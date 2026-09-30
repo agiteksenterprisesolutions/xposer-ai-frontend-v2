@@ -1,0 +1,1034 @@
+/* ==========================================================================
+   XPOSER.AI — Design Tokens
+   --------------------------------------------------------------------------
+   Derived from the Home page (src/pages/public/Home.jsx) color scheme:
+     canvas #080c14 · elevated surface #111827 · ink #f0f4ff
+     brand blue-500 #3b82f6 / blue-400 #60a5fa
+     status emerald-400 / amber-400 / red-400 · hairlines on white alpha
+
+   Three layers, in order. Only ever consume the layer above you:
+     1. PRIMITIVES  --xp-<family>-<step>   raw, theme-independent values
+     2. SEMANTIC    --xp-<role>            what a color *means* (themeable)
+     3. COMPONENT   --xp-btn-*, --xp-card-*, --xp-table-*  (built on semantic)
+
+   Dark is the default theme (the marketing surface). Light is opt-in via
+   <html data-theme="light"> or the prefers-color-scheme fallback, and only
+   remaps the SEMANTIC layer — components need no changes.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. PRIMITIVES
+   ========================================================================== */
+
+:root {
+  /* --- Neutrals: a single blue-leaning ramp (hue ~217) so every surface,
+         hairline and body text sits on the same axis as the brand. -------- */
+  --xp-neutral-0: #ffffff;
+  --xp-neutral-25: #fbfcfe;
+  --xp-neutral-50: #f6f8fc;
+  --xp-neutral-100: #eef1f7;
+  --xp-neutral-200: #dee3ec;
+  --xp-neutral-300: #c3cbda;
+  --xp-neutral-400: #97a2b6;
+  --xp-neutral-500: #6b7789;
+  --xp-neutral-600: #4b5565;
+  --xp-neutral-700: #333d4d;
+  --xp-neutral-800: #1f2937;
+  --xp-neutral-850: #111827;
+  --xp-neutral-900: #0d1420;
+  --xp-neutral-950: #080c14;
+  --xp-neutral-1000: #04070c;
+
+  /* --- Brand blue ------------------------------------------------------- */
+  --xp-blue-50: #eff6ff;
+  --xp-blue-100: #dbeafe;
+  --xp-blue-200: #bfdbfe;
+  --xp-blue-300: #93c5fd;
+  --xp-blue-400: #60a5fa;
+  --xp-blue-500: #3b82f6;
+  --xp-blue-600: #2563eb;
+  --xp-blue-700: #1d4ed8;
+  --xp-blue-800: #1e40af;
+  --xp-blue-900: #1e3a8a;
+  --xp-blue-950: #172554;
+
+  /* --- Status ----------------------------------------------------------- */
+  --xp-emerald-300: #6ee7b7;
+  --xp-emerald-400: #34d399;
+  --xp-emerald-500: #10b981;
+  --xp-emerald-600: #059669;
+  --xp-emerald-700: #047857;
+
+  --xp-amber-300: #fcd34d;
+  --xp-amber-400: #fbbf24;
+  --xp-amber-500: #f59e0b;
+  --xp-amber-600: #d97706;
+  --xp-amber-700: #b45309;
+
+  --xp-red-300: #fca5a5;
+  --xp-red-400: #f87171;
+  --xp-red-500: #ef4444;
+  --xp-red-600: #dc2626;
+  --xp-red-700: #b91c1c;
+
+  /* --- Alpha inks: hairlines and secondary text. Alpha rather than solid
+         so cards stay correct over gradients and glows. ------------------ */
+  --xp-white-a04: rgb(255 255 255 / 0.04);
+  --xp-white-a06: rgb(255 255 255 / 0.06);
+  --xp-white-a10: rgb(255 255 255 / 0.10);
+  --xp-white-a20: rgb(255 255 255 / 0.20);
+  --xp-white-a40: rgb(255 255 255 / 0.40);
+  --xp-white-a60: rgb(255 255 255 / 0.60);
+  --xp-white-a70: rgb(255 255 255 / 0.70);
+
+  --xp-black-a04: rgb(8 12 20 / 0.04);
+  --xp-black-a06: rgb(8 12 20 / 0.06);
+  --xp-black-a10: rgb(8 12 20 / 0.10);
+  --xp-black-a20: rgb(8 12 20 / 0.20);
+  --xp-black-a55: rgb(8 12 20 / 0.55);
+  --xp-black-a70: rgb(8 12 20 / 0.70);
+
+  /* --- Non-color primitives --------------------------------------------- */
+  --xp-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --xp-font-mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
+
+  --xp-radius-xs: 0.25rem;
+  --xp-radius-sm: 0.375rem;
+  --xp-radius-md: 0.5rem;
+  --xp-radius-lg: 0.75rem;
+  --xp-radius-xl: 1rem;
+  --xp-radius-2xl: 1.25rem;
+  --xp-radius-full: 9999px;
+
+  --xp-space-1: 0.25rem;
+  --xp-space-2: 0.5rem;
+  --xp-space-3: 0.75rem;
+  --xp-space-4: 1rem;
+  --xp-space-5: 1.25rem;
+  --xp-space-6: 1.5rem;
+  --xp-space-8: 2rem;
+  --xp-space-10: 2.5rem;
+  --xp-space-12: 3rem;
+  --xp-space-16: 4rem;
+
+  --xp-text-2xs: 0.65625rem;
+  /* 10.5px — badge caps */
+  --xp-text-xs: 0.75rem;
+  --xp-text-sm: 0.84375rem;
+  /* 13.5px — table + list rows */
+  --xp-text-base: 0.90625rem;
+  /* 14.5px — button / control label */
+  --xp-text-md: 1rem;
+  --xp-text-lg: 1.125rem;
+  --xp-text-xl: 1.5rem;
+  --xp-text-2xl: 2rem;
+  --xp-text-3xl: 3rem;
+  --xp-text-4xl: 4.5rem;
+
+  --xp-leading-tight: 1.02;
+  --xp-leading-snug: 1.3;
+  --xp-leading-normal: 1.5;
+  --xp-leading-relaxed: 1.7;
+
+  --xp-weight-light: 300;
+  --xp-weight-normal: 400;
+  --xp-weight-medium: 500;
+  --xp-weight-semibold: 600;
+  --xp-weight-bold: 700;
+  --xp-weight-extrabold: 800;
+
+  --xp-tracking-tight: -0.02em;
+  --xp-tracking-normal: 0;
+  --xp-tracking-wide: 0.04em;
+
+  --xp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --xp-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --xp-duration-fast: 120ms;
+  --xp-duration-base: 180ms;
+  --xp-duration-slow: 320ms;
+
+  --xp-z-base: 0;
+  --xp-z-sticky: 10;
+  --xp-z-overlay: 100;
+  --xp-z-modal: 200;
+  --xp-z-toast: 300;
+}
+
+/* ==========================================================================
+   2. SEMANTIC — dark (default)
+   ========================================================================== */
+
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Surfaces, ascending elevation */
+  --xp-canvas: var(--xp-neutral-950);
+  --xp-surface: var(--xp-neutral-850);
+  --xp-surface-raised: var(--xp-neutral-800);
+  --xp-surface-sunken: var(--xp-neutral-1000);
+  --xp-surface-subtle: var(--xp-white-a04);
+  --xp-surface-hover: var(--xp-white-a06);
+  --xp-surface-active: var(--xp-white-a10);
+  --xp-overlay: var(--xp-black-a70);
+
+  /* Text — four steps is enough; more invites inconsistency */
+  --xp-text-primary: #f0f4ff;
+  --xp-text-secondary: var(--xp-white-a70);
+  --xp-text-muted: var(--xp-white-a60);
+  --xp-text-subtle: var(--xp-white-a40);
+  --xp-text-inverse: var(--xp-neutral-950);
+  --xp-text-on-accent: var(--xp-neutral-1000);
+  --xp-text-link: var(--xp-blue-400);
+  --xp-text-link-hover: var(--xp-blue-300);
+
+  /* Borders */
+  --xp-border: var(--xp-white-a10);
+  --xp-border-subtle: var(--xp-white-a06);
+  --xp-border-strong: var(--xp-white-a20);
+  --xp-border-accent: var(--xp-blue-400);
+
+  /* Accent */
+  --xp-accent: var(--xp-blue-500);
+  --xp-accent-hover: var(--xp-blue-400);
+  --xp-accent-active: var(--xp-blue-600);
+  --xp-accent-fg: var(--xp-blue-400);
+  --xp-accent-soft: rgb(59 130 246 / 0.10);
+  --xp-accent-soft-hover: rgb(59 130 246 / 0.16);
+  --xp-accent-ring: rgb(96 165 250 / 0.45);
+
+  /* Status: -fg on canvas, -soft as fill, -solid for bars and dots */
+  --xp-success-fg: var(--xp-emerald-400);
+  --xp-success-solid: var(--xp-emerald-500);
+  --xp-success-soft: rgb(52 211 153 / 0.10);
+  --xp-success-border: rgb(52 211 153 / 0.25);
+
+  --xp-warning-fg: var(--xp-amber-400);
+  --xp-warning-solid: var(--xp-amber-500);
+  --xp-warning-soft: rgb(251 191 36 / 0.10);
+  --xp-warning-border: rgb(251 191 36 / 0.25);
+
+  --xp-danger-fg: var(--xp-red-400);
+  --xp-danger-solid: var(--xp-red-500);
+  --xp-danger-soft: rgb(248 113 113 / 0.10);
+  --xp-danger-border: rgb(248 113 113 / 0.25);
+
+  --xp-info-fg: var(--xp-blue-400);
+  --xp-info-solid: var(--xp-blue-500);
+  --xp-info-soft: rgb(96 165 250 / 0.10);
+  --xp-info-border: rgb(96 165 250 / 0.25);
+
+  /* Focus — one visible ring for the whole app */
+  --xp-focus-ring: var(--xp-blue-400);
+  --xp-focus-ring-offset: var(--xp-canvas);
+
+  /* Elevation. Dark UI reads depth from glow + hairline, not soft shadow. */
+  --xp-shadow-xs: 0 1px 2px rgb(0 0 0 / 0.32);
+  --xp-shadow-sm: 0 2px 6px rgb(0 0 0 / 0.36);
+  --xp-shadow-md: 0 8px 20px -6px rgb(0 0 0 / 0.48);
+  --xp-shadow-lg: 0 18px 40px -12px rgb(0 0 0 / 0.58);
+  --xp-shadow-xl: 0 28px 64px -16px rgb(0 0 0 / 0.66);
+  --xp-glow-accent: 0 0 28px rgb(59 130 246 / 0.25);
+  --xp-glow-success: 0 0 28px rgb(52 211 153 / 0.25);
+
+  /* Signature gradients (hero glow + progress fill) */
+  --xp-gradient-accent: linear-gradient(90deg, var(--xp-blue-500), var(--xp-blue-400));
+  --xp-gradient-hero:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgb(52 211 153 / 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgb(96 165 250 / 0.06) 0%, transparent 50%);
+
+  /* Data-viz series — ordered for categorical use, distinct at 2px strokes */
+  --xp-chart-1: var(--xp-blue-400);
+  --xp-chart-2: var(--xp-emerald-400);
+  --xp-chart-3: var(--xp-amber-400);
+  --xp-chart-4: #c084fc;
+  --xp-chart-5: var(--xp-red-400);
+  --xp-chart-6: #22d3ee;
+  --xp-chart-grid: var(--xp-white-a06);
+  --xp-chart-axis: var(--xp-text-subtle);
+}
+
+/* ==========================================================================
+   2b. SEMANTIC — light (dashboards / print). Same roles, remapped only.
+   ========================================================================== */
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --xp-canvas: var(--xp-neutral-50);
+  --xp-surface: var(--xp-neutral-0);
+  --xp-surface-raised: var(--xp-neutral-0);
+  --xp-surface-sunken: var(--xp-neutral-100);
+  --xp-surface-subtle: var(--xp-black-a04);
+  --xp-surface-hover: var(--xp-black-a04);
+  --xp-surface-active: var(--xp-black-a06);
+  --xp-overlay: var(--xp-black-a55);
+
+  --xp-text-primary: var(--xp-neutral-900);
+  --xp-text-secondary: var(--xp-neutral-700);
+  --xp-text-muted: var(--xp-neutral-600);
+  --xp-text-subtle: var(--xp-neutral-500);
+  --xp-text-inverse: var(--xp-neutral-0);
+  --xp-text-on-accent: var(--xp-neutral-0);
+  --xp-text-link: var(--xp-blue-600);
+  --xp-text-link-hover: var(--xp-blue-700);
+
+  --xp-border: var(--xp-neutral-200);
+  --xp-border-subtle: var(--xp-neutral-100);
+  --xp-border-strong: var(--xp-neutral-300);
+  --xp-border-accent: var(--xp-blue-600);
+
+  --xp-accent: var(--xp-blue-600);
+  --xp-accent-hover: var(--xp-blue-700);
+  --xp-accent-active: var(--xp-blue-800);
+  --xp-accent-fg: var(--xp-blue-700);
+  --xp-accent-soft: var(--xp-blue-50);
+  --xp-accent-soft-hover: var(--xp-blue-100);
+  --xp-accent-ring: rgb(37 99 235 / 0.35);
+
+  /* Darker foregrounds so text on tinted fills clears 4.5:1 on white */
+  --xp-success-fg: var(--xp-emerald-700);
+  --xp-success-solid: var(--xp-emerald-600);
+  --xp-success-soft: #ecfdf5;
+  --xp-success-border: #a7f3d0;
+
+  --xp-warning-fg: var(--xp-amber-700);
+  --xp-warning-solid: var(--xp-amber-600);
+  --xp-warning-soft: #fffbeb;
+  --xp-warning-border: #fde68a;
+
+  --xp-danger-fg: var(--xp-red-700);
+  --xp-danger-solid: var(--xp-red-600);
+  --xp-danger-soft: #fef2f2;
+  --xp-danger-border: #fecaca;
+
+  --xp-info-fg: var(--xp-blue-700);
+  --xp-info-solid: var(--xp-blue-600);
+  --xp-info-soft: var(--xp-blue-50);
+  --xp-info-border: var(--xp-blue-200);
+
+  --xp-focus-ring: var(--xp-blue-600);
+  --xp-focus-ring-offset: var(--xp-surface);
+
+  --xp-shadow-xs: 0 1px 2px rgb(8 12 20 / 0.05);
+  --xp-shadow-sm: 0 1px 3px rgb(8 12 20 / 0.08), 0 1px 2px rgb(8 12 20 / 0.04);
+  --xp-shadow-md: 0 6px 16px -4px rgb(8 12 20 / 0.10);
+  --xp-shadow-lg: 0 16px 32px -8px rgb(8 12 20 / 0.14);
+  --xp-shadow-xl: 0 24px 48px -12px rgb(8 12 20 / 0.18);
+  --xp-glow-accent: 0 0 0 1px rgb(37 99 235 / 0.12), 0 6px 18px -6px rgb(37 99 235 / 0.35);
+  --xp-glow-success: 0 0 0 1px rgb(5 150 105 / 0.12), 0 6px 18px -6px rgb(5 150 105 / 0.35);
+
+  --xp-gradient-accent: linear-gradient(90deg, var(--xp-blue-600), var(--xp-blue-400));
+  --xp-gradient-hero:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgb(16 185 129 / 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgb(59 130 246 / 0.08) 0%, transparent 50%);
+
+  --xp-chart-1: var(--xp-blue-600);
+  --xp-chart-2: var(--xp-emerald-600);
+  --xp-chart-3: var(--xp-amber-600);
+  --xp-chart-4: #7c3aed;
+  --xp-chart-5: var(--xp-red-600);
+  --xp-chart-6: #0891b2;
+  --xp-chart-grid: var(--xp-neutral-200);
+  --xp-chart-axis: var(--xp-neutral-500);
+}
+
+/* ==========================================================================
+   3. COMPONENT TOKENS + reusable classes
+   ========================================================================== */
+
+/* --- Button ------------------------------------------------------------- */
+
+:root {
+  --xp-btn-height-sm: 2rem;
+  --xp-btn-height-md: 2.5rem;
+  --xp-btn-height-lg: 3rem;
+  --xp-btn-padding-x-sm: var(--xp-space-3);
+  --xp-btn-padding-x-md: var(--xp-space-5);
+  --xp-btn-padding-x-lg: var(--xp-space-6);
+  --xp-btn-radius: var(--xp-radius-md);
+  --xp-btn-font-size: var(--xp-text-base);
+  --xp-btn-font-weight: var(--xp-weight-semibold);
+  --xp-btn-gap: var(--xp-space-2);
+  --xp-btn-lift: -1px;
+  --xp-btn-transition: background-color var(--xp-duration-base) var(--xp-ease-out),
+    border-color var(--xp-duration-base) var(--xp-ease-out),
+    color var(--xp-duration-base) var(--xp-ease-out),
+    box-shadow var(--xp-duration-base) var(--xp-ease-out),
+    transform var(--xp-duration-base) var(--xp-ease-out);
+}
+
+.xp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--xp-btn-gap);
+  height: var(--xp-btn-height-md);
+  padding-inline: var(--xp-btn-padding-x-md);
+  border: 1px solid transparent;
+  border-radius: var(--xp-btn-radius);
+  font-family: inherit;
+  font-size: var(--xp-btn-font-size);
+  font-weight: var(--xp-btn-font-weight);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--xp-btn-transition);
+}
+
+.xp-btn:focus-visible {
+  outline: 2px solid var(--xp-focus-ring);
+  outline-offset: 2px;
+}
+
+.xp-btn:disabled,
+.xp-btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.xp-btn--sm {
+  height: var(--xp-btn-height-sm);
+  padding-inline: var(--xp-btn-padding-x-sm);
+  font-size: var(--xp-text-sm);
+}
+
+.xp-btn--lg {
+  height: var(--xp-btn-height-lg);
+  padding-inline: var(--xp-btn-padding-x-lg);
+  font-size: var(--xp-text-md);
+}
+
+.xp-btn--block {
+  display: flex;
+  width: 100%;
+}
+
+.xp-btn--primary {
+  background-color: var(--xp-accent);
+  border-color: var(--xp-accent);
+  color: var(--xp-text-on-accent);
+  box-shadow: var(--xp-glow-accent);
+}
+
+.xp-btn--primary:hover:not(:disabled) {
+  background-color: transparent;
+  border-color: var(--xp-accent-hover);
+  color: var(--xp-text-primary);
+  transform: translateY(var(--xp-btn-lift));
+}
+
+.xp-btn--primary:active:not(:disabled) {
+  background-color: var(--xp-accent-active);
+  border-color: var(--xp-accent-active);
+  color: var(--xp-text-on-accent);
+  transform: none;
+}
+
+.xp-btn--secondary {
+  background-color: var(--xp-surface-raised);
+  border-color: var(--xp-border);
+  color: var(--xp-text-primary);
+}
+
+.xp-btn--secondary:hover:not(:disabled) {
+  border-color: var(--xp-border-strong);
+  background-color: var(--xp-surface-hover);
+}
+
+.xp-btn--outline {
+  background-color: transparent;
+  border-color: var(--xp-border);
+  color: var(--xp-text-muted);
+  font-weight: var(--xp-weight-medium);
+}
+
+.xp-btn--outline:hover:not(:disabled) {
+  color: var(--xp-text-primary);
+  border-color: var(--xp-border-strong);
+  background-color: var(--xp-surface-hover);
+}
+
+.xp-btn--ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xp-text-muted);
+  font-weight: var(--xp-weight-medium);
+}
+
+.xp-btn--ghost:hover:not(:disabled) {
+  color: var(--xp-text-primary);
+  background-color: var(--xp-surface-hover);
+}
+
+.xp-btn--danger {
+  background-color: var(--xp-danger-solid);
+  border-color: var(--xp-danger-solid);
+  color: var(--xp-neutral-0);
+}
+
+.xp-btn--danger:hover:not(:disabled) {
+  background-color: var(--xp-red-600);
+  border-color: var(--xp-red-600);
+}
+
+.xp-btn--icon {
+  width: var(--xp-btn-height-md);
+  padding-inline: 0;
+}
+
+.xp-btn--icon.xp-btn--sm {
+  width: var(--xp-btn-height-sm);
+}
+
+.xp-btn--icon.xp-btn--lg {
+  width: var(--xp-btn-height-lg);
+}
+
+/* --- Card -------------------------------------------------------------- */
+
+:root {
+  --xp-card-bg: var(--xp-surface);
+  --xp-card-bg-subtle: var(--xp-surface-subtle);
+  --xp-card-border: var(--xp-border);
+  --xp-card-border-hover: var(--xp-border-strong);
+  --xp-card-radius: var(--xp-radius-xl);
+  --xp-card-padding: var(--xp-space-6);
+  --xp-card-padding-compact: var(--xp-space-4);
+  --xp-card-shadow: var(--xp-shadow-lg);
+  --xp-card-gap: var(--xp-space-4);
+}
+
+.xp-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xp-card-gap);
+  background-color: var(--xp-card-bg);
+  border: 1px solid var(--xp-card-border);
+  border-radius: var(--xp-card-radius);
+  padding: var(--xp-card-padding);
+  box-shadow: var(--xp-card-shadow);
+  color: var(--xp-text-primary);
+}
+
+.xp-card--compact {
+  padding: var(--xp-card-padding-compact);
+  border-radius: var(--xp-radius-lg);
+  gap: var(--xp-space-3);
+}
+
+/* Sits over the hero glow — translucent instead of solid */
+.xp-card--glass {
+  background-color: var(--xp-card-bg-subtle);
+  backdrop-filter: blur(12px);
+}
+
+.xp-card--flat {
+  box-shadow: none;
+}
+
+.xp-card--interactive {
+  cursor: pointer;
+  transition: border-color var(--xp-duration-base) var(--xp-ease-out),
+    box-shadow var(--xp-duration-base) var(--xp-ease-out),
+    transform var(--xp-duration-base) var(--xp-ease-out);
+}
+
+.xp-card--interactive:hover {
+  border-color: var(--xp-card-border-hover);
+  box-shadow: var(--xp-shadow-xl);
+  transform: translateY(-2px);
+}
+
+.xp-card--interactive:focus-visible {
+  outline: 2px solid var(--xp-focus-ring);
+  outline-offset: 2px;
+}
+
+.xp-card--accent {
+  border-color: var(--xp-border-accent);
+  box-shadow: var(--xp-card-shadow), var(--xp-glow-accent);
+}
+
+.xp-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--xp-space-3);
+}
+
+.xp-card__title {
+  font-size: var(--xp-text-md);
+  font-weight: var(--xp-weight-semibold);
+  letter-spacing: var(--xp-tracking-tight);
+}
+
+.xp-card__subtitle {
+  font-size: var(--xp-text-sm);
+  color: var(--xp-text-subtle);
+}
+
+.xp-card__body {
+  font-size: var(--xp-text-sm);
+  line-height: var(--xp-leading-relaxed);
+  color: var(--xp-text-secondary);
+}
+
+.xp-card__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--xp-space-3);
+  padding-top: var(--xp-space-4);
+  border-top: 1px solid var(--xp-border-subtle);
+}
+
+/* Icon tile used by the AI-triage / feature cards */
+.xp-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--xp-radius-md);
+  background-color: var(--xp-accent-soft);
+  color: var(--xp-accent-fg);
+}
+
+/* --- Table ------------------------------------------------------------- */
+
+:root {
+  --xp-table-bg: var(--xp-surface);
+  --xp-table-header-bg: var(--xp-surface-subtle);
+  --xp-table-header-color: var(--xp-text-subtle);
+  --xp-table-row-hover: var(--xp-surface-hover);
+  --xp-table-row-selected: var(--xp-accent-soft);
+  --xp-table-border: var(--xp-border-subtle);
+  --xp-table-cell-padding-y: var(--xp-space-3);
+  --xp-table-cell-padding-x: var(--xp-space-4);
+  --xp-table-font-size: var(--xp-text-sm);
+  --xp-table-radius: var(--xp-radius-lg);
+}
+
+.xp-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background-color: var(--xp-table-bg);
+  border: 1px solid var(--xp-border);
+  border-radius: var(--xp-table-radius);
+}
+
+.xp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--xp-table-font-size);
+  color: var(--xp-text-secondary);
+  text-align: left;
+}
+
+.xp-table th {
+  padding: var(--xp-table-cell-padding-y) var(--xp-table-cell-padding-x);
+  background-color: var(--xp-table-header-bg);
+  color: var(--xp-table-header-color);
+  font-size: var(--xp-text-2xs);
+  font-weight: var(--xp-weight-semibold);
+  letter-spacing: var(--xp-tracking-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--xp-table-border);
+}
+
+.xp-table td {
+  padding: var(--xp-table-cell-padding-y) var(--xp-table-cell-padding-x);
+  border-bottom: 1px solid var(--xp-table-border);
+  vertical-align: middle;
+}
+
+.xp-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.xp-table tbody tr {
+  transition: background-color var(--xp-duration-fast) var(--xp-ease-out);
+}
+
+.xp-table tbody tr:hover {
+  background-color: var(--xp-table-row-hover);
+}
+
+.xp-table tbody tr[data-selected='true'] {
+  background-color: var(--xp-table-row-selected);
+}
+
+.xp-table--striped tbody tr:nth-child(even) {
+  background-color: var(--xp-surface-subtle);
+}
+
+.xp-table--compact th,
+.xp-table--compact td {
+  padding-block: var(--xp-space-2);
+}
+
+.xp-table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-table__sticky-header th {
+  position: sticky;
+  top: 0;
+  z-index: var(--xp-z-sticky);
+}
+
+/* --- Badge / status pill ----------------------------------------------- */
+
+:root {
+  --xp-badge-padding-y: 0.25rem;
+  --xp-badge-padding-x: 0.625rem;
+  --xp-badge-radius: var(--xp-radius-full);
+  --xp-badge-font-size: var(--xp-text-2xs);
+  --xp-badge-font-weight: var(--xp-weight-semibold);
+}
+
+.xp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--xp-space-1);
+  padding: var(--xp-badge-padding-y) var(--xp-badge-padding-x);
+  border: 1px solid transparent;
+  border-radius: var(--xp-badge-radius);
+  font-size: var(--xp-badge-font-size);
+  font-weight: var(--xp-badge-font-weight);
+  letter-spacing: var(--xp-tracking-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.xp-badge--neutral {
+  background-color: var(--xp-surface-active);
+  color: var(--xp-text-muted);
+}
+
+.xp-badge--info {
+  background-color: var(--xp-info-soft);
+  border-color: var(--xp-info-border);
+  color: var(--xp-info-fg);
+}
+
+.xp-badge--success {
+  background-color: var(--xp-success-soft);
+  border-color: var(--xp-success-border);
+  color: var(--xp-success-fg);
+}
+
+.xp-badge--warning {
+  background-color: var(--xp-warning-soft);
+  border-color: var(--xp-warning-border);
+  color: var(--xp-warning-fg);
+}
+
+.xp-badge--danger {
+  background-color: var(--xp-danger-soft);
+  border-color: var(--xp-danger-border);
+  color: var(--xp-danger-fg);
+}
+
+/* Severity dot — pair with a badge so status is never color-only */
+.xp-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--xp-radius-full);
+  background-color: currentColor;
+}
+
+.xp-dot--success {
+  color: var(--xp-success-solid);
+}
+
+.xp-dot--warning {
+  color: var(--xp-warning-solid);
+}
+
+.xp-dot--danger {
+  color: var(--xp-danger-solid);
+}
+
+.xp-dot--info {
+  color: var(--xp-info-solid);
+}
+
+/* --- Input / form control --------------------------------------------- */
+
+:root {
+  --xp-input-bg: var(--xp-surface-subtle);
+  --xp-input-border: var(--xp-border);
+  --xp-input-border-focus: var(--xp-border-accent);
+  --xp-input-color: var(--xp-text-primary);
+  --xp-input-placeholder: var(--xp-text-subtle);
+  --xp-input-height: var(--xp-btn-height-md);
+  --xp-input-radius: var(--xp-radius-md);
+  --xp-input-padding-x: var(--xp-space-3);
+}
+
+.xp-input,
+.xp-textarea,
+.xp-select {
+  width: 100%;
+  min-height: var(--xp-input-height);
+  padding: 0 var(--xp-input-padding-x);
+  background-color: var(--xp-input-bg);
+  border: 1px solid var(--xp-input-border);
+  border-radius: var(--xp-input-radius);
+  color: var(--xp-input-color);
+  font-family: inherit;
+  font-size: var(--xp-text-base);
+  transition: border-color var(--xp-duration-base) var(--xp-ease-out),
+    box-shadow var(--xp-duration-base) var(--xp-ease-out);
+}
+
+.xp-textarea {
+  padding-block: var(--xp-space-2);
+  line-height: var(--xp-leading-normal);
+  resize: vertical;
+}
+
+.xp-input::placeholder,
+.xp-textarea::placeholder {
+  color: var(--xp-input-placeholder);
+}
+
+.xp-input:focus-visible,
+.xp-textarea:focus-visible,
+.xp-select:focus-visible {
+  outline: none;
+  border-color: var(--xp-input-border-focus);
+  box-shadow: 0 0 0 3px var(--xp-accent-ring);
+}
+
+.xp-input[aria-invalid='true'],
+.xp-textarea[aria-invalid='true'] {
+  border-color: var(--xp-danger-solid);
+}
+
+.xp-label {
+  display: block;
+  margin-bottom: var(--xp-space-2);
+  font-size: var(--xp-text-sm);
+  font-weight: var(--xp-weight-medium);
+  color: var(--xp-text-secondary);
+}
+
+.xp-help {
+  font-size: var(--xp-text-xs);
+  color: var(--xp-text-subtle);
+}
+
+.xp-help--error {
+  color: var(--xp-danger-fg);
+}
+
+/* --- Progress bar (AI processing meter) ------------------------------- */
+
+:root {
+  --xp-progress-track: var(--xp-surface-subtle);
+  --xp-progress-fill: var(--xp-gradient-accent);
+  --xp-progress-height: 0.375rem;
+}
+
+.xp-progress {
+  height: var(--xp-progress-height);
+  border-radius: var(--xp-radius-full);
+  background-color: var(--xp-progress-track);
+  overflow: hidden;
+}
+
+.xp-progress__fill {
+  height: 100%;
+  border-radius: var(--xp-radius-full);
+  background: var(--xp-progress-fill);
+  transition: width var(--xp-duration-slow) var(--xp-ease-out);
+}
+
+/* --- Layout helpers --------------------------------------------------- */
+
+:root {
+  --xp-container-max: 72rem;
+  --xp-container-pad: var(--xp-space-6);
+  --xp-section-pad-y: var(--xp-space-16);
+}
+
+.xp-container {
+  width: 100%;
+  max-width: var(--xp-container-max);
+  margin-inline: auto;
+  padding-inline: var(--xp-container-pad);
+}
+
+.xp-section {
+  padding-block: var(--xp-section-pad-y);
+}
+
+.xp-divider {
+  height: 1px;
+  border: 0;
+  background-color: var(--xp-border-subtle);
+}
+
+.xp-surface {
+  background-color: var(--xp-canvas);
+  color: var(--xp-text-primary);
+}
+
+/* Hero glow backdrop — pair with a positioned parent */
+.xp-hero-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--xp-gradient-hero);
+}
+
+.xp-link {
+  color: var(--xp-text-link);
+  text-decoration: none;
+  transition: color var(--xp-duration-fast) var(--xp-ease-out);
+}
+
+.xp-link:hover {
+  color: var(--xp-text-link-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- Motion / accessibility ------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --xp-duration-fast: 1ms;
+    --xp-duration-base: 1ms;
+    --xp-duration-slow: 1ms;
+    --xp-btn-lift: 0px;
+  }
+
+  .xp-card--interactive:hover {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   Navbar: always-dark override (used on the home/marketing page)
+   Applied to the <nav> element via .navbar-force-dark when isHome is true.
+   Re-declares the semantic token subset the navbar consumes so that every
+   descendant (text, borders, dropdowns, icon buttons) resolves dark values
+   regardless of the page-level data-theme.
+   ========================================================================== */
+
+.navbar-force-dark {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --xp-canvas: var(--xp-neutral-950);
+  --xp-surface: var(--xp-neutral-850);
+  --xp-surface-raised: var(--xp-neutral-800);
+  --xp-surface-subtle: var(--xp-white-a04);
+  --xp-surface-hover: var(--xp-white-a06);
+  --xp-surface-active: var(--xp-white-a10);
+
+  /* Text */
+  --xp-text-primary: #f0f4ff;
+  --xp-text-secondary: var(--xp-white-a70);
+  --xp-text-muted: var(--xp-white-a60);
+  --xp-text-subtle: var(--xp-white-a40);
+  --xp-text-on-accent: var(--xp-neutral-1000);
+
+  /* Borders */
+  --xp-border: var(--xp-white-a10);
+  --xp-border-subtle: var(--xp-white-a06);
+  --xp-border-strong: var(--xp-white-a20);
+  --xp-border-accent: var(--xp-blue-400);
+
+  /* Accent */
+  --xp-accent: var(--xp-blue-500);
+  --xp-accent-hover: var(--xp-blue-400);
+  --xp-accent-fg: var(--xp-blue-400);
+  --xp-accent-soft: rgb(59 130 246 / 0.10);
+  --xp-accent-soft-hover: rgb(59 130 246 / 0.16);
+
+  /* Shadows */
+  --xp-shadow-sm: 0 2px 6px rgb(0 0 0 / 0.36);
+  --xp-shadow-md: 0 8px 20px -6px rgb(0 0 0 / 0.48);
+}
+
+/* Honor the OS preference when no explicit data-theme is set */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+
+    --xp-canvas: var(--xp-neutral-50);
+    --xp-surface: var(--xp-neutral-0);
+    --xp-surface-raised: var(--xp-neutral-0);
+    --xp-surface-sunken: var(--xp-neutral-100);
+    --xp-surface-subtle: var(--xp-black-a04);
+    --xp-surface-hover: var(--xp-black-a04);
+    --xp-surface-active: var(--xp-black-a06);
+    --xp-overlay: var(--xp-black-a55);
+
+    --xp-text-primary: var(--xp-neutral-900);
+    --xp-text-secondary: var(--xp-neutral-700);
+    --xp-text-muted: var(--xp-neutral-600);
+    --xp-text-subtle: var(--xp-neutral-500);
+    --xp-text-inverse: var(--xp-neutral-0);
+    --xp-text-on-accent: var(--xp-neutral-0);
+    --xp-text-link: var(--xp-blue-600);
+    --xp-text-link-hover: var(--xp-blue-700);
+
+    --xp-border: var(--xp-neutral-200);
+    --xp-border-subtle: var(--xp-neutral-100);
+    --xp-border-strong: var(--xp-neutral-300);
+    --xp-border-accent: var(--xp-blue-600);
+
+    --xp-accent: var(--xp-blue-600);
+    --xp-accent-hover: var(--xp-blue-700);
+    --xp-accent-active: var(--xp-blue-800);
+    --xp-accent-fg: var(--xp-blue-700);
+    --xp-accent-soft: var(--xp-blue-50);
+    --xp-accent-soft-hover: var(--xp-blue-100);
+    --xp-accent-ring: rgb(37 99 235 / 0.35);
+
+    --xp-success-fg: var(--xp-emerald-700);
+    --xp-success-solid: var(--xp-emerald-600);
+    --xp-success-soft: #ecfdf5;
+    --xp-success-border: #a7f3d0;
+
+    --xp-warning-fg: var(--xp-amber-700);
+    --xp-warning-solid: var(--xp-amber-600);
+    --xp-warning-soft: #fffbeb;
+    --xp-warning-border: #fde68a;
+
+    --xp-danger-fg: var(--xp-red-700);
+    --xp-danger-solid: var(--xp-red-600);
+    --xp-danger-soft: #fef2f2;
+    --xp-danger-border: #fecaca;
+
+    --xp-info-fg: var(--xp-blue-700);
+    --xp-info-solid: var(--xp-blue-600);
+    --xp-info-soft: var(--xp-blue-50);
+    --xp-info-border: var(--xp-blue-200);
+
+    --xp-focus-ring: var(--xp-blue-600);
+    --xp-focus-ring-offset: var(--xp-surface);
+
+    --xp-shadow-xs: 0 1px 2px rgb(8 12 20 / 0.05);
+    --xp-shadow-sm: 0 1px 3px rgb(8 12 20 / 0.08), 0 1px 2px rgb(8 12 20 / 0.04);
+    --xp-shadow-md: 0 6px 16px -4px rgb(8 12 20 / 0.10);
+    --xp-shadow-lg: 0 16px 32px -8px rgb(8 12 20 / 0.14);
+    --xp-shadow-xl: 0 24px 48px -12px rgb(8 12 20 / 0.18);
+    --xp-glow-accent: 0 0 0 1px rgb(37 99 235 / 0.12), 0 6px 18px -6px rgb(37 99 235 / 0.35);
+
+    --xp-chart-grid: var(--xp-neutral-200);
+    --xp-chart-axis: var(--xp-neutral-500);
+  }
+}

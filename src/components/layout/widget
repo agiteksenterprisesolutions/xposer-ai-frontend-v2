@@ -1,0 +1,713 @@
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { MessageSquare, X, Send, Mic, MicOff, Paperclip } from "lucide-react";
+import axios from "axios";
+import { Room, RoomEvent, Track } from "livekit-client";
+import MarkdownMessage from "../ui/MarkDownMessage";
+import { useAuthStore } from "../../store/authStore";
+
+export default function AIChatWidget() {
+  // ==================== State Management ====================
+  const [isOpen, setIsOpen] = useState(false);
+  const [credentials, setCredentials] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isLoadingToken, setIsLoadingToken] = useState(false);
+  const [tokenError, setTokenError] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const roomRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isMicEnabled, setIsMicEnabled] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  
+  // Use ref to prevent double registration (more reliable than state)
+  const isTranscriptionHandlerRegistered = useRef(false);
+
+  // Get auth state from store
+  const { isAuthenticated, token: authToken } = useAuthStore();
+
+  // Refs
+  const messagesEndRef = useRef(null);
+  const audioElementRef = useRef(null);
+  const localAudioTrackRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // ==================== Initialize (Mount Only) ====================
+  useEffect(() => {
+    console.log("AIChatWidget - Initialize", { isAuthenticated, hasAuthToken: !!authToken });
+    
+    try {
+      const reportCredentials = localStorage.getItem("reportCredentials");
+      if (reportCredentials) {
+        const parsed = JSON.parse(reportCredentials);
+        setCredentials(parsed);
+        console.log("AIChatWidget - Initial credentials loaded:", parsed.reportNumber);
+      }
+    } catch (error) {
+      console.error("AIChatWidget - Error parsing credentials:", error);
+    }
+
+    // Create audio element for playing agent responses
+    audioElementRef.current = new Audio();
+    audioElementRef.current.autoplay = true;
+
+    return () => {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+        audioElementRef.current = null;
+      }
+      if (roomRef.current) {
+        disconnectFromRoom();
+      }
+    };
+  }, []);
+
+  // ==================== Token Management ====================
+  const getToken = useCallback(async () => {
+    setIsLoadingToken(true);
+    setTokenError(null);
+
+    try {
+      let freshCredentials = null;
+      try {
+        const stored = localStorage.getItem("reportCredentials");
+        if (stored) {
+          freshCredentials = JSON.parse(stored);
+          console.log("AIChatWidget - Fresh credentials from localStorage:", freshCredentials.reportNumber);
+        }
+      } catch (e) {
+        console.error("Error reading localStorage:", e);
+      }
+
+      let requestBody = {};
+      let config = {
+        timeout: 15000,
+        headers: {}
+      };
+
+      if (isAuthenticated && authToken) {
+        if (!freshCredentials?.reportNumber) {
+          throw new Error("Report number not available. Please ensure you have started a report.");
+        }
+
+        requestBody = {
+          reportNumber: freshCredentials.reportNumber,
+          accessToken: authToken
+        };
+
+      } else if (!isAuthenticated) {
+        if (!freshCredentials?.reportNumber || !freshCredentials?.password) {
+          throw new Error("Anonymous credentials not available.");
+        }
+
+        requestBody = {
+          reportNumber: freshCredentials.reportNumber,
+          password: freshCredentials.password,
+        };
+      } else {
+        throw new Error("Authentication state unclear.");
+      }
+
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL}/livekit/getToken`,
+        requestBody,
+        config
+      );
+
+      if (data.success && data?.data?.participant_token) {
+        setToken(data.data.participant_token);
+        console.log("✅ AIChatWidget - Token set successfully");
+      } else {
+        throw new Error(data.message || "Invalid token response");
+      }
+    } catch (error) {
+      console.error("❌ AIChatWidget - Error:", {
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      if (error.response?.status === 401) {
+        setTokenError(
+          isAuthenticated 
+            ? "Invalid access token. Please log in again." 
+            : "Invalid report credentials."
+        );
+      } else {
+        setTokenError(
+          error.response?.data?.message || 
+          error.response?.data?.error ||
+          error.message || 
+          "Failed to connect."
+        );
+      }
+      
+      setToken(null);
+    } finally {
+      setIsLoadingToken(false);
+    }
+  }, [isAuthenticated, authToken]);
+
+  // Fetch token when chat opens
+  useEffect(() => {
+    if (isOpen && !token && !isLoadingToken && !tokenError) {
+      let freshCredentials = null;
+      try {
+        const stored = localStorage.getItem("reportCredentials");
+        if (stored) freshCredentials = JSON.parse(stored);
+      } catch (e) { /* ignore */ }
+
+      let canFetch = false;
+
+      if (isAuthenticated) {
+        canFetch = !!(authToken && freshCredentials?.reportNumber);
+      } else {
+        canFetch = !!(freshCredentials?.reportNumber && freshCredentials?.password);
+      }
+      
+      if (canFetch) {
+        getToken();
+      } else if (isOpen) {
+        if (isAuthenticated) {
+          if (!authToken) {
+            setTokenError("Please log in first");
+          } else if (!freshCredentials?.reportNumber) {
+            setTokenError("No report found. Please start a report.");
+          }
+        } else {
+          setTokenError("Please create a report first");
+        }
+      }
+    }
+  }, [isOpen, token, getToken, isLoadingToken, tokenError, isAuthenticated, authToken]);
+
+  // ==================== Room Connection ====================
+  useEffect(() => {
+    if (token && isOpen && !roomRef.current) {
+      console.log("🚀 AIChatWidget - Connecting to room...");
+      connectToRoom();
+    }
+
+    return () => {
+      if (!isOpen && roomRef.current) {
+        disconnectFromRoom();
+      }
+    };
+  }, [token, isOpen]);
+
+  // ==================== Message Deduplication ====================
+  const deduplicateMessages = (msgs) => {
+    const seen = new Map();
+    const deduplicated = [];
+
+    for (const message of msgs) {
+      // Create a unique key based on content, role, and message type
+      const key = `${message.content.trim()}_${message.role}_${message.messageType}`;
+
+      // If we haven't seen this exact message before, add it
+      if (!seen.has(key)) {
+        seen.set(key, true);
+        deduplicated.push(message);
+      } else {
+        console.log(`🗑️ Duplicate message removed: "${message.content.substring(0, 30)}..." (${message.role})`);
+      }
+    }
+
+    return deduplicated;
+  };
+
+  // ==================== File Handling ====================
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files]);
+      console.log(`📎 AIChatWidget - ${files.length} file(s) selected:`, files.map(f => f.name));
+    }
+    // Reset input so same files can be selected again if needed
+    e.target.value = '';
+  };
+
+  const handlePaperclipClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeFile = (indexToRemove) => {
+    setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const clearFiles = () => {
+    setSelectedFiles([]);
+  };
+
+  // ==================== Room Event Handlers ====================
+  const setupRoomEventHandlers = (room) => {
+    room.on(RoomEvent.Connected, () => {
+      console.log("✅ Connected to LiveKit");
+      setIsConnected(true);
+      setTokenError(null);
+    });
+
+    room.on(RoomEvent.Disconnected, (reason) => {
+      console.log("Disconnected:", reason);
+      setIsConnected(false);
+      setIsMicEnabled(false);
+      setIsRecording(false);
+      isTranscriptionHandlerRegistered.current = false;
+      
+      if (reason === "token_expired") {
+        setToken(null);
+        setTokenError("Session expired.");
+      }
+    });
+
+    room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      if (track.kind === Track.Kind.Audio && participant.identity !== room.localParticipant.identity) {
+        const audioElement = track.attach();
+        audioElement.play().catch((e) => {
+          document.addEventListener("click", () => {
+            audioElement.play().catch(console.error);
+          }, { once: true });
+        });
+      }
+    });
+
+    room.on(RoomEvent.LocalTrackUnpublished, (publication) => {
+      if (publication.kind === Track.Kind.Audio) {
+        setIsRecording(false);
+      }
+    });
+
+    // Use ref to prevent double registration
+    if (!isTranscriptionHandlerRegistered.current) {
+      room.registerTextStreamHandler(
+        "lk.transcription",
+        async (reader, participantInfo) => {
+          const info = reader.info;
+          const isUser = participantInfo.identity === room.localParticipant.identity;
+          const sender = isUser ? "user" : "agent";
+          
+          console.log("AIChatWidget - Transcription stream started", {
+            streamId: info.id,
+            sender,
+            timestamp: new Date().toISOString(),
+          });
+          
+          setIsTyping(true);
+          let fullText = "";
+
+          for await (const chunk of reader) {
+            fullText += String(chunk);
+            
+            if (sender === "agent") {
+              // Agent: Merge chunks into one bubble
+              setIsTyping(false);
+              
+              setMessages((prev) => {
+                const existing = prev.find((m) => m.streamId === info.id);
+                if (existing) {
+                  return prev.map((m) =>
+                    m.streamId === info.id
+                      ? { ...m, content: fullText, isStreaming: true }
+                      : m
+                  );
+                } else {
+                  return [
+                    ...prev,
+                    {
+                      id: info.id,
+                      streamId: info.id,
+                      content: fullText,
+                      role: sender,
+                      messageType: "transcription",
+                      timestamp: new Date(),
+                      isStreaming: true,
+                    },
+                  ];
+                }
+              });
+            } else {
+              // User: Add each chunk separately (deduplication will handle duplicates)
+              console.log("AIChatWidget - Adding user transcription chunk");
+              addMessage(String(chunk), sender, "transcription", info.id);
+            }
+          }
+
+          // Mark streaming as complete for agent
+          if (sender === "agent") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.streamId === info.id ? { ...m, isStreaming: false } : m
+              )
+            );
+          }
+          
+          console.log("AIChatWidget - Transcription stream completed", {
+            sender,
+            streamId: info.id,
+            finalLength: fullText.length,
+          });
+        }
+      );
+      isTranscriptionHandlerRegistered.current = true;
+      console.log("AIChatWidget - Transcription handler registered");
+    }
+  };
+
+  const disconnectFromRoom = () => {
+    if (localAudioTrackRef.current) {
+      localAudioTrackRef.current.stop();
+      localAudioTrackRef.current = null;
+    }
+
+    if (roomRef.current) {
+      roomRef.current.removeAllListeners();
+      roomRef.current.disconnect();
+      roomRef.current = null;
+    }
+
+    setIsConnected(false);
+    setIsMicEnabled(false);
+    setIsRecording(false);
+    isTranscriptionHandlerRegistered.current = false;
+    clearFiles(); // Clear files on disconnect
+  };
+
+  const connectToRoom = async () => {
+    try {
+      const livekitUrl = import.meta.env.VITE_LIVEKIT_URL;
+      if (!livekitUrl) throw new Error("VITE_LIVEKIT_URL not defined");
+      if (!token) throw new Error("Token not available");
+
+      const room = new Room({
+        audioCaptureDefaults: {
+          autoGainControl: true,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+      
+      roomRef.current = room;
+      setupRoomEventHandlers(room);
+      await room.connect(livekitUrl, token);
+      
+    } catch (error) {
+      console.error("Connection error:", error);
+      setTokenError("Failed to connect.");
+      setToken(null);
+    }
+  };
+
+  const addMessage = (text, sender, messageType = "text", streamId = null) => {
+    const trimmedText = text?.trim();
+    if (!trimmedText) return null;
+
+    const newMessage = {
+      id: streamId || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      content: trimmedText,
+      role: sender,
+      messageType,
+      timestamp: new Date(),
+      isStreaming: false,
+      ...(streamId && { streamId }),
+    };
+
+    setMessages((prev) => {
+      const updatedMessages = [...prev, newMessage];
+      // Apply deduplication
+      return deduplicateMessages(updatedMessages);
+    });
+    
+    return newMessage;
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if ((!inputValue.trim() && selectedFiles.length === 0) || !roomRef.current || !isConnected) return;
+
+    const message = inputValue.trim();
+    
+    // If there are files, you might want to upload them here
+    // For now, we'll just mention them in the message or handle separately
+    if (selectedFiles.length > 0) {
+      console.log("📤 AIChatWidget - Sending message with files:", selectedFiles.map(f => f.name));
+      // TODO: Implement file upload logic here
+      // You can upload files to your server here and then send the message with file URLs
+    }
+
+    if (message) {
+      // Add message (deduplication will prevent if duplicate)
+      addMessage(message, "user", "text");
+    }
+
+    try {
+      await roomRef.current.localParticipant.sendText(message, { topic: "lk.chat" });
+      setInputValue("");
+      clearFiles(); // Clear files after sending
+    } catch (error) {
+      addMessage("Failed to send.", "assistant", "text");
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const toggleMicrophone = async () => {
+    if (!roomRef.current || !isConnected) return;
+
+    try {
+      if (isMicEnabled) {
+        if (localAudioTrackRef.current) {
+          await roomRef.current.localParticipant.unpublishTrack(localAudioTrackRef.current);
+          localAudioTrackRef.current.stop();
+          localAudioTrackRef.current = null;
+        }
+        await roomRef.current.localParticipant.setMicrophoneEnabled(false);
+        setIsMicEnabled(false);
+        setIsRecording(false);
+      } else {
+        await roomRef.current.localParticipant.setMicrophoneEnabled(true);
+        const tracks = Array.from(roomRef.current.localParticipant.audioTrackPublications.values());
+        if (tracks.length > 0) {
+          localAudioTrackRef.current = tracks[0].audioTrack;
+        }
+        setIsMicEnabled(true);
+        setIsRecording(true);
+      }
+    } catch (error) {
+      addMessage("Could not access microphone.", "assistant", "text");
+      setIsMicEnabled(false);
+      setIsRecording(false);
+    }
+  };
+
+  const handleToggleChat = useCallback(() => {
+    if (!isOpen) {
+      console.log("Opening chat:", { isAuthenticated, hasAuthToken: !!authToken });
+      
+      let freshCredentials = null;
+      try {
+        const stored = localStorage.getItem("reportCredentials");
+        if (stored) freshCredentials = JSON.parse(stored);
+      } catch (e) { /* ignore */ }
+      
+      if (isAuthenticated) {
+        if (!authToken) {
+          setTokenError("Please log in first");
+          return;
+        }
+        if (!freshCredentials?.reportNumber) {
+          setTokenError("No report found.");
+          return;
+        }
+      } else {
+        if (!freshCredentials?.reportNumber || !freshCredentials?.password) {
+          alert("Please create a report first.");
+          return;
+        }
+      }
+
+      setTokenError(null);
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+      setTimeout(() => {
+        if (roomRef.current) disconnectFromRoom();
+        setToken(null);
+        setTokenError(null);
+        setMessages([]);
+        clearFiles();
+      }, 300);
+    }
+  }, [isOpen, isAuthenticated, authToken]);
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      {isOpen && (
+        <div className="fixed bottom-20 right-6 w-[calc(100vw-3rem)] max-w-md h-150 max-h-[80vh] bg-white rounded-lg shadow-2xl flex flex-col border border-gray-200 overflow-hidden">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                isConnected ? "bg-green-500 animate-pulse" : tokenError ? "bg-red-500" : "bg-yellow-500"
+              }`} />
+              <span className="font-medium text-black text-sm">
+                AI Assistant {isConnected ? "(Online)" : tokenError ? "(Error)" : isLoadingToken ? "(Connecting...)" : "(Offline)"}
+              </span>
+              {isRecording && (
+                <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full animate-pulse">Recording</span>
+              )}
+            </div>
+            <button onClick={handleToggleChat} className="text-gray-500 hover:text-black transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-hidden relative">
+            {!isConnected ? (
+              <div className="flex flex-col items-center justify-center h-full gap-4 p-6">
+                {isLoadingToken ? (
+                  <>
+                    <div className="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin" />
+                    <div className="text-center">
+                      <span className="font-semibold text-lg text-gray-900 block">Getting access...</span>
+                      <span className="text-sm text-gray-500">{isAuthenticated ? "Authenticating..." : "Connecting..."}</span>
+                    </div>
+                  </>
+                ) : tokenError ? (
+                  <>
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                      <X size={24} className="text-red-600" />
+                    </div>
+                    <div className="text-center max-w-70">
+                      <span className="font-semibold text-lg text-gray-900 block mb-2">Connection Failed</span>
+                      <span className="text-sm text-gray-600 block mb-4">{tokenError}</span>
+                      <button onClick={getToken} className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 text-sm font-medium">
+                        Try Again
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex gap-1">
+                      <span className="bg-gray-400 w-3 h-3 rounded-full animate-pulse" />
+                      <span className="bg-gray-400 w-3 h-3 rounded-full animate-pulse [animation-delay:0.2s]" />
+                      <span className="bg-gray-400 w-3 h-3 rounded-full animate-pulse [animation-delay:0.4s]" />
+                    </div>
+                    <span className="text-gray-800">Initializing...</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="h-[calc(100%-80px)] overflow-y-auto p-4 space-y-3">
+                  {messages.length === 0 && <div className="text-center text-gray-400 mt-8">How can I help you today?</div>}
+                  {messages.map((msg, index) => {
+                    const isUser = msg.role === "user";
+                    const isTranscription = msg.messageType === "transcription";
+                    
+                    return (
+                      <div key={msg.id || index} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                          isUser 
+                            ? isTranscription ? "bg-black text-white" : "bg-black text-white"
+                            : isTranscription ? "bg-gray-200 text-black" : "bg-gray-100 text-gray-800"
+                        }`}>
+                          {isTranscription && isUser && (
+                            <div className="text-xs opacity-60 mb-1 flex items-center gap-1">
+                              <Mic size={10} />
+                              <span>Voice</span>
+                            </div>
+                          )}
+                          
+                          {msg.role === "agent" ? (
+                            <MarkdownMessage content={msg.isStreaming ? `${msg.content}▌` : msg.content} />
+                          ) : (
+                            <span className="whitespace-pre-wrap wrap-break-word">{msg.content}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+                  {/* Selected Files Preview */}
+                  {selectedFiles.length > 0 && (
+                    <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full text-xs whitespace-nowrap">
+                          <span className="max-w-20 truncate">{file.name}</span>
+                          <button 
+                            onClick={() => removeFile(index)}
+                            className="text-gray-500 hover:text-red-500 ml-1"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2 items-center">
+                    {/* Hidden File Input */}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      multiple
+                    />
+                    
+                    {/* Paperclip Button with Badge */}
+                    <div className="relative">
+                      <button
+                        onClick={handlePaperclipClick}
+                        disabled={!isConnected}
+                        className={`p-2.5 rounded-full transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 relative`}
+                        title="Attach files"
+                      >
+                        <Paperclip size={20} />
+                      </button>
+                      
+                      {/* File Count Badge */}
+                      {selectedFiles.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-4.5 h-4.5 flex items-center justify-center px-1 border-2 border-white">
+                          {selectedFiles.length}
+                        </span>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      placeholder={isRecording ? "Listening..." : "Type a message..."}
+                      disabled={!isConnected}
+                      className="flex-1 px-4 py-2.5 text-sm border border-gray-300 rounded-full focus:outline-none focus:border-black disabled:bg-gray-50"
+                    />
+                    <button
+                      onClick={toggleMicrophone}
+                      disabled={!isConnected}
+                      className={`p-2.5 rounded-full transition-colors ${isMicEnabled ? "bg-red-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"} disabled:opacity-50`}
+                    >
+                      {isMicEnabled ? <MicOff size={20} /> : <Mic size={20} />}
+                    </button>
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!isConnected || (!inputValue.trim() && selectedFiles.length === 0)}
+                      className="bg-black text-white p-2.5 rounded-full hover:bg-gray-800 disabled:opacity-50"
+                    >
+                      <Send size={20} />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={handleToggleChat}
+        className={`bg-black text-white p-4 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center ${isOpen ? "rotate-90" : ""}`}
+      >
+        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
+      </button>
+    </div>
+  );
+}

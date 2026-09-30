@@ -1,0 +1,1259 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Frontend Integration Handbook</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Karla:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --ink:       #16202b;
+    --ink-soft:  #4c5a68;
+    --ink-faint: #7d8b98;
+    --paper:     #f5f6f7;
+    --card:      #ffffff;
+    --rule:      #dfe3e6;
+    --accent:    #17457a;
+    --accent-lo: #e6edf5;
+    --hot:       #a8522a;
+    --hot-lo:    #fbeee6;
+    --ok:        #1b6349;
+    --ok-bg:     #e6f1ec;
+    --bad:       #9c2f2b;
+    --bad-bg:    #f9eae9;
+    --warn:      #84590f;
+    --warn-bg:   #fbf1dc;
+    --code-bg:   #141c25;
+    --code-ink:  #e3e9ef;
+    --c-key:     #8fc7f0;
+    --c-str:     #a8d5b5;
+    --c-com:     #6e7d8c;
+    --get:  #1b6349; --post: #17457a; --put: #84590f; --del: #9c2f2b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ink: #e6ebf0; --ink-soft: #a4b1bd; --ink-faint: #76838f;
+      --paper: #10161c; --card: #19212a; --rule: #2a343e;
+      --accent: #7db2e8; --accent-lo: #1a2836;
+      --hot: #e0996f; --hot-lo: #2b1f18;
+      --ok: #6bbd98; --ok-bg: #16261f; --bad: #e0938e; --bad-bg: #291a19;
+      --warn: #d4a55c; --warn-bg: #282013;
+      --code-bg: #0b1116; --code-ink: #dde5ec;
+      --get: #6bbd98; --post: #7db2e8; --put: #d4a55c; --del: #e0938e;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ink: #e6ebf0; --ink-soft: #a4b1bd; --ink-faint: #76838f;
+    --paper: #10161c; --card: #19212a; --rule: #2a343e;
+    --accent: #7db2e8; --accent-lo: #1a2836;
+    --hot: #e0996f; --hot-lo: #2b1f18;
+    --ok: #6bbd98; --ok-bg: #16261f; --bad: #e0938e; --bad-bg: #291a19;
+    --warn: #d4a55c; --warn-bg: #282013;
+    --code-bg: #0b1116; --code-ink: #dde5ec;
+    --get: #6bbd98; --post: #7db2e8; --put: #d4a55c; --del: #e0938e;
+  }
+
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: Karla, system-ui, sans-serif;
+    font-size: 15.5px; line-height: 1.62;
+    padding-inline: 20px; padding-block: 0 80px;
+  }
+  .wrap { max-width: 53rem; margin: 0 auto; }
+
+  header.top { padding-block: 46px 24px; }
+  .kick {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.7rem;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--hot); margin: 0 0 13px;
+  }
+  h1 {
+    font-family: Archivo, system-ui, sans-serif; font-weight: 700;
+    font-size: clamp(2rem, 6.4vw, 2.85rem); line-height: 1.07;
+    letter-spacing: -0.025em; margin: 0 0 15px; text-wrap: balance;
+  }
+  .lede { font-size: 1.05rem; color: var(--ink-soft); max-width: 41rem; margin: 0; }
+  .facts {
+    display: flex; flex-wrap: wrap; gap: 7px 20px; margin-top: 22px;
+    padding-top: 18px; border-top: 1px solid var(--rule);
+    font-family: "IBM Plex Mono", monospace; font-size: 0.73rem; color: var(--ink-faint);
+  }
+  .facts b { color: var(--ink-soft); font-weight: 500; }
+
+  nav.toc {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    background: var(--paper); border-bottom: 1px solid var(--rule);
+    padding-block: 11px; margin-bottom: 8px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  nav.toc a {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.7rem;
+    color: var(--ink-soft); text-decoration: none;
+    border: 1px solid var(--rule); border-radius: 4px; padding: 3px 8px;
+  }
+  nav.toc a:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-lo); }
+
+  h2 {
+    font-family: Archivo, system-ui, sans-serif; font-weight: 600;
+    font-size: 1.55rem; letter-spacing: -0.015em;
+    margin: 50px 0 6px; padding-bottom: 8px; border-bottom: 2px solid var(--ink);
+    text-wrap: balance; scroll-margin-top: 64px;
+  }
+  h2 .num {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.68rem;
+    letter-spacing: 0.12em; color: var(--hot); display: block;
+    margin-bottom: 4px; font-weight: 500;
+  }
+  h3 {
+    font-family: Archivo, system-ui, sans-serif; font-weight: 600;
+    font-size: 1.1rem; letter-spacing: -0.01em; margin: 30px 0 8px;
+  }
+  h4 {
+    font-family: "IBM Plex Mono", monospace; font-weight: 500;
+    font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 22px 0 7px;
+  }
+  p { margin: 0 0 12px; }
+  p.lead { color: var(--ink-soft); max-width: 42rem; }
+
+  .op {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; margin: 0 0 8px;
+  }
+  .m {
+    font-weight: 500; font-size: 0.66rem; letter-spacing: 0.05em;
+    border: 1px solid currentColor; border-radius: 3px; padding: 1px 5px; flex: none;
+  }
+  .m.get{color:var(--get)} .m.post{color:var(--post)} .m.put{color:var(--put)}
+  .m.patch{color:var(--put)} .m.delete{color:var(--del)}
+  .op .perm { color: var(--ink-faint); font-size: 0.72rem; }
+
+  .code { position: relative; background: var(--code-bg); border-radius: 6px; margin: 11px 0; }
+  .code pre {
+    margin: 0; padding: 13px 15px; overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace; font-size: 0.775rem;
+    line-height: 1.6; color: var(--code-ink);
+  }
+  .code .lbl {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.63rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: #7b8894; padding: 9px 15px 0;
+  }
+  .code .cp {
+    position: absolute; top: 7px; right: 7px;
+    font-family: "IBM Plex Mono", monospace; font-size: 0.62rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: #8b98a4; background: #ffffff12; border: 1px solid #ffffff20;
+    border-radius: 4px; padding: 2px 7px; cursor: pointer;
+  }
+  .code .cp:hover { color: var(--code-ink); background: #ffffff22; }
+  .k { color: var(--c-key); } .s { color: var(--c-str); } .c { color: var(--c-com); font-style: italic; }
+  code {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.86em;
+    background: var(--accent-lo); color: var(--accent);
+    padding: 0.5px 4px; border-radius: 3px;
+  }
+
+  .note {
+    border-left: 3px solid var(--accent); background: var(--accent-lo);
+    padding: 10px 14px; border-radius: 0 5px 5px 0; margin: 12px 0; font-size: 0.93rem;
+  }
+  .note.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  .note.bad { border-left-color: var(--bad); background: var(--bad-bg); }
+  .note.warn { border-left-color: var(--warn); background: var(--warn-bg); }
+  .note.break { border-left-color: var(--hot); background: var(--hot-lo); }
+  .note b.t {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.66rem;
+    letter-spacing: 0.09em; text-transform: uppercase; display: block;
+    margin-bottom: 4px; color: var(--accent);
+  }
+  .note.ok b.t{color:var(--ok)} .note.bad b.t{color:var(--bad)}
+  .note.warn b.t{color:var(--warn)} .note.break b.t{color:var(--hot)}
+  .note p:last-child { margin-bottom: 0; }
+
+  .tbl { overflow-x: auto; margin: 13px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.65rem;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint);
+    font-weight: 500; border-bottom: 1px solid var(--ink-faint); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+  table.api td:first-child { font-family: "IBM Plex Mono", monospace; font-size: 0.75rem; white-space: nowrap; }
+
+  ul, ol { margin: 10px 0; padding-left: 21px; color: var(--ink-soft); }
+  li { margin-bottom: 5px; }
+  li > strong, li > b { color: var(--ink); }
+
+  footer {
+    margin-top: 54px; padding-top: 22px; border-top: 2px solid var(--ink);
+    font-size: 0.88rem; color: var(--ink-soft);
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="kick">Xposer Whistle-Blower · Backend handoff</p>
+  <h1>Frontend Integration Handbook</h1>
+  <p class="lede">Everything the web app has to change for per-organization roles, permission-driven
+  access, organization-defined AI agents, the summarizer switch, the reporting hierarchy, the
+  knowledge base and English-only report types. Three breaking changes, nine new screens, and one
+  pattern that replaces every role check in the codebase.</p>
+  <div class="facts">
+    <span><b>Base</b> <code>/xp</code> · port 6005</span>
+    <span><b>Docs</b> <code>/xp/docs</code> (ENVIRONMENT=dev)</span>
+    <span><b>Permissions</b> 33 defined / 29 assignable</span>
+    <span><b>Routes</b> 105</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#break">Breaking changes</a>
+  <a href="#gate">Permission gate</a>
+  <a href="#errors">Error contract</a>
+  <a href="#roles">Roles editor</a>
+  <a href="#agents">Agents</a>
+  <a href="#summarizer">Summarizer</a>
+  <a href="#workflow">Workflow</a>
+  <a href="#hierarchy">Hierarchy</a>
+  <a href="#kb">Knowledge base</a>
+  <a href="#runs">Runs &amp; digests</a>
+  <a href="#types">Report types</a>
+  <a href="#ref">Endpoint reference</a>
+  <a href="#checklist">Checklist</a>
+</nav>
+
+<h2 id="break"><span class="num">01</span>Three breaking changes</h2>
+<p class="lead">Start here. Each one silently breaks working code rather than throwing, which is why
+they are first.</p>
+
+<h3>1 · Roles are no longer a fixed enum</h3>
+<p>There used to be five role codes. Now an organization defines as many as it wants, names them what
+it wants, and grants each whatever permissions it wants. Only two codes are structural and
+uneditable: <code>admin</code> (the root role) and <code>reporter</code> (the public self-service
+identity). <code>manager</code>, <code>officer</code> and <code>reviewer</code> still exist, but only
+as a <em>starting point</em> every new organization is seeded with — they can be renamed,
+re-permissioned or deleted.</p>
+<div class="note break">
+  <b class="t">What breaks</b>
+  <p>Any <code>role === 'admin'</code>, <code>['manager','officer'].includes(role)</code>, hardcoded
+  role dropdown, or role-keyed lookup table. These now return the wrong answer for any organization
+  that has customised its roles — and they fail <em>quietly</em>, showing a user too little UI or too
+  much.</p>
+</div>
+<div class="note ok">
+  <b class="t">What to do</b>
+  <p>Never branch on role identity. Branch on a permission from
+  <code>GET /users/me</code> → <code>permissions[]</code>. Populate every role dropdown from
+  <code>GET /xp/org-roles/</code>. See <a href="#gate">§02</a>.</p>
+</div>
+
+<h3>2 · Report types store English only</h3>
+<p>Every translation field is gone from the API. Translations are now a frontend concern, which is the
+right side of the boundary: the database holds one canonical English definition, and the app renders
+it in whatever language the reporter picked.</p>
+<div class="tbl"><table>
+  <thead><tr><th>Removed</th><th>Was</th><th>Now</th></tr></thead>
+  <tbody>
+    <tr><td><code>*_i18n</code> on every text field</td><td><code>{"en": "...", "ar": "..."}</code></td><td>gone — the plain field is English</td></tr>
+    <tr><td><code>Option.label</code></td><td>a <code>LocalizedText</code> object</td><td>a plain <code>string</code></td></tr>
+    <tr><td><code>locales</code>, <code>locale_directions</code></td><td>declared per report type</td><td>gone</td></tr>
+    <tr><td><code>is_rtl</code>, <code>text_direction</code></td><td>server-computed</td><td>gone — derive from the UI locale</td></tr>
+  </tbody>
+</table></div>
+<div class="note break">
+  <b class="t">What breaks</b>
+  <p>Any reader of <code>question.label_i18n[locale]</code> or <code>option.label.en</code>. The first
+  throws on <code>undefined</code>; the second returns <code>undefined</code> and renders an empty
+  option — a silent, shipped bug.</p>
+</div>
+<div class="note ok">
+  <b class="t">What to do</b>
+  <p>Read the plain field, and look up a translation in your own i18n bundle keyed on stable
+  identifiers — <code>reportType.code</code>, <code>section.section_key</code>,
+  <code>question.name</code>, <code>option.value</code> — never on the English text, which changes
+  when someone edits a typo.</p>
+</div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">Suggested key scheme</div><pre><span class="c">// value, not label: the label is display text and will be edited</span>
+t(<span class="s">`rt.${reportType.code}.name`</span>, { defaultValue: reportType.name })
+t(<span class="s">`rt.${reportType.code}.s.${section.section_key}.title`</span>, { defaultValue: section.title })
+t(<span class="s">`rt.${reportType.code}.q.${question.name}.label`</span>, { defaultValue: question.label })
+t(<span class="s">`rt.${reportType.code}.q.${question.name}.o.${option.value}`</span>, { defaultValue: option.label })</pre></div>
+<div class="note warn">
+  <b class="t">Open question for you to decide</b>
+  <p>Nothing now records the question text a reporter actually <em>saw</em> at submission. Previously
+  the stored translations were an implicit audit trail. If the compliance team needs "what exactly was
+  this person asked", the answer has to be snapshotted onto the report at submit time — either
+  client-side into the payload, or as a backend change. Flag it; it is not built.</p>
+</div>
+
+<h3>3 · Agent and voice screens no longer need <code>role:manage</code></h3>
+<p>Four routers used to sit behind an admin check, so the only way to give someone access to the AI
+agent screens was to give them the power to rewrite every role in the organization. They now have
+their own permissions.</p>
+<div class="tbl"><table>
+  <thead><tr><th>Area</th><th>Read</th><th>Write</th></tr></thead>
+  <tbody>
+    <tr><td>Agent config, agents, workflows, run history</td><td><code>agent:read</code></td><td><code>agent:manage</code></td></tr>
+    <tr><td>Knowledge base documents</td><td><code>agent:read</code></td><td><code>agent:manage</code></td></tr>
+    <tr><td>Consulting policy documents (agents only)</td><td><code>agent:kb_read</code></td><td>—</td></tr>
+    <tr><td>A report's summarizer digest</td><td><code>agent:summary_read</code></td><td>—</td></tr>
+    <tr><td>Voice profile</td><td><code>voice_profile:read</code></td><td><code>voice_profile:manage</code></td></tr>
+    <tr><td>Reporting hierarchy</td><td><code>org_hierarchy:read</code></td><td><code>org_hierarchy:manage</code></td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="gate"><span class="num">02</span>The permission gate</h2>
+<p class="lead">One pattern replaces every role check. The server resolves permissions from the
+organization's own role document on <em>every request</em>, so they are never stale and never in the
+token.</p>
+
+<div class="op"><span class="m get">GET</span><span>/xp/users/me</span><span class="perm">— any authenticated user</span></div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">Response (abridged)</div><pre>{
+  <span class="k">"id"</span>: <span class="s">"66f1..."</span>,
+  <span class="k">"email"</span>: <span class="s">"lead@acme.com"</span>,
+  <span class="k">"role"</span>: <span class="s">"finance_lead"</span>,          <span class="c">// a code, not an enum member</span>
+  <span class="k">"organization_id"</span>: <span class="s">"66f0..."</span>,
+  <span class="k">"permissions"</span>: [<span class="s">"report:read_all"</span>, <span class="s">"report:manage"</span>, <span class="s">"agent:summary_read"</span>, ...]
+}</pre></div>
+
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">The only access helper you need</div><pre><span class="k">export const</span> PERM = {
+  reportReadAll:    <span class="s">'report:read_all'</span>,
+  reportManage:     <span class="s">'report:manage'</span>,
+  roleManage:       <span class="s">'role:manage'</span>,
+  agentRead:        <span class="s">'agent:read'</span>,
+  agentManage:      <span class="s">'agent:manage'</span>,
+  agentSummaryRead: <span class="s">'agent:summary_read'</span>,
+  hierarchyRead:    <span class="s">'org_hierarchy:read'</span>,
+  hierarchyManage:  <span class="s">'org_hierarchy:manage'</span>,
+  <span class="c">// …the full list is in §12</span>
+} <span class="k">as const</span>;
+
+<span class="k">export function</span> useCan() {
+  <span class="k">const</span> { permissions } = useCurrentUser();
+  <span class="k">const</span> held = useMemo(() => <span class="k">new</span> Set(permissions ?? []), [permissions]);
+  <span class="k">return</span> useCallback((...needed: <span class="k">string</span>[]) => needed.every(p => held.has(p)), [held]);
+}
+
+<span class="c">// usage — note it gates on capability, never on who someone is</span>
+<span class="k">const</span> can = useCan();
+{can(PERM.agentManage) &amp;&amp; <span class="s">&lt;Button&gt;</span>New agent<span class="s">&lt;/Button&gt;</span>}</pre></div>
+
+<div class="note warn">
+  <b class="t">Refetch /users/me after a role edit</b>
+  <p>The server resolves per request, so a permission change takes effect on the next call with no
+  re-login. But your cached <code>permissions</code> array does not know that. Invalidate the
+  <code>users/me</code> query after any successful write to <code>/org-roles/</code>, and after
+  changing the role on the signed-in user.</p>
+</div>
+<div class="note bad">
+  <b class="t">Hide, but also handle the 403</b>
+  <p>Hiding a button is a courtesy, not a control. Every one of these endpoints enforces server-side,
+  so a deep link or a stale tab will produce a 403 — render a "you no longer have access to this"
+  state rather than an error toast on a blank screen.</p>
+</div>
+<div class="note">
+  <b class="t">Two headers the browser app never sends</b>
+  <p><code>X-Agent-Key</code> (an AI agent acting on a report) and <code>X-Service-Key</code>
+  (server-to-server, the multiagent runtime bundle) exist in the API but are not for a browser client.
+  If you find yourself needing either from the frontend, something is wrong with the design — say so
+  rather than working around it.</p>
+</div>
+
+<h2 id="errors"><span class="num">03</span>Error contract</h2>
+<p class="lead">Four shapes. The 400 is new and carries structured, user-presentable problems — build
+one handler that understands it and every screen below gets good errors for free.</p>
+
+<div class="tbl"><table>
+  <thead><tr><th>Status</th><th>Meaning</th><th><code>detail</code> shape</th></tr></thead>
+  <tbody>
+    <tr><td><b>422</b></td><td>Schema validation, before any logic — missing field, number out of bounds, bad enum</td><td><code>[{loc, msg, type}]</code></td></tr>
+    <tr><td><b>400</b></td><td>A business rule. <b>New shape.</b></td><td><code>{message, problems[], warnings?}</code></td></tr>
+    <tr><td><b>403</b></td><td>Missing permission, or granting one you don't hold</td><td><code>string</code></td></tr>
+    <tr><td><b>409</b></td><td>A guard — duplicate code, fixed role, still in use</td><td><code>string</code></td></tr>
+  </tbody>
+</table></div>
+
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">One normaliser for all four</div><pre><span class="k">type</span> Problem = { code?: <span class="k">string</span>; message: <span class="k">string</span>; permission?: <span class="k">string</span>;
+                  requires?: <span class="k">string</span>[]; row?: <span class="k">number</span>; field?: <span class="k">string</span>;
+                  stage?: <span class="k">string</span>; capability?: <span class="k">string</span> };
+
+<span class="k">export function</span> normaliseError(status: <span class="k">number</span>, body: <span class="k">any</span>):
+    { summary: <span class="k">string</span>; problems: Problem[] } {
+  <span class="k">const</span> d = body?.detail;
+
+  <span class="c">// 400 from a business rule — the useful case</span>
+  <span class="k">if</span> (d &amp;&amp; <span class="k">typeof</span> d === <span class="s">'object'</span> &amp;&amp; !Array.isArray(d) &amp;&amp; d.message) {
+    <span class="k">return</span> { summary: d.message, problems: d.problems ?? [] };
+  }
+  <span class="c">// 422 from Pydantic</span>
+  <span class="k">if</span> (Array.isArray(d)) {
+    <span class="k">return</span> {
+      summary: <span class="s">'Some fields need fixing.'</span>,
+      problems: d.map((e: <span class="k">any</span>) => ({
+        field: e.loc?.filter((x: <span class="k">any</span>) => x !== <span class="s">'body'</span>).join(<span class="s">'.'</span>),
+        message: e.msg,
+      })),
+    };
+  }
+  <span class="c">// 403 / 409 / anything else</span>
+  <span class="k">return</span> { summary: <span class="k">typeof</span> d === <span class="s">'string'</span> ? d : <span class="s">'Something went wrong.'</span>, problems: [] };
+}</pre></div>
+<div class="note ok">
+  <b class="t">The messages are written for users</b>
+  <p>Every <code>problems[].message</code> from the new rules is a complete sentence aimed at whoever
+  is looking at the screen — <em>"'report:manage' needs 'report:read_all' or 'report:read_assigned' as
+  well — without one of those, this role can never open the reports it would be acting on."</em> Render
+  them verbatim; do not re-word them into "Invalid input".</p>
+</div>
+
+<h2 id="roles"><span class="num">04</span>Roles &amp; permissions editor</h2>
+<p class="lead">The biggest new screen. An organization builds its own roles from a catalog of 29
+permissions, and the backend now refuses combinations that cannot work.</p>
+
+<h4>Endpoints</h4>
+<div class="tbl"><table class="api">
+  <tbody>
+    <tr><td><span class="m get">GET</span> /xp/org-roles/permissions</td><td>The catalog, grouped, with what the caller may grant and which permissions depend on others. <i>Any authenticated user.</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-roles/validate</td><td>Dry-run a set. Saves nothing. <i>Any authenticated user.</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/org-roles/</td><td>All roles. <code>?active_only=true</code> by default. <i>Any authenticated user.</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-roles/</td><td>Create. <i>role:manage</i></td></tr>
+    <tr><td><span class="m put">PUT</span> /xp/org-roles/{role_id}</td><td>Rename, re-permission, deactivate. <i>role:manage</i></td></tr>
+    <tr><td><span class="m delete">DELETE</span> /xp/org-roles/{role_id}</td><td>Delete. <i>role:manage</i></td></tr>
+  </tbody>
+</table></div>
+
+<h4>Building the checkbox tree</h4>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET /xp/org-roles/permissions</div><pre>{
+  <span class="k">"groups"</span>: [
+    { <span class="k">"key"</span>: <span class="s">"report"</span>, <span class="k">"label"</span>: <span class="s">"Reports"</span>, <span class="k">"permissions"</span>: [
+        { <span class="k">"permission"</span>: <span class="s">"report:read_all"</span>, <span class="k">"granted"</span>: <span class="k">true</span>,  <span class="k">"requires_any_of"</span>: [] },
+        { <span class="k">"permission"</span>: <span class="s">"report:manage"</span>,  <span class="k">"granted"</span>: <span class="k">true</span>,
+          <span class="k">"requires_any_of"</span>: [<span class="s">"report:read_all"</span>, <span class="s">"report:read_assigned"</span>] }
+    ] },
+    <span class="c">// … 10 groups: Reports, Messages, Users, Report Types, Organization,</span>
+    <span class="c">//    Reporting Hierarchy, AI Agents, Voice Profile, Roles, System</span>
+  ],
+  <span class="k">"total"</span>: 29,
+  <span class="k">"can_manage_roles"</span>: <span class="k">true</span>,
+  <span class="k">"dependencies"</span>: { <span class="s">"report:manage"</span>: [<span class="s">"report:read_all"</span>, <span class="s">"report:read_assigned"</span>], ... }
+}</pre></div>
+<ul>
+  <li>Render one collapsible section per <code>group</code>, using <code>label</code> as the heading.</li>
+  <li><b>Disable</b> any checkbox where <code>granted</code> is <code>false</code> — the caller cannot
+  grant a permission they do not hold, and the save would 403. Show a tooltip saying so.</li>
+  <li><code>requires_any_of</code> means <b>at least one of</b>, never all of. Use it to auto-tick or
+  to warn inline.</li>
+  <li>The four platform-only permissions are absent from the catalog entirely. Do not hardcode them
+  into a picker.</li>
+</ul>
+
+<h4>Live validation</h4>
+<p>Two layers. Do the cheap one locally from <code>dependencies</code> so ticking a box gives instant
+feedback, and call the endpoint on a debounce so the messages you show are the exact ones the save
+would produce.</p>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">POST /xp/org-roles/validate</div><pre><span class="c">// request</span>
+{ <span class="k">"permissions"</span>: [<span class="s">"report:manage"</span>] }
+
+<span class="c">// response</span>
+{
+  <span class="k">"valid"</span>: <span class="k">false</span>,
+  <span class="k">"errors"</span>: [{
+    <span class="k">"permission"</span>: <span class="s">"report:manage"</span>,
+    <span class="k">"requires"</span>: [<span class="s">"report:read_all"</span>, <span class="s">"report:read_assigned"</span>],
+    <span class="k">"code"</span>: <span class="s">"missing_prerequisite"</span>,
+    <span class="k">"message"</span>: <span class="s">"'report:manage' needs 'report:read_all' or 'report:read_assigned' as well — without one of those, this role can never open the reports it would be acting on."</span>
+  }],
+  <span class="k">"warnings"</span>: [],
+  <span class="k">"not_grantable"</span>: []
+}</pre></div>
+<div class="note">
+  <b class="t">errors block the save · warnings never do</b>
+  <p><code>valid</code> is <code>false</code> only when <code>errors</code> is non-empty. Warnings are
+  combinations that work but are usually a mistake — show them as advisories beside the Save button
+  and let the user proceed. An organization is allowed to want something unusual.</p>
+</div>
+
+<div class="tbl"><table>
+  <thead><tr><th>Warning code</th><th>Fires when</th><th>Suggested copy treatment</th></tr></thead>
+  <tbody>
+    <tr><td><code>empty</code></td><td>No permissions at all</td><td>amber, beside Save</td></tr>
+    <tr><td><code>redundant</code></td><td><code>report:read_own</code> next to <code>report:read_all</code></td><td>inline on the checkbox</td></tr>
+    <tr><td><code>unreachable</code></td><td><code>message:create</code> with no report read</td><td>amber, beside Save</td></tr>
+    <tr><td><code>self_escalation</code></td><td><code>role:manage</code> is ticked</td><td>a confirm step — its holders can rewrite their own permissions</td></tr>
+    <tr><td><code>advisory</code></td><td><code>agent:manage</code> without <code>agent:kb_read</code></td><td>inline hint</td></tr>
+  </tbody>
+</table></div>
+<div class="tbl"><table>
+  <thead><tr><th>Error code</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>missing_prerequisite</code></td><td>Needs at least one of <code>requires</code>. 14 rules; the full map is in <code>dependencies</code>.</td></tr>
+    <tr><td><code>platform_only</code></td><td>Belongs to the separate super-admin service. Should be unreachable if you build the picker from the catalog.</td></tr>
+  </tbody>
+</table></div>
+
+<h4>The role list, and the fixed roles</h4>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET /xp/org-roles/ — first entry is synthesised</div><pre>[
+  { <span class="k">"id"</span>: <span class="s">"admin"</span>,            <span class="c">// NOT an ObjectId — the code is the id</span>
+    <span class="k">"code"</span>: <span class="s">"admin"</span>, <span class="k">"name"</span>: <span class="s">"Admin"</span>,
+    <span class="k">"permissions"</span>: [ ...26 ],
+    <span class="k">"is_system_default"</span>: <span class="k">true</span>, <span class="k">"is_fixed"</span>: <span class="k">true</span>, <span class="k">"is_active"</span>: <span class="k">true</span> },
+
+  { <span class="k">"id"</span>: <span class="s">"6aba5b05..."</span>, <span class="k">"code"</span>: <span class="s">"manager"</span>, <span class="k">"name"</span>: <span class="s">"Manager"</span>,
+    <span class="k">"permissions"</span>: [ ...17 ],
+    <span class="k">"is_system_default"</span>: <span class="k">true</span>, <span class="k">"is_active"</span>: <span class="k">true</span>,
+    <span class="k">"organization_id"</span>: <span class="s">"6aba5b05..."</span>,
+    <span class="k">"created_at"</span>: <span class="s">"..."</span>, <span class="k">"updated_at"</span>: <span class="s">"..."</span> }
+]</pre></div>
+<ul>
+  <li><b><code>is_fixed: true</code> → render read-only.</b> Edit and delete both return <b>409</b>.
+  Its <code>id</code> is the literal string <code>"admin"</code>, so do not treat ids here as
+  ObjectIds.</li>
+  <li><code>is_system_default: true</code> with no <code>is_fixed</code> means seeded-but-editable
+  (<code>manager</code>, <code>officer</code>, <code>reviewer</code>). Fully editable — a badge, not a
+  lock.</li>
+  <li><code>reporter</code> is <b>not in this list</b> at all. It is the public self-service identity,
+  not something an organization manages. Do not offer it in a staff role picker.</li>
+  <li>A successful create or update returns the role with a <code>warnings</code> array attached.
+  Surface it as a post-save toast rather than discarding it.</li>
+</ul>
+<div class="note bad">
+  <b class="t">Two 409s to handle on delete</b>
+  <p><em>"N active user(s) still have this role — reassign them first"</em> → offer a link to the
+  filtered user list. <em>"This is the only role that can manage roles…"</em> → explain rather than
+  retry.</p>
+</div>
+
+<h4>Assigning a role to a user</h4>
+<div class="op"><span class="m post">POST</span><span>/xp/users/</span><span class="perm">— user:create</span></div>
+<div class="op"><span class="m put">PUT</span><span>/xp/users/{user_id}</span><span class="perm">— user:update (+ user:manage_roles to change `role`)</span></div>
+<p><code>role</code> is simply a role <code>code</code>. Populate the dropdown from
+<code>GET /xp/org-roles/</code>, excluding nothing except what your product rules say — every listed
+code is assignable.</p>
+
+<h2 id="agents"><span class="num">05</span>AI agents</h2>
+<p class="lead">The four hard-coded agents are gone. An organization defines as many as it wants and
+says what each may do, drawing on the same permission catalog its human roles use.</p>
+
+<h4>Endpoints</h4>
+<div class="tbl"><table class="api">
+  <tbody>
+    <tr><td><span class="m get">GET</span> /xp/org-agents/capabilities</td><td>Kinds, role sources, the 7 capabilities and what each requires. <i>agent:read</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/org-agents/</td><td>List. <code>?active_only=false</code> default. <i>agent:read</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/org-agents/{agent_id}</td><td>One, <b>by id or by code</b>. <i>agent:read</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-agents/</td><td>Create. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m put">PUT</span> /xp/org-agents/{agent_id}</td><td>Update. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m delete">DELETE</span> /xp/org-agents/{agent_id}</td><td>Delete. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-agents/{agent_id}/token</td><td>Mint or rotate. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m delete">DELETE</span> /xp/org-agents/{agent_id}/token</td><td>Revoke. <i>agent:manage</i></td></tr>
+  </tbody>
+</table></div>
+
+<h4>The agent object</h4>
+<div class="code"><button class="cp" type="button">Copy</button><pre>{
+  <span class="k">"id"</span>: <span class="s">"66f2..."</span>, <span class="k">"organization_id"</span>: <span class="s">"66f0..."</span>,
+  <span class="k">"code"</span>: <span class="s">"finance_triage"</span>,        <span class="c">// immutable slug; workflow stages reference it</span>
+  <span class="k">"name"</span>: <span class="s">"Finance Triage"</span>,
+  <span class="k">"description"</span>: <span class="k">null</span>,
+  <span class="k">"kind"</span>: <span class="s">"analyst"</span>,               <span class="c">// "analyst" | "summarizer"</span>
+  <span class="k">"role_source"</span>: <span class="s">"org_role"</span>,        <span class="c">// "org_role" | "custom"</span>
+  <span class="k">"role_code"</span>: <span class="s">"finance_lead"</span>,     <span class="c">// when role_source = org_role</span>
+  <span class="k">"permissions"</span>: [],                <span class="c">// inline list, only when role_source = custom</span>
+  <span class="k">"capabilities"</span>: [<span class="s">"message_reporter"</span>, <span class="s">"internal_note"</span>, <span class="s">"consult_kb"</span>],
+  <span class="k">"decisions"</span>: [<span class="s">"escalate"</span>, <span class="s">"handle_locally"</span>],
+  <span class="k">"instructions"</span>: <span class="s">"Prioritise anything implicating a budget holder."</span>,
+  <span class="k">"model_name"</span>: <span class="k">null</span>, <span class="k">"temperature"</span>: <span class="k">null</span>,
+  <span class="k">"is_active"</span>: <span class="k">true</span>,
+  <span class="k">"has_token"</span>: <span class="k">true</span>,
+
+  <span class="c">// ── derived, read-only. Show THESE, not `capabilities`. ──</span>
+  <span class="k">"effective_permissions"</span>: [<span class="s">"report:read_all"</span>, ...],
+  <span class="k">"effective_capabilities"</span>: [<span class="s">"internal_note"</span>, <span class="s">"consult_kb"</span>],
+  <span class="k">"disabled_capabilities"</span>: [
+    { <span class="k">"capability"</span>: <span class="s">"message_reporter"</span>, <span class="k">"requires"</span>: <span class="s">"message:create"</span> }
+  ]
+}</pre></div>
+<div class="note">
+  <b class="t">effective vs ticked — the key UI idea</b>
+  <p><code>capabilities</code> is what someone ticked. <code>effective_capabilities</code> is what will
+  actually happen, after intersecting with the permissions the agent's role carries.
+  <code>disabled_capabilities</code> explains the difference. Show a ticked-but-disabled capability
+  with a warning icon and the sentence <em>"needs <code>message:create</code> on the
+  <code>finance_lead</code> role"</em> — and a link to that role. Without this an admin cannot tell why
+  their agent is silent.</p>
+  <p>This is resolved live, so revoking a permission on the role moves a capability into
+  <code>disabled_capabilities</code> on the very next read, with no edit to the agent. Refetch agents
+  after any role write.</p>
+</div>
+
+<h4>The capability catalog</h4>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET /xp/org-agents/capabilities</div><pre>{
+  <span class="k">"kinds"</span>: [<span class="s">"analyst"</span>, <span class="s">"summarizer"</span>],
+  <span class="k">"role_sources"</span>: [<span class="s">"org_role"</span>, <span class="s">"custom"</span>],
+  <span class="k">"capabilities"</span>: [
+    { <span class="k">"capability"</span>: <span class="s">"message_reporter"</span>,   <span class="k">"requires"</span>: <span class="s">"message:create"</span> },
+    { <span class="k">"capability"</span>: <span class="s">"internal_note"</span>,      <span class="k">"requires"</span>: <span class="s">"message:read_internal"</span> },
+    { <span class="k">"capability"</span>: <span class="s">"update_report"</span>,      <span class="k">"requires"</span>: <span class="s">"report:manage"</span> },
+    { <span class="k">"capability"</span>: <span class="s">"assign_report"</span>,      <span class="k">"requires"</span>: <span class="s">"report:manage"</span> },
+    { <span class="k">"capability"</span>: <span class="s">"read_attachments"</span>,   <span class="k">"requires"</span>: <span class="s">"report:read_all"</span> },
+    { <span class="k">"capability"</span>: <span class="s">"consult_kb"</span>,         <span class="k">"requires"</span>: <span class="s">"agent:kb_read"</span> },
+    { <span class="k">"capability"</span>: <span class="s">"resolve_escalation"</span>, <span class="k">"requires"</span>: <span class="s">"org_hierarchy:read"</span> }
+  ],
+  <span class="k">"summarizer_forbidden_capabilities"</span>: [
+    { <span class="k">"capability"</span>: <span class="s">"message_reporter"</span>,
+      <span class="k">"reason"</span>: <span class="s">"a digest is not a decision, and a reporter should not receive one"</span> },
+    { <span class="k">"capability"</span>: <span class="s">"update_report"</span>, <span class="k">"reason"</span>: <span class="s">"..."</span> },
+    { <span class="k">"capability"</span>: <span class="s">"assign_report"</span>, <span class="k">"reason"</span>: <span class="s">"..."</span> }
+  ]
+}</pre></div>
+<div class="note ok">
+  <b class="t">Drive the form off this, not off a hardcoded list</b>
+  <p>When <code>kind</code> is <code>summarizer</code>, grey out the three in
+  <code>summarizer_forbidden_capabilities</code> and show the <code>reason</code> as the tooltip, and
+  hide the <code>decisions</code> field entirely — a summarizer reaches no verdict. Both are refused
+  with a 400 server-side, but a greyed box is a better experience than a rejected save.</p>
+</div>
+
+<h4>Validation to expect</h4>
+<div class="tbl"><table>
+  <thead><tr><th>Status</th><th>When</th></tr></thead>
+  <tbody>
+    <tr><td>400 <code>missing_prerequisite</code></td><td><code>role_source: "custom"</code> with an incoherent inline list — same rules as a role</td></tr>
+    <tr><td>400 <code>summarizer_rule</code></td><td>A summarizer given <code>message_reporter</code>, <code>update_report</code> or <code>assign_report</code></td></tr>
+    <tr><td>400 (string)</td><td>A summarizer declaring <code>decisions</code>; or <code>role_code</code> missing when <code>role_source: "org_role"</code>; or an unknown role code</td></tr>
+    <tr><td>403</td><td>Giving an agent a permission you do not hold</td></tr>
+    <tr><td>409</td><td>Duplicate <code>code</code>; or deleting an agent a workflow stage still runs</td></tr>
+  </tbody>
+</table></div>
+
+<h4>Tokens</h4>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">POST /xp/org-agents/{agent_id}/token</div><pre>{
+  <span class="k">"agent_code"</span>: <span class="s">"finance_triage"</span>,
+  <span class="k">"token"</span>: <span class="s">"xpa_8Kd...redacted"</span>,
+  <span class="k">"note"</span>: <span class="s">"Store this now — it is not recoverable. Rotating replaces it immediately."</span>
+}</pre></div>
+<div class="note warn">
+  <b class="t">Shown once</b>
+  <p>Only the SHA-256 hash is stored. Use a reveal-and-copy modal that the user must explicitly
+  dismiss, and never re-request the token to re-display it — <code>has_token</code> is all a list view
+  can know. Make clear that Rotate invalidates the previous token immediately.</p>
+</div>
+
+<h2 id="summarizer"><span class="num">06</span>Summarizer settings</h2>
+<p class="lead">A small screen with one subtlety worth getting right. The summarizer is an ordinary
+agent, but whether it runs is an organization-level switch — separate from its role, its
+<code>is_active</code> flag, and the workflow.</p>
+
+<div class="op"><span class="m get">GET</span><span>/xp/org-agents/summarizer</span><span class="perm">— agent:read</span></div>
+<div class="op"><span class="m put">PUT</span><span>/xp/org-agents/summarizer</span><span class="perm">— agent:manage</span></div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET response</div><pre>{
+  <span class="k">"enabled"</span>: <span class="k">true</span>,               <span class="c">// what the org asked for</span>
+  <span class="k">"agent_code"</span>: <span class="k">null</span>,             <span class="c">// explicit choice; null = infer</span>
+  <span class="k">"include_attachments"</span>: <span class="k">true</span>,
+  <span class="k">"max_words"</span>: 400,                <span class="c">// 50–4000</span>
+
+  <span class="k">"active"</span>: <span class="k">true</span>,                <span class="c">// ← what will ACTUALLY happen</span>
+  <span class="k">"resolved_agent"</span>: {
+    <span class="k">"code"</span>: <span class="s">"summarizer"</span>, <span class="k">"name"</span>: <span class="s">"Summarizer"</span>, <span class="k">"is_active"</span>: <span class="k">true</span>,
+    <span class="k">"role_code"</span>: <span class="s">"officer"</span>, <span class="k">"role_source"</span>: <span class="s">"org_role"</span>,
+    <span class="k">"effective_capabilities"</span>: [<span class="s">"read_attachments"</span>],
+    <span class="k">"disabled_capabilities"</span>: []
+  },
+  <span class="k">"available_agents"</span>: [{ <span class="k">"code"</span>: <span class="s">"summarizer"</span>, <span class="k">"name"</span>: <span class="s">"Summarizer"</span>, <span class="k">"is_active"</span>: <span class="k">true</span> }],
+  <span class="k">"affected_stages"</span>: [<span class="s">"summarize"</span>],   <span class="c">// which workflow stages this switch controls</span>
+  <span class="k">"problems"</span>: [],
+  <span class="k">"access"</span>: {
+    <span class="k">"permission"</span>: <span class="s">"agent:summary_read"</span>,
+    <span class="k">"granted_to"</span>:     [{ <span class="k">"code"</span>: <span class="s">"admin"</span>, <span class="k">"name"</span>: <span class="s">"Admin"</span>, <span class="k">"is_fixed"</span>: <span class="k">true</span> }, ...],
+    <span class="k">"not_granted_to"</span>: [{ <span class="k">"code"</span>: <span class="s">"poster"</span>, <span class="k">"name"</span>: <span class="s">"Poster"</span>, <span class="k">"is_fixed"</span>: <span class="k">false</span> }],
+    <span class="k">"how_to_change"</span>: <span class="s">"Grant or revoke agent:summary_read on the role…"</span>
+  }
+}</pre></div>
+<div class="note">
+  <b class="t">Render `active`, not `enabled`</b>
+  <p>The toggle's bound value is <code>enabled</code>; the status line beside it must read
+  <code>active</code>. When they disagree, show every <code>problems[].message</code> — the switch is
+  on but nothing will happen, and the reason is one of:</p>
+  <ul>
+    <li><code>no_summarizer_agent</code> — none exists. Offer "Create a summarizer".</li>
+    <li><code>ambiguous_summarizer</code> — several exist and none chosen. Show the
+    <code>available_agents</code> picker; the backend deliberately refuses to guess.</li>
+    <li><code>summarizer_inactive</code> — the chosen agent is deactivated. Link to it.</li>
+    <li><code>cannot_read_attachments</code> — evidence parsing is on but the agent's role lacks
+    <code>report:read_all</code>. Advisory: it will digest report text only.</li>
+  </ul>
+</div>
+<div class="note ok">
+  <b class="t">Show `affected_stages` next to the toggle</b>
+  <p>So the consequence of switching it off is visible <em>before</em> it is switched off. Turning it
+  off does not edit the workflow, deactivate the agent, or touch any role — say so in the helper text,
+  because that is what makes it safe to flip back on.</p>
+</div>
+<div class="note warn">
+  <b class="t">`access` is a read-only mirror, not an editor</b>
+  <p>There is no second sharing list to manage here. <code>agent:summary_read</code> on a role
+  <em>is</em> the access control. Render <code>granted_to</code> / <code>not_granted_to</code> as
+  chips with a link into the roles editor, and do not build a save action on this block — a
+  fixed role among them cannot be changed at all.</p>
+</div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">PUT body — all fields optional</div><pre>{ <span class="k">"enabled"</span>: <span class="k">false</span> }
+{ <span class="k">"enabled"</span>: <span class="k">true</span>, <span class="k">"agent_code"</span>: <span class="s">"digest"</span>, <span class="k">"max_words"</span>: 250, <span class="k">"include_attachments"</span>: <span class="k">false</span> }</pre></div>
+<p><code>max_words</code> outside 50–4000 is a <b>422</b>. An <code>agent_code</code> that is not a
+summarizer-kind agent, or does not exist, is a <b>400</b> with a plain string.</p>
+
+<h2 id="workflow"><span class="num">07</span>Workflow builder</h2>
+<p class="lead">An ordered list of stages. Each names an executor — one of the organization's agents,
+or one of its human roles — and optionally where to go for each verdict.</p>
+
+<div class="tbl"><table class="api">
+  <tbody>
+    <tr><td><span class="m get">GET</span> /xp/org-workflows/</td><td>List. <i>agent:read</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/org-workflows/active</td><td>The one a report submitted now would run. <i>agent:read</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-workflows/validate</td><td>Dry-run. Saves nothing. <i>agent:read</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-workflows/</td><td>Create. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m put">PUT</span> /xp/org-workflows/{id}</td><td>Update. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m delete">DELETE</span> /xp/org-workflows/{id}</td><td>Delete. <i>agent:manage</i></td></tr>
+  </tbody>
+</table></div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">Stage shape</div><pre>{
+  <span class="k">"key"</span>: <span class="s">"triage"</span>,                 <span class="c">// slug: [a-z0-9_] only</span>
+  <span class="k">"name"</span>: <span class="s">"Triage"</span>,
+  <span class="k">"executor_type"</span>: <span class="s">"agent"</span>,        <span class="c">// "agent" | "human"</span>
+  <span class="k">"executor_ref"</span>: <span class="s">"manager"</span>,        <span class="c">// agent code, or role code when human</span>
+  <span class="k">"transitions"</span>: [
+    { <span class="k">"when_decision"</span>: <span class="s">"ask_info"</span>, <span class="k">"goto"</span>: <span class="s">"end"</span> },
+    { <span class="k">"when_decision"</span>: <span class="s">"assign"</span>,   <span class="k">"goto"</span>: <span class="s">"next"</span> }
+  ],
+  <span class="k">"optional"</span>: <span class="k">false</span>                 <span class="c">// MAY BE ABSENT — default it to false</span>
+}</pre></div>
+<ul>
+  <li><code>goto</code> is another stage's <code>key</code>, or the reserved <code>"next"</code> /
+  <code>"end"</code>. A stage with no rule for the verdict it returned falls through to
+  <code>next</code>, so only interesting branches need writing down.</li>
+  <li><code>when_decision</code> must be one of the executing agent's <code>decisions</code>. Populate
+  that dropdown from the selected agent, not from free text.</li>
+  <li>A <code>human</code> stage pauses the run for the dashboard. "Fully automated" and "fully human"
+  are no longer modes — they are just which executor each stage has.</li>
+  <li><b>Backward jumps are allowed</b> (review → investigate). Termination is bounded by
+  <code>max_stage_visits</code> (1–20, default 3), so do not reject a cycle in the builder.</li>
+  <li><code>optional</code> may be missing from stored stages — treat <code>undefined</code> as
+  <code>false</code>.</li>
+</ul>
+<div class="note ok">
+  <b class="t">Always call /validate before /create</b>
+  <p>It returns <code>[{code, stage, message}]</code>, so you can pin each problem to the stage card
+  that caused it. It catches a <code>goto</code> to a stage that does not exist, an
+  <code>executor_ref</code> that does not exist, a <code>when_decision</code> the agent never returns,
+  a transition on a summarizer-kind stage, and duplicate keys.</p>
+</div>
+<div class="note bad">
+  <b class="t">Two 409s</b>
+  <p>Deleting the only workflow is refused — an organization with none has nothing to run. And
+  deleting an <em>agent</em> still referenced by a stage is refused, so the builder is where a user
+  must go first.</p>
+</div>
+
+<h2 id="hierarchy"><span class="num">08</span>Reporting hierarchy</h2>
+<p class="lead">The ladder that decides who a report escalates to. A report implicating a Finance
+Executive must reach someone above them — a Finance Manager — not their peers and never themselves.
+Three sub-screens: levels, directory, and HR connection.</p>
+
+<h4>Endpoints</h4>
+<div class="tbl"><table class="api">
+  <tbody>
+    <tr><td><span class="m get">GET</span> /xp/org-hierarchy/levels</td><td>Most senior first. <i>org_hierarchy:read</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-hierarchy/levels</td><td>Create. <i>…:manage</i></td></tr>
+    <tr><td><span class="m put">PUT</span> /xp/org-hierarchy/levels/{id}</td><td>Update. <i>…:manage</i></td></tr>
+    <tr><td><span class="m delete">DELETE</span> /xp/org-hierarchy/levels/{id}</td><td>Delete. <i>…:manage</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/org-hierarchy/members</td><td><code>?level_code=&amp;active_only=</code>. <i>…:read</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-hierarchy/members</td><td><b>New.</b> Add one by hand. <i>…:manage</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-hierarchy/members/bulk</td><td><b>New.</b> <code>?dry_run=</code>. All-or-nothing. <i>…:manage</i></td></tr>
+    <tr><td><span class="m put">PUT</span> /xp/org-hierarchy/members/{id}</td><td><b>New.</b> Correct one entry. <i>…:manage</i></td></tr>
+    <tr><td><span class="m delete">DELETE</span> /xp/org-hierarchy/members/{id}</td><td><b>New.</b> <i>…:manage</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/org-hierarchy/coverage</td><td><b>New.</b> Mapping health. <i>…:read</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/org-hierarchy/sync-config</td><td>Credential redacted. <i>…:manage</i></td></tr>
+    <tr><td><span class="m put">PUT</span> · <span class="m patch">PATCH</span> /xp/org-hierarchy/sync-config</td><td>Replace / partial. <i>…:manage</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-hierarchy/sync/preview</td><td><b>New.</b> <code>?limit=10</code>. Writes nothing. <i>…:manage</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-hierarchy/sync</td><td>Pull now. <i>…:manage</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/org-hierarchy/resolve</td><td>Who does this text escalate to. <i>…:read</i></td></tr>
+  </tbody>
+</table></div>
+
+<h3>Levels</h3>
+<div class="code"><button class="cp" type="button">Copy</button><pre>{
+  <span class="k">"code"</span>: <span class="s">"fin_mgr"</span>,
+  <span class="k">"title"</span>: <span class="s">"Finance Manager"</span>,
+  <span class="k">"rank"</span>: 20,                      <span class="c">// higher = more senior; gaps are intentional</span>
+  <span class="k">"department"</span>: <span class="s">"Finance"</span>,         <span class="c">// null = org-wide</span>
+  <span class="k">"designation_aliases"</span>: [<span class="s">"Finance Manager"</span>, <span class="s">"Sr. Finance Manager"</span>],
+  <span class="k">"escalation_role"</span>: <span class="s">"manager"</span>     <span class="c">// matches ReportType.default_owner_role</span>
+}</pre></div>
+<ul>
+  <li><b>No ceiling on the number of levels.</b> Build the editor as an orderable list, not a fixed
+  set of tiers.</li>
+  <li><b>Do not auto-assign contiguous ranks.</b> Leave gaps (10, 20, 30) so a tier can be inserted
+  later without renumbering. If you offer drag-to-reorder, rewrite ranks in steps of 10.</li>
+  <li><code>designation_aliases</code> are the raw job titles the client's HR system returns. Make this
+  a tag input and explain it that way — it is how HR titles map onto a level during a sync.</li>
+</ul>
+
+<h3>The directory</h3>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET /xp/org-hierarchy/members</div><pre>{
+  <span class="k">"id"</span>: <span class="s">"66f3..."</span>,
+  <span class="k">"external_id"</span>: <span class="s">"E1"</span>,               <span class="c">// the HR system's own employee id</span>
+  <span class="k">"name"</span>: <span class="s">"Omar Haddad"</span>,
+  <span class="k">"email"</span>: <span class="s">"omar@acme.com"</span>,
+  <span class="k">"designation"</span>: <span class="s">"Finance Executive"</span>,  <span class="c">// raw HR job title</span>
+  <span class="k">"department"</span>: <span class="s">"Finance"</span>,
+  <span class="k">"source"</span>: <span class="s">"hr_sync"</span>,               <span class="c">// "hr_sync" | "manual"</span>
+  <span class="k">"is_active"</span>: <span class="k">true</span>,
+
+  <span class="k">"level_code"</span>: <span class="s">"executive"</span>,         <span class="c">// EFFECTIVE value — use this one</span>
+  <span class="k">"manager_external_id"</span>: <span class="s">"M1"</span>,       <span class="c">// EFFECTIVE value</span>
+  <span class="k">"level_code_from_hr"</span>: <span class="k">null</span>,        <span class="c">// what the sync derived</span>
+  <span class="k">"manager_external_id_from_hr"</span>: <span class="s">"M1"</span>,
+  <span class="k">"has_manual_override"</span>: <span class="k">true</span>,       <span class="c">// a human corrected HR</span>
+  <span class="k">"synced_at"</span>: <span class="s">"2026-09-28T..."</span>
+}</pre></div>
+<div class="note">
+  <b class="t">Read the effective fields; show the override as provenance</b>
+  <p><code>level_code</code> and <code>manager_external_id</code> already carry the answer — the manual
+  correction where one was made, the synced value otherwise. The <code>*_from_hr</code> fields exist so
+  you can render "overridden from <em>(none)</em>" beside an entry. Never compute the effective value
+  yourself.</p>
+  <p><code>has_manual_override</code> is only true for an <code>hr_sync</code> entry a human has
+  corrected — a purely manual person has nothing to override, so use <code>source</code> for the
+  "added by hand" badge and <code>has_manual_override</code> for the "corrected" badge.</p>
+</div>
+<div class="note ok">
+  <b class="t">Two provenance badges, and what each implies</b>
+  <ul>
+    <li><code>source: "manual"</code> — added by hand. Survives every sync untouched. Deleting removes
+    it outright.</li>
+    <li><code>source: "hr_sync"</code> — HR owns it. Absent from the next pull, it is deactivated
+    automatically. Deleting only deactivates it, because a real delete would be undone by the next
+    sync — say that in the confirm dialog.</li>
+  </ul>
+  <p>A manual entry that HR later starts reporting flips to <code>hr_sync</code> and keeps its
+  overrides. Worth a tooltip, because the badge will appear to change on its own.</p>
+</div>
+
+<h4>Adding people by hand</h4>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">POST /xp/org-hierarchy/members</div><pre>{
+  <span class="k">"external_id"</span>: <span class="s">"E1"</span>,          <span class="c">// optional — generated from the name if omitted</span>
+  <span class="k">"name"</span>: <span class="s">"Omar Haddad"</span>,        <span class="c">// required, min length 1</span>
+  <span class="k">"email"</span>: <span class="s">"omar@acme.com"</span>,
+  <span class="k">"designation"</span>: <span class="s">"Finance Executive"</span>,
+  <span class="k">"department"</span>: <span class="s">"Finance"</span>,
+  <span class="k">"level_code"</span>: <span class="s">"executive"</span>,
+  <span class="k">"manager_external_id"</span>: <span class="s">"M1"</span>
+}</pre></div>
+<p><code>level_code</code> is technically optional but a member without one cannot be escalated from
+— warn in the form rather than accepting it silently. Both <code>level_code</code> and
+<code>manager_external_id</code> are stored as overrides, so they outlast the next sync.</p>
+
+<h4>Bulk import — build a paste-a-spreadsheet flow</h4>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">POST /xp/org-hierarchy/members/bulk?dry_run=true</div><pre>{ <span class="k">"members"</span>: [ { <span class="c">/* same shape as above */</span> }, ... ] }</pre></div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">400 — nothing was imported</div><pre>{ <span class="k">"detail"</span>: {
+  <span class="k">"message"</span>: <span class="s">"3 problem(s) found. Nothing was imported."</span>,
+  <span class="k">"problems"</span>: [
+    { <span class="k">"row"</span>: 2, <span class="k">"field"</span>: <span class="s">"name"</span>,
+      <span class="k">"message"</span>: <span class="s">"A directory entry needs a name to match against."</span> },
+    { <span class="k">"row"</span>: 3, <span class="k">"field"</span>: <span class="s">"level_code"</span>,
+      <span class="k">"message"</span>: <span class="s">"No level 'bogus' in this organization. Defined: ceo, cfo, …"</span> },
+    { <span class="k">"row"</span>: 4, <span class="k">"field"</span>: <span class="s">"manager_external_id"</span>,
+      <span class="k">"message"</span>: <span class="s">"A person cannot be their own manager — escalation would route the report back to them."</span> }
+  ]
+} }</pre></div>
+<ul>
+  <li><code>row</code> is <b>1-indexed</b> against the array you sent — map it straight onto the row in
+  your paste grid and highlight the named <code>field</code>.</li>
+  <li>Always run <code>dry_run=true</code> first and show a preview.
+  <code>{"would_create": N, "external_ids": [...]}</code> comes back and nothing is written.</li>
+  <li>Managers may reference other rows in the same upload, in either direction — do not validate
+  manager references client-side against only what is already on the server.</li>
+  <li>It is genuinely all-or-nothing, so a single bad row leaves the directory untouched. Say so in
+  the error panel; a user who has pasted 300 rows needs to know they have not half-loaded.</li>
+</ul>
+
+<h4>Coverage — the "is it working" panel</h4>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET /xp/org-hierarchy/coverage</div><pre>{
+  <span class="k">"resolvable"</span>: <span class="k">true</span>,            <span class="c">// can this hierarchy escalate anything at all</span>
+  <span class="k">"level_count"</span>: 5, <span class="k">"member_count"</span>: 8,
+  <span class="k">"manual_member_count"</span>: 1, <span class="k">"override_count"</span>: 2,
+  <span class="k">"levels"</span>: [
+    { <span class="k">"code"</span>: <span class="s">"ceo"</span>, <span class="k">"title"</span>: <span class="s">"Chief Executive"</span>, <span class="k">"rank"</span>: 60,
+      <span class="k">"department"</span>: <span class="k">null</span>, <span class="k">"member_count"</span>: 1,
+      <span class="k">"members"</span>: [<span class="s">"Nadia Rahman"</span>], <span class="k">"escalation_role"</span>: <span class="k">null</span>,
+      <span class="k">"vacant"</span>: <span class="k">false</span> }
+  ],
+  <span class="k">"unmapped_designations"</span>: [
+    { <span class="k">"designation"</span>: <span class="s">"Procurement Lead"</span>, <span class="k">"people"</span>: [<span class="s">"Hadi Salem"</span>] }
+  ],
+  <span class="k">"members_without_manager"</span>: [
+    { <span class="k">"name"</span>: <span class="s">"Hadi Salem"</span>, <span class="k">"level_code"</span>: <span class="k">null</span>, <span class="k">"reason"</span>: <span class="s">"no manager recorded"</span> }
+  ],
+  <span class="k">"problems"</span>: [{ <span class="k">"code"</span>: <span class="s">"unmapped_designations"</span>, <span class="k">"message"</span>: <span class="s">"…"</span> }]
+}</pre></div>
+<p>Make this the landing panel of the hierarchy screen. Each <code>unmapped_designations</code> entry
+should offer two one-click fixes: <em>add this title to a level's aliases</em> (a level update) or
+<em>set the level on these people</em> (a member update). Problem codes:
+<code>no_levels</code>, <code>no_members</code>, <code>unmapped_designations</code>,
+<code>vacant_levels</code>, <code>chain_gaps</code>.</p>
+
+<h3>HR connection</h3>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">PUT /xp/org-hierarchy/sync-config</div><pre>{
+  <span class="k">"api_base_url"</span>: <span class="s">"https://hr.client.com/api"</span>,
+  <span class="k">"employees_path"</span>: <span class="s">"/v2/employees"</span>,
+  <span class="k">"auth_type"</span>: <span class="s">"bearer"</span>,          <span class="c">// none | api_key | bearer | basic</span>
+  <span class="k">"auth_header_name"</span>: <span class="s">"Authorization"</span>,
+  <span class="k">"credential"</span>: <span class="s">"..."</span>,             <span class="c">// "user:pass" when auth_type = basic</span>
+  <span class="k">"results_path"</span>: <span class="s">"data.employees"</span>, <span class="c">// null if the body IS the array</span>
+  <span class="k">"field_mapping"</span>: {
+    <span class="k">"external_id"</span>: <span class="s">"employeeId"</span>,
+    <span class="k">"name"</span>: <span class="s">"displayName"</span>,
+    <span class="k">"email"</span>: <span class="s">"workEmail"</span>,
+    <span class="k">"designation"</span>: <span class="s">"job.title"</span>,      <span class="c">// dot-paths for nested JSON</span>
+    <span class="k">"department"</span>: <span class="s">"job.department"</span>,
+    <span class="k">"manager_external_id"</span>: <span class="s">"manager.employeeId"</span>
+  },
+  <span class="k">"sync_frequency_hours"</span>: 24
+}</pre></div>
+<div class="note ok">
+  <b class="t">Make Preview the primary action, Sync the secondary one</b>
+  <p><code>POST /sync/preview</code> writes nothing and returns
+  <code>records_returned</code>, <code>would_upsert</code>,
+  <code>would_skip_missing_id_or_name</code>, <code>unmapped_designations</code>,
+  <code>field_mapping_used</code> and a <code>sample</code> of mapped rows. A field mapping is
+  guesswork until it meets the real payload, and <code>POST /sync</code> writes over the live
+  directory.</p>
+  <p>Surface <code>would_skip_missing_id_or_name</code> prominently: non-zero almost always means the
+  mapping points at the wrong key for <code>external_id</code> or <code>name</code>. The real sync
+  drops those rows silently, so a wholly wrong mapping otherwise looks like a successful sync of
+  nobody.</p>
+</div>
+<ul>
+  <li><code>credential</code> comes back as <code>••••••••</code> on every read. Treat the field as
+  write-only: an empty input means "leave unchanged", which is what <code>PATCH</code> is for.</li>
+  <li><code>POST /sync</code> returns <code>{synced, matched_to_a_level, unmatched_designations[],
+  deactivated, synced_at}</code>. Show <code>unmatched_designations</code> as the follow-up task —
+  each is a job title to add to a level's aliases.</li>
+  <li>An unreachable or non-JSON HR API is a <b>502</b> with the reason, and nothing already synced is
+  touched. Render it as "could not reach your HR system", not a generic failure.</li>
+</ul>
+
+<h3>Escalation preview</h3>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">POST /xp/org-hierarchy/resolve</div><pre><span class="c">// request — note both fields are top-level, not nested</span>
+{ <span class="k">"texts"</span>: [<span class="s">"I saw Omar Haddad approve fake invoices."</span>], <span class="k">"department"</span>: <span class="k">null</span> }
+
+<span class="c">// matched</span>
+{
+  <span class="k">"matched"</span>: <span class="k">true</span>,
+  <span class="k">"implicated_member"</span>: { <span class="k">"name"</span>: <span class="s">"Omar Haddad"</span>, ... },
+  <span class="k">"implicated_level"</span>:  { <span class="k">"code"</span>: <span class="s">"executive"</span>, <span class="k">"rank"</span>: 10, ... },
+  <span class="k">"escalate_to_member"</span>: { <span class="k">"name"</span>: <span class="s">"Layla Nasser"</span>, ... },
+  <span class="k">"escalate_to_level"</span>:  { <span class="k">"code"</span>: <span class="s">"fin_mgr"</span>, <span class="k">"title"</span>: <span class="s">"Finance Manager"</span>, ... },
+  <span class="k">"escalation_role"</span>: <span class="s">"manager"</span>,
+  <span class="k">"reason"</span>: <span class="s">"Escalated to the implicated person's direct manager on file"</span>
+}
+
+<span class="c">// not matched</span>
+{ <span class="k">"matched"</span>: <span class="k">false</span>, <span class="k">"reason"</span>: <span class="s">"No directory member is named in the report text"</span> }</pre></div>
+<div class="note bad">
+  <b class="t">Never render `matched: false` as "nobody is implicated"</b>
+  <p>It means the directory could not identify anyone named in the text, so <b>a human decides</b>.
+  Matching is exact, case-insensitive and whole-word by design — no fuzzy matching — because a near
+  miss must not resolve in a system that decides who gets told about an allegation against them.
+  <code>matched: true</code> with <code>escalate_to_member: null</code> is a third state: someone was
+  identified but there is no one above them on file. All three need distinct copy.</p>
+</div>
+<p>A "test this report's routing" panel on the report detail screen is the natural home for this.</p>
+
+<h2 id="kb"><span class="num">09</span>Knowledge base</h2>
+<p class="lead">Documents are assigned to <b>agents</b>, by the agent code the organization gave them —
+not to a fixed list of three roles.</p>
+
+<div class="tbl"><table class="api">
+  <tbody>
+    <tr><td><span class="m get">GET</span> /xp/agent-kb/roles</td><td>Assignable agents. <i>agent:read</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/agent-kb/documents</td><td>List, annotated. <i>agent:read</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/agent-kb/documents</td><td>Upload, multipart. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m patch">PATCH</span> /xp/agent-kb/documents/{id}</td><td>Reassign. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/agent-kb/reconcile</td><td><b>New.</b> <code>?dry_run=</code>. <i>agent:manage</i></td></tr>
+    <tr><td><span class="m delete">DELETE</span> /xp/agent-kb/documents/{id}</td><td>Delete. <i>agent:manage</i></td></tr>
+  </tbody>
+</table></div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET /xp/agent-kb/roles</div><pre>{
+  <span class="k">"roles"</span>: [<span class="s">"manager"</span>, <span class="s">"officer"</span>],       <span class="c">// codes; older shape, still present</span>
+  <span class="k">"agents"</span>: [                              <span class="c">// use this one</span>
+    { <span class="k">"code"</span>: <span class="s">"manager"</span>, <span class="k">"name"</span>: <span class="s">"Manager"</span>, <span class="k">"kind"</span>: <span class="s">"analyst"</span>,
+      <span class="k">"role_code"</span>: <span class="s">"manager"</span>, <span class="k">"role_source"</span>: <span class="s">"org_role"</span> }
+  ],
+  <span class="k">"all_agents_sentinel"</span>: <span class="s">"*"</span>
+}</pre></div>
+<p>Only agents carrying <code>consult_kb</code> in <code>effective_capabilities</code> appear. An
+agent the organization invents shows up as soon as it can really read policy, and disappears when it
+cannot — so refetch this after any agent or role write. A summarizer appears only when it is also the
+<em>active</em> summarizer.</p>
+<div class="note bad">
+  <b class="t">Handle the empty case explicitly</b>
+  <p>When no agent can consult the KB, upload returns 400 with <em>"No agent in this organization can
+  consult the knowledge base. Give an agent the 'consult_kb' capability (and a role carrying
+  agent:kb_read) before uploading documents for it."</em> Render that as an empty state with a link to
+  the agents screen, not as an upload failure.</p>
+</div>
+
+<h4>Upload</h4>
+<p><code>multipart/form-data</code>: <code>files</code> (repeatable, max 10 per request) and
+<code>roles</code> as a <b>comma-separated string</b> — not a JSON array. Omitting
+<code>roles</code> means every consulting agent, stored as the <code>*</code> sentinel. Returns
+<b>202</b>; poll the list for <code>status</code>.</p>
+<div class="tbl"><table>
+  <thead><tr><th>status</th><th>Show as</th></tr></thead>
+  <tbody>
+    <tr><td><code>pending</code> → <code>parsing</code> → <code>embedding</code></td><td>a progress state, poll every few seconds</td></tr>
+    <tr><td><code>ready</code></td><td>done, with <code>chunk_count</code></td></tr>
+    <tr><td><code>failed</code></td><td>show <code>error</code> verbatim and offer re-upload</td></tr>
+  </tbody>
+</table></div>
+
+<h4>Stale assignments</h4>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET /xp/agent-kb/documents</div><pre>{
+  <span class="k">"id"</span>: <span class="s">"66f4..."</span>, <span class="k">"filename"</span>: <span class="s">"code-of-conduct.pdf"</span>,
+  <span class="k">"status"</span>: <span class="s">"ready"</span>, <span class="k">"chunk_count"</span>: 42, <span class="k">"error"</span>: <span class="k">null</span>,
+  <span class="k">"roles"</span>: [<span class="s">"finance_triage"</span>, <span class="s">"officer"</span>],   <span class="c">// as stored</span>
+
+  <span class="k">"effective_roles"</span>: [<span class="s">"officer"</span>],            <span class="c">// can actually retrieve it now</span>
+  <span class="k">"stale_roles"</span>: [<span class="s">"finance_triage"</span>],        <span class="c">// point at nothing any more</span>
+  <span class="k">"assigned_to_all"</span>: <span class="k">false</span>,                  <span class="c">// the "*" sentinel</span>
+  <span class="k">"orphaned"</span>: <span class="k">false</span>                          <span class="c">// NO agent can retrieve it</span>
+}</pre></div>
+<div class="note warn">
+  <b class="t">`status: "ready"` and `orphaned: true` can both be true</b>
+  <p>The document ingested perfectly and no agent will ever read it — because the agent it was assigned
+  to was deleted, deactivated, lost <code>consult_kb</code>, or had <code>agent:kb_read</code> stripped
+  from its role. Nothing failed, so nothing was reported; it just stopped being retrieved. Give
+  <code>orphaned</code> its own red badge, separate from <code>status</code>, and put a banner above
+  the list when any document has <code>stale_roles</code>.</p>
+</div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">POST /xp/agent-kb/reconcile?dry_run=true</div><pre>{
+  <span class="k">"dry_run"</span>: <span class="k">true</span>,
+  <span class="k">"consulting_agents"</span>: [<span class="s">"manager"</span>, <span class="s">"officer"</span>],
+  <span class="k">"changed"</span>: 1, <span class="k">"unchanged"</span>: 3,
+  <span class="k">"changes"</span>: [{
+    <span class="k">"document_id"</span>: <span class="s">"66f4..."</span>, <span class="k">"filename"</span>: <span class="s">"code-of-conduct.pdf"</span>,
+    <span class="k">"removed"</span>: [<span class="s">"finance_triage"</span>],
+    <span class="k">"from"</span>: [<span class="s">"finance_triage"</span>, <span class="s">"officer"</span>], <span class="k">"to"</span>: [<span class="s">"officer"</span>],
+    <span class="k">"reassigned_to_all"</span>: <span class="k">false</span>
+  }]
+}</pre></div>
+<p>Show the dry run as a diff the user confirms. A document left with no valid agent is reassigned to
+every consulting agent with <code>reassigned_to_all: true</code> — call that out, it is a widening of
+access. Nothing is re-parsed or re-embedded.</p>
+<p><code>PATCH /documents/{id}</code> takes a real JSON array: <code>{"roles": ["officer",
+"reviewer"]}</code>. Note the asymmetry with the upload's comma-separated form field.</p>
+
+<h2 id="runs"><span class="num">10</span>Agent runs &amp; the digest</h2>
+<div class="tbl"><table class="api">
+  <tbody>
+    <tr><td><span class="m get">GET</span> /xp/agent-runs/</td><td><code>?limit=50</code>. <i>agent:read</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/agent-runs/{report_id}</td><td>Full run. <i>agent:read</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/agent-runs/{report_id}/summary</td><td><b>New.</b> Digest only. <i>agent:summary_read</i></td></tr>
+  </tbody>
+</table></div>
+<div class="note ok">
+  <b class="t">Two different screens, two different permissions</b>
+  <p>The full run carries every agent's prompts, verdicts and reasoning — an audit view for whoever
+  administers the agents (<code>agent:read</code>). The digest is the factual summary of the evidence
+  on one case, useful to whoever is <em>working</em> that case
+  (<code>agent:summary_read</code>). Put the digest on the <b>report detail</b> screen and the full run
+  under agent administration. Do not gate the digest panel on <code>agent:read</code>, or you
+  reintroduce exactly the over-granting this split removed.</p>
+</div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">GET /xp/agent-runs/{report_id}/summary</div><pre><span class="c">// available</span>
+{ <span class="k">"report_id"</span>: <span class="s">"66f5..."</span>, <span class="k">"available"</span>: <span class="k">true</span>,
+  <span class="k">"agent_code"</span>: <span class="s">"summarizer"</span>, <span class="k">"stage"</span>: <span class="s">"summarize"</span>,
+  <span class="k">"summary"</span>: <span class="s">"The attached invoices show…"</span>,
+  <span class="k">"workflow"</span>: { <span class="k">"name"</span>: <span class="s">"Default workflow"</span>, <span class="k">"version"</span>: 1 },
+  <span class="k">"generated_at"</span>: <span class="s">"2026-09-28T..."</span> }
+
+<span class="c">// not available — a 200, not a 404</span>
+{ <span class="k">"report_id"</span>: <span class="s">"66f5..."</span>, <span class="k">"available"</span>: <span class="k">false</span>,
+  <span class="k">"reason"</span>: <span class="s">"The summarizer is not active for this organization."</span>,
+  <span class="k">"problems"</span>: [...] }</pre></div>
+<p>Render <code>available: false</code> as a quiet empty state with the <code>reason</code>. The
+summarizer being switched off and a report having no attachments are both normal. Only a report
+outside your organization is a real 404.</p>
+<p>The run's <code>stage_log</code> entries carry <code>outcome</code> values
+<code>ran · paused · skipped · error · halted</code>. <code>skipped</code> is new — a summarizer stage
+when the switch is off. Colour it neutral grey, not red.</p>
+
+<h2 id="types"><span class="num">11</span>Report types</h2>
+<p class="lead">Beyond the i18n removal in <a href="#break">§01</a>, the import/export workbook
+changed and there is one behaviour you must design around.</p>
+
+<div class="tbl"><table class="api">
+  <tbody>
+    <tr><td><span class="m get">GET</span> /xp/report-types/export</td><td><code>?active_only=</code>. xlsx. <i>report_type:manage</i></td></tr>
+    <tr><td><span class="m get">GET</span> /xp/report-types/import/template</td><td>Blank workbook. <i>report_type:manage</i></td></tr>
+    <tr><td><span class="m post">POST</span> /xp/report-types/import</td><td>multipart <code>file</code>. <i>report_type:manage</i></td></tr>
+  </tbody>
+</table></div>
+<ul>
+  <li>Both GETs return a binary <code>.xlsx</code>. Read the filename from
+  <code>Content-Disposition</code>; do not construct it.</li>
+  <li>The workbook has 8 sheets and 50 English columns in 6 colour-coded bands. No Arabic columns.</li>
+  <li>An <b>older</b> workbook that still has AR columns imports fine — they come back as
+  <code>header.unknown_column</code> warnings. Show warnings distinctly from errors: the import
+  succeeded.</li>
+  <li>Export → edit → re-import round-trips losslessly (verified at 72 types / 2018 questions).</li>
+</ul>
+<div class="note bad">
+  <b class="t">Import does not upsert — design for this</b>
+  <p>It matches on report type <b>name</b>, not on <code>Report Type Code</code>. Importing the same
+  file twice <b>fails</b> with one "a report type named 'X' already exists" problem per type. There is
+  no <code>dryRun</code> parameter and no version history.</p>
+  <p>Consequences for the UI: do not offer "re-import to update"; label the action <b>Import new
+  report types</b>. Import is all-or-nothing and returns every problem at once, so you can implement a
+  <em>client-side</em> dry run by uploading and rendering the 400 without retrying — but be honest in
+  the copy that a failed import changed nothing. This is a known backend gap; check whether it has
+  been closed before building around it.</p>
+</div>
+<div class="code"><button class="cp" type="button">Copy</button><div class="lbl">Question shape (English-only)</div><pre>{
+  <span class="k">"id"</span>: <span class="s">"q_1"</span>, <span class="k">"name"</span>: <span class="s">"incident_description"</span>,   <span class="c">// name is your i18n key</span>
+  <span class="k">"type"</span>: <span class="s">"textarea"</span>, <span class="k">"label"</span>: <span class="s">"Describe what happened"</span>,
+  <span class="k">"required"</span>: <span class="k">true</span>, <span class="k">"is_core_field"</span>: <span class="k">true</span>,
+  <span class="k">"placeholder"</span>: <span class="k">null</span>, <span class="k">"help_text"</span>: <span class="k">null</span>,
+  <span class="k">"options"</span>: [ { <span class="k">"value"</span>: <span class="s">"yes"</span>, <span class="k">"label"</span>: <span class="s">"Yes"</span>, <span class="k">"display_order"</span>: 1 } ],
+  <span class="k">"default_value"</span>: <span class="k">null</span>,
+  <span class="k">"sensitive_data_class"</span>: <span class="s">"none"</span>,
+  <span class="k">"validation"</span>: { <span class="k">"max_length"</span>: 5000, ... },
+  <span class="k">"conditional_logic"</span>: { <span class="k">"rules"</span>: [...], <span class="k">"logic_type"</span>: <span class="s">"and"</span> },
+  <span class="k">"order"</span>: 3
+}</pre></div>
+<p><code>type</code> is one of <code>text · textarea · number · email · phone · select · multiselect ·
+date · datetime · time · boolean · file · currency</code>. <code>currency</code> and
+<code>time</code> may need new widgets — check what your renderer already covers.</p>
+
+<h2 id="ref"><span class="num">12</span>Reference</h2>
+
+<h4>All 29 assignable permissions</h4>
+<div class="tbl"><table>
+  <thead><tr><th>Group</th><th>Permissions</th></tr></thead>
+  <tbody>
+    <tr><td>Reports</td><td><code>report:create</code> <code>report:read_own</code> <code>report:read_all</code> <code>report:read_assigned</code> <code>report:update_all</code> <code>report:delete_all</code> <code>report:manage</code></td></tr>
+    <tr><td>Messages</td><td><code>message:create</code> <code>message:read_own</code> <code>message:read_internal</code></td></tr>
+    <tr><td>Users</td><td><code>user:read_me</code> <code>user:read_all</code> <code>user:create</code> <code>user:update</code> <code>user:delete</code> <code>user:manage_roles</code></td></tr>
+    <tr><td>Report Types</td><td><code>report_type:read</code> <code>report_type:manage</code></td></tr>
+    <tr><td>Organization</td><td><code>organization:read</code></td></tr>
+    <tr><td>Reporting Hierarchy</td><td><code>org_hierarchy:read</code> <code>org_hierarchy:manage</code></td></tr>
+    <tr><td>AI Agents</td><td><code>agent:read</code> <code>agent:manage</code> <code>agent:kb_read</code> <code>agent:summary_read</code></td></tr>
+    <tr><td>Voice Profile</td><td><code>voice_profile:read</code> <code>voice_profile:manage</code></td></tr>
+    <tr><td>Roles</td><td><code>role:manage</code></td></tr>
+    <tr><td>System</td><td><code>system:stats</code></td></tr>
+  </tbody>
+</table></div>
+<p>Four more exist in the enum but can never be granted here and are absent from the catalog:
+<code>organization:create</code>, <code>organization:update</code>,
+<code>organization:delete</code>, <code>system:admin</code>. They belong to the separate super-admin
+service.</p>
+
+<h4>The 14 prerequisite rules</h4>
+<div class="tbl"><table>
+  <thead><tr><th>Granting</th><th>Requires at least one of</th></tr></thead>
+  <tbody>
+    <tr><td><code>report:update_all</code></td><td><code>report:read_all</code> · <code>report:read_assigned</code></td></tr>
+    <tr><td><code>report:delete_all</code></td><td><code>report:read_all</code></td></tr>
+    <tr><td><code>report:manage</code></td><td><code>report:read_all</code> · <code>report:read_assigned</code></td></tr>
+    <tr><td><code>message:read_internal</code></td><td><code>report:read_all</code> · <code>report:read_assigned</code></td></tr>
+    <tr><td><code>message:read_own</code></td><td><code>report:read_own</code> · <code>report:read_all</code> · <code>report:read_assigned</code></td></tr>
+    <tr><td><code>user:create</code> · <code>user:update</code> · <code>user:delete</code> · <code>user:manage_roles</code></td><td><code>user:read_all</code></td></tr>
+    <tr><td><code>report_type:manage</code></td><td><code>report_type:read</code></td></tr>
+    <tr><td><code>org_hierarchy:manage</code></td><td><code>org_hierarchy:read</code></td></tr>
+    <tr><td><code>agent:manage</code></td><td><code>agent:read</code></td></tr>
+    <tr><td><code>voice_profile:manage</code></td><td><code>voice_profile:read</code></td></tr>
+    <tr><td><code>agent:summary_read</code></td><td><code>report:read_all</code> · <code>report:read_assigned</code></td></tr>
+  </tbody>
+</table></div>
+<p>Fetch these from <code>dependencies</code> rather than hardcoding the table — it is generated from
+the same source the server validates against, so it cannot drift.</p>
+
+<h4>Enums</h4>
+<div class="code"><button class="cp" type="button">Copy</button><pre>AgentKind        = <span class="s">'analyst'</span> | <span class="s">'summarizer'</span>
+RoleSource       = <span class="s">'org_role'</span> | <span class="s">'custom'</span>
+AgentCapability  = <span class="s">'message_reporter'</span> | <span class="s">'internal_note'</span> | <span class="s">'update_report'</span>
+                 | <span class="s">'assign_report'</span> | <span class="s">'read_attachments'</span> | <span class="s">'consult_kb'</span>
+                 | <span class="s">'resolve_escalation'</span>
+ExecutorType     = <span class="s">'agent'</span> | <span class="s">'human'</span>
+MemberSource     = <span class="s">'hr_sync'</span> | <span class="s">'manual'</span>
+AuthType         = <span class="s">'none'</span> | <span class="s">'api_key'</span> | <span class="s">'bearer'</span> | <span class="s">'basic'</span>
+StageOutcome     = <span class="s">'ran'</span> | <span class="s">'paused'</span> | <span class="s">'skipped'</span> | <span class="s">'error'</span> | <span class="s">'halted'</span>
+RunStatus        = <span class="s">'completed'</span> | <span class="s">'awaiting_human'</span> | <span class="s">'error'</span>
+                 | <span class="s">'halted_visit_budget'</span></pre></div>
+
+<h2 id="checklist"><span class="num">13</span>Migration checklist</h2>
+<h4>Must do — these are silent breaks</h4>
+<ol>
+  <li>Grep for every role-identity comparison and replace with <code>can(PERM.x)</code>. Search
+  <code>'admin'</code>, <code>'manager'</code>, <code>'officer'</code>, <code>'reviewer'</code>,
+  <code>role ===</code>, <code>role.includes</code>.</li>
+  <li>Grep for <code>_i18n</code>, <code>.label.en</code>, <code>locales</code>,
+  <code>is_rtl</code>, <code>text_direction</code> and rewrite against the plain fields.</li>
+  <li>Replace every hardcoded role dropdown with <code>GET /xp/org-roles/</code>.</li>
+  <li>Invalidate the <code>users/me</code> cache after any role write.</li>
+  <li>Implement the 400 <code>{message, problems}</code> handler before building the roles editor.</li>
+</ol>
+<h4>New screens, roughly in build order</h4>
+<ol>
+  <li>Roles &amp; permissions editor with live validation — everything else gates on it.</li>
+  <li>Agents list and editor, with <code>effective</code> vs <code>disabled</code> capabilities.</li>
+  <li>Summarizer settings, including the read-only <code>access</code> mirror.</li>
+  <li>Hierarchy: coverage panel, levels editor, directory with manual add and bulk paste.</li>
+  <li>Workflow builder (validate-before-save).</li>
+  <li>Knowledge base with stale-assignment banner and the reconcile diff.</li>
+  <li>Digest panel on report detail, gated on <code>agent:summary_read</code>.</li>
+  <li>HR sync configuration, with Preview as the primary action.</li>
+  <li>Escalation preview on report detail.</li>
+</ol>
+<h4>Ask before you build around them</h4>
+<ul>
+  <li><b>Report type import does not upsert</b> — matching on name, not code. Known gap.</li>
+  <li><b>No report type version history</b> — submissions are not pinned to a version.</li>
+  <li><b>No snapshot of the question text a reporter saw.</b> If compliance needs it, it is a change,
+  not a setting.</li>
+</ul>
+
+<footer>
+  <p><b>Exploring the API directly.</b> <code>/xp/docs</code> with
+  <code>ENVIRONMENT=dev</code>. The Authorize dialog's username field accepts an email; Google and
+  Microsoft accounts must go through <code>POST /auth/firebase/login</code> and paste the token
+  instead. The other two schemes (<code>X-Agent-Key</code>, <code>X-Service-Key</code>) are not for a
+  browser client.</p>
+  <p>Backend branch <code>feat_org_ai_agent</code>, 105 routes, nothing committed yet — pin your
+  integration work to a commit once it lands.</p>
+</footer>
+
+</div>
+
+<script>
+document.querySelectorAll('.code .cp').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var pre = btn.parentElement.querySelector('pre');
+    var fallback = function () {
+      var r = document.createRange(); r.selectNodeContents(pre);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      btn.textContent = 'Selected';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(pre.innerText).then(function () {
+        btn.textContent = 'Copied';
+        setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+      }, fallback);
+    } else { fallback(); }
+  });
+});
+</script>
+
+</body></html>

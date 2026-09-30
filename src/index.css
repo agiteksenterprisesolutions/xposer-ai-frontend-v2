@@ -1,0 +1,293 @@
+@import "tailwindcss";
+@import "./App.css";
+
+@plugin "@tailwindcss/typography";
+
+/* ==========================================================================
+   TOKEN BRIDGE
+   --------------------------------------------------------------------------
+   Every utility below resolves to an --xp-* custom property defined in
+   App.css. Nothing here holds a literal color. To restyle the entire app,
+   edit the SEMANTIC layer of App.css — never this file.
+
+   Because both the --xp-* definitions and these --color-* aliases live on
+   :root, swapping <html data-theme="..."> re-resolves all of them at once.
+
+   Naming, so a class reads as its meaning:
+     surfaces  bg-canvas  bg-surface  bg-raised  bg-sunken  bg-subtle
+     text      text-ink   text-ink-secondary  text-ink-muted  text-ink-subtle
+     borders   border-line  border-line-subtle  border-line-strong
+     accent    bg-accent  text-accent-fg  bg-accent-soft
+     status    text-success-fg  bg-success-soft  border-success-line
+   ========================================================================== */
+
+@theme {
+  /* --- Surfaces ------------------------------------------------------- */
+  --color-canvas: var(--xp-canvas);
+  --color-surface: var(--xp-surface);
+  --color-raised: var(--xp-surface-raised);
+  --color-sunken: var(--xp-surface-sunken);
+  --color-subtle: var(--xp-surface-subtle);
+  --color-hover: var(--xp-surface-hover);
+  --color-active: var(--xp-surface-active);
+  --color-overlay: var(--xp-overlay);
+
+  /* --- Text ----------------------------------------------------------- */
+  --color-ink: var(--xp-text-primary);
+  --color-ink-secondary: var(--xp-text-secondary);
+  --color-ink-muted: var(--xp-text-muted);
+  --color-ink-subtle: var(--xp-text-subtle);
+  --color-ink-inverse: var(--xp-text-inverse);
+  --color-on-accent: var(--xp-text-on-accent);
+  --color-link: var(--xp-text-link);
+  --color-link-hover: var(--xp-text-link-hover);
+
+  /* --- Borders -------------------------------------------------------- */
+  --color-line: var(--xp-border);
+  --color-line-subtle: var(--xp-border-subtle);
+  --color-line-strong: var(--xp-border-strong);
+  --color-line-accent: var(--xp-border-accent);
+
+  /* --- Accent --------------------------------------------------------- */
+  --color-accent: var(--xp-accent);
+  --color-accent-hover: var(--xp-accent-hover);
+  --color-accent-active: var(--xp-accent-active);
+  --color-accent-fg: var(--xp-accent-fg);
+  --color-accent-soft: var(--xp-accent-soft);
+  --color-accent-soft-hover: var(--xp-accent-soft-hover);
+  --color-accent-ring: var(--xp-accent-ring);
+
+  /* --- Status --------------------------------------------------------- */
+  --color-success-fg: var(--xp-success-fg);
+  --color-success-solid: var(--xp-success-solid);
+  --color-success-soft: var(--xp-success-soft);
+  --color-success-line: var(--xp-success-border);
+
+  --color-warning-fg: var(--xp-warning-fg);
+  --color-warning-solid: var(--xp-warning-solid);
+  --color-warning-soft: var(--xp-warning-soft);
+  --color-warning-line: var(--xp-warning-border);
+
+  --color-danger-fg: var(--xp-danger-fg);
+  --color-danger-solid: var(--xp-danger-solid);
+  --color-danger-soft: var(--xp-danger-soft);
+  --color-danger-line: var(--xp-danger-border);
+
+  --color-info-fg: var(--xp-info-fg);
+  --color-info-solid: var(--xp-info-solid);
+  --color-info-soft: var(--xp-info-soft);
+  --color-info-line: var(--xp-info-border);
+
+  --color-focus: var(--xp-focus-ring);
+
+  /* --- Data-viz series ------------------------------------------------ */
+  --color-chart-1: var(--xp-chart-1);
+  --color-chart-2: var(--xp-chart-2);
+  --color-chart-3: var(--xp-chart-3);
+  --color-chart-4: var(--xp-chart-4);
+  --color-chart-5: var(--xp-chart-5);
+  --color-chart-6: var(--xp-chart-6);
+  --color-chart-grid: var(--xp-chart-grid);
+  --color-chart-axis: var(--xp-chart-axis);
+
+  /* --- Brand scales --------------------------------------------------- *
+   * Kept so raw-ramp utilities (bg-primary-600) still resolve. Prefer the
+   * semantic aliases above; these are for the marketing pages that need a
+   * fixed hue regardless of theme.                                       */
+  --color-primary-50: var(--xp-blue-50);
+  --color-primary-100: var(--xp-blue-100);
+  --color-primary-200: var(--xp-blue-200);
+  --color-primary-300: var(--xp-blue-300);
+  --color-primary-400: var(--xp-blue-400);
+  --color-primary-500: var(--xp-blue-500);
+  --color-primary-600: var(--xp-blue-600);
+  --color-primary-700: var(--xp-blue-700);
+  --color-primary-800: var(--xp-blue-800);
+  --color-primary-900: var(--xp-blue-900);
+  --color-primary-950: var(--xp-blue-950);
+
+  /* --- Type ----------------------------------------------------------- */
+  --font-sans: var(--xp-font-sans);
+  --font-mono: var(--xp-font-mono);
+
+  /* --- Radii ---------------------------------------------------------- */
+  --radius-xs: var(--xp-radius-xs);
+  --radius-sm: var(--xp-radius-sm);
+  --radius-md: var(--xp-radius-md);
+  --radius-lg: var(--xp-radius-lg);
+  --radius-xl: var(--xp-radius-xl);
+  --radius-2xl: var(--xp-radius-2xl);
+
+  /* --- Elevation ------------------------------------------------------ */
+  --shadow-xs: var(--xp-shadow-xs);
+  --shadow-sm: var(--xp-shadow-sm);
+  --shadow-md: var(--xp-shadow-md);
+  --shadow-lg: var(--xp-shadow-lg);
+  --shadow-xl: var(--xp-shadow-xl);
+  --shadow-glow: var(--xp-glow-accent);
+  --shadow-glow-success: var(--xp-glow-success);
+
+  /* --- Motion --------------------------------------------------------- */
+  --ease-out-xp: var(--xp-ease-out);
+  --ease-in-out-xp: var(--xp-ease-in-out);
+
+  --animate-fade-in: fade-in 0.4s var(--xp-ease-out) both;
+  --animate-slide-up: slide-up 0.32s var(--xp-ease-out) both;
+  --animate-slide-down: slide-down 0.32s var(--xp-ease-out) both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slide-down {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+html {
+  /* Prevent the canvas color from flashing white behind an overscroll */
+  background-color: var(--xp-canvas);
+}
+
+body {
+  background-color: var(--xp-canvas);
+  color: var(--xp-text-primary);
+  font-family: var(--xp-font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Native controls (date pickers, select arrows, scrollbars) follow the theme */
+:root[data-theme='dark'] { color-scheme: dark; }
+:root[data-theme='light'] { color-scheme: light; }
+
+/* The <select> popup is painted by the platform, not by the select's own
+   classes: most browsers default that list to a white background while the
+   options inherit the control's light text, leaving white on white. Both
+   colors have to be set explicitly, and opaquely — the subtle surface tokens
+   are translucent overlays and would let the platform white through. */
+option,
+optgroup {
+  background-color: var(--xp-surface);
+  color: var(--xp-text-primary);
+}
+
+option:disabled {
+  color: var(--xp-text-muted);
+}
+
+::selection {
+  background-color: var(--xp-accent-soft-hover);
+  color: var(--xp-text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--xp-focus-ring);
+  outline-offset: 2px;
+}
+
+/* The calendar/clock button inside date inputs.
+
+   `color-scheme: dark` above already makes the UA paint this glyph light, so
+   the invert() filter that used to live here inverted a white icon back to
+   black and it disappeared against the dark field. Rather than depend on how
+   each engine tints the platform glyph, override its background-image and
+   paint our own, one explicit color per theme. */
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator,
+input[type='month']::-webkit-calendar-picker-indicator,
+input[type='week']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.7;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 1rem 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E");
+}
+
+:root[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator,
+:root[data-theme='dark'] input[type='datetime-local']::-webkit-calendar-picker-indicator,
+:root[data-theme='dark'] input[type='month']::-webkit-calendar-picker-indicator,
+:root[data-theme='dark'] input[type='week']::-webkit-calendar-picker-indicator,
+:root[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E");
+}
+
+input[type='date']::-webkit-calendar-picker-indicator:hover,
+input[type='datetime-local']::-webkit-calendar-picker-indicator:hover,
+input[type='month']::-webkit-calendar-picker-indicator:hover,
+input[type='week']::-webkit-calendar-picker-indicator:hover,
+input[type='time']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   UTILITIES
+   ========================================================================== */
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--xp-border-strong) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--xp-border-strong);
+    border-radius: var(--xp-radius-full);
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--xp-text-subtle);
+  }
+}
+
+/* Legacy alias — older markup still references this class name */
+@utility custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--xp-border-strong) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--xp-border-strong);
+    border-radius: var(--xp-radius-full);
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--xp-text-subtle);
+  }
+}
+
+/* Hairline grid backdrop for empty states and page headers */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, var(--xp-border-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--xp-border-subtle) 1px, transparent 1px);
+  background-size: 32px 32px;
+}

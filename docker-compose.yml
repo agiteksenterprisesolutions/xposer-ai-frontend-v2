@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whistleblower-frontend
+    ports:
+      - "7005:3000"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=${VITE_API_URL:-https://demo.agiteks.com/xp}
+    # networks:
+    #   - whistleblower-network
+    restart: unless-stopped
+    # depends_on:
+    #   - backend
+    # labels:
+    #   - "traefik.enable=false"
+
+    # Optional: Backend service (adjust as needed)
+    #   backend:
+    #     image: whistleblower-backend:latest
+    #     container_name: whistleblower-backend
+    #     ports:
+    #       - "8000:8000"
+    #     environment:
+    #       - DEBUG=False
+    #       - ALLOWED_HOSTS=*
+    #     networks:
+    #       - whistleblower-network
+    #     restart: unless-stopped
+    #     profiles:
+    #       - "with-backend"
+    #     labels:
+    #       - "traefik.enable=false"
+
+    # networks:
+    #   whistleblower-network:
+    #     driver: bridge

@@ -1,0 +1,33 @@
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuthStpinner from '../components/layout/LoadingSpinner';
+
+const ProtectedRoute = ({ children, requiredRole, allowAnonymous = false }) => {
+    const { isAuthenticated, user, isLoading, hasRole } = useAuthStore();
+    const location = useLocation();
+
+    if (isLoading) {
+        return <LoadingSpinner message="Checking authentication..." />;
+    }
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // Handle anonymous trackers vs registered users
+    if (user?.is_anonymous && !allowAnonymous) {
+        return <Navigate to="/track-report" replace />;
+    }
+
+    if (requiredRole && !hasRole(requiredRole)) {
+        // Redirect to appropriate dashboard if they have the wrong role
+        if (user?.role === 'reporter') {
+            return <Navigate to="/reporter/dashboard" replace />;
+        }
+        return <Navigate to="/compliance/dashboard" replace />;
+    }
+
+    return children;
+};
+
+export default ProtectedRoute;

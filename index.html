@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xposer AI</title>
+
+  <!-- Ensure this line exists -->
+  <link rel="stylesheet" href="/src/index.css">
+
+  <!--
+    Resolve the theme before first paint so the page never flashes the wrong
+    palette. This is the source of truth for the initial value: the theme store
+    reads the data-theme set here rather than resolving it a second time, so the
+    two can't disagree. Light is the product default when nothing is stored.
+  -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('xposer-theme');
+        var theme = (stored === 'light' || stored === 'dark')
+          ? stored
+          : 'light'
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
