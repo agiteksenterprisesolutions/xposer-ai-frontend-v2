@@ -2,6 +2,8 @@
 node_modules/
 .pnpm-debug.log*
 
+.env
+.dockerignore
 
 # Build output
 dist/
