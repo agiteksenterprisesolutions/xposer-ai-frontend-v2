@@ -1,0 +1,27 @@
+# Single-page app routing for Apache / LiteSpeed (Hostinger).
+#
+# The app's routes (/login, /agiteks/staff/dashboard, …) exist only in the
+# browser's router, not as files on the server. Any request that isn't a real
+# file or folder is answered with index.html, and React Router takes it from
+# there. Vite copies this file from public/ into the build output.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Real files and folders (assets, favicon, /guide) are served as they are.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Everything else is an app route.
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# index.html must not be cached, or visitors keep loading an old build after a
+# deploy. (The JS and CSS it points to have hashed names, so they're safe.)
+<IfModule mod_headers.c>
+  <FilesMatch "^index\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
