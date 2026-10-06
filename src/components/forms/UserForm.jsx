@@ -267,7 +267,7 @@ const UserForm = ({
                 error={errors.role?.message}
                 options={getRoleOptions()}
                 disabled={!canChangeRole}
-                helperText={!canChangeRole ? "Changing roles needs the user:manage_roles permission" : ""}
+                helperText={!canChangeRole ? "Changing roles needs permission to change a user's role" : ""}
               />
               
               <div className="flex items-center">
@@ -575,4 +575,4 @@ export const ProfileForm = ({ user, onSubmit, isLoading = false }) => {
   );
 };
 
-export default UserForm;
+export default UserForm;

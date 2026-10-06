@@ -40,7 +40,7 @@ const TabsList = ({ children, className = '', ...props }) => {
     // Scrolls horizontally rather than wrapping, so a long tab set stays on
     // one line on narrow screens.
     <div
-      className={`flex items-center gap-1 border-b border-line overflow-x-auto scrollbar-thin ${className}`}
+      className={`flex items-center gap-1 border-b border-line overflow-x-auto overflow-y-hidden scrollbar-none ${className}`}
       role="tablist"
       {...props}
     >
@@ -73,7 +73,7 @@ const TabsTrigger = ({
       aria-selected={isActive}
       className={`relative shrink-0 px-3.5 py-2.5 text-sm font-medium whitespace-nowrap rounded-t-md transition-colors duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus ${
         isActive
-          ? 'text-accent-fg after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-accent'
+          ? 'text-accent-fg after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:bg-accent'
           : 'text-ink-muted hover:text-ink hover:bg-hover'
       } ${className}`}
       onClick={() => onChange(value)}

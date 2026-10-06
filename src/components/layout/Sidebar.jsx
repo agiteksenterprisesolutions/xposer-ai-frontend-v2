@@ -34,11 +34,11 @@ const Sidebar = ({ onClose }) => {
   // Google/Microsoft accounts have no password to change — the provider owns
   // the credential, and the backend rejects the endpoint with a 400.
   const reporterMenu = [
-    { name: 'Dashboard', icon: Home, path: `/${basePath}/reporter/dashboard` },
-    { name: 'Submit Report', icon: FileText, path: `/${basePath}/reporter/submit` },
-    { name: 'My Reports', icon: ClipboardList, path: `/${basePath}/reporter/reports` },
+    { section: 'Menu', name: 'Dashboard', icon: Home, path: `/${basePath}/reporter/dashboard` },
+    { section: 'Menu', name: 'Submit Report', icon: FileText, path: `/${basePath}/reporter/submit` },
+    { section: 'Menu', name: 'My Reports', icon: ClipboardList, path: `/${basePath}/reporter/reports` },
     ...(isPasswordAccount(user)
-      ? [{ name: 'Change Password', icon: Lock, path: `/${basePath}/reporter/change-password` }]
+      ? [{ section: 'Account', name: 'Change Password', icon: Lock, path: `/${basePath}/reporter/change-password` }]
       : []),
   ];
 
@@ -51,6 +51,15 @@ const Sidebar = ({ onClose }) => {
   }));
 
   const menuItems = staffMenu.length > 0 ? staffMenu : reporterMenu;
+
+  // Consecutive items sharing a section render under one heading; sections
+  // the user can open no page in simply don't appear.
+  const menuSections = menuItems.reduce((sections, item) => {
+    const last = sections[sections.length - 1];
+    if (last && last.title === item.section) last.items.push(item);
+    else sections.push({ title: item.section, items: [item] });
+    return sections;
+  }, []);
 
   const handleLinkClick = () => {
     if (onClose) onClose();
@@ -112,24 +121,32 @@ const Sidebar = ({ onClose }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
-          {showLabels && (
-            <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
-              Menu
-            </p>
-          )}
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={handleLinkClick}
-              className={({ isActive }) => linkClass(isActive)}
-              title={!showLabels ? item.name : undefined}
-              data-tour={`sidebar-${slugify(item.name)}`}
-            >
-              <item.icon className="h-4.5 w-4.5 shrink-0" />
-              {showLabels && <span className={labelClass}>{item.name}</span>}
-            </NavLink>
+        <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin">
+          {menuSections.map((section, index) => (
+            <div key={section.title} className={index > 0 ? 'mt-4' : ''}>
+              {showLabels ? (
+                <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
+                  {section.title}
+                </p>
+              ) : (
+                index > 0 && <div className="mx-3 mb-4 border-t border-line-subtle" />
+              )}
+              <div className="space-y-1">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={handleLinkClick}
+                    className={({ isActive }) => linkClass(isActive)}
+                    title={!showLabels ? item.name : undefined}
+                    data-tour={`sidebar-${slugify(item.name)}`}
+                  >
+                    <item.icon className="h-4.5 w-4.5 shrink-0" />
+                    {showLabels && <span className={labelClass}>{item.name}</span>}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

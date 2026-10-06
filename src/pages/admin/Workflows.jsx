@@ -2,14 +2,28 @@
 //
 // The organization's workflows. Exactly one is active — the one a report
 // submitted now runs through — and activating another stands it down.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Bot, Eye, GitBranch, Pencil, Plus, Power, RefreshCw, Trash2, UserRound } from 'lucide-react';
+import {
+  ArrowRight,
+  Bot,
+  Eye,
+  Flag,
+  GitBranch,
+  Inbox,
+  MoreHorizontal,
+  Plus,
+  Power,
+  RefreshCw,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { toast } from 'react-toastify';
-import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
 import Alert from '../../components/ui/Alert';
+import Dropdown from '../../components/ui/Dropdown';
 import Modal, { ConfirmationModal } from '../../components/ui/Modal';
 import { orgWorkflowsAPI } from '../../api/orgWorkflows';
 import { useCan } from '../../hooks/useCan';
@@ -17,23 +31,275 @@ import { useAuthStore } from '../../store/authStore';
 import { PERM } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
 import { describeError, errorSummary } from '../../utils/errors';
+import { parseServerDate } from '../../utils/formatters';
 import { EXECUTOR_HUMAN } from '../../utils/workflows';
 import useSEO from '../../hooks/useSEO';
 
-const FlowLine = ({ stages = [] }) => (
-  <div className="flex flex-wrap items-center gap-1.5 text-xs">
-    {stages.map((stage) => (
-      <span key={stage.key} className="flex items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-ink-secondary">
-          {stage.executor_type === EXECUTOR_HUMAN ? <UserRound className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
-          {stage.name || stage.key}
-          {stage.transitions?.length > 0 && <GitBranch className="h-3 w-3 text-ink-subtle" aria-label="Has branches" />}
-        </span>
-        <ArrowRight className="h-3 w-3 text-ink-subtle" />
-      </span>
-    ))}
-    <span className="rounded-full bg-active px-2.5 py-1 text-ink-muted">End</span>
+// The builder's dotted canvas, echoed behind each preview.
+const canvasDots = {
+  backgroundImage: 'radial-gradient(var(--color-line-strong) 1px, transparent 1px)',
+  backgroundSize: '14px 14px',
+};
+
+const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
+
+const formatUpdated = (value) => {
+  const date = parseServerDate(value);
+  return date ? date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+};
+
+const Terminal = ({ icon: Icon, label, accent }) => (
+  <div className="flex w-14 shrink-0 flex-col items-center gap-1.5">
+    <span
+      className={`flex h-8 w-8 items-center justify-center rounded-full border ${
+        accent ? 'border-line-accent bg-accent-soft text-accent-fg' : 'border-line bg-surface text-ink-muted'
+      }`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </span>
+    <span className="text-[10px] font-medium text-ink-subtle">{label}</span>
   </div>
+);
+
+const Link = () => <span className="mt-4 h-px w-4 shrink-0 bg-line-strong" aria-hidden="true" />;
+
+// Widths the preview is laid out on (px): its padding, the Report and End
+// ends, and one step with the line leading into it.
+const PREVIEW_PADDING = 24;
+const TERMINAL_W = 56;
+const LINK_W = 16;
+const STEP_W = 72 + LINK_W;
+const MORE_W = 48 + LINK_W;
+
+const PreviewStep = ({ stage }) => {
+  const isHuman = stage.executor_type === EXECUTOR_HUMAN;
+  const Icon = isHuman ? UserRound : Bot;
+  const branches = stage.transitions?.filter((t) => t.when_decision).length || 0;
+  return (
+    <div className="flex items-start">
+      <Link />
+      <div className="flex w-18 shrink-0 flex-col items-center gap-1.5" title={stage.name || stage.key}>
+        <span
+          className={`relative flex h-8 w-8 items-center justify-center rounded-lg shadow-sm ${
+            isHuman ? 'bg-warning-soft text-warning-fg' : 'bg-accent text-on-accent'
+          }`}
+        >
+          <Icon className="h-4 w-4" />
+          {branches > 0 && (
+            <span
+              className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-surface bg-surface px-1 text-[9px] font-semibold text-accent-fg shadow-sm"
+              title={plural(branches, 'branch rule')}
+            >
+              {branches}
+            </span>
+          )}
+        </span>
+        <span className="w-full truncate text-center text-[10px] font-medium text-ink-secondary">
+          {stage.name || stage.key}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * The workflow at a glance: its steps in run order, as on the canvas. It
+ * never scrolls. As many whole steps as fit are drawn; the rest collapse
+ * into one "+N" marker before the End, and the builder shows them all.
+ */
+const FlowPreview = ({ stages = [] }) => {
+  const boxRef = useRef(null);
+  const [width, setWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!box) return undefined;
+    const measure = () => setWidth(box.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
+
+  // Room for steps once both ends (and the line into End) are placed.
+  const room = width - PREVIEW_PADDING - TERMINAL_W * 2 - LINK_W;
+  const fitsAll = !width || stages.length * STEP_W <= room;
+  // Otherwise leave space for the narrower "+N" marker.
+  const shown = fitsAll ? stages : stages.slice(0, Math.max(0, Math.floor((room - MORE_W) / STEP_W)));
+  const more = stages.length - shown.length;
+
+  return (
+    <div ref={boxRef} className="overflow-hidden rounded-lg border border-line-subtle bg-subtle" style={canvasDots}>
+      <div className="flex items-start px-3 pb-2.5 pt-3">
+        <Terminal icon={Inbox} label="Report" accent />
+        {shown.map((stage) => (
+          <PreviewStep key={stage.key} stage={stage} />
+        ))}
+        {more > 0 && (
+          <div className="flex items-start" title={stages.slice(shown.length).map((s) => s.name || s.key).join(', ')}>
+            <Link />
+            <div className="flex w-12 shrink-0 flex-col items-center gap-1.5">
+              <span className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-dashed border-line-strong bg-surface px-1.5 text-xs font-semibold text-ink-muted">
+                +{more}
+              </span>
+              <span className="text-[10px] font-medium text-ink-subtle">more</span>
+            </div>
+          </div>
+        )}
+        <Link />
+        <Terminal icon={Flag} label="End" />
+      </div>
+    </div>
+  );
+};
+
+const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => {
+  const stages = workflow.stages || [];
+  const people = stages.filter((s) => s.executor_type === EXECUTOR_HUMAN).length;
+  const branches = stages.reduce((n, s) => n + (s.transitions?.filter((t) => t.when_decision).length || 0), 0);
+  const updated = formatUpdated(workflow.updated_at || workflow.created_at);
+
+  return (
+    <article
+      className={`group relative flex min-w-0 flex-col gap-4 rounded-xl border bg-surface p-5 shadow-sm transition-[border-color,box-shadow] hover:shadow-md ${
+        workflow.is_active ? 'border-line-accent ring-1 ring-accent-ring' : 'border-line hover:border-line-strong'
+      }`}
+    >
+      <header className="flex items-start gap-3">
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+            workflow.is_active ? 'bg-accent text-on-accent' : 'bg-active text-ink-muted'
+          }`}
+        >
+          <GitBranch className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onOpen}
+              className="truncate text-left text-[15px] font-semibold text-ink after:absolute after:inset-0 after:rounded-xl focus:outline-none focus-visible:underline"
+            >
+              {workflow.name}
+            </button>
+            {workflow.is_active ? (
+              <Badge variant="success" size="small" dot>
+                Running
+              </Badge>
+            ) : (
+              <Badge size="small">Standby</Badge>
+            )}
+          </div>
+          {workflow.version != null && <p className="mt-0.5 text-xs text-ink-subtle">Version {workflow.version}</p>}
+        </div>
+
+        {/* Above the card-wide link, so these stay clickable. */}
+        {canManage && (
+          <div className="relative z-10">
+            <Dropdown
+              align="right"
+              trigger={
+                <button
+                  type="button"
+                  aria-label={`More actions for ${workflow.name}`}
+                  className="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-hover hover:text-ink"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              }
+            >
+              {!workflow.is_active && (
+                <Dropdown.Item onClick={onActivate}>
+                  <Power className="h-4 w-4 shrink-0" />
+                  Use for new reports
+                </Dropdown.Item>
+              )}
+              <Dropdown.Item onClick={onDelete} className="text-danger-fg hover:text-danger-fg">
+                <Trash2 className="h-4 w-4 shrink-0" />
+                Delete workflow
+              </Dropdown.Item>
+            </Dropdown>
+          </div>
+        )}
+      </header>
+
+      {workflow.description ? (
+        <p className="line-clamp-2 text-sm text-ink-muted">{workflow.description}</p>
+      ) : (
+        <p className="text-sm italic text-ink-subtle">No description</p>
+      )}
+
+      {stages.length > 0 ? (
+        <FlowPreview stages={stages} />
+      ) : (
+        <div className="rounded-lg border border-dashed border-line px-3 py-5 text-center text-xs text-ink-muted" style={canvasDots}>
+          No steps yet — open the builder to add some.
+        </div>
+      )}
+
+      <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted">
+        <div className="flex items-center gap-1.5">
+          <dt className="sr-only">Steps</dt>
+          <Bot className="h-3.5 w-3.5 text-ink-subtle" />
+          <dd>{plural(stages.length, 'step')}</dd>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <dt className="sr-only">Handled by people</dt>
+          <UserRound className="h-3.5 w-3.5 text-ink-subtle" />
+          <dd>{people} by people</dd>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <dt className="sr-only">Branches</dt>
+          <GitBranch className="h-3.5 w-3.5 text-ink-subtle" />
+          <dd>{plural(branches, 'branch', 'branches')}</dd>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <dt className="sr-only">Visit limit</dt>
+          <RefreshCw className="h-3.5 w-3.5 text-ink-subtle" />
+          <dd>up to {workflow.max_stage_visits ?? 3} visits</dd>
+        </div>
+      </dl>
+
+      <footer className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-line-subtle pt-4">
+        <span className="text-xs text-ink-subtle">{updated ? `Updated ${updated}` : ''}</span>
+        <span className="relative z-10 flex gap-2">
+          {canManage && !workflow.is_active && (
+            <Button variant="ghost" size="small" startIcon={Power} onClick={onActivate}>
+              Activate
+            </Button>
+          )}
+          <Button
+            variant={canManage ? 'secondary' : 'outline'}
+            size="small"
+            startIcon={canManage ? undefined : Eye}
+            endIcon={canManage ? ArrowRight : undefined}
+            onClick={onOpen}
+          >
+            {canManage ? 'Open builder' : 'View'}
+          </Button>
+        </span>
+      </footer>
+    </article>
+  );
+};
+
+const NewWorkflowTile = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-line p-6 text-center transition-colors hover:border-line-accent hover:bg-accent-soft/40"
+    style={canvasDots}
+  >
+    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-on-accent shadow-glow">
+      <Plus className="h-5 w-5" />
+    </span>
+    <span>
+      <span className="block text-sm font-semibold text-ink">New workflow</span>
+      <span className="mt-1 block max-w-60 text-xs text-ink-muted">
+        Connect agents and people into the route a report takes.
+      </span>
+    </span>
+  </button>
 );
 
 const Workflows = () => {
@@ -100,21 +366,37 @@ const Workflows = () => {
     }
   };
 
+  const create = () => navigate(`${base}/new`);
+
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <h1 className="text-xl font-bold text-ink">Workflows</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            The stages a new report runs through — each handled by an AI agent or by a person, in order.
+          <p className="mt-1 max-w-2xl text-sm text-ink-muted">
+            The route a new report takes — which AI agents look at it, in what order, and when a person takes over.
           </p>
+          {loading && workflows.length === 0 && <Skeleton.Text size="xs" className="mt-3 w-72" />}
+          {!loading && workflows.length > 0 && (
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+              <span className="font-medium text-ink">{plural(workflows.length, 'workflow')}</span>
+              <span aria-hidden="true">·</span>
+              {active ? (
+                <span>
+                  New reports run through <span className="font-medium text-ink">{active.name}</span>
+                </span>
+              ) : (
+                <span className="font-medium text-warning-fg">None running</span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" startIcon={RefreshCw} onClick={load} disabled={loading}>
-            Refresh
+          <Button variant="outline" onClick={load} disabled={loading} aria-label="Refresh" title="Refresh">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           {canManage && (
-            <Button startIcon={Plus} onClick={() => navigate(`${base}/new`)}>
+            <Button startIcon={Plus} onClick={create}>
               New workflow
             </Button>
           )}
@@ -128,85 +410,85 @@ const Workflows = () => {
       )}
 
       {!loading && !error && workflows.length > 0 && !active && (
-        <Alert variant="warning" title="No workflow is active">
-          New reports have nothing to run through. Activate one below.
+        <Alert variant="warning" title="No workflow is running">
+          New reports have nothing to run through. Choose "Use for new reports" on one of the workflows below.
         </Alert>
       )}
 
-      {loading && workflows.length === 0 && <div className="h-40 animate-pulse rounded-xl border border-line bg-surface" />}
+      {loading && workflows.length === 0 && (
+        <div className="grid gap-5 lg:grid-cols-2" aria-busy="true">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex min-w-0 flex-col gap-4 rounded-xl border border-line bg-surface p-5 shadow-sm">
+              <div className="flex items-start gap-3">
+                <Skeleton.Icon size="h-10 w-10" />
+                <div className="min-w-0 flex-1">
+                  <Skeleton.Text size="base" className="w-48" />
+                  <Skeleton.Text size="xs" className="mt-0.5 w-16" />
+                </div>
+                <Skeleton className="h-7 w-7 rounded-md" />
+              </div>
+              <Skeleton.Text className="w-2/3" />
+              <Skeleton className="h-[74px] w-full rounded-lg" />
+              <Skeleton.Text size="xs" className="w-64" />
+              <div className="mt-auto flex items-center justify-between gap-3 border-t border-line-subtle pt-4">
+                <Skeleton.Text size="xs" className="w-28" />
+                <Skeleton.Button small className="w-28" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && !error && workflows.length === 0 && (
-        <Card className="py-12 text-center">
-          <GitBranch className="mx-auto h-8 w-8 text-ink-subtle" />
-          <p className="mt-3 text-sm font-semibold text-ink">No workflows yet</p>
+        <div className="rounded-xl border border-line bg-surface px-6 py-14 text-center" style={canvasDots}>
+          <div className="mx-auto flex w-max items-center gap-2 text-ink-subtle" aria-hidden="true">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-line-accent bg-accent-soft text-accent-fg">
+              <Inbox className="h-4 w-4" />
+            </span>
+            <span className="h-px w-6 bg-line-strong" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-on-accent">
+              <Bot className="h-4 w-4" />
+            </span>
+            <span className="h-px w-6 bg-line-strong" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning-soft text-warning-fg">
+              <UserRound className="h-4 w-4" />
+            </span>
+            <span className="h-px w-6 bg-line-strong" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface">
+              <Flag className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="mt-5 text-base font-semibold text-ink">No workflows yet</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
             A workflow decides what happens to a new report — which agents look at it, in what order, and when a person
             takes over.
           </p>
           {canManage && (
-            <Button className="mt-4" startIcon={Plus} onClick={() => navigate(`${base}/new`)}>
+            <Button className="mt-5" startIcon={Plus} onClick={create}>
               Build your first workflow
             </Button>
           )}
-        </Card>
+        </div>
       )}
 
-      <div className="space-y-4">
-        {sorted.map((workflow) => (
-          <Card key={workflow.id} className={workflow.is_active ? 'border-line-accent' : ''}>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-semibold text-ink">{workflow.name}</h3>
-                  {workflow.is_active ? (
-                    <Badge variant="success" size="small" dot>
-                      Running
-                    </Badge>
-                  ) : (
-                    <Badge size="small">Standby</Badge>
-                  )}
-                  {workflow.version != null && <span className="text-xs text-ink-subtle">v{workflow.version}</span>}
-                  <span className="text-xs text-ink-subtle">
-                    · {workflow.stages?.length || 0} stage{workflow.stages?.length === 1 ? '' : 's'} · up to{' '}
-                    {workflow.max_stage_visits ?? 3} visits each
-                  </span>
-                </div>
-                {workflow.description && <p className="text-xs text-ink-muted">{workflow.description}</p>}
-                <FlowLine stages={workflow.stages} />
-              </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
-                {canManage ? (
-                  <>
-                    {!workflow.is_active && (
-                      <Button variant="outline" size="small" startIcon={Power} onClick={() => setActivating(workflow)}>
-                        Activate
-                      </Button>
-                    )}
-                    <Button variant="outline" size="small" startIcon={Pencil} onClick={() => navigate(`${base}/${workflow.id}`)}>
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="small"
-                      onClick={() => {
-                        setDeleteError(null);
-                        setDeleting(workflow);
-                      }}
-                      aria-label={`Delete ${workflow.name}`}
-                    >
-                      <Trash2 className="h-4 w-4 text-danger-fg" />
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="outline" size="small" startIcon={Eye} onClick={() => navigate(`${base}/${workflow.id}`)}>
-                    View
-                  </Button>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {sorted.length > 0 && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {sorted.map((workflow) => (
+            <WorkflowCard
+              key={workflow.id}
+              workflow={workflow}
+              canManage={canManage}
+              onOpen={() => navigate(`${base}/${workflow.id}`)}
+              onActivate={() => setActivating(workflow)}
+              onDelete={() => {
+                setDeleteError(null);
+                setDeleting(workflow);
+              }}
+            />
+          ))}
+          {canManage && <NewWorkflowTile onClick={create} />}
+        </div>
+      )}
 
       <ConfirmationModal
         isOpen={Boolean(activating)}

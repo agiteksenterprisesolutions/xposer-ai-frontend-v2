@@ -14,6 +14,7 @@ import {
   Download,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Input from '../../components/ui/Input';
@@ -527,12 +528,17 @@ Generated on: ${new Date().toLocaleString()}
           {isLoadingTypes ? (
             // Skeletons rather than a bare string — keeps the layout from jumping
             <div className="grid sm:grid-cols-2 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="h-5 w-2/3 rounded bg-active mb-3" />
-                  <div className="h-3 w-full rounded bg-active mb-2" />
-                  <div className="h-3 w-4/5 rounded bg-active mb-4" />
-                  <div className="h-6 w-20 rounded-full bg-active" />
+              {[1, 2].map((i) => (
+                <Card key={i} className="h-full flex flex-col" aria-hidden="true">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <Skeleton.Text size="base" className="w-3/4" />
+                    <Skeleton className="h-5 w-5 shrink-0 rounded" />
+                  </div>
+                  <div className="mb-4">
+                    <span className="flex h-[1.625em] items-center text-sm"><Skeleton className="h-3 w-full" /></span>
+                    <span className="flex h-[1.625em] items-center text-sm"><Skeleton className="h-3 w-2/3" /></span>
+                  </div>
+                  <Skeleton className="mt-auto h-6.5 w-16 rounded-full" />
                 </Card>
               ))}
             </div>

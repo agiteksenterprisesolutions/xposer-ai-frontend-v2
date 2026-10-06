@@ -9,6 +9,11 @@
 // requires, and an admin who can't see that cannot tell why their agent is
 // silent. The server re-resolves this on every read, so the saved agent's
 // `disabled_capabilities` is the final word.
+//
+// The summarizer is different: one per organization (a second is a 409), with
+// fixed permissions (role_source "intrinsic", role_code null) and only three
+// allowed capabilities. So it has no permissions section, and the kind is only
+// offered when the organization has no summarizer.
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ChevronDown, Plus, X } from 'lucide-react';
@@ -22,13 +27,21 @@ import { orgAgentsAPI } from '../../api/orgAgents';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
-import { ACCESS } from '../../utils/permissions';
+import { ACCESS, permissionLabel } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
 import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import { describeError } from '../../utils/errors';
-import { AGENT_KIND_INFO, CAPABILITY_INFO, SUGGESTED_DECISIONS, capabilityLabel } from '../../utils/agents';
+import {
+  AGENT_KIND_INFO,
+  CAPABILITY_INFO,
+  SUGGESTED_DECISIONS,
+  SUMMARIZER_CAPABILITIES,
+  SUMMARIZER_KIND,
+  SUMMARIZER_PERMISSIONS,
+  capabilityLabel,
+} from '../../utils/agents';
 
-const SUMMARIZER = 'summarizer';
+const SUMMARIZER = SUMMARIZER_KIND;
 const ORG_ROLE = 'org_role';
 const CUSTOM = 'custom';
 
@@ -141,7 +154,8 @@ const DecisionsInput = ({ value, onChange, readOnly }) => {
  *   agent             – the agent to edit or view; omit to create one
  *   capabilityCatalog – GET /org-agents/capabilities
  *   permissionCatalog – GET /org-roles/permissions (for custom permissions)
- *   initialKind       – preselect a kind when creating (e.g. from "Create a summarizer")
+ *   initialKind       – preselect a kind when creating (e.g. from "Recreate the summarizer")
+ *   canCreateSummarizer – offer the summarizer kind; only when the org has none
  *   readOnly
  *   onClose, onSaved(agent)
  */
@@ -150,6 +164,7 @@ const AgentEditorModal = ({
   capabilityCatalog,
   permissionCatalog,
   initialKind = null,
+  canCreateSummarizer = false,
   readOnly = false,
   onClose,
   onSaved,
@@ -163,11 +178,12 @@ const AgentEditorModal = ({
   const [code, setCode] = useState(agent?.code || '');
   const [codeTouched, setCodeTouched] = useState(false);
   const [description, setDescription] = useState(agent?.description || '');
+  // Kinds offered when creating. The summarizer only when there isn't one.
+  const creatableKinds = (capabilityCatalog?.kinds || ['analyst', SUMMARIZER]).filter(
+    (k) => k !== SUMMARIZER || canCreateSummarizer,
+  );
   const [kind, setKind] = useState(
-    agent?.kind ||
-      (capabilityCatalog?.kinds?.includes(initialKind) ? initialKind : null) ||
-      capabilityCatalog?.kinds?.[0] ||
-      'analyst',
+    agent?.kind || (creatableKinds.includes(initialKind) ? initialKind : null) || creatableKinds[0] || 'analyst',
   );
   const [roleSource, setRoleSource] = useState(agent?.role_source || ORG_ROLE);
   const [roleCode, setRoleCode] = useState(agent?.role_code || '');
@@ -200,16 +216,23 @@ const AgentEditorModal = ({
   }, [isSummarizer, forbidden]);
 
   const selectedRole = roleSource === ORG_ROLE ? byCode.get(roleCode) : null;
-  // The permissions the agent will act with: its role's, or its own list.
-  const actingPermissions = useMemo(
-    () => (roleSource === ORG_ROLE ? new Set(selectedRole?.permissions || []) : permissions),
-    [roleSource, selectedRole, permissions],
+  // The permissions the agent will act with: its role's, its own list, or —
+  // for a summarizer — the fixed set.
+  const actingPermissions = useMemo(() => {
+    if (isSummarizer) return new Set(SUMMARIZER_PERMISSIONS);
+    return roleSource === ORG_ROLE ? new Set(selectedRole?.permissions || []) : permissions;
+  }, [isSummarizer, roleSource, selectedRole, permissions]);
+
+  // A summarizer is offered only its three capabilities, not the refused rest.
+  const capabilityEntries = (capabilityCatalog?.capabilities || []).filter(
+    ({ capability }) => !isSummarizer || SUMMARIZER_CAPABILITIES.includes(capability),
   );
 
   const permissionEntries = useMemo(() => catalogEntries(permissionCatalog), [permissionCatalog]);
   const permissionErrors = useMemo(
-    () => (roleSource === CUSTOM ? localPrerequisiteErrors(permissions, permissionEntries) : new Map()),
-    [roleSource, permissions, permissionEntries],
+    () =>
+      !isSummarizer && roleSource === CUSTOM ? localPrerequisiteErrors(permissions, permissionEntries) : new Map(),
+    [isSummarizer, roleSource, permissions, permissionEntries],
   );
 
   const codeError = (() => {
@@ -222,7 +245,7 @@ const AgentEditorModal = ({
   const blocked =
     !name.trim() ||
     Boolean(codeError) ||
-    (roleSource === ORG_ROLE && !roleCode) ||
+    (!isSummarizer && roleSource === ORG_ROLE && !roleCode) ||
     permissionErrors.size > 0;
 
   const toggleIn = (setter) => (value) =>
@@ -243,10 +266,15 @@ const AgentEditorModal = ({
     const body = {
       name: name.trim(),
       description: description.trim() || null,
-      role_source: roleSource,
-      role_code: roleSource === ORG_ROLE ? roleCode : null,
-      permissions: roleSource === CUSTOM ? [...permissions] : [],
-      capabilities: [...capabilities],
+      // A summarizer's permissions are intrinsic; it takes no role fields.
+      ...(isSummarizer
+        ? {}
+        : {
+            role_source: roleSource,
+            role_code: roleSource === ORG_ROLE ? roleCode : null,
+            permissions: roleSource === CUSTOM ? [...permissions] : [],
+          }),
+      capabilities: [...capabilities].filter((c) => !isSummarizer || SUMMARIZER_CAPABILITIES.includes(c)),
       // A summarizer reaches no verdict; declaring any is refused.
       decisions: isSummarizer ? [] : decisions,
       instructions: instructions.trim() || null,
@@ -353,7 +381,7 @@ const AgentEditorModal = ({
           hint={isCreate ? 'Fixed once the agent is created.' : 'The kind is fixed once an agent is created.'}
         >
           <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Kind">
-            {(capabilityCatalog?.kinds || ['analyst', 'summarizer']).map((k) => (
+            {(isCreate ? creatableKinds : [kind]).map((k) => (
               <ChoiceCard
                 key={k}
                 selected={kind === k}
@@ -366,7 +394,21 @@ const AgentEditorModal = ({
           </div>
         </Section>
 
-        {/* Permissions */}
+        {/* Permissions — a summarizer's are fixed */}
+        {isSummarizer ? (
+          <Section title="Permissions" hint="Fixed for the summarizer — it doesn't act as a role.">
+            <div className="flex flex-wrap gap-1.5">
+              {SUMMARIZER_PERMISSIONS.map((permission) => (
+                <span
+                  key={permission}
+                  className="inline-flex items-center rounded-full border border-line bg-subtle px-2.5 py-1 text-xs font-medium text-ink-secondary"
+                >
+                  {permissionLabel(permission)}
+                </span>
+              ))}
+            </div>
+          </Section>
+        ) : (
         <Section
           title="Permissions"
           hint="An agent acts with a set of permissions, exactly like a person. You can only give it permissions you hold yourself."
@@ -435,14 +477,19 @@ const AgentEditorModal = ({
             />
           )}
         </Section>
+        )}
 
         {/* Capabilities */}
         <Section
           title="Capabilities"
-          hint="What the agent may do on a report. Each one only works while its permissions include the one it needs."
+          hint={
+            isSummarizer
+              ? 'A summarizer can only do these three. It never messages the reporter, changes a report or routes it.'
+              : 'What the agent may do on a report. Each one only works while its permissions include the one it needs.'
+          }
         >
           <div className="grid gap-2 sm:grid-cols-2">
-            {(capabilityCatalog?.capabilities || []).map(({ capability, requires }) => {
+            {capabilityEntries.map(({ capability, requires }) => {
               const checked = capabilities.has(capability);
               const forbiddenReason = isSummarizer ? forbidden.get(capability) : null;
               const works = !requires || actingPermissions.has(requires);
@@ -469,7 +516,7 @@ const AgentEditorModal = ({
                       {CAPABILITY_INFO[capability]?.description && (
                         <p className="text-xs text-ink-muted">{CAPABILITY_INFO[capability].description}</p>
                       )}
-                      <p className="mt-0.5 font-mono text-[11px] text-ink-subtle">needs {requires}</p>
+                      <p className="mt-0.5 text-[11px] text-ink-subtle">Needs “{permissionLabel(requires)}”</p>
 
                       {forbiddenReason && (
                         <p className="mt-1.5 text-xs text-ink-muted">Not for a summarizer — {forbiddenReason}.</p>
@@ -482,7 +529,7 @@ const AgentEditorModal = ({
                             {roleSource === ORG_ROLE ? (
                               roleCode ? (
                                 <>
-                                  Won't work yet: needs <span className="font-mono">{requires}</span> on the{' '}
+                                  Won't work yet: needs “{permissionLabel(requires)}” on the{' '}
                                   {roleLink ? (
                                     <Link to={roleLink} className="font-medium underline">
                                       {nameFor(roleCode)}
@@ -497,7 +544,7 @@ const AgentEditorModal = ({
                               )
                             ) : (
                               <>
-                                Won't work yet: add <span className="font-mono">{requires}</span> to this agent's
+                                Won't work yet: add “{permissionLabel(requires)}” to this agent's
                                 permissions.
                                 {!readOnly && permissionEntries.get(requires)?.granted && (
                                   <button
@@ -528,6 +575,12 @@ const AgentEditorModal = ({
             hint="The verdicts this agent may return. Workflow stages branch on them, so keep them short and stable."
           >
             <DecisionsInput value={decisions} onChange={setDecisions} readOnly={readOnly} />
+            {decisions.length === 0 && (
+              <p className="flex items-start gap-1.5 text-xs text-warning-fg">
+                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                With no decisions, a workflow can't branch on this agent — every run just moves on to the next step.
+              </p>
+            )}
           </Section>
         )}
 

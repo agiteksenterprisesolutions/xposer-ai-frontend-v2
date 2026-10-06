@@ -6,8 +6,8 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Input from '../../components/ui/Input';
-import LoadingSpinner from '../../components/layout/LoadingSpinner';
-import MultiStepReportForm from '../../components/forms/MultiStepReportForm';
+import Skeleton from '../../components/ui/Skeleton';
+import MultiStepReportForm, { ReportFormSkeleton } from '../../components/forms/MultiStepReportForm';
 import { reportsAPI } from '../../api/reports';
 import { reportTypesAPI } from '../../api/reportTypes';
 import { isDraftReport } from '../../utils/reports';
@@ -142,7 +142,11 @@ const EditAnonymousDraft = () => {
   );
 
   if (isLoading) {
-    return <LoadingSpinner message="Loading your draft..." />;
+    return (
+      <div className="min-h-screen bg-canvas px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-28 sm:pb-12">
+        <ReportFormSkeleton message="Loading your draft…" onBack={() => navigate(trackBase)} />
+      </div>
+    );
   }
 
   // No usable password — ask for it rather than bouncing the reporter away.
@@ -212,7 +216,14 @@ const EditAnonymousDraft = () => {
           </p>
 
           {isLoadingTypes ? (
-            <LoadingSpinner message="Loading report types..." />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" aria-busy="true">
+              {[0, 1].map((i) => (
+                <div key={i} className="bg-surface rounded-xl border-2 border-line h-full p-6">
+                  <Skeleton.Text size="lg" className="mb-2 w-3/4" />
+                  <Skeleton.Lines lines={2} />
+                </div>
+              ))}
+            </div>
           ) : reportTypes.length === 0 ? (
             <Card>
               <Alert variant="warning">

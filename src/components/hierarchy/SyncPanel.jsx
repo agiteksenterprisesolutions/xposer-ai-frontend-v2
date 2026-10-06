@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Eye, PlugZap, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Card from '../ui/Card';
+import Skeleton from '../ui/Skeleton';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Alert from '../ui/Alert';
@@ -237,6 +238,26 @@ const SyncResult = ({ result, onGoTo }) => {
   );
 };
 
+/** The HR connection form while its settings load. */
+export const SyncSkeleton = () => (
+  <div className="space-y-6" aria-busy="true">
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <Skeleton.Text className="w-48" />
+      <Skeleton.Text className="w-4/5" />
+    </div>
+    <Card title="Connection" icon={PlugZap}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i}>
+            <Skeleton className="h-13 w-full rounded-lg" />
+            <Skeleton.Text size="xs" className="mt-1.5 w-4/5" />
+          </div>
+        ))}
+      </div>
+    </Card>
+  </div>
+);
+
 const SyncPanel = ({ onChanged, onGoTo }) => {
   const [config, setConfig] = useState(undefined); // undefined loading · null none
   const [loadError, setLoadError] = useState(null);
@@ -355,9 +376,7 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
     }
   };
 
-  if (config === undefined) {
-    return <div className="h-64 animate-pulse rounded-xl border border-line bg-surface" />;
-  }
+  if (config === undefined) return <SyncSkeleton />;
 
   const lastSync = formatWhen(lastSyncOf(config));
 

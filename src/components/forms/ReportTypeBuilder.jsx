@@ -33,26 +33,26 @@ import {
   Layers,
   Sparkles,
   Shield,
+  Clock,
+  Banknote,
+  Lock,
+  Landmark,
 } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Input, { Textarea, Select } from '../ui/Input';
 import Alert from '../ui/Alert';
-
-const normalizeOption = (option) => {
-  if (typeof option === 'string') {
-    return { value: option, label: option };
-  }
-
-  if (option && typeof option === 'object') {
-    return {
-      value: option.value ?? option.label ?? '',
-      label: option.label ?? option.value ?? '',
-    };
-  }
-
-  return { value: '', label: '' };
-};
+import ReportTypeGovernance from './ReportTypeGovernance';
+import QuestionValidationEditor from './QuestionValidationEditor';
+import {
+  CURRENCIES,
+  DEFAULT_CURRENCY,
+  GOVERNANCE_DEFAULTS,
+  SENSITIVE_DATA_CLASSES,
+  normalizeOption,
+  normalizeOptions,
+  normalizeValidation,
+} from '../../utils/reportTypes';
 
 const normalizeQuestionType = (type) => {
   const normalized = String(type || '').toLowerCase().replace(/_/g, '-');
@@ -66,11 +66,14 @@ const normalizeSections = (sections = []) =>
     questions: (section.questions || []).map((question) => ({
       ...question,
       type: normalizeQuestionType(question.type) || 'text',
-      options: Array.isArray(question.options)
-        ? question.options.map(normalizeOption)
-        : [],
+      options: normalizeOptions(question.options),
+      validation: normalizeValidation(question.validation),
     })),
   }));
+
+// Core fields are mandatory on every taxonomy-based type: their key, type
+// and existence are fixed. The label can still be reworded.
+const isCore = (question) => Boolean(question?.is_core_field);
 
 const ReportTypeBuilder = ({
   initialData = null,
@@ -83,12 +86,22 @@ const ReportTypeBuilder = ({
   onEdit,
   onBack,
 }) => {
-  const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    description: initialData?.description || '',
-    is_active: initialData?.is_active ?? true,
-    sections: normalizeSections(initialData?.sections || []),
+  const [formData, setFormData] = useState(() => {
+    const governance = Object.fromEntries(
+      Object.entries(GOVERNANCE_DEFAULTS).map(([key, fallback]) => [key, initialData?.[key] ?? fallback]),
+    );
+    return {
+      ...governance,
+      approved_by: initialData?.approved_by ?? null,
+      approved_at: initialData?.approved_at ?? null,
+      name: initialData?.name || '',
+      description: initialData?.description || '',
+      is_active: initialData?.is_active ?? true,
+      sections: normalizeSections(initialData?.sections || []),
+    };
   });
+  // A saved compliance code is treated as permanent.
+  const codeLocked = Boolean(initialData?.code);
 
   const [errors, setErrors] = useState({});
   // In view mode the preview is the whole page, and there is no way back to
@@ -110,6 +123,8 @@ const ReportTypeBuilder = ({
     { value: 'phone', label: 'Phone Number', icon: Phone, color: 'cyan' },
     { value: 'date', label: 'Date', icon: Calendar, color: 'amber' },
     { value: 'datetime', label: 'Date & Time', icon: Calendar, color: 'orange' },
+    { value: 'time', label: 'Time', icon: Clock, color: 'amber' },
+    { value: 'currency', label: 'Amount (currency)', icon: Banknote, color: 'emerald' },
     { value: 'select', label: 'Dropdown', icon: List, color: 'pink' },
     { value: 'multiselect', label: 'Multiple Choice', icon: Grid, color: 'fuchsia' },
     { value: 'boolean', label: 'Yes/No', icon: CheckSquare, color: 'teal' },
@@ -274,6 +289,15 @@ const ReportTypeBuilder = ({
   };
 
   const removeSection = (index) => {
+    const coreCount = formData.sections[index].questions.filter(isCore).length;
+    if (coreCount > 0) {
+      window.alert(
+        `This section holds ${coreCount} core field${coreCount === 1 ? '' : 's'}, which every report type must keep. Move ${
+          coreCount === 1 ? 'it' : 'them'
+        } to another section first.`,
+      );
+      return;
+    }
     if (!window.confirm('Are you sure you want to delete this section and all its questions?')) return;
 
     const updatedSections = formData.sections.filter((_, i) => i !== index);
@@ -325,6 +349,8 @@ const ReportTypeBuilder = ({
       options: [],
       validation: {},
       conditional_logic: null,
+      is_core_field: false,
+      sensitive_data_class: 'none',
       order: formData.sections[sectionIndex].questions.length,
     };
 
@@ -353,7 +379,10 @@ const ReportTypeBuilder = ({
       [field]: value
     };
 
-    if (field === 'label' && autoGenerateFieldName && value.trim()) {
+    // A core field's key and type are fixed.
+    if (isCore(oldQuestion) && (field === 'name' || field === 'type')) return;
+
+    if (field === 'label' && autoGenerateFieldName && value.trim() && !isCore(oldQuestion)) {
       const generatedName = generateFieldName(value);
       const { isUnique } = isFieldNameUnique(generatedName, sectionIndex, questionIndex);
 
@@ -394,6 +423,7 @@ const ReportTypeBuilder = ({
   };
 
   const updateFieldName = (sectionIndex, questionIndex, value) => {
+    if (isCore(formData.sections[sectionIndex].questions[questionIndex])) return;
     const updatedSections = [...formData.sections];
     const updatedQuestions = [...updatedSections[sectionIndex].questions];
 
@@ -438,6 +468,7 @@ const ReportTypeBuilder = ({
   };
 
   const removeQuestionFromSection = (sectionIndex, questionIndex) => {
+    if (isCore(formData.sections[sectionIndex].questions[questionIndex])) return;
     if (!window.confirm('Delete this question?')) return;
 
     const updatedSections = [...formData.sections];
@@ -498,6 +529,8 @@ const ReportTypeBuilder = ({
       id: `question_${Date.now()}`,
       name: duplicateName,
       label: `${questionToDuplicate.label} (Copy)`,
+      // A copy is an ordinary question, even when copied from a core field.
+      is_core_field: false,
     };
 
     const updatedSections = [...formData.sections];
@@ -521,7 +554,7 @@ const ReportTypeBuilder = ({
     const options = updatedQuestion.options || [];
     updatedQuestion.options = [
       ...options,
-      { value: "", label: "" }
+      { value: "", label: "", display_order: options.length }
     ];
 
     setFormData(prev => ({
@@ -1244,6 +1277,15 @@ const ReportTypeBuilder = ({
                 {question.required && (
                   <span className="text-xs text-danger-fg font-medium">Required</span>
                 )}
+                {isCore(question) && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded bg-info-soft px-1.5 py-px text-[11px] font-semibold text-info-fg"
+                    title="One of the ten fields every report type must have. It can be reworded but not renamed or deleted."
+                  >
+                    <Lock className="w-3 h-3" />
+                    Core field
+                  </span>
+                )}
                 {question.conditional_logic && question.conditional_logic.rules.length > 0 && (
                   <span className={`inline-flex items-center gap-1 text-xs ${colors.text} font-medium`}>
                     <GitBranch className="w-3 h-3" />
@@ -1283,14 +1325,16 @@ const ReportTypeBuilder = ({
               >
                 <Copy className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => removeQuestionFromSection(sectionIndex, questionIndex)}
-                className="p-1.5 text-ink-subtle hover:text-danger-fg hover:bg-danger-soft rounded-lg transition-all"
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {!isCore(question) && (
+                <button
+                  type="button"
+                  onClick={() => removeQuestionFromSection(sectionIndex, questionIndex)}
+                  className="p-1.5 text-ink-subtle hover:text-danger-fg hover:bg-danger-soft rounded-lg transition-all"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* Minimize / Expand — always visible */}
@@ -1328,6 +1372,7 @@ const ReportTypeBuilder = ({
               <label htmlFor="S">Question Type</label>
               <Select
                 value={question.type}
+                disabled={isCore(question)}
                 onChange={(e) => updateQuestionInSection(sectionIndex, questionIndex, 'type', e.target.value)}
                 options={questionTypeOptions.map(opt => ({
                   value: opt.value,
@@ -1344,6 +1389,8 @@ const ReportTypeBuilder = ({
                 <input
                   type="text"
                   value={question.name}
+                  readOnly={isCore(question)}
+                  title={isCore(question) ? "A core field's name is fixed." : undefined}
                   onChange={(e) => updateFieldName(sectionIndex, questionIndex, e.target.value)}
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:ring-accent-ring focus:border-line-accent outline-none transition-all font-mono ${errors[`sections[${sectionIndex}].questions[${questionIndex}].name`]
                     ? 'border-danger-line bg-danger-soft'
@@ -1353,6 +1400,7 @@ const ReportTypeBuilder = ({
                 />
                 <button
                   type="button"
+                  disabled={isCore(question)}
                   onClick={() => regenerateFieldName(sectionIndex, questionIndex)}
                   className="px-3 py-2 text-ink-muted hover:text-ink-secondary hover:bg-active rounded-lg border border-line-strong transition-all"
                   title="Regenerate from label"
@@ -1399,6 +1447,49 @@ const ReportTypeBuilder = ({
             placeholder="Optional instructions for users"
             rows={2}
           />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor={`${question.id}-sensitive`} className="block text-sm font-medium text-ink-secondary">
+                Sensitive data
+              </label>
+              <select
+                id={`${question.id}-sensitive`}
+                value={question.sensitive_data_class || 'none'}
+                onChange={(e) => updateQuestionInSection(sectionIndex, questionIndex, 'sensitive_data_class', e.target.value)}
+                className="w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line-accent"
+              >
+                {SENSITIVE_DATA_CLASSES.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-ink-subtle">How the answer is protected when it's stored and read.</p>
+            </div>
+            {question.type === 'currency' && (
+              <div className="space-y-1.5">
+                <label htmlFor={`${question.id}-currency`} className="block text-sm font-medium text-ink-secondary">
+                  Default currency
+                </label>
+                <select
+                  id={`${question.id}-currency`}
+                  value={question.default_value?.currency || DEFAULT_CURRENCY}
+                  onChange={(e) =>
+                    updateQuestionInSection(sectionIndex, questionIndex, 'default_value', { currency: e.target.value, amount_minor: null })
+                  }
+                  className="w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line-accent"
+                >
+                  {CURRENCIES.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-ink-subtle">Reporters can pick another. Amounts are stored in the smallest unit.</p>
+              </div>
+            )}
+          </div>
 
           {/* Options for select/multiselect */}
           {['select', 'multiselect'].includes(question.type) && (
@@ -1460,55 +1551,10 @@ const ReportTypeBuilder = ({
           )}
 
           {/* Validation rules */}
-          {['number', 'text', 'textarea'].includes(question.type) && (
-            <div className="bg-subtle rounded-lg p-4 border border-line">
-              <label className="block text-sm font-semibold text-ink mb-3">
-                Validation Rules
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {question.type === 'number' && (
-                  <>
-                    <Input
-                      label="Minimum Value"
-                      type="number"
-                      value={question.validation?.min || ''}
-                      onChange={(e) => updateValidationInQuestion(sectionIndex, questionIndex, 'min', e.target.value)}
-                      size="small"
-                      maxLength={14}
-                    />
-                    <Input
-                      label="Maximum Value"
-                      type="number"
-                      value={question.validation?.max || ''}
-                      onChange={(e) => updateValidationInQuestion(sectionIndex, questionIndex, 'max', e.target.value)}
-                      size="small"
-                      maxLength={14}
-                    />
-                  </>
-                )}
-                {question.type === 'text' && (
-                  <Input
-                    label="Minimum Length"
-                    type="number"
-                    value={question.validation?.minLength || ''}
-                    onChange={(e) => updateValidationInQuestion(sectionIndex, questionIndex, 'minLength', e.target.value)}
-                    size="small"
-                    maxLength={14}
-                  />
-                )}
-                {question.type === 'textarea' && (
-                  <Input
-                    label="Maximum Length"
-                    type="number"
-                    value={question.validation?.maxLength || ''}
-                    onChange={(e) => updateValidationInQuestion(sectionIndex, questionIndex, 'maxLength', e.target.value)}
-                    size="small"
-                    maxLength={14}
-                  />
-                )}
-              </div>
-            </div>
-          )}
+          <QuestionValidationEditor
+            question={question}
+            onChange={(key, value) => updateValidationInQuestion(sectionIndex, questionIndex, key, value)}
+          />
 
           {/* Conditional Logic */}
           {renderQuestionConditionalLogic(question, sectionIndex, questionIndex)}
@@ -1722,6 +1768,32 @@ const ReportTypeBuilder = ({
                 {formData.description && (
                   <p className="text-ink-subtle mt-1 text-sm">{formData.description}</p>
                 )}
+                {readOnly && (
+                  <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+                    {[
+                      formData.code && { label: formData.code, mono: true },
+                      formData.status && formData.status !== 'active' && { label: formData.status === 'draft' ? 'Draft' : 'Retired' },
+                      formData.category && { label: formData.category },
+                      formData.confidentiality_tier &&
+                        formData.confidentiality_tier !== 'standard' && {
+                          label: formData.confidentiality_tier === 'restricted' ? 'Restricted' : 'Confidential',
+                        },
+                      formData.allows_anonymous === false && { label: 'No anonymous reports' },
+                      formData.ack_sla_days && { label: `Acknowledge in ${formData.ack_sla_days}d` },
+                      formData.triage_sla_days && { label: `Triage in ${formData.triage_sla_days}d` },
+                      formData.audience?.length > 0 && { label: `For: ${formData.audience.join(', ')}` },
+                    ]
+                      .filter(Boolean)
+                      .map((chip) => (
+                        <span
+                          key={chip.label}
+                          className={`rounded-full border border-line bg-surface px-2 py-0.5 text-ink-secondary ${chip.mono ? 'font-mono' : ''}`}
+                        >
+                          {chip.label}
+                        </span>
+                      ))}
+                  </div>
+                )}
               </div>
               {readOnly ? (
                 onEdit && (
@@ -1867,6 +1939,29 @@ const ReportTypeBuilder = ({
                             placeholder={question.placeholder || 'email@example.com'}
                             disabled
                           />
+                        )}
+
+                        {normalizedType === 'time' && (
+                          <input
+                            type="time"
+                            className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
+                            disabled
+                          />
+                        )}
+
+                        {normalizedType === 'currency' && (
+                          <div className="flex gap-2">
+                            <select className="w-24 border border-line-strong rounded-lg px-3 py-2.5 text-sm bg-subtle" disabled>
+                              <option>{question.default_value?.currency || DEFAULT_CURRENCY}</option>
+                            </select>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              className="min-w-0 flex-1 border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
+                              placeholder={question.placeholder || '0.00'}
+                              disabled
+                            />
+                          </div>
                         )}
 
                         {normalizedType === 'date' && (
@@ -2027,7 +2122,7 @@ const ReportTypeBuilder = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Settings */}
             <div className="lg:col-span-4 xl:col-span-3 space-y-6">
-              <div className="bg-surface rounded-xl shadow-sm border border-line p-6 sticky top-24" data-tour="rtb-basic-settings">
+              <div className="bg-surface rounded-xl shadow-sm border border-line p-6" data-tour="rtb-basic-settings">
                 <div className="flex items-center gap-2 mb-5">
                   <Sparkles className="w-5 h-5 text-warning-fg" />
                   <h3 className="font-bold text-ink">Basic Settings</h3>
@@ -2094,6 +2189,14 @@ const ReportTypeBuilder = ({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="bg-surface rounded-xl shadow-sm border border-line p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Landmark className="w-5 h-5 text-info-fg" />
+                  <h3 className="font-bold text-ink">Governance</h3>
+                </div>
+                <ReportTypeGovernance value={formData} onChange={handleFieldChange} codeLocked={codeLocked} />
               </div>
 
               {/* Quick Stats */}

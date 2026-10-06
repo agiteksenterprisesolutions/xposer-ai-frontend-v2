@@ -1,6 +1,7 @@
 // src/api/users.js
 import api from './axios';
 import { toast } from 'react-toastify';
+import { blobDownload } from '../utils/download';
 
 export const usersAPI = {
   // Get all users
@@ -154,6 +155,38 @@ export const usersAPI = {
     } catch (error) {
       throw error;
     }
+  },
+
+  /**
+   * Link an account to its directory entry (org_hierarchy_members.external_id),
+   * or unlink it with "". The link is what report:read_subordinates resolves
+   * from: an unlinked holder sees only their own caseload.
+   */
+  linkDirectoryEntry: async (id, hierarchyMemberId) => {
+    const response = await api.put(`/users/${id}`, { hierarchy_member_id: hierarchyMemberId ?? '' }, { skipErrorToast: true });
+    return response.data;
+  },
+
+  /** The blank people workbook, with a four-person example that imports as is. */
+  downloadImportTemplate: async () => {
+    const response = await api.get('/users/import/template', { responseType: 'blob' });
+    return blobDownload(response, 'users_import_template.xlsx');
+  },
+
+  /**
+   * One row → a login account, a directory entry and the link between them.
+   * All-or-nothing; `dryRun` validates and stops. Problems come back together,
+   * each with `sheet, row, column, value, code, message`.
+   */
+  importUsers: async (file, { dryRun = false } = {}) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/users/import', formData, {
+      params: { dry_run: dryRun },
+      headers: { 'Content-Type': 'multipart/form-data' },
+      skipErrorToast: true,
+    });
+    return response.data;
   },
 
   // Get system logs (if implemented)

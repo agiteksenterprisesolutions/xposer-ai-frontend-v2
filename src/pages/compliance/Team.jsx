@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Table, { TableLoading } from '../../components/ui/Table';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { usersAPI } from '../../api';
@@ -90,12 +91,16 @@ const ComplianceTeam = () => {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-accent text-on-accent border-none text-left">
+        <Card className="bg-accent! text-on-accent border-none text-left">
           <div className="flex items-center space-x-3 opacity-80">
             <TrendingUp className="h-5 w-5" />
             <span className="text-sm font-medium">Avg. Resolution Time</span>
           </div>
-          <p className="text-3xl font-bold mt-2">{stats?.avg_resolution}</p>
+          {stats ? (
+            <p className="text-3xl font-bold mt-2">{stats.avg_resolution}</p>
+          ) : (
+            <Skeleton.Text size="3xl" className="mt-2 w-24" />
+          )}
           <p className="text-xs mt-4 opacity-70 text-left">↓ 12% from last month</p>
         </Card>
         <Card>
@@ -103,7 +108,11 @@ const ComplianceTeam = () => {
             <Activity className="h-5 w-5" />
             <span className="text-sm font-medium">Active Investigations</span>
           </div>
-          <p className="text-3xl font-bold text-ink mt-2">{stats?.total_active}</p>
+          {stats ? (
+            <p className="text-3xl font-bold text-ink mt-2">{stats.total_active}</p>
+          ) : (
+            <Skeleton.Text size="3xl" className="mt-2 w-24" />
+          )}
           <p className="text-xs text-success-fg mt-4 font-medium text-left">Optimal Distribution</p>
         </Card>
         <Card>
@@ -111,7 +120,11 @@ const ComplianceTeam = () => {
             <Award className="h-5 w-5" />
             <span className="text-sm font-medium">Cases Resolved (YTD)</span>
           </div>
-          <p className="text-3xl font-bold text-ink mt-2">{stats?.cases_resolved}</p>
+          {stats ? (
+            <p className="text-3xl font-bold text-ink mt-2">{stats.cases_resolved}</p>
+          ) : (
+            <Skeleton.Text size="3xl" className="mt-2 w-24" />
+          )}
           <p className="text-xs text-ink-muted mt-4 leading-relaxed text-left">System-wide resolution count</p>
         </Card>
       </div>
@@ -144,7 +157,26 @@ const ComplianceTeam = () => {
           </Table.Header>
           <Table.Body>
             {loading ? (
-              <TableLoading colSpan={6} rows={5} />
+              <TableLoading
+                rows={8}
+                cells={[
+                  <div key="m" className="flex items-center space-x-3">
+                    <Skeleton.Circle />
+                    <div className="space-y-0.5">
+                      <Skeleton.Text className="w-28" />
+                      <Skeleton.Text size="xs" className="w-40" />
+                    </div>
+                  </div>,
+                  <Skeleton.Badge key="r" className="w-16" />,
+                  <div key="w" className="w-24 space-y-1">
+                    <Skeleton.Text size="2xs" className="w-full" />
+                    <Skeleton className="h-1 w-full rounded-full" />
+                  </div>,
+                  <Skeleton.Text key="t" className="w-16" />,
+                  <Skeleton.Text key="s" size="xs" className="w-14" />,
+                  <Skeleton key="a" className="ml-auto h-8 w-10 rounded-lg" />,
+                ]}
+              />
             ) : sortedTeam.length === 0 ? (
               <Table.Empty message="No team members found" description="Personnel will appear here once assigned roles." icon={Users} />
             ) : (

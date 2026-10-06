@@ -155,7 +155,7 @@ const AgentConfiguration = () => {
 
       {!canManage && (
         <Alert variant="info" title="View only">
-          Your role can see the agent configuration but not change it. Changing it needs the agent:manage permission.
+          Your role can see the agent configuration but not change it. Changing it needs permission to configure AI agents.
         </Alert>
       )}
 

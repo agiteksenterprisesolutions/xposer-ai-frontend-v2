@@ -12,8 +12,11 @@ import {
   MessageSquare,
   Clock,
   Send,
+  Sparkles,
+  Route,
 } from "lucide-react";
 import Card from "../../components/ui/Card";
+import Skeleton from '../../components/ui/Skeleton';
 import Button from "../../components/ui/Button";
 import Badge, { StatusBadge, PriorityBadge } from "../../components/ui/Badge";
 import { Textarea } from "../../components/ui/Input";
@@ -25,12 +28,14 @@ import { parseServerDate } from "../../utils/formatters";
 import VoiceAnswers from '../../components/reports/VoiceAnswers';
 import DigestPanel from '../../components/reports/DigestPanel';
 import EscalationPreview from '../../components/reports/EscalationPreview';
+import EscalationRecord, { hasEscalationRecord } from '../../components/reports/EscalationRecord';
 import { staffPath } from '../../utils/navigation';
 import { getReportDescription, getReportTitle } from '../../utils/reports';
 import toast from "react-hot-toast";
 import { formatFileSize, formatRelativeTime, formatDateTime, formatDate } from "../../utils/formatters";
 import useSEO from "../../hooks/useSEO";
 import { normalizeListResponse } from '../../utils/pagination';
+import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
 
 const STATUS_OPTIONS = [
   // { value: "draft", label: "Draft" },
@@ -39,6 +44,137 @@ const STATUS_OPTIONS = [
   { value: "resolved", label: "Resolved" },
   { value: "closed", label: "Closed" },
 ];
+
+/** The case page while it loads: the same cards and grid, data stubbed. */
+const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack }) => (
+  <div className="space-y-6" aria-busy="true">
+    <Button variant="ghost" size="small" onClick={onBack}>
+      <ArrowLeft className="h-4 w-4 mr-1" /> Back
+    </Button>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col">
+        <Skeleton.Text size="xl" className="w-44" />
+        <Skeleton.Text className="w-28" />
+      </div>
+      <div className="flex space-x-2">
+        {showActions && <Skeleton.Button className="w-24" />}
+        <Skeleton className="h-9 w-32 rounded-lg" />
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-6">
+        {showDigest && (
+          <Card>
+            <Card.Header>
+              <Card.Title className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-accent-fg" />
+                AI summary
+              </Card.Title>
+              <Card.Description>A factual digest of the evidence files on this report.</Card.Description>
+            </Card.Header>
+            <Card.Content>
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-11/12" />
+                <Skeleton className="h-3 w-4/6" />
+              </div>
+            </Card.Content>
+          </Card>
+        )}
+
+        <Card>
+          <Card.Header>
+            <Card.Title>Original Submission</Card.Title>
+            <Skeleton.Text className="w-56" />
+          </Card.Header>
+          <Card.Content className="space-y-4">
+            <Skeleton.Text size="base" className="w-2/3" />
+            <div className="bg-subtle p-4 rounded-lg border border-line-subtle">
+              <Skeleton.Lines size="base" lines={4} />
+            </div>
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="rounded-lg bg-subtle px-3 py-2.5">
+                  <Skeleton.Text size="xs" className="w-28" />
+                  <Skeleton.Text className="w-3/4" />
+                </div>
+              ))}
+            </div>
+          </Card.Content>
+        </Card>
+
+        <Card>
+          <Card.Header className="flex items-center justify-between border-b border-line-subtle">
+            <Card.Title className="flex items-center">
+              <Clock className="h-5 w-5 mr-2 text-accent-fg" />
+              Case Timeline
+            </Card.Title>
+          </Card.Header>
+          <Card.Content className="pt-6">
+            <div className="flex space-x-3">
+              <Skeleton.Circle size="h-8 w-8" />
+              <div className="flex-1">
+                <Skeleton.Text className="w-32" />
+                <Skeleton.Text size="xs" className="mt-0.5 w-40" />
+                <Skeleton.Text className="mt-2 w-3/4" />
+              </div>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+
+      <div className="space-y-6">
+        <Card>
+          <Card.Header>
+            <Card.Title>Case Details</Card.Title>
+          </Card.Header>
+          <Card.Content className="space-y-6">
+            {['Status', 'Priority', 'Assigned By', 'Assigned To'].map((label, index) => (
+              <div key={label} className="space-y-1">
+                <p className="text-xs font-semibold text-ink-muted uppercase">{label}</p>
+                {index < 2 ? <Skeleton.Badge className="w-20" /> : <Skeleton.Text className="w-28" />}
+              </div>
+            ))}
+          </Card.Content>
+        </Card>
+
+        {showEscalation && (
+          <Card>
+            <Card.Header>
+              <Card.Title className="flex items-center gap-2">
+                <Route className="h-4 w-4 text-accent-fg" />
+                Escalation route
+              </Card.Title>
+              <Card.Description>
+                Who this report would go to, based on the people it names and your reporting hierarchy. Nothing is changed.
+              </Card.Description>
+            </Card.Header>
+            <Card.Content>
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-9 w-full rounded-lg" />
+                <Skeleton.Button className="w-full" />
+                <Skeleton.Text size="xs" className="w-48" />
+              </div>
+            </Card.Content>
+          </Card>
+        )}
+
+        <Card>
+          <Card.Header>
+            <Card.Title className="flex items-center">
+              <FileText className="h-5 w-5 mr-2 text-accent-fg" />
+              Evidence & Files
+            </Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <Skeleton.Text className="w-40" />
+          </Card.Content>
+        </Card>
+      </div>
+    </div>
+  </div>
+);
 
 const CaseDetail = () => {
   const { id, orgSlug } = useParams();
@@ -51,6 +187,9 @@ const CaseDetail = () => {
   const [messageText, setMessageText] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const [loading, setLoading] = useState(true);
+  // A 404 is an ordinary "not found". It is also what a person locked out of
+  // a case by an escalation rule gets, so nothing here may hint otherwise.
+  const [notFound, setNotFound] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -82,16 +221,20 @@ const CaseDetail = () => {
       const messagesData = await messagesAPI.getReportMessages(reportNumber, true);
       setMessages(messagesData);
 
-      // Fetch users for assignee/assigner display and assignment modal; fail-soft for restricted roles.
-      try {
-        const usersData = await usersAPI.getAllUsers();
-        setUsers(normalizeListResponse(usersData).items);
-      } catch {
-        setUsers([]);
-      }
+      // Users for assignee/assigner display and the assignment modal. Loaded
+      // in the background so the case shows without waiting on the whole
+      // user list; fail-soft for roles that can't list users.
+      usersAPI
+        .getAllUsers()
+        .then((usersData) => setUsers(normalizeListResponse(usersData).items))
+        .catch(() => setUsers([]));
     } catch (error) {
-      console.error("Error fetching report detail:", error);
-      toast.error("Failed to load case details");
+      if (error?.response?.status === 404) {
+        setNotFound(true);
+      } else {
+        console.error("Error fetching report detail:", error);
+        toast.error("Failed to load case details");
+      }
     } finally {
       setLoading(false);
     }
@@ -137,6 +280,7 @@ const CaseDetail = () => {
   }, [users]);
 
   const formatFormValue = (value) => {
+    if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || "N/A";
     if (value === null || value === undefined || value === "") return "N/A";
     if (typeof value === "boolean") return value ? "Yes" : "No";
     if (Array.isArray(value)) return value.length ? value.join(", ") : "N/A";
@@ -258,19 +402,36 @@ const CaseDetail = () => {
     noIndex: true, // authenticated case data must never be indexed
   });
 
-  if (loading) {
+  // Only the first load shows the skeleton; a refresh after a change keeps
+  // the case on screen.
+  if (loading && !report) {
     return (
-      <div className="animate-pulse space-y-6">
-        <div className="h-8 bg-active w-1/4 rounded" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 h-96 bg-active rounded-xl" />
-          <div className="h-96 bg-active rounded-xl" />
-        </div>
-      </div>
+      <CaseDetailSkeleton
+        showDigest={can(PERM.agentSummaryRead)}
+        showEscalation={can(PERM.hierarchyRead)}
+        showActions={canAssignReports}
+        onBack={() => navigate(-1)}
+      />
     );
   }
 
-  if (!report) return <div>Report not found.</div>;
+  if (!report) {
+    return (
+      <div className="mx-auto max-w-md py-16 text-center">
+        <p className="text-base font-semibold text-ink">{notFound ? "Case not found" : "This case couldn't be loaded"}</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          {notFound ? "Check the link, or find the case from the reports list." : "Try again in a moment."}
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="mt-4 text-sm font-semibold text-link hover:underline"
+        >
+          Go back
+        </button>
+      </div>
+    );
+  }
 
   // Both optional: written by the voice agent when it files a report, absent
   // on plenty of others. Shown only when present.
@@ -326,7 +487,7 @@ const CaseDetail = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* The AI digest — agent:summary_read, deliberately not agent:read:
               reading a case's summary is not administering the agents. */}
-          {can(PERM.agentSummaryRead) && <DigestPanel reportId={report?.id || id} />}
+          {can(PERM.agentSummaryRead) && <DigestPanel reportId={report?.id || id} attachmentCount={report ? (report.attachments || []).length : null} />}
 
           {/* Report Summary */}
           <Card>
@@ -541,6 +702,11 @@ const CaseDetail = () => {
               </Button>
             </Card.Footer> */}
           </Card>
+
+          {/* What escalation routing did to this case */}
+          {hasEscalationRecord(report) && (
+            <EscalationRecord report={report} canReadHierarchy={can(PERM.hierarchyRead)} />
+          )}
 
           {/* Who the people named in this report escalate to */}
           {can(PERM.hierarchyRead) && (

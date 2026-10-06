@@ -30,7 +30,7 @@ import MarkdownMessage from "../ui/MarkDownMessage";
 import AudioVisualizer from "../ui/AudioVisualizer";
 import LanguagePills from "../ui/LanguagePills";
 import { useAuthStore } from "../../store/authStore";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { isStaffUser, isIdentifiedUser } from "../../utils/roles";
 import {
   ATTACHMENT_ACCEPT,
@@ -301,6 +301,28 @@ const ConnectingState = ({ hasToken, isConnected, agentReady, languageName }) =>
   );
 };
 
+// "Login to your account" in the widget sends the visitor to the login page.
+// This flag (per tab, so it survives a Google/Microsoft sign-in round trip)
+// keeps the widget open there and reopens it once they are signed in.
+const LOGIN_HANDOFF_KEY = "xposer-widget-login-handoff";
+
+const readLoginHandoff = () => {
+  try {
+    return sessionStorage.getItem(LOGIN_HANDOFF_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+const writeLoginHandoff = (on) => {
+  try {
+    if (on) sessionStorage.setItem(LOGIN_HANDOFF_KEY, "1");
+    else sessionStorage.removeItem(LOGIN_HANDOFF_KEY);
+  } catch {
+    // Storage blocked: the widget just won't reopen on its own.
+  }
+};
+
 // --- Main Application ---
 
 export default function AIChatWidget() {
@@ -315,7 +337,14 @@ export default function AIChatWidget() {
   const isReporterAccount = isIdentifiedUser(user) && !isStaff;
   const entryStep = isReporterAccount ? "loggedin-submission" : "home";
 
-  const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+  const onLoginPage = /\/login\/?$/.test(location.pathname);
+  const [loginHandoff, setLoginHandoff] = useState(readLoginHandoff);
+  // Waiting on the login page: the panel shrinks to a small card so the
+  // login form stays usable.
+  const awaitingLogin = loginHandoff && onLoginPage && !isAuthenticated;
+
+  const [isOpen, setIsOpen] = useState(loginHandoff);
   const [step, setStep] = useState(entryStep); // 'home', 'password-setup', 'credentials', 'chat'
   const [reportType, setReportType] = useState(null); // 'anonymous' | 'auth'
 
@@ -431,6 +460,40 @@ export default function AIChatWidget() {
         : current,
     );
   }, [entryStep]);
+
+  // Finish the login handoff once the visitor has signed in and left the
+  // login page. Waiting for that matters: the widget on the login page sees
+  // the sign-in first and is then unmounted, and the one on the next page is
+  // the one that should open.
+  useEffect(() => {
+    if (!loginHandoff) return;
+    if (isAuthenticated && !onLoginPage) {
+      setLoginHandoff(false);
+      writeLoginHandoff(false);
+      // Only an account reporter continues here. Staff never see the widget,
+      // and a report-tracking session isn't the account they went to log into.
+      if (isReporterAccount) {
+        setStep(entryStep);
+        setIsOpen(true);
+      }
+    } else if (!isAuthenticated && !onLoginPage) {
+      // Left the login page without signing in: back to a normal widget.
+      setLoginHandoff(false);
+      writeLoginHandoff(false);
+    }
+  }, [loginHandoff, isAuthenticated, onLoginPage, isReporterAccount, entryStep]);
+
+  const startLoginHandoff = () => {
+    writeLoginHandoff(true);
+    setLoginHandoff(true);
+    navigate(orgSlug ? `/${orgSlug}/login` : `/login`);
+  };
+
+  const cancelLoginHandoff = () => {
+    writeLoginHandoff(false);
+    setLoginHandoff(false);
+    setIsOpen(false);
+  };
 
   // Check for existing credentials on mount
   useEffect(() => {
@@ -2534,7 +2597,7 @@ Generated: ${new Date().toLocaleString()}
               <p className="text-sm text-ink-muted mb-4">
                 Login to your account to continue.
               </p>
-              <Button variant="outline" onClick={() => navigate(orgSlug ? `/${orgSlug}/login` : `/login`)}>
+              <Button variant="outline" onClick={startLoginHandoff}>
                 Login to your account
               </Button>
             </div>
@@ -2560,8 +2623,45 @@ Generated: ${new Date().toLocaleString()}
 
       <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-6 z-80 flex flex-col items-end pointer-events-none">
         <AnimatePresence>
-          {isOpen && (
+          {isOpen && awaitingLogin && (
             <motion.div
+              key="awaiting-login"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="mb-3 w-[min(20rem,calc(100vw-5.5rem))] max-sm:mr-16 max-sm:-mb-14 rounded-lg border border-line bg-surface p-3 shadow-2xl pointer-events-auto sm:p-4"
+              role="status"
+            >
+              {/* Kept short on phones, where it sits beside the toggle button
+                  instead of over the login form's sign-in options. */}
+              <div className="flex items-start gap-3">
+                <div className="hidden rounded-lg border border-line bg-canvas p-2 text-ink-secondary sm:block">
+                  <Fingerprint size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-ink">Sign in to continue your report</p>
+                  <p className="mt-1 text-xs leading-relaxed text-ink-muted">
+                    <span className="sm:hidden">The assistant reopens once you're signed in.</span>
+                    <span className="hidden sm:inline">
+                      Use the form on this page. The assistant opens again as soon as you're signed in.
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2 flex justify-end sm:mt-3">
+                <button
+                  type="button"
+                  onClick={cancelLoginHandoff}
+                  className="text-xs text-ink-muted transition-colors hover:text-ink"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          )}
+          {isOpen && !awaitingLogin && (
+            <motion.div
+              key="panel"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -2662,7 +2762,7 @@ Generated: ${new Date().toLocaleString()}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 1.1 }}
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() => (awaitingLogin ? cancelLoginHandoff() : setIsOpen(!isOpen))}
             className={`
               ${isOpen && step === "chat" ? "hidden sm:flex" : "flex"} items-center justify-center w-14 h-14 rounded-full shadow-glow
               transition-all duration-300 relative z-70

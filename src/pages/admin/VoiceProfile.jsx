@@ -2,6 +2,10 @@
 //
 // How the voice agent introduces the organization on a call: the name it
 // uses, background it keeps to itself, and the first thing callers hear.
+//
+// The API keeps greetings per language. This page edits the one written
+// greeting (English); callers in other languages hear it translated, and any
+// other language's entry already saved is carried through untouched.
 // Every field is optional — an empty one falls back to a sensible default —
 // and a save applies from the next call.
 //
@@ -9,20 +13,11 @@
 // their own, so they choose one first and every request carries its id.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import {
-  AudioLines,
-  Braces,
-  Building2,
-  Info,
-  RotateCcw,
-  Save,
-  Volume2,
-} from 'lucide-react';
+import { AudioLines, Info, Lock, Plus, Volume2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import Skeleton from '../../components/ui/Skeleton';
 import Alert from '../../components/ui/Alert';
-import Badge from '../../components/ui/Badge';
 import { ConfirmationModal } from '../../components/ui/Modal';
 import api from '../../api/axios';
 import { voiceProfileAPI } from '../../api';
@@ -32,8 +27,10 @@ import { useCan } from '../../hooks/useCan';
 import { PERM } from '../../utils/permissions';
 import { AGENT_ORG_REQUIRED_MESSAGE } from '../../utils/agents';
 import {
+  GREETING_LANGUAGE,
   ORGANIZATION_PLACEHOLDER,
   VOICE_PROFILE_LIMITS,
+  greetingFrom,
   normaliseLength,
   parseVoiceProfileErrors,
   renderGreeting,
@@ -46,7 +43,7 @@ const EMPTY_FORM = { display_name: '', about: '', greeting: '' };
 const toForm = (profile) => ({
   display_name: profile?.display_name ?? '',
   about: profile?.about ?? '',
-  greeting: profile?.greeting ?? '',
+  greeting: greetingFrom(profile),
 });
 
 // Labels sit above the control rather than floating inside it: the display
@@ -221,12 +218,15 @@ const VoiceProfile = () => {
 
     setSaving(true);
     try {
-      // All three, every time: a field left out of the body is cleared.
+      // Every field, every time: one left out of the body is cleared. Only the
+      // English greeting is edited here; any other language's entry is kept.
+      const others = (profile?.greetings || []).filter((entry) => entry.language !== GREETING_LANGUAGE);
+      const greeting = form.greeting.trim();
       const data = await voiceProfileAPI.updateVoiceProfile(
         {
           displayName: form.display_name.trim() || null,
           about: form.about.trim() || null,
-          greeting: form.greeting.trim() || null,
+          greetings: greeting ? [...others, { language: GREETING_LANGUAGE, text: greeting }] : others,
         },
         scope,
       );
@@ -286,60 +286,54 @@ const VoiceProfile = () => {
     const raw = profile.updated_at;
     const date = new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(raw) ? raw : `${raw}Z`);
     if (Number.isNaN(date.getTime())) return null;
-    const seconds = Math.round((date.getTime() - Date.now()) / 1000);
-    const units = [
-      ['second', 60],
-      ['minute', 60],
-      ['hour', 24],
-      ['day', 7],
-      ['week', 4.35],
-      ['month', 12],
-    ];
-    const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-    let value = seconds;
-    for (const [unit, step] of units) {
-      if (Math.abs(value) < step) return relative.format(Math.round(value), unit);
-      value /= step;
-    }
-    return relative.format(Math.round(value), 'year');
+    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   }, [profile?.updated_at]);
 
+  const discard = () => {
+    setForm(savedForm);
+    setErrors({});
+  };
+
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [isDirty]);
+
+  // Greetings in other languages, set outside this page, are kept untouched.
+  const otherGreetings = (profile?.greetings || []).filter((entry) => entry.language !== GREETING_LANGUAGE);
+
   const header = (
-    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <h1 className="text-2xl font-bold text-ink">Voice Profile</h1>
-        <p className="text-sm text-ink-muted">
-          How the voice assistant introduces your organization on calls.
+        <h1 className="text-xl font-bold text-ink">Voice Profile</h1>
+        <p className="mt-1 max-w-2xl text-sm text-ink-muted">
+          How your voice agent introduces you on a call. Every field is optional — a blank one uses a sensible default —
+          and changes apply from the next call.
         </p>
       </div>
+      {!profile && loading && canManage && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Skeleton.Text size="xs" className="w-24" />
+          <Skeleton.Button className="w-36" />
+        </div>
+      )}
       {profile && (
-        <div className="flex flex-wrap items-center gap-2">
-          {profile.version > 0 && (
-            <Badge variant="secondary" size="small">
-              Version {profile.version}
-              {updatedLabel ? ` · saved ${updatedLabel}` : ''}
-            </Badge>
-          )}
+        <div className="flex flex-wrap items-center gap-3">
+          {profile.version > 0 && updatedLabel && <span className="text-xs text-ink-subtle">Saved {updatedLabel}</span>}
           {canManage && (
-            <>
-              <Button
-                variant="outline"
-                startIcon={RotateCcw}
-                onClick={() => setConfirmReset(true)}
-                disabled={busy || isDefault}
-                title={isDefault ? 'Already using the defaults' : 'Clear the profile and use the defaults'}
-              >
-                Reset to defaults
-              </Button>
-              <Button
-                startIcon={Save}
-                onClick={handleSave}
-                isLoading={saving}
-                disabled={resetting || !isDirty}
-              >
-                Save profile
-              </Button>
-            </>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmReset(true)}
+              disabled={busy || isDefault}
+              title={isDefault ? 'Already using the defaults' : 'Clear the profile and use the defaults'}
+            >
+              Reset to defaults
+            </Button>
           )}
         </div>
       )}
@@ -351,7 +345,7 @@ const VoiceProfile = () => {
       <div className="mx-auto max-w-3xl space-y-6">
         {header}
         <Alert variant="warning" title="Not available for your role">
-          Viewing the voice profile needs the voice_profile:read permission on your role.
+          Viewing the voice profile needs a role that allows “View the voice profile”.
         </Alert>
       </div>
     );
@@ -369,11 +363,11 @@ const VoiceProfile = () => {
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="mx-auto max-w-5xl space-y-5 pb-24">
       {header}
 
       {isSuperAdmin && (
-        <Card title="Organization" icon={Building2}>
+        <section className="rounded-2xl border border-line bg-surface p-5">
           <form onSubmit={openOrganization} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="min-w-0 flex-1">
               <label htmlFor="vp-organization" className="mb-1.5 block text-sm font-medium text-ink">
@@ -399,12 +393,69 @@ const VoiceProfile = () => {
               ? `Editing ${profile.organization_name}.`
               : 'As a super admin you can edit any organization. Choose one to load its profile.'}
           </p>
-        </Card>
+        </section>
       )}
 
       {loading && (
-        <div className="flex h-48 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-line-accent" />
+        // The real cards and fields, empty and pulsing, so the page doesn't
+        // move when the profile arrives.
+        <div className="space-y-5" aria-busy="true">
+          <section className="grid overflow-hidden rounded-2xl border border-line bg-surface md:grid-cols-[16rem_minmax(0,1fr)]">
+            <div className="flex flex-col items-center justify-center gap-4 bg-ink px-6 py-8 text-center text-canvas">
+              <span className="flex h-18 w-18 items-center justify-center rounded-full bg-accent text-on-accent shadow-[0_0_0_10px_color-mix(in_srgb,var(--color-accent)_22%,transparent)]">
+                <AudioLines className="h-8 w-8" />
+              </span>
+              <span className="flex flex-col items-center">
+                <Skeleton.Text size="xl" className="w-28 opacity-30" />
+                <span className="mt-1 block text-sm opacity-70">Reporting line voice agent</span>
+              </span>
+            </div>
+            <div className="space-y-6 p-5 sm:p-7">
+              <Field id="vp-skeleton-name" label="Name callers know you by" hint={<Skeleton.Text size="xs" className="w-72" />}>
+                <input disabled aria-hidden="true" className={`${controlClass()} animate-pulse text-[15px]`} />
+              </Field>
+              <Field
+                id="vp-skeleton-about"
+                label="Background for the agent"
+                hint={<Skeleton.Text size="xs" className="w-80" />}
+                action={
+                  <span className="inline-flex items-center gap-1 rounded-full bg-active px-2 py-0.5 text-[11px] font-semibold text-ink-muted">
+                    <Lock className="h-3 w-3" />
+                    Private
+                  </span>
+                }
+              >
+                <textarea disabled rows={4} aria-hidden="true" className={`${controlClass()} animate-pulse resize-none leading-relaxed`} />
+              </Field>
+            </div>
+          </section>
+          <section className="rounded-2xl border border-line bg-surface p-5 sm:p-7">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-base font-semibold text-ink">First thing callers hear</h2>
+              <p className="text-sm text-ink-muted">
+                Spoken as written. Callers who speak another language hear it translated for them.
+              </p>
+            </div>
+            <div className="mt-5">
+              <Field
+                id="vp-skeleton-greeting"
+                label="Greeting"
+                hint={<Skeleton.Text size="xs" className="w-64" />}
+                action={canManage && <Skeleton className="h-6.5 w-36 rounded-md" />}
+              >
+                <textarea disabled rows={3} aria-hidden="true" className={`${controlClass()} animate-pulse resize-none leading-relaxed`} />
+              </Field>
+            </div>
+            <div className="mt-5 flex gap-3 rounded-xl bg-ink p-4 text-canvas">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent">
+                <Volume2 className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <Skeleton.Text size="2xs" className="w-40 opacity-30" />
+                <Skeleton.Lines lines={2} className="mt-1 opacity-30" />
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
@@ -418,114 +469,176 @@ const VoiceProfile = () => {
         <>
           {isDefault && (
             <Alert variant="info" title="Using the defaults">
-              Nothing has been saved for {profile.organization_name} yet. Callers hear the
-              default greeting below until you save a profile.
+              Nothing has been saved for {profile.organization_name} yet. Callers hear the default greeting until you
+              save a profile.
             </Alert>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <Card title="Profile" icon={AudioLines}>
-              <div className="space-y-6">
-                <Field
+          {!canManage && (
+            <Alert variant="info" title="View only">
+              Your role can see the voice profile but not change it.
+            </Alert>
+          )}
+
+          {/* Identity */}
+          <section className="grid overflow-hidden rounded-2xl border border-line bg-surface md:grid-cols-[16rem_minmax(0,1fr)]">
+            <div className="flex flex-col items-center justify-center gap-4 bg-ink px-6 py-8 text-center text-canvas">
+              <span className="flex h-18 w-18 items-center justify-center rounded-full bg-accent text-on-accent shadow-[0_0_0_10px_color-mix(in_srgb,var(--color-accent)_22%,transparent)]">
+                <AudioLines className="h-8 w-8" />
+              </span>
+              <span>
+                <span dir="auto" className="block break-words text-xl font-bold">{spokenName}</span>
+                <span className="mt-1 block text-sm opacity-70">Reporting line voice agent</span>
+              </span>
+            </div>
+
+            <div className="space-y-6 p-5 sm:p-7">
+              <Field
+                id="vp-display-name"
+                label="Name callers know you by"
+                hint={`As the agent should say it. Leave blank to use your registered name, ${profile.organization_name}.`}
+                error={errors.display_name}
+                counter={<Counter value={form.display_name} max={VOICE_PROFILE_LIMITS.display_name} />}
+              >
+                <input
                   id="vp-display-name"
-                  label="Display name"
-                  hint="The name the assistant uses for your organization. Leave empty to use the registered name."
-                  error={errors.display_name}
-                  counter={<Counter value={form.display_name} max={VOICE_PROFILE_LIMITS.display_name} />}
-                >
-                  <input
-                    id="vp-display-name"
-                    dir="auto"
-                    value={form.display_name}
-                    onChange={(event) => setField('display_name', event.target.value)}
-                    placeholder={profile.organization_name}
-                    disabled={locked}
-                    aria-invalid={errors.display_name ? 'true' : undefined}
-                    className={controlClass(errors.display_name)}
-                  />
-                </Field>
+                  dir="auto"
+                  value={form.display_name}
+                  onChange={(event) => setField('display_name', event.target.value)}
+                  placeholder={profile.organization_name}
+                  disabled={locked}
+                  aria-invalid={errors.display_name ? 'true' : undefined}
+                  className={`${controlClass(errors.display_name)} text-[15px]`}
+                />
+              </Field>
 
-                <Field
+              <Field
+                id="vp-about"
+                label="Background for the agent"
+                hint="What your organization is and does. It helps the agent understand callers, and is never read out."
+                error={errors.about}
+                counter={<Counter value={form.about} max={VOICE_PROFILE_LIMITS.about} />}
+                action={
+                  <span className="inline-flex items-center gap-1 rounded-full bg-active px-2 py-0.5 text-[11px] font-semibold text-ink-muted">
+                    <Lock className="h-3 w-3" />
+                    Private
+                  </span>
+                }
+              >
+                <textarea
                   id="vp-about"
-                  label="About"
-                  hint="What your organization does. The assistant uses this as background and never reads it out."
-                  error={errors.about}
-                  counter={<Counter value={form.about} max={VOICE_PROFILE_LIMITS.about} />}
-                >
-                  <textarea
-                    id="vp-about"
-                    dir="auto"
-                    rows={5}
-                    value={form.about}
-                    onChange={(event) => setField('about', event.target.value)}
-                    placeholder="e.g. A software company building AI products for enterprises."
-                    disabled={locked}
-                    aria-invalid={errors.about ? 'true' : undefined}
-                    className={`${controlClass(errors.about)} resize-y`}
-                  />
-                </Field>
+                  dir="auto"
+                  rows={4}
+                  value={form.about}
+                  onChange={(event) => setField('about', event.target.value)}
+                  placeholder="e.g. A software company building AI products for enterprises."
+                  disabled={locked}
+                  aria-invalid={errors.about ? 'true' : undefined}
+                  className={`${controlClass(errors.about)} resize-y leading-relaxed`}
+                />
+              </Field>
+            </div>
+          </section>
 
-                <Field
-                  id="vp-greeting"
-                  label="Greeting"
-                  hint="Write it in any language; callers hear it in their own language."
-                  error={errors.greeting}
-                  counter={<Counter value={form.greeting} max={VOICE_PROFILE_LIMITS.greeting} />}
-                  action={
+          {/* Greeting */}
+          <section className="rounded-2xl border border-line bg-surface p-5 sm:p-7">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-base font-semibold text-ink">First thing callers hear</h2>
+              <p className="text-sm text-ink-muted">
+                Spoken as written. Callers who speak another language hear it translated for them.
+              </p>
+            </div>
+
+            <div className="mt-5">
+              <Field
+                id="vp-greeting"
+                label="Greeting"
+                hint={
+                  form.greeting.trim()
+                    ? `Write ${ORGANIZATION_PLACEHOLDER} where the organization's name should go.`
+                    : 'Leave blank for the default greeting shown below.'
+                }
+                error={errors.greeting}
+                counter={<Counter value={form.greeting} max={VOICE_PROFILE_LIMITS.greeting} />}
+                action={
+                  canManage && (
                     <button
                       type="button"
                       onClick={insertPlaceholder}
                       disabled={locked}
-                      title="Insert the organization's name placeholder"
-                      className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2 py-1 font-mono text-xs text-ink-secondary transition-colors hover:border-line-accent hover:text-accent-fg disabled:opacity-50"
+                      title={`Insert ${ORGANIZATION_PLACEHOLDER}, which is replaced with the name callers know you by`}
+                      className="inline-flex items-center gap-1 rounded-md border border-line-accent bg-surface px-2 py-1 text-xs font-semibold text-accent-fg transition-colors hover:bg-accent-soft disabled:opacity-50"
                     >
-                      <Braces className="h-3.5 w-3.5" />
-                      {ORGANIZATION_PLACEHOLDER}
+                      <Plus className="h-3.5 w-3.5" />
+                      Organization name
                     </button>
-                  }
-                >
-                  <textarea
-                    id="vp-greeting"
-                    ref={greetingRef}
-                    dir="auto"
-                    rows={4}
-                    value={form.greeting}
-                    onChange={(event) => setField('greeting', event.target.value)}
-                    placeholder={`e.g. Welcome to the ${ORGANIZATION_PLACEHOLDER} speak-up line. What would you like to report?`}
-                    disabled={locked}
-                    aria-invalid={errors.greeting ? 'true' : undefined}
-                    className={`${controlClass(errors.greeting)} resize-y`}
-                  />
-                </Field>
-              </div>
-            </Card>
+                  )
+                }
+              >
+                <textarea
+                  id="vp-greeting"
+                  ref={greetingRef}
+                  dir="auto"
+                  rows={3}
+                  value={form.greeting}
+                  onChange={(event) => setField('greeting', event.target.value)}
+                  placeholder={`e.g. Welcome to the ${ORGANIZATION_PLACEHOLDER} speak-up line. What would you like to report?`}
+                  disabled={locked}
+                  aria-invalid={errors.greeting ? 'true' : undefined}
+                  className={`${controlClass(errors.greeting)} resize-y leading-relaxed`}
+                />
+              </Field>
+            </div>
 
-            <div className="space-y-4">
-              <Card title="Callers will hear" icon={Volume2}>
-                {!form.greeting.trim() && (
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-subtle">
-                    Default greeting
-                  </p>
-                )}
-                <p dir="auto" className="whitespace-pre-wrap text-sm leading-relaxed text-ink [overflow-wrap:anywhere]">
+            {/* What it sounds like, with the name filled in */}
+            <div className="mt-5 flex gap-3 rounded-xl bg-ink p-4 text-canvas">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent">
+                <Volume2 className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] opacity-60">
+                  {form.greeting.trim() ? 'Callers will hear' : 'Callers will hear the default'}
+                </p>
+                <p dir="auto" className="mt-1 whitespace-pre-wrap text-sm leading-relaxed [overflow-wrap:anywhere]">
                   “{preview}”
-                </p>
-                <p className="mt-3 text-xs text-ink-subtle">
-                  Translated into each caller's language automatically.
-                </p>
-              </Card>
-
-              <div className="flex gap-2 rounded-xl border border-line-subtle bg-subtle p-4 text-xs text-ink-muted">
-                <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent-fg" />
-                <p>
-                  <span className="font-mono">{ORGANIZATION_PLACEHOLDER}</span> is replaced with
-                  the display name, or the registered name if that is empty. It is the only
-                  placeholder allowed. Changes apply from the next call.
                 </p>
               </div>
             </div>
-          </div>
+
+            {otherGreetings.length > 0 && (
+              <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-subtle">
+                <Info className="mt-px h-3.5 w-3.5 shrink-0" />
+                {otherGreetings.length} greeting{otherGreetings.length === 1 ? '' : 's'} in other languages (
+                {otherGreetings.map((entry) => entry.language.toUpperCase()).join(', ')}) will be kept as they are.
+              </p>
+            )}
+          </section>
         </>
+      )}
+
+      {/* Save bar */}
+      {canManage && isDirty && (
+        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:pl-5">
+          <p className="min-w-0 flex-1 text-sm">Unsaved changes · they apply from the next call</p>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={discard}
+              disabled={busy}
+              className="h-9 rounded-lg border border-canvas/25 px-3.5 text-sm font-medium transition-colors hover:bg-canvas/10 disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={busy}
+              className="h-9 rounded-lg bg-canvas px-4 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save profile'}
+            </button>
+          </div>
+        </div>
       )}
 
       <ConfirmationModal
@@ -533,7 +646,7 @@ const VoiceProfile = () => {
         onClose={() => setConfirmReset(false)}
         onConfirm={handleReset}
         title="Reset the voice profile?"
-        message="The display name, about text and greeting will be permanently cleared, and callers will hear the default greeting from the next call. This cannot be undone."
+        message="The name, background and greeting will be permanently cleared, and callers will hear the default greeting from the next call. This cannot be undone."
         confirmText="Reset to defaults"
         destructive
         isLoading={resetting}

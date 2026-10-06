@@ -100,7 +100,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search name, email, title…"
               aria-label="Search the directory"
-              className="w-full rounded-lg border border-line bg-subtle py-2 pl-9 pr-3 text-sm text-ink hover:border-line-strong"
+              className="w-full rounded-lg border border-line bg-subtle py-2 pl-9 pr-3 text-sm text-ink outline-none transition-colors hover:border-line-strong focus:border-line-accent focus:ring-2 focus:ring-accent-ring"
             />
           </div>
           <select

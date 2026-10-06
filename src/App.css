@@ -92,12 +92,13 @@
   --xp-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --xp-font-mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
 
-  --xp-radius-xs: 0.25rem;
-  --xp-radius-sm: 0.375rem;
-  --xp-radius-md: 0.5rem;
-  --xp-radius-lg: 0.75rem;
-  --xp-radius-xl: 1rem;
-  --xp-radius-2xl: 1.25rem;
+  /* 65% of the original scale (0.25 / 0.375 / 0.5 / 0.75 / 1 / 1.25rem) */
+  --xp-radius-xs: 0.1625rem;
+  --xp-radius-sm: 0.24375rem;
+  --xp-radius-md: 0.325rem;
+  --xp-radius-lg: 0.4875rem;
+  --xp-radius-xl: 0.65rem;
+  --xp-radius-2xl: 0.8125rem;
   --xp-radius-full: 9999px;
 
   --xp-space-1: 0.25rem;

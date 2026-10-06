@@ -23,7 +23,8 @@ import {
     STATUS_RANK,
 } from '../../hooks/useTableSort';
 import { StatusBadge } from '../../components/ui/Badge';
-import LoadingSpinner from '../../components/layout/LoadingSpinner';
+import Skeleton from '../../components/ui/Skeleton';
+import { ReportGridCardSkeleton } from '../../components/reports/ReportCard';
 import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
 import useSEO from '../../hooks/useSEO';
@@ -328,9 +329,29 @@ const MyReports = () => {
         return steps;
     }, [isDesktop]);
 
-    if (isLoading && !reports) {
-        return <LoadingSpinner message="Loading reports..." />;
-    }
+    // First load: the same table (or cards), with placeholder rows — never the
+    // empty state, which would say there are no reports before we know.
+    const firstLoad = isLoading && !(reports && reports.length);
+    const SKELETON_CELLS = {
+        report_number: <Skeleton.Text className="w-20" />,
+        status: <Skeleton.Badge className="w-16" />,
+        submission_status: <Skeleton.Badge className="w-20" />,
+    };
+    const skeletonColumns = columns.map((column, index) => ({
+        ...column,
+        cell: () =>
+            column.header === 'Actions' ? (
+                <div className="flex gap-1">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+            ) : index === 1 ? (
+                <Skeleton.Text className="w-24" />
+            ) : (
+                SKELETON_CELLS[column.accessor] || <Skeleton.Text className="w-20" />
+            ),
+    }));
+    const skeletonRows = Array.from({ length: 5 }, (_, id) => ({ id: `skeleton-${id}` }));
 
     return (
         <div className="space-y-6">
@@ -435,7 +456,18 @@ const MyReports = () => {
 
                 {/* Reports Content */}
                 <div data-tour="myreports-results">
-                    {visibleReports.length === 0 ? (
+                    {firstLoad ? (
+                        viewMode === 'table' ? (
+                            <div className="overflow-hidden rounded-lg border border-line" aria-busy="true">
+                                <Table columns={skeletonColumns} data={skeletonRows} getSortProps={getHeaderProps} />
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" aria-busy="true">
+                                <ReportGridCardSkeleton />
+                                <ReportGridCardSkeleton />
+                            </div>
+                        )
+                    ) : visibleReports.length === 0 ? (
                         <TableEmpty
                             asRow={false}
                             message={

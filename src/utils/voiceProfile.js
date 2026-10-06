@@ -15,6 +15,13 @@ export const ORGANIZATION_PLACEHOLDER = '{organization}';
 /** Length after the server's own trimming and whitespace collapsing. */
 export const normaliseLength = (value) => (value || '').replace(/\s+/g, ' ').trim().length;
 
+/** The language the page's single greeting is written in. */
+export const GREETING_LANGUAGE = 'en';
+
+/** The written greeting to edit: the English entry of `greetings`. */
+export const greetingFrom = (profile) =>
+  (profile?.greetings || []).find((entry) => entry.language === GREETING_LANGUAGE)?.text ?? profile?.greeting ?? '';
+
 /** What callers hear when no greeting is saved. */
 export const defaultGreeting = (name) =>
   `Hello, and welcome to the ${name} reporting line. I am here to help you make a report, safely and in confidence. What would you like to report?`;
@@ -62,7 +69,10 @@ export const parseVoiceProfileErrors = (error) => {
   const detail = error?.response?.data?.detail;
   if (!Array.isArray(detail)) return {};
   return detail.reduce((errors, item) => {
-    const field = item?.loc?.[1];
+    // Greetings are a list; the page edits the one the admin writes, so any
+    // error inside it belongs to that field.
+    const raw = item?.loc?.[1];
+    const field = raw === 'greetings' ? 'greeting' : raw;
     if (field && !errors[field]) {
       errors[field] = String(item.msg || 'Invalid value').replace(/^Value error, /, '');
     }

@@ -134,6 +134,7 @@
   --animate-fade-in: fade-in 0.4s var(--xp-ease-out) both;
   --animate-slide-up: slide-up 0.32s var(--xp-ease-out) both;
   --animate-slide-down: slide-down 0.32s var(--xp-ease-out) both;
+  --animate-slide-in-right: slide-in-right 0.28s var(--xp-ease-out) both;
 }
 
 @keyframes fade-in {
@@ -146,6 +147,11 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes slide-in-right {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
 @keyframes slide-down {
   from { transform: translateY(-10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -156,6 +162,8 @@
    ========================================================================== */
 
 html {
+  /* 15.5px root. Every rem-based size (text, spacing, radii) scales from it. */
+  font-size: 96.875%;
   /* Prevent the canvas color from flashing white behind an overscroll */
   background-color: var(--xp-canvas);
 }
@@ -201,6 +209,28 @@ option:disabled {
   outline-offset: 2px;
 }
 
+/* Text fields show focus with their own border and ring (or their search
+   box's), so the outline would only draw a second, offset box around them. */
+:where(
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+  textarea,
+  select
+):focus-visible {
+  outline: none;
+}
+
+/* A fallback for any field that doesn't style its own focus: the border turns
+   accent. In the base layer, so a field's own focus classes always win. */
+@layer base {
+  :where(
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']),
+    textarea,
+    select
+  ):focus {
+    border-color: var(--xp-border-accent);
+  }
+}
+
 /* The calendar/clock button inside date inputs.
 
    `color-scheme: dark` above already makes the UA paint this glyph light, so
@@ -242,6 +272,16 @@ input[type='time']::-webkit-calendar-picker-indicator:hover {
 /* ==========================================================================
    UTILITIES
    ========================================================================== */
+
+/* Still scrolls sideways (trackpad, touch, arrow keys), but shows no bar.
+   For tab rows, where a bar under the tabs looks like a stray line. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
 
 @utility scrollbar-thin {
   scrollbar-width: thin;

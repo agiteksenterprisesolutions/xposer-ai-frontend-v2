@@ -122,13 +122,35 @@ export const CAPABILITY_INFO = {
   internal_note: { label: 'Write internal notes', description: 'Leave notes only staff can see.' },
   update_report: { label: 'Update the report', description: 'Change status, priority and details.' },
   assign_report: { label: 'Assign the report', description: 'Hand the report to a member of staff.' },
-  read_attachments: { label: 'Read attachments', description: 'Open the evidence files on a report.' },
+  // Filenames, sizes and types are part of the report and visible to any agent
+  // that can read it; this gates downloading the file contents.
+  read_attachments: {
+    label: 'Download evidence files',
+    description: 'Open and read the contents of attached files. File names are visible either way.',
+  },
   consult_kb: { label: 'Consult the knowledge base', description: "Quote the organization's policy documents." },
   resolve_escalation: {
     label: 'Resolve escalation',
     description: 'Use the reporting hierarchy to work out who a report escalates to.',
   },
 };
+
+export const SUMMARIZER_KIND = 'summarizer';
+
+/**
+ * The only capabilities a summarizer may hold. The rest are refused at save
+ * (GET /org-agents/capabilities lists them with reasons), so the summarizer's
+ * form offers just these.
+ */
+export const SUMMARIZER_CAPABILITIES = ['read_attachments', 'internal_note', 'consult_kb'];
+
+/**
+ * A summarizer's fixed permissions — it has no role to borrow them from
+ * (role_source "intrinsic", role_code null).
+ */
+export const SUMMARIZER_PERMISSIONS = ['report:read_all', 'message:read_internal', 'agent:kb_read'];
+
+export const isSummarizer = (agent) => agent?.kind === SUMMARIZER_KIND;
 
 export const capabilityLabel = (capability) =>
   CAPABILITY_INFO[capability]?.label || capability?.replace(/_/g, ' ') || '';

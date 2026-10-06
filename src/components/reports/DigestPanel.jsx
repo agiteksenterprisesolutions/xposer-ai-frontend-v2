@@ -7,9 +7,11 @@
 // would reintroduce the over-granting the permission split removed. The full
 // run (every agent's prompts and verdicts) stays under agent administration.
 //
-// No digest is not an error: the summarizer being off, or a report with
-// nothing to digest, come back as `available: false` with a reason, and are
-// shown quietly. Only a report outside the organization is a 404.
+// No digest is the normal case, not an error. The summarizer digests evidence
+// files only, so a report filed without attachments never gets one — and
+// neither does any report while summaries are off. Those come back as
+// 200 `available: false` and are shown quietly. A 503 is a real fault (the
+// agent service is unreachable); a 404 only means the report isn't found.
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import Card from '../ui/Card';
@@ -20,10 +22,16 @@ import { agentRunsAPI } from '../../api';
 import { errorSummary } from '../../utils/errors';
 import { formatDateTime, formatRelativeTime } from '../../utils/formatters';
 
-const DigestPanel = ({ reportId }) => {
+/**
+ * Props:
+ *   reportId
+ *   attachmentCount – evidence files on the report, when known; with none,
+ *                     the empty state can say exactly why there's no summary
+ */
+const DigestPanel = ({ reportId, attachmentCount = null }) => {
   const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // { message, fault }
 
   const load = useCallback(async () => {
     if (!reportId) return;
@@ -33,20 +41,13 @@ const DigestPanel = ({ reportId }) => {
       setError(null);
     } catch (err) {
       setDigest(null);
-      if (err?.response?.status === 404) {
-        // The handbook promises a 200 {available:false} for anything but a
-        // report outside the organization, but the backend also answers 404
-        // "Run not found" for a report no agent run has processed yet (older
-        // reports, or ones submitted before the workflow existed). Both are
-        // quiet empty states, not failures.
-        const detail = errorSummary(err);
-        setError(
-          /run not found/i.test(detail)
-            ? 'No AI run has processed this report yet, so there is no summary.'
-            : 'There is no summary for this report.',
-        );
+      const status = err?.response?.status;
+      if (status === 503) {
+        setError({ message: "The AI service can't be reached right now, so the summary can't be loaded. Try again shortly.", fault: true });
+      } else if (status === 404) {
+        setError({ message: 'There is no summary for this report.', fault: false });
       } else {
-        setError(errorSummary(err));
+        setError({ message: errorSummary(err), fault: true });
       }
     } finally {
       setLoading(false);
@@ -72,7 +73,7 @@ const DigestPanel = ({ reportId }) => {
               </Badge>
             )}
           </Card.Title>
-          <Card.Description>A factual digest of the evidence on this report.</Card.Description>
+          <Card.Description>A factual digest of the evidence files on this report.</Card.Description>
         </div>
         <Button
           variant="ghost"
@@ -95,11 +96,15 @@ const DigestPanel = ({ reportId }) => {
           </div>
         )}
 
-        {error && <p className="text-sm text-ink-muted">{error}</p>}
+        {error && <p className={`text-sm ${error.fault ? 'text-danger-fg' : 'text-ink-muted'}`}>{error.message}</p>}
 
         {digest && !available && (
           <div className="space-y-1">
-            <p className="text-sm text-ink-muted">{digest.reason || 'No summary is available for this report.'}</p>
+            <p className="text-sm text-ink-muted">
+              {attachmentCount === 0
+                ? 'No evidence files were attached, so there is nothing to summarize. Summaries are written from attachments only.'
+                : digest.reason || 'No summary for this report yet. One can arrive a little after the evidence does.'}
+            </p>
             {(digest.problems || [])
               .filter((problem) => problem?.message && problem.message !== digest.reason)
               .map((problem, index) => (
@@ -138,8 +143,7 @@ const DigestPanel = ({ reportId }) => {
               )}
             </div>
             <p className="text-xs text-ink-subtle">
-              Written by an AI agent from the report and its evidence. Check it against the original submission before
-              relying on it.
+              Written by an AI agent from the evidence files. Check it against the originals before relying on it.
             </p>
           </div>
         )}

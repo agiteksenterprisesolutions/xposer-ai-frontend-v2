@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Table, { TableLoading } from '../../components/ui/Table';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { StatusBadge, PriorityBadge } from '../../components/ui/Badge';
@@ -126,7 +127,17 @@ const MyCases = () => {
           </Table.Header>
           <Table.Body>
             {loading ? (
-              <TableLoading colSpan={6} rows={5} />
+              <TableLoading
+                rows={5}
+                cells={[
+                  <Skeleton.Text key="id" className="w-20" />,
+                  <Skeleton.Text key="c" className="w-24" />,
+                  <Skeleton.Badge key="p" className="w-14" />,
+                  <Skeleton.Text key="u" className="w-20" />,
+                  <Skeleton.Badge key="s" className="w-20" />,
+                  <Skeleton key="a" className="ml-auto h-8 w-10 rounded-lg" />,
+                ]}
+              />
             ) : sortedReports.length === 0 ? (
               <Table.Empty
                 message="No assigned cases"

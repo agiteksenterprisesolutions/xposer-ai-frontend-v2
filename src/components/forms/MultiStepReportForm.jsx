@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import Card from "../ui/Card";
+import Skeleton from "../ui/Skeleton";
 import Button from "../ui/Button";
 import Input, { Textarea, Select } from "../ui/Input";
 import Alert from "../ui/Alert";
@@ -36,6 +37,15 @@ import {
   validateAttachments,
 } from "../../utils/attachments";
 import { copyToClipboard } from "../../utils/clipboard";
+import {
+  CURRENCIES,
+  DEFAULT_CURRENCY,
+  currencyDigits,
+  fromMinorUnits,
+  normalizeOptions,
+  normalizeValidation,
+  toMinorUnits,
+} from "../../utils/reportTypes";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -572,16 +582,58 @@ const MultiStepReportForm = ({
     });
   }, [currentStep]);
 
+  // Most of these constraints aren't enforced by the server (it checks only
+  // max_length, pattern and email format), so this is the only check there is.
   const validateQuestionValue = useCallback((question, rawValue) => {
     const label = question.label || question.name || "Field";
+    const normalizedType = normalizeQuestionType(question.type);
+    const rules = normalizeValidation(question.validation);
+
+    if (normalizedType === "currency") {
+      const minor = rawValue && typeof rawValue === "object" ? rawValue.amount_minor : null;
+      if (minor === null || minor === undefined) return question.required ? `${label} is required` : "";
+      const currency = rawValue.currency || DEFAULT_CURRENCY;
+      const amount = minor / 10 ** currencyDigits(currency);
+      if (amount < 0) return `${label} can't be negative`;
+      if (rules.min_value !== undefined && amount < Number(rules.min_value)) return `${label} must be at least ${rules.min_value} ${currency}`;
+      if (rules.max_value !== undefined && amount > Number(rules.max_value)) return `${label} must be at most ${rules.max_value} ${currency}`;
+      return "";
+    }
+
     const value = Array.isArray(rawValue) ? rawValue : String(rawValue ?? "").trim();
     const isEmpty = value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0);
-    const normalizedType = normalizeQuestionType(question.type);
 
     if (question.required && isEmpty) {
       return `${label} is required`;
     }
     if (isEmpty) return "";
+
+    if (normalizedType === "multiselect") {
+      if (rules.min_selections !== undefined && value.length < Number(rules.min_selections)) {
+        return `Choose at least ${rules.min_selections}`;
+      }
+      if (rules.max_selections !== undefined && value.length > Number(rules.max_selections)) {
+        return `Choose at most ${rules.max_selections}`;
+      }
+      return "";
+    }
+
+    if (["text", "textarea"].includes(normalizedType)) {
+      if (rules.min_length !== undefined && value.length < Number(rules.min_length)) {
+        return `${label} must be at least ${rules.min_length} characters`;
+      }
+      if (rules.max_length !== undefined && value.length > Number(rules.max_length)) {
+        return `${label} must be at most ${rules.max_length} characters`;
+      }
+    }
+
+    if (rules.pattern) {
+      try {
+        if (!new RegExp(rules.pattern).test(String(value))) return `${label} isn't in the expected format`;
+      } catch {
+        // A pattern the browser can't compile is the server's to judge.
+      }
+    }
 
     if (normalizedType === "email" && !isValidEmail(String(value))) {
       return `${label} must be a valid email address`;
@@ -600,41 +652,41 @@ const MultiStepReportForm = ({
       if (Number.isNaN(numberValue)) {
         return `${label} must be a number`;
       }
-      const minValue = question.validation?.min ?? 0;
+      const minValue = rules.min_value ?? 0;
       if (numberValue < Number(minValue)) {
         return Number(minValue) === 0
           ? `${label} must be a non-negative number`
           : `${label} must be at least ${minValue}`;
       }
-      if (
-        question.validation?.max !== undefined &&
-        question.validation?.max !== null &&
-        numberValue > Number(question.validation.max)
-      ) {
-        return `${label} must be at most ${question.validation.max}`;
+      if (rules.max_value !== undefined && numberValue > Number(rules.max_value)) {
+        return `${label} must be at most ${rules.max_value}`;
       }
     }
 
-    if (normalizedType === "date") {
-      if (!isValidDate(String(value))) {
+    if (normalizedType === "time" && !/^\d{2}:\d{2}(:\d{2})?$/.test(String(value))) {
+      return `${label} must be a valid time`;
+    }
+
+    const isDate = normalizedType === "date";
+    const isDateTime = ["datetime", "datetime-local", "date-time"].includes(normalizedType);
+    if (isDate || isDateTime) {
+      if (isDateTime) {
+        const datetimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
+        if (!datetimeRegex.test(String(value)) || !isValidDate(String(value))) {
+          return `${label} must be a valid date and time`;
+        }
+      } else if (!isValidDate(String(value))) {
         return `${label} must be a valid date`;
       }
-      const selectedDate = new Date(String(value).includes('T') ? String(value) : String(value) + 'T00:00:00');
-      selectedDate.setHours(0, 0, 0, 0);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (selectedDate > today) {
-        return `${label} cannot be a future date`;
+      const day = String(value).slice(0, 10);
+      const minDate = resolveDateBound(rules.min_date);
+      // With no latest date set, a report can't describe the future.
+      const maxDate = resolveDateBound(rules.max_date) || localToday();
+      if (minDate && day < minDate) return `${label} can't be before ${minDate}`;
+      if (day > maxDate) {
+        return rules.max_date ? `${label} can't be after ${maxDate}` : `${label} cannot be a future date`;
       }
-    }
-
-    if (["datetime", "datetime-local", "date-time"].includes(normalizedType)) {
-      const datetimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
-      if (!datetimeRegex.test(String(value)) || !isValidDate(String(value))) {
-        return `${label} must be a valid date and time`;
-      }
-      const selectedDateTime = new Date(String(value));
-      if (selectedDateTime > new Date()) {
+      if (isDateTime && !rules.max_date && new Date(String(value)) > new Date()) {
         return `${label} cannot be a future date and time`;
       }
     }
@@ -702,8 +754,13 @@ const MultiStepReportForm = ({
     // Defaults are seeded up front, but a question revealed later by
     // conditional logic missed that pass — so fold them in again here. An
     // explicit answer, including one the reporter cleared to "", still wins.
-    const visibleDefaults = collectDefaults(getVisibleQuestions(visibleSections[currentStep]));
-    const currentData = { ...visibleDefaults, ...(stepData[currentStep] || {}) };
+    const visibleQuestions = getVisibleQuestions(visibleSections[currentStep]);
+    const visibleDefaults = collectDefaults(visibleQuestions);
+    // A question hidden by conditional logic is omitted, not submitted blank.
+    const visibleNames = new Set(visibleQuestions.map((question) => question.name));
+    const currentData = Object.fromEntries(
+      Object.entries({ ...visibleDefaults, ...(stepData[currentStep] || {}) }).filter(([name]) => visibleNames.has(name)),
+    );
     const isStepValid = validateCurrentStep();
     if (!isStepValid) {
       toast.error("Please fix validation errors before saving");
@@ -810,27 +867,16 @@ const MultiStepReportForm = ({
   // ============ RENDER FUNCTIONS ============
 
   const renderLoading = () => (
-    <div className="max-w-4xl mx-auto">
-      <Card>
-        <div className="text-center py-12">
-          <Loader className="w-8 h-8 text-accent-fg animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-ink mb-2">
-            {isEditingDraft
-              ? "Loading Your Draft"
-              : isAnonymous
-                ? "Preparing Anonymous Report"
-                : "Initializing Your Report"}
-          </h2>
-          <p className="text-ink-muted">
-            {isEditingDraft
-              ? "Restoring your saved answers..."
-              : isAnonymous
-                ? "Setting up your secure anonymous form..."
-                : "Linking report to your account..."}
-          </p>
-        </div>
-      </Card>
-    </div>
+    <ReportFormSkeleton
+      onBack={onCancel}
+      message={
+        isEditingDraft
+          ? "Restoring your saved answers…"
+          : isAnonymous
+            ? "Setting up your secure anonymous form…"
+            : "Linking report to your account…"
+      }
+    />
   );
 
   // Attachments stage — shown after completing all steps, before final submit
@@ -1197,23 +1243,21 @@ const MultiStepReportForm = ({
                         onBlur={(e) => validateQuestionOnBlur(question, e.target.value)}
                         required={isRequired}
                         disabled={isLoading || isSaving}
-                        options={question.options || []}
+                        options={normalizeOptions(question.options)}
                         placeholder={question.placeholder || "Select an option"}
                         error={fieldError}
                         className="outline-none focus:ring-1"
                       >
                         <option value="">{question.placeholder || "Select an option"}</option>
-                        {question.options?.map((option, optIdx) => {
-                          const optionValue = typeof option === "object" ? option.value || option : option;
-                          const optionLabel = typeof option === "object" ? option.label || option.value || option : option;
-                          return <option key={optIdx} value={optionValue}>{optionLabel}</option>;
-                        })}
+                        {normalizeOptions(question.options).map((option, optIdx) => (
+                          <option key={optIdx} value={option.value}>{option.label}</option>
+                        ))}
                       </Select>
                     ) : normalizedType === "multiselect" ? (
                       <div className="space-y-2">
-                        {question.options?.map((option, optIdx) => {
-                          const optionValue = typeof option === "object" ? option.value || option : option;
-                          const optionLabel = typeof option === "object" ? option.label || option.value || option : option;
+                        {normalizeOptions(question.options).map((option, optIdx) => {
+                          const optionValue = option.value;
+                          const optionLabel = option.label;
                           return (
                             <label key={optIdx} className="flex items-center">
                               <input
@@ -1270,6 +1314,17 @@ const MultiStepReportForm = ({
                         onAttachmentSync={setAttachments}
                         onUploaded={(filename) => handleStepDataChange(question.name, filename)}
                       />
+                    ) : normalizedType === "currency" ? (
+                      <CurrencyField
+                        value={value && typeof value === "object" ? value : null}
+                        defaultCurrency={question.default_value?.currency}
+                        placeholder={question.placeholder}
+                        disabled={isLoading || isSaving}
+                        required={isRequired}
+                        error={fieldError}
+                        onChange={(next) => handleStepDataChange(question.name, next)}
+                        onBlur={(next) => validateQuestionOnBlur(question, next)}
+                      />
                     ) : isDateTimeField ? (
                       // Firefox's datetime-local picker only offers the calendar — the
                       // time has to be typed blind — so the field is split in two and
@@ -1289,7 +1344,8 @@ const MultiStepReportForm = ({
                             : normalizedType === "phone" ? "tel"
                               : normalizedType === "number" ? "number"
                                 : normalizedType === "date" ? "date"
-                                  : "text"
+                                  : normalizedType === "time" ? "time"
+                                    : "text"
                         }
                         value={value}
                         onChange={(e) => {
@@ -1319,10 +1375,14 @@ const MultiStepReportForm = ({
                         required={isRequired}
                         title={question.type === 'phone' ? 'Write phone number including country code and without + symbol (e.g., 251912345678)' : ''}
                         disabled={isLoading || isSaving}
-                        min={normalizedType === "number" ? (question.validation?.min ?? 0) : undefined}
+                        min={
+                          normalizedType === "number" ? (normalizeValidation(question.validation).min_value ?? 0) :
+                            normalizedType === "date" ? resolveDateBound(normalizeValidation(question.validation).min_date) || undefined :
+                              undefined
+                        }
                         max={
-                          normalizedType === "number" ? question.validation?.max :
-                            normalizedType === "date" ? new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0] :
+                          normalizedType === "number" ? normalizeValidation(question.validation).max_value :
+                            normalizedType === "date" ? resolveDateBound(normalizeValidation(question.validation).max_date) || localToday() :
                               undefined
                         }
                         maxLength={isPhoneField ? PHONE_DIGIT_LIMIT : isEmailField ? EMAIL_MAX_LENGTH : normalizedType === "number" ? NUMBER_DIGIT_LIMIT : undefined}
@@ -1520,6 +1580,74 @@ const splitDateTime = (value) => {
 
 const localNow = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString();
 
+// `today` in a date bound is resolved here, at render, as the server does.
+const localToday = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0];
+const resolveDateBound = (bound) => (bound === "today" ? localToday() : bound || null);
+
+/**
+ * Amount plus currency. The answer is `{ amount_minor, currency }` — money is
+ * stored as an integer in the currency's smallest unit, never as a float.
+ */
+const CurrencyField = ({ value, defaultCurrency, disabled, required, error, placeholder, onChange, onBlur }) => {
+  const currency = value?.currency || defaultCurrency || DEFAULT_CURRENCY;
+  const [draft, setDraft] = useState(() => fromMinorUnits(value?.amount_minor, currency));
+
+  useEffect(() => {
+    const shown = toMinorUnits(draft, currency);
+    if (shown !== (value?.amount_minor ?? null)) setDraft(fromMinorUnits(value?.amount_minor, currency));
+    // Only an outside change (a loaded draft) should overwrite what's typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value?.amount_minor, currency]);
+
+  const emit = (amount, code) => {
+    const next = { amount_minor: toMinorUnits(amount, code), currency: code };
+    onChange(next.amount_minor === null && amount === "" ? "" : next);
+    return next;
+  };
+
+  const options = CURRENCIES.includes(currency) ? CURRENCIES : [currency, ...CURRENCIES];
+  return (
+    <div>
+      <div className="flex gap-2">
+        <select
+          value={currency}
+          onChange={(e) => emit(draft, e.target.value)}
+          disabled={disabled}
+          aria-label="Currency"
+          className="w-24 shrink-0 rounded-lg border border-line bg-subtle px-3 py-2.5 text-sm text-ink outline-none focus:border-line-accent"
+        >
+          {options.map((code) => (
+            <option key={code} value={code}>
+              {code}
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={draft}
+          required={required}
+          disabled={disabled}
+          placeholder={placeholder || (0).toFixed(currencyDigits(currency))}
+          onChange={(e) => {
+            const next = e.target.value.replace(/[^0-9.]/g, "");
+            const [whole, fraction] = next.split(".");
+            if (fraction !== undefined && fraction.length > currencyDigits(currency)) return;
+            setDraft(fraction === undefined ? whole : `${whole}.${fraction}`);
+            emit(next, currency);
+          }}
+          onBlur={() => onBlur(emit(draft, currency))}
+          aria-invalid={error ? "true" : undefined}
+          className={`min-w-0 flex-1 rounded-lg border bg-subtle px-3 py-2.5 text-sm text-ink outline-none focus:border-line-accent ${
+            error ? "border-danger-line" : "border-line"
+          }`}
+        />
+      </div>
+      {error && <p className="mt-1 text-xs text-danger-fg">{error}</p>}
+    </div>
+  );
+};
+
 const DateTimeField = ({ value, disabled, required, error, onChange, onBlur }) => {
   const [parts, setParts] = useState(() => splitDateTime(value));
 
@@ -1579,6 +1707,67 @@ const DateTimeField = ({ value, disabled, required, error, onChange, onBlur }) =
 
 // ============ INLINE FILE UPLOAD (for "file" type questions) ============
 // Immediately uploads to R2 when a file is chosen, storing the S3 key in stepData.
+/**
+ * The report form while it loads: the same header, progress and card, with
+ * the fields stubbed — and what is happening, where the report number will
+ * be. Pages that load a draft before mounting the form show it too, so the
+ * two loads read as one.
+ */
+export const ReportFormSkeleton = ({ message, onBack }) => (
+  <div className="max-w-4xl mx-auto" aria-busy="true">
+    <div className="mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-1 text-sm text-ink-muted transition-colors hover:text-ink"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+        <span className="flex items-center gap-1.5 text-sm text-ink-muted">
+          <Loader className="w-3.5 h-3.5 animate-spin" />
+          {message}
+        </span>
+      </div>
+      <Skeleton.Text size="2xl" className="w-72" />
+      <Skeleton.Text className="mt-1 w-48" />
+    </div>
+    <div className="mb-6">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <Skeleton.Text size="xs" className="w-20" />
+        <Skeleton.Text size="xs" className="w-8" />
+      </div>
+      <Skeleton className="h-1.5 w-full rounded-full" />
+      <div className="flex gap-2 mt-4 pb-1">
+        {[0, 1].map((i) => (
+          <Skeleton key={i} className="h-7 w-20 rounded-full" />
+        ))}
+      </div>
+    </div>
+    <Card>
+      <div className="mb-8">
+        <Skeleton.Text size="xl" className="w-56" />
+        <Skeleton.Text size="base" className="mt-2 w-72" />
+      </div>
+      <div className="space-y-6">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton.Text className="w-48" />
+            <Skeleton className="h-11 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3 pt-6 mt-6 border-t border-line">
+        <div className="flex gap-3">
+          <Skeleton.Button className="w-28" />
+          <Skeleton.Button className="w-32" />
+        </div>
+        <Skeleton.Button className="w-40" />
+      </div>
+    </Card>
+  </div>
+);
+
 const InlineFileUpload = ({
   question,
   value,

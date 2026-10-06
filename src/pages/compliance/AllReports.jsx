@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Table, { TableLoading } from '../../components/ui/Table';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { StatusBadge, PriorityBadge } from '../../components/ui/Badge';
@@ -328,7 +329,9 @@ const AllReports = () => {
         </div> */}
         <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto">
           <TableSortControl {...sort} id="reports" className="shrink-0" data-tour="reports-sort" />
-          {!loading && (
+          {loading ? (
+            <Skeleton.Text className="w-20" />
+          ) : (
             <span className="text-sm text-ink-muted whitespace-nowrap tabular-nums">
               {totalReports} report{totalReports === 1 ? '' : 's'}
             </span>
@@ -364,7 +367,7 @@ const AllReports = () => {
 
       {/* Tabs */}
       <div className="border-b border-line" data-tour="reports-tabs">
-        <nav className="-mb-px flex gap-6 sm:gap-8 overflow-x-auto scrollbar-thin">
+        <nav className="-mb-px flex gap-6 sm:gap-8 overflow-x-auto overflow-y-hidden scrollbar-none">
           {statusTabs.map((tab) => (
             <button
               key={tab.id}
@@ -396,7 +399,18 @@ const AllReports = () => {
           </Table.Header>
           <Table.Body>
             {loading ? (
-              <TableLoading colSpan={7} rows={10} />
+              <TableLoading
+                rows={DEFAULT_PAGE_SIZE}
+                cells={[
+                  <Skeleton.Text key="id" className="w-20" />,
+                  <Skeleton.Text key="d" className="w-20" />,
+                  <Skeleton.Text key="c" className="w-24" />,
+                  <Skeleton.Badge key="p" className="w-14" />,
+                  <Skeleton.Text key="b" className="w-16" />,
+                  <Skeleton.Text key="t" className="w-16" />,
+                  <Skeleton.Badge key="s" className="w-20" />,
+                ]}
+              />
             ) : filteredReports.length === 0 ? (
               <Table.Empty
                 message={searchTerm ? 'No matching reports' : 'No reports found'}

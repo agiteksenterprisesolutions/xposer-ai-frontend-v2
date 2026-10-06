@@ -24,6 +24,7 @@ import { toast } from "react-toastify";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Table, { TableLoading } from "../../components/ui/Table";
+import Skeleton from '../../components/ui/Skeleton';
 import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
 import Input from "../../components/ui/Input";
@@ -390,7 +391,20 @@ const ReportTypes = () => {
           </Table.Header>
           <Table.Body>
             {loading ? (
-              <TableLoading colSpan={5} rows={5} />
+              <TableLoading
+                rows={5}
+                cells={[
+                  <Skeleton.Text key="n" className="w-56" />,
+                  <Skeleton.Badge key="c" className="w-14" />,
+                  <Skeleton.Badge key="s" tall className="w-16" />,
+                  <Skeleton.Text key="d" size="xs" className="w-36" />,
+                  <div key="a" className="flex items-center justify-end space-x-2">
+                    <Skeleton className="h-8 w-10 rounded-lg" />
+                    {canManage && <Skeleton className="h-8 w-10 rounded-lg" />}
+                    {canManage && <Skeleton className="h-10 w-18 rounded-lg" />}
+                  </div>,
+                ]}
+              />
             ) : filteredTypes.length === 0 ? (
               <Table.Empty
                 message={
@@ -420,6 +434,7 @@ const ReportTypes = () => {
                     <p className="text-sm font-semibold text-ink capitalize">
                       {type.name}
                     </p>
+                    {type.code && <p className="font-mono text-xs text-ink-subtle">{type.code}</p>}
                   </Table.Cell>
                   <Table.Cell>
                     <Badge variant="info" size="small">
@@ -427,9 +442,13 @@ const ReportTypes = () => {
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>
-                    <Badge variant={type.is_active ? "success" : "default"} dot>
-                      {type.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant={type.is_active ? "success" : "default"} dot>
+                        {type.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                      {type.status === "draft" && <Badge size="small">Draft</Badge>}
+                      {type.status === "retired" && <Badge size="small">Retired</Badge>}
+                    </div>
                   </Table.Cell>
                   <Table.Cell>
                     <span className="text-xs text-ink-muted whitespace-nowrap">
@@ -559,42 +578,63 @@ const ReportTypes = () => {
             </Alert>
           )}
 
-          {importResult?.problems?.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-                <AlertTriangle className="h-4 w-4 text-warning-solid" />
-                <span>
-                  Problems found ({importResult.problems.length})
-                </span>
-              </div>
-              <ul className="space-y-3 text-sm text-ink-secondary">
-                {importResult.problems.map((problem, index) => {
-                  if (typeof problem === "string") {
-                    return <li key={index}>{problem}</li>;
-                  }
-                  const errors = Array.isArray(problem?.errors) ? problem.errors : [];
-                  return (
-                    <li key={index} className="space-y-1">
-                      <p className="font-semibold text-ink">
-                        {problem?.row != null ? `Row ${problem.row}` : `Entry ${index + 1}`}
+          {importResult?.problems?.length > 0 && (() => {
+            const errorsOf = (problem) =>
+              typeof problem === "string"
+                ? [problem]
+                : Array.isArray(problem?.errors)
+                  ? problem.errors.map((err) => (typeof err === "string" ? err : err?.message || JSON.stringify(err)))
+                  : [problem?.message || JSON.stringify(problem)];
+            // row: null is a problem with the whole file, not one row.
+            const fileProblems = importResult.problems.filter((p) => typeof p === "string" || p?.row == null);
+            const rowProblems = importResult.problems.filter((p) => typeof p !== "string" && p?.row != null);
+            // Import matches on name and never updates, so a re-import of a
+            // corrected file fails once per existing type.
+            const alreadyExists = importResult.problems.some((p) => errorsOf(p).some((e) => /already exists/i.test(e)));
+            return (
+              <div className="space-y-4">
+                {fileProblems.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+                      <AlertTriangle className="h-4 w-4 text-warning-solid" />
+                      About the whole file ({fileProblems.length})
+                    </p>
+                    <ul className="list-disc space-y-1 pl-5 text-sm text-ink-secondary marker:text-ink-subtle">
+                      {fileProblems.flatMap((problem, index) =>
+                        errorsOf(problem).map((err, errIndex) => <li key={`${index}-${errIndex}`}>{err}</li>),
+                      )}
+                    </ul>
+                    {alreadyExists && (
+                      <p className="text-xs text-ink-muted">
+                        Importing never updates an existing type — it matches on the name. To replace one, delete it
+                        here first, then import the file again.
                       </p>
-                      <ul className="space-y-1 pl-4 list-disc marker:text-ink-subtle">
-                        {errors.length > 0 ? (
-                          errors.map((err, errIndex) => (
-                            <li key={errIndex}>
-                              {typeof err === "string" ? err : JSON.stringify(err)}
-                            </li>
-                          ))
-                        ) : (
-                          <li>{JSON.stringify(problem)}</li>
-                        )}
-                      </ul>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
+                    )}
+                  </div>
+                )}
+                {rowProblems.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+                      <AlertTriangle className="h-4 w-4 text-warning-solid" />
+                      In specific rows ({rowProblems.length})
+                    </p>
+                    <ul className="space-y-3 text-sm text-ink-secondary">
+                      {rowProblems.map((problem, index) => (
+                        <li key={index} className="space-y-1">
+                          <p className="font-semibold text-ink">Row {problem.row}</p>
+                          <ul className="list-disc space-y-1 pl-4 marker:text-ink-subtle">
+                            {errorsOf(problem).map((err, errIndex) => (
+                              <li key={errIndex}>{err}</li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </Modal>
     </div>

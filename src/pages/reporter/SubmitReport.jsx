@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import MultiStepReportForm from '../../components/forms/MultiStepReportForm';
@@ -138,11 +139,22 @@ const SubmitReport = () => {
         </h2>
 
         {isLoadingTypes ? (
-          <div className="bg-surface rounded-xl border border-line shadow-sm">
-            <div className="text-center py-16">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-line-accent mb-4"></div>
-              <p className="text-ink-muted">Loading report types...</p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" aria-busy="true">
+            {[0, 1].map((i) => (
+              <div key={i} className="bg-surface rounded-xl border-2 border-line h-full p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <Skeleton.Text size="lg" className="mb-2 w-3/4" />
+                    <Skeleton.Lines lines={2} />
+                  </div>
+                  <Skeleton className="ml-2 h-5 w-5 rounded" />
+                </div>
+                <div className="flex items-center justify-between pt-4 border-t border-line-subtle">
+                  <Skeleton.Text size="xs" className="w-14" />
+                  <Skeleton.Text size="xs" className="w-20" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : reportTypes.length === 0 ? (
           <Card>

@@ -19,6 +19,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import { reportsAPI } from '../../api';
 import { useAuthStore } from '../../store/authStore';
@@ -261,17 +262,6 @@ const AdminDashboard = () => {
     return steps;
   }, [isDesktop]);
 
-  if (loading) {
-    return <div className="animate-pulse space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-active rounded-xl" />)}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {[1, 2].map(i => <div key={i} className="h-80 bg-active rounded-xl" />)}
-      </div>
-    </div>;
-  }
-
   return (
     <div className="space-y-8">
       <DashboardTour ref={tourRef} storageKey={ADMIN_TOUR_KEY} steps={tourSteps} />
@@ -299,9 +289,13 @@ const AdminDashboard = () => {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-ink-muted truncate">{stat.title}</p>
-                <h3 className="text-2xl sm:text-3xl font-bold text-ink mt-1 tabular-nums tracking-[-0.02em]">
-                  {stat.value}
-                </h3>
+                {loading ? (
+                  <Skeleton.Text size="2xl" className="mt-1 w-12 sm:h-9" />
+                ) : (
+                  <h3 className="text-2xl sm:text-3xl font-bold text-ink mt-1 tabular-nums tracking-[-0.02em]">
+                    {stat.value}
+                  </h3>
+                )}
               </div>
               <span className={`inline-flex items-center justify-center h-9 w-9 shrink-0 rounded-lg ${tone(stat.color).soft} ${tone(stat.color).fg}`}>
                 <stat.icon className="h-4.5 w-4.5" />
@@ -393,8 +387,10 @@ const AdminDashboard = () => {
           <Card.Content>
             {/* Scrolls internally so the card height stays fixed no matter how
                 many categories come back. */}
-            <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
-              {reportTypeData.length > 0 ? (
+            <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pr-3">
+              {loading ? (
+                <Skeleton.Bars className="block space-y-1.5 p-1 -m-1" />
+              ) : reportTypeData.length > 0 ? (
                 reportTypeData.map((type, i) => {
                   const percentage = totalReports > 0 ? Math.round((type.total / totalReports) * 100) : 0;
                   return (
@@ -430,7 +426,14 @@ const AdminDashboard = () => {
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            {reportTypeData.length > 0 ? (
+            {loading ? (
+              <div className="min-w-0" aria-hidden="true">
+                <Skeleton.Donut />
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                  <div className="py-0.5"><Skeleton.Text size="xs" className="w-40" /></div>
+                </div>
+              </div>
+            ) : reportTypeData.length > 0 ? (
               <div className="min-w-0">
                 {/* Percentage radii so the pie scales with the container, and a
                     shorter chart on phones. */}

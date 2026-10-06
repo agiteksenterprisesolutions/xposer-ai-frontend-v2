@@ -22,7 +22,7 @@ import Badge from '../ui/Badge';
 import { orgRolesAPI } from '../../api/orgRoles';
 import { invalidateOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
-import { PERM } from '../../utils/permissions';
+import { PERM, permissionLabels } from '../../utils/permissions';
 import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import PermissionPicker, { Checkbox, catalogEntries, localPrerequisiteErrors } from './PermissionPicker';
 import { describeError } from '../../utils/errors';
@@ -325,7 +325,8 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
             <Badge variant="warning" size="small" className="mr-1.5">
               Not grantable
             </Badge>
-            {serverResult.not_grantable.join(', ')} — you don't hold {serverResult.not_grantable.length === 1 ? 'it' : 'them'},
+            {permissionLabels(serverResult.not_grantable, ', ')} — you don't hold{' '}
+            {serverResult.not_grantable.length === 1 ? 'it' : 'them'},
             so saving will be refused.
           </p>
         )}

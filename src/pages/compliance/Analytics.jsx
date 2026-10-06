@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import { reportsAPI, analyticsAPI } from '../../api';
 import { toast } from 'react-toastify';
@@ -139,19 +140,6 @@ const ComplianceAnalytics = () => {
     { label: 'Active Users', value: '0', trend: '0%', icon: Map }
   ];
 
-  if (loading) {
-    return (
-      <div className="animate-pulse space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-active rounded-xl" />)}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2].map(i => <div key={i} className="h-80 bg-active rounded-xl" />)}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
@@ -220,12 +208,20 @@ const ComplianceAnalytics = () => {
               <div className="p-2 bg-accent-soft rounded-lg">
                 <m.icon className="h-5 w-5 text-accent-fg" />
               </div>
-              <span className={`text-xs font-medium ${m.trend.startsWith('+') ? 'text-success-fg' : 'text-accent-fg'}`}>
-                {m.trend}
-              </span>
+              {loading ? (
+                <Skeleton.Text size="xs" className="w-8" />
+              ) : (
+                <span className={`text-xs font-medium ${m.trend.startsWith('+') ? 'text-success-fg' : 'text-accent-fg'}`}>
+                  {m.trend}
+                </span>
+              )}
             </div>
             <div className="mt-4 text-left">
-              <h3 className="text-2xl font-bold text-ink">{m.value}</h3>
+              {loading ? (
+                <Skeleton.Text size="2xl" className="w-12" />
+              ) : (
+                <h3 className="text-2xl font-bold text-ink">{m.value}</h3>
+              )}
               <p className="text-sm text-ink-muted font-medium">{m.label}</p>
             </div>
           </Card>
@@ -244,8 +240,10 @@ const ComplianceAnalytics = () => {
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
-              {reportTypeData.length > 0 ? (
+            <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pr-3">
+              {loading ? (
+                <Skeleton.Bars />
+              ) : reportTypeData.length > 0 ? (
                 reportTypeData.map((type, i) => {
                   const percentage = totalReports > 0 ? Math.round((type.total / totalReports) * 100) : 0;
                   return (
@@ -275,7 +273,14 @@ const ComplianceAnalytics = () => {
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            {reportTypeData.length > 0 ? (
+            {loading ? (
+              <div className="min-w-0" aria-hidden="true">
+                <Skeleton.Donut />
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                  <Skeleton.Text size="xs" className="w-40" />
+                </div>
+              </div>
+            ) : reportTypeData.length > 0 ? (
               <div className="min-w-0">
                 {/* Percentage radii so the pie scales with the container, and a
                     shorter chart on phones. */}

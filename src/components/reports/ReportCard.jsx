@@ -10,6 +10,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import Card from '../ui/Card';
+import Skeleton from '../ui/Skeleton';
 import Badge, { StatusBadge, PriorityBadge } from '../ui/Badge';
 import Button from '../ui/Button';
 import { formatDate, truncateText } from '../../utils/formatters';
@@ -156,6 +157,25 @@ const ReportCard = ({
     </Card>
   );
 };
+
+// A grid card while reports load — same card, data stubbed.
+export const ReportGridCardSkeleton = () => (
+  <Card className="h-full" aria-hidden="true">
+    <div className="h-full flex flex-col">
+      <div className="mb-4">
+        <div className="flex justify-between items-start mb-2">
+          <Skeleton.Badge className="w-16" />
+          <Skeleton.Badge className="w-14" />
+        </div>
+        <Skeleton.Text size="xs" className="w-20" />
+      </div>
+      <Skeleton.Text className="mb-2 w-3/4" />
+      <div className="mt-auto pt-4 border-t border-line-subtle">
+        <Skeleton.Text size="xs" className="w-14" />
+      </div>
+    </div>
+  </Card>
+);
 
 // Grid view variant
 export const ReportGridCard = ({ report, onClick }) => {

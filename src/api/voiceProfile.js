@@ -19,17 +19,19 @@ export const voiceProfileAPI = {
   },
 
   /**
-   * Whole-profile replace. All three fields are always sent: a field left out
-   * is cleared, not kept. The server trims and collapses whitespace and turns
+   * Whole-profile replace. Every field is always sent: one left out is
+   * cleared, not kept. `greetings` is one entry per language
+   * (`{ language, text }`, ISO 639-1); callers in a language with no entry
+   * hear one translated. The server trims and collapses whitespace and turns
    * empty strings into null, so the form must be refilled from the response.
    */
-  updateVoiceProfile: async ({ displayName, about, greeting }, organizationId = null) => {
+  updateVoiceProfile: async ({ displayName, about, greetings = [] }, organizationId = null) => {
     const response = await api.put(
       '/voice-profile/',
       {
         display_name: displayName ?? null,
         about: about ?? null,
-        greeting: greeting ?? null,
+        greetings,
       },
       scoped(organizationId),
     );

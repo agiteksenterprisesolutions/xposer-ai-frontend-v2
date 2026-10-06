@@ -3,6 +3,9 @@
 // The organization's own AI agents. There are no hard-coded agents any more:
 // an organization defines as many as it wants, each drawing its permissions
 // from one of its roles (role_source "org_role") or an inline set ("custom").
+// The summarizer is the exception: one per organization, with fixed
+// permissions (role_source "intrinsic", role_code null). Creating a second
+// returns 409.
 //
 // An agent's `capabilities` are what someone ticked; `effective_capabilities`
 // are what will actually happen once intersected with the permissions its role
@@ -73,11 +76,13 @@ export const orgAgentsAPI = {
   },
 
   /**
-   * The organization's summarizer switch. `enabled` is what was asked for;
-   * `active` is whether it will actually run, and `problems` says why when the
-   * two disagree. Also: `resolved_agent`, `available_agents`,
-   * `affected_stages`, and `access` — a read-only mirror of which roles hold
-   * agent:summary_read.
+   * The organization's summarizer. There is exactly one per organization; it
+   * runs automatically before the first stage of every workflow and is never
+   * a stage itself. `enabled` is the switch; `active` is whether anything will
+   * actually run, and `problems` says why when the two disagree. Also:
+   * `resolved_agent` (with effective/disabled capabilities),
+   * `runs_before_stages` (every agent stage, since all read the digest) and
+   * `access` — a read-only mirror of which roles hold agent:summary_read.
    */
   getSummarizer: async () => {
     const response = await api.get('/org-agents/summarizer');
@@ -85,10 +90,9 @@ export const orgAgentsAPI = {
   },
 
   /**
-   * Any of `{ enabled, agent_code, include_attachments, max_words }`.
-   * Switching off skips summarizer stages on the next run; it does not edit
-   * the workflow, the agent or any role. max_words is 50–4000 (else 422); an
-   * agent_code that isn't a summarizer-kind agent is a 400.
+   * Any of `{ enabled, include_attachments, max_words }`. There is one
+   * summarizer, so there is no agent to choose. Switching off does not edit
+   * the workflow, the agent or any role. max_words is 50–4000 (else 422).
    */
   updateSummarizer: async (changes) => {
     const response = await api.put('/org-agents/summarizer', changes, inline);

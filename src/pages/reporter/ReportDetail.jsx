@@ -22,7 +22,7 @@ import { reportsAPI, messagesAPI } from "../../api";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { StatusBadge, PriorityBadge } from "../../components/ui/Badge";
-import LoadingSpinner from "../../components/layout/LoadingSpinner";
+import Skeleton from "../../components/ui/Skeleton";
 import Alert from "../../components/ui/Alert";
 import { Textarea } from "../../components/ui/Input";
 import { formatDate, formatDateTime, formatRelativeTime, formatFileSize } from "../../utils/formatters";
@@ -30,8 +30,10 @@ import useSEO from '../../hooks/useSEO';
 import { isDraftReport, getReportDescription, getReportTitle } from '../../utils/reports';
 import VoiceAnswers from '../../components/reports/VoiceAnswers';
 import { toast } from "react-toastify";
+import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
 
 const formatFormValue = (value) => {
+  if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || "N/A";
   if (value == null) return "N/A";
 
   const str = String(value);
@@ -47,6 +49,96 @@ const formatFormValue = (value) => {
 
   return str;
 };
+
+/** The report page while it loads: the same header, cards and sidebar. */
+const ReportDetailSkeleton = ({ backLabel, steps }) => (
+  <div className="max-w-5xl mx-auto space-y-6 overflow-hidden" aria-busy="true">
+    <div>
+      <span className="inline-flex items-center text-sm text-ink-muted mb-4">
+        <ArrowLeft className="w-4 h-4 mr-1" />
+        Back to {backLabel}
+      </span>
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 mb-2">
+            <Skeleton.Text size="2xl" className="w-52" />
+            <Skeleton className="h-7 w-20 rounded" />
+          </div>
+          <div className="flex items-center gap-4">
+            <Skeleton.Text className="w-52" />
+            <Skeleton.Text className="w-56" />
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton.Badge className="w-16" />
+          <Skeleton.Badge className="w-14" />
+        </div>
+      </div>
+    </div>
+
+    <div className="grid lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-6">
+        <Card>
+          <div className="flex flex-col md:flex-row justify-between">
+            {steps.map((step) => (
+              <div key={step.key} className="flex md:flex-col items-center gap-4 md:gap-2 p-2 md:p-0">
+                <Skeleton.Circle size="h-8 w-8" />
+                <span className="text-sm font-medium text-ink-muted">{step.label}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card title="Report Details">
+          <div>
+            <Skeleton.Text className="mb-2 w-44" />
+            <Skeleton className="h-11 w-full rounded-lg" />
+          </div>
+        </Card>
+        <Card>
+          <Card.Header className="flex items-center justify-between border-b border-line-subtle">
+            <Card.Title className="flex items-center">
+              <MessageSquare className="h-5 w-5 mr-2 text-accent-fg" />
+              Communication
+            </Card.Title>
+          </Card.Header>
+          <Card.Content className="pt-6">
+            <Skeleton.Text className="mx-auto w-64" />
+            <div className="mt-8 pt-6 border-t border-line-subtle">
+              <Skeleton className="h-24 w-full rounded-lg" />
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+
+      <div className="space-y-6">
+        <Card className="bg-accent-soft border-line-accent">
+          <div className="flex items-start">
+            <Shield className="w-5 h-5 text-accent-fg mr-2 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-accent-fg">Secure Channel</h4>
+              <p className="text-sm text-accent-fg mt-1">
+                This conversation is end-to-end encrypted. Your identity remains protected.
+              </p>
+            </div>
+          </div>
+        </Card>
+        <Card title="Timeline">
+          <div className="space-y-4">
+            {[0, 1].map((i) => (
+              <div key={i} className="flex gap-3">
+                <Skeleton.Circle size="mt-2 h-2 w-2" />
+                <div>
+                  <Skeleton.Text className="w-32" />
+                  <Skeleton.Text size="xs" className="w-36" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  </div>
+);
 
 const ReportDetail = () => {
   const { id } = useParams();
@@ -187,7 +279,12 @@ const ReportDetail = () => {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading report details..." />;
+    return (
+      <ReportDetailSkeleton
+        backLabel={user?.is_anonymous ? "Report Tracking" : "My Reports"}
+        steps={statusSteps}
+      />
+    );
   }
 
   if (error || !report) {

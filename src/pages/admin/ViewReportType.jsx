@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
+import ReportTypeBuilderSkeleton from '../../components/forms/ReportTypeBuilderSkeleton';
 import ReportTypeBuilder from '../../components/forms/ReportTypeBuilder';
 import { reportTypesAPI } from '../../api';
 import { toast } from 'react-toastify';
@@ -60,16 +61,7 @@ const ViewReportType = () => {
 
   const listPath = `/${user?.organization_slug}/staff/report-types`;
 
-  if (loading) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-16 bg-active rounded-xl" />
-          <div className="h-96 bg-active rounded-2xl" />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <ReportTypeBuilderSkeleton mode="view" />;
 
   if (error || !reportType) {
     return (

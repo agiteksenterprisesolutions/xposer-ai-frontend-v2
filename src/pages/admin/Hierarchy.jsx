@@ -5,8 +5,8 @@
 // never their peers and never themselves.
 //
 // Coverage is the landing tab because it answers the question an admin
-// actually has ("is this working?"); levels and the directory are where the
-// fixes happen. All three read the same data and reload together after any
+// actually has ("is this working?"); the org chart shows the same directory
+// as a picture; levels and the directory are where the fixes happen. All three read the same data and reload together after any
 // change, so a fix made on one tab shows up on the others.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -17,7 +17,10 @@ import Alert from '../../components/ui/Alert';
 import CoveragePanel from '../../components/hierarchy/CoveragePanel';
 import LevelsPanel from '../../components/hierarchy/LevelsPanel';
 import DirectoryPanel from '../../components/hierarchy/DirectoryPanel';
+import OrgChartPanel from '../../components/hierarchy/OrgChartPanel';
 import SyncPanel from '../../components/hierarchy/SyncPanel';
+import EscalationPanel from '../../components/hierarchy/EscalationPanel';
+import HierarchySkeleton from '../../components/hierarchy/HierarchySkeleton';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useCan } from '../../hooks/useCan';
 import { PERM } from '../../utils/permissions';
@@ -27,8 +30,10 @@ import useSEO from '../../hooks/useSEO';
 
 const TABS = [
   { value: 'coverage', label: 'Coverage' },
+  { value: 'chart', label: 'Org chart' },
   { value: 'levels', label: 'Levels' },
   { value: 'directory', label: 'Directory' },
+  { value: 'escalation', label: 'Escalation rules' },
   // Every sync endpoint needs org_hierarchy:manage, including reading the config.
   { value: 'hr', label: 'HR connection', manageOnly: true },
 ];
@@ -95,6 +100,8 @@ const Hierarchy = () => {
     [coverage],
   );
 
+  const initialLoad = loading && !coverage;
+
   return (
     <div className="space-y-6 pb-12">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -111,7 +118,7 @@ const Hierarchy = () => {
 
       {!canManage && (
         <Alert variant="info" title="View only">
-          Your role can see the hierarchy but not change it. Changing it needs the org_hierarchy:manage permission.
+          Your role can see the hierarchy but not change it. Changing it needs permission to edit the hierarchy.
         </Alert>
       )}
 
@@ -124,24 +131,24 @@ const Hierarchy = () => {
         </Alert>
       )}
 
-      {loading && !coverage && !error ? (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl border border-line bg-surface" />
-          ))}
-        </div>
-      ) : (
-        !error && (
+      {!error && (
           <Tabs value={tab} onChange={setTab}>
             <Tabs.List className="mb-5">
               {tabs.map(({ value, label }) => (
                 <Tabs.Trigger key={value} value={value}>
                   {label}
-                  {value === 'levels' && ` (${activeLevels.length})`}
-                  {value === 'directory' && ` (${members.filter((m) => m.is_active !== false).length})`}
+                  {/* Counts arrive with the data; hold their space meanwhile. */}
+                  {initialLoad && (value === 'levels' || value === 'directory') && <span className="invisible"> (0)</span>}
+                  {!initialLoad && value === 'levels' && ` (${activeLevels.length})`}
+                  {!initialLoad && value === 'directory' && ` (${members.filter((m) => m.is_active !== false).length})`}
                 </Tabs.Trigger>
               ))}
             </Tabs.List>
+
+            {initialLoad ? (
+              <HierarchySkeleton tab={tab} canManage={canManage} />
+            ) : (
+            <>
 
             <Tabs.Content value="coverage">
               <CoveragePanel
@@ -153,19 +160,32 @@ const Hierarchy = () => {
                 onGoTo={setTab}
               />
             </Tabs.Content>
+            <Tabs.Content value="chart">
+              <OrgChartPanel
+                members={members}
+                levels={activeLevels}
+                canManage={canManage}
+                onChanged={load}
+                onGoTo={setTab}
+              />
+            </Tabs.Content>
             <Tabs.Content value="levels">
               <LevelsPanel levels={levels} memberCounts={memberCounts} canManage={canManage} onChanged={load} />
             </Tabs.Content>
             <Tabs.Content value="directory">
               <DirectoryPanel members={members} levels={activeLevels} canManage={canManage} onChanged={load} />
             </Tabs.Content>
+            <Tabs.Content value="escalation">
+              <EscalationPanel levels={activeLevels} canManage={canManage} onGoTo={setTab} />
+            </Tabs.Content>
             {canManage && (
               <Tabs.Content value="hr">
                 <SyncPanel onChanged={load} onGoTo={setTab} />
               </Tabs.Content>
             )}
+            </>
+            )}
           </Tabs>
-        )
       )}
     </div>
   );

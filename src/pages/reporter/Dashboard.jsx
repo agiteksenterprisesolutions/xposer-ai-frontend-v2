@@ -15,8 +15,8 @@ import { useReports } from '../../hooks/useReports';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
-import { ReportGridCard } from '../../components/reports/ReportCard';
-import LoadingSpinner from '../../components/layout/LoadingSpinner';
+import { ReportGridCard, ReportGridCardSkeleton } from '../../components/reports/ReportCard';
+import Skeleton from '../../components/ui/Skeleton';
 import { formatRelativeTime, parseServerDate } from '../../utils/formatters';
 import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
@@ -151,10 +151,6 @@ const Dashboard = () => {
     return steps;
   }, [isDesktop]);
 
-  if (isLoading) {
-    return <LoadingSpinner message="Loading your dashboard..." />;
-  }
-
   return (
     <div className="space-y-6">
       <DashboardTour ref={tourRef} storageKey={REPORTER_TOUR_KEY} steps={tourSteps} />
@@ -221,7 +217,11 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-ink-muted">{tile.label}</p>
-                  <p className="text-2xl font-bold text-ink">{tile.value}</p>
+                  {isLoading ? (
+                    <Skeleton.Text size="2xl" className="w-10" />
+                  ) : (
+                    <p className="text-2xl font-bold text-ink">{tile.value}</p>
+                  )}
                 </div>
               </div>
             </Card>
@@ -289,7 +289,12 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {filteredReports.length === 0 ? (
+          {isLoading ? (
+            <div className="grid md:grid-cols-2 gap-4" aria-busy="true">
+              <ReportGridCardSkeleton />
+              <ReportGridCardSkeleton />
+            </div>
+          ) : filteredReports.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-12 h-12 text-ink-subtle mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-ink mb-2">
@@ -344,7 +349,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          {filteredReports.length > 0 && (
+          {(isLoading || filteredReports.length > 0) && (
             <div className="mt-6 pt-6 border-t border-line">
               <Link to={`/${user ? user.organization_slug : ''}/reporter/reports`}>
                 <Button variant="secondary" className="w-full">

@@ -27,8 +27,14 @@ export const invalidateOrgRoles = () => {
   listeners.forEach((notify) => notify());
 };
 
-/** reporter is never in /org-roles/ — it is the self-service identity. */
+/**
+ * The public self-service identity. /org-roles/ lists it with
+ * is_staff_role: false; it is never a role to assign staff to.
+ */
 export const REPORTER_ROLE = 'reporter';
+
+/** True for a role staff can hold — everything except reporter. */
+export const isStaffRole = (role) => role?.is_staff_role !== false && role?.code !== REPORTER_ROLE;
 
 /** finance_lead → Finance lead, for a code with no role record to name it. */
 export const humanizeRoleCode = (code) =>
@@ -36,7 +42,7 @@ export const humanizeRoleCode = (code) =>
 
 /** True when holders of `role` can open reports someone could hand them. */
 export const roleCanWorkReports = (role) =>
-  Boolean(role?.permissions?.includes(PERM.reportReadAll) || role?.permissions?.includes(PERM.reportReadAssigned));
+  [PERM.reportReadAll, PERM.reportReadSubordinates, PERM.reportReadAssigned].some((p) => role?.permissions?.includes(p));
 
 export function useOrgRoles({ activeOnly = true, enabled = true } = {}) {
   const [roles, setRoles] = useState([]);
@@ -71,7 +77,11 @@ export function useOrgRoles({ activeOnly = true, enabled = true } = {}) {
     };
   }, [activeOnly, enabled, version]);
 
+  // Every listed role, reporter included, so any code can be named.
   const byCode = useMemo(() => new Map(roles.map((role) => [role.code, role])), [roles]);
+  // What pickers offer: staff roles only. A screen that may also make someone
+  // a reporter adds that option itself.
+  const staffRoles = useMemo(() => roles.filter(isStaffRole), [roles]);
 
   /** Display name for a role code, including reporter and codes not (or no longer) listed. */
   const nameFor = useCallback(
@@ -84,7 +94,7 @@ export function useOrgRoles({ activeOnly = true, enabled = true } = {}) {
 
   const reload = useCallback(() => invalidateOrgRoles(), []);
 
-  return { roles, byCode, nameFor, loading, error, reload };
+  return { roles: staffRoles, allRoles: roles, byCode, nameFor, loading, error, reload };
 }
 
 export default useOrgRoles;

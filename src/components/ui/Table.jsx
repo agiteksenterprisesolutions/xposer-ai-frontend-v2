@@ -1,5 +1,6 @@
 import { Children, Fragment, isValidElement } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import Skeleton from './Skeleton';
 
 // Children may arrive wrapped in fragments (e.g. `<TableLoading />` renders one),
 // so flatten before matching element types.
@@ -330,14 +331,17 @@ const TableEmpty = ({
   return <div className="py-12 text-center">{content}</div>;
 };
 
-// Loading state for tables
-const TableLoading = ({ colSpan = 1, rows = 5 }) => (
+// Loading state for tables. Pass `cells` — one placeholder node per column,
+// shaped like that column's real content (an avatar with two lines, a badge,
+// a row of action icons) — so the rows are the height the data will be.
+// Without it each cell is one text-sm line.
+const TableLoading = ({ colSpan = 1, rows = 5, cells = null }) => (
   <>
     {Array.from({ length: rows }).map((_, rowIndex) => (
-      <tr key={rowIndex} className="border-b border-line-subtle last:border-0">
-        {Array.from({ length: colSpan }).map((_, colIndex) => (
-          <td key={colIndex} className="px-4 py-3 sm:px-5 sm:py-3.5">
-            <div className="h-4 rounded bg-active animate-pulse" />
+      <tr key={rowIndex} className="border-b border-line-subtle last:border-0" aria-hidden="true">
+        {(cells || Array.from({ length: colSpan })).map((cell, colIndex) => (
+          <td key={colIndex} className="px-4 py-3 sm:px-5 sm:py-3.5 align-middle">
+            {cells ? cell : <Skeleton.Text className="w-full max-w-32" />}
           </td>
         ))}
       </tr>

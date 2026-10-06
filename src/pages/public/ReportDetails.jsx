@@ -19,9 +19,10 @@ import {
   Pencil,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Badge, { StatusBadge, PriorityBadge } from '../../components/ui/Badge';
-import { reportsAPI } from '../../api/reports';
+import { toReporterView, reportsAPI } from '../../api/reports';
 import { messagesAPI } from '../../api/messages';
 import ChatInterface from '../../components/reports/ChatInterface';
 import { useAuthStore } from '../../store/authStore';
@@ -32,6 +33,7 @@ import useSEO from '../../hooks/useSEO';
 import { isDraftReport, getReportDescription, getReportTitle } from '../../utils/reports';
 import { copyToClipboard } from '../../utils/clipboard';
 import VoiceAnswers from '../../components/reports/VoiceAnswers';
+import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
 
 const REPORT_DETAILS_TOUR_KEY = 'xposer_report_details_tour_seen';
 
@@ -78,7 +80,8 @@ const ReportDetails = () => {
           reportData = location.state.report;
         } else {
           // Fetch report by ID
-          reportData = await reportsAPI.getReport(id);
+          // Reporter-facing: never show staff fields, whatever the response holds.
+          reportData = toReporterView(await reportsAPI.getReport(id));
         }
 
         setReport(reportData);
@@ -155,6 +158,7 @@ const ReportDetails = () => {
   };
 
   const formatFormValue = (value) => {
+    if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || "N/A";
     if (value == null) return "N/A";
 
     const str = String(value);
@@ -246,11 +250,72 @@ const ReportDetails = () => {
   }, [report]);
 
   if (isLoading) {
+    // The page's own header and cards, with the report's details stubbed.
     return (
-      <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
-          <p className="mt-4 text-ink-muted">Loading report details...</p>
+      <div className="min-h-screen bg-canvas py-8 px-4 sm:px-6 lg:px-8" aria-busy="true">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <Link
+              to={`/${orgSlug ? orgSlug : ''}/track-report`}
+              className="inline-flex items-center text-sm text-accent-fg hover:opacity-80 mb-4"
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Back to Report Tracking
+            </Link>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center mb-2">
+                  <Shield className="h-6 w-6 text-accent-fg mr-2" />
+                  <h1 className="text-2xl font-bold text-ink">Report Details</h1>
+                </div>
+                <p className="text-ink-muted">View all details of your submitted report</p>
+              </div>
+              <Skeleton.Button small className="mt-4 sm:mt-0 w-44" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
+            <div className="lg:col-span-2 space-y-6 min-w-0">
+              <Card>
+                <h2 className="text-lg font-semibold text-ink mb-4 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-accent-fg" />
+                  Report Information
+                </h2>
+                <div className="space-y-4">
+                  <div>
+                    <Skeleton.Text className="w-12" />
+                    <Skeleton.Text size="base" className="mt-1 w-2/3" />
+                  </div>
+                  <div>
+                    <Skeleton.Text className="w-24" />
+                    <Skeleton.Lines size="base" lines={3} className="mt-1" />
+                  </div>
+                </div>
+              </Card>
+            </div>
+            <div className="space-y-6">
+              <Card>
+                <h2 className="text-lg font-semibold text-ink mb-4">Report Status</h2>
+                <div className="space-y-4">
+                  {['w-16', 'w-14', 'w-20'].map((w) => (
+                    <div key={w} className="flex items-center justify-between">
+                      <Skeleton.Text className="w-16" />
+                      <Skeleton.Badge className={w} />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <Card>
+                <h2 className="text-lg font-semibold text-ink mb-4">Timeline</h2>
+                <div className="flex items-start gap-3">
+                  <Skeleton.Circle size="h-8 w-8" />
+                  <div>
+                    <Skeleton.Text className="w-32" />
+                    <Skeleton.Text size="xs" className="w-28" />
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     );

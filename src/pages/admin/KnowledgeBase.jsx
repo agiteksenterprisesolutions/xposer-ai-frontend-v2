@@ -23,6 +23,7 @@ import {
 import { toast } from 'react-toastify';
 import Card from '../../components/ui/Card';
 import Table, { TableLoading } from '../../components/ui/Table';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Alert from '../../components/ui/Alert';
@@ -400,14 +401,14 @@ const KnowledgeBase = () => {
       {!canManage && (
         <Alert variant="info" title="View only">
           Your role can see the knowledge base but not change it. Uploading, reassigning and deleting documents
-          needs the agent:manage permission.
+          needs permission to configure AI agents.
         </Alert>
       )}
 
       {noConsultingAgents && (
         <Alert variant="warning" title="No agent can consult the knowledge base yet">
           Documents are only useful once an agent can read them. Give an agent the "Consult the knowledge base"
-          capability — and a role carrying agent:kb_read — then upload here.{' '}
+          capability — and a role that allows “Consult policy documents” — then upload here.{' '}
           <Link to={staffPath(user?.organization_slug, 'agents')} className="font-medium text-link hover:underline">
             Open AI Agents →
           </Link>
@@ -450,7 +451,9 @@ const KnowledgeBase = () => {
             </p>
             <p className="max-w-md text-xs text-ink-muted">
               Up to {KB_MAX_FILES_PER_REQUEST} files per upload, 10 MB each.{' '}
-              {remainingSlots} of {KB_MAX_DOCUMENTS_PER_ORG} document slots remaining.
+              <span className={loading ? 'invisible' : undefined}>
+                {remainingSlots} of {KB_MAX_DOCUMENTS_PER_ORG} document slots remaining.
+              </span>
             </p>
             <p className="max-w-lg text-[11px] text-ink-subtle">
               {KB_ACCEPTED_EXTENSIONS.join('  ')}
@@ -547,12 +550,23 @@ const KnowledgeBase = () => {
       {/* A document can index perfectly and still never be read: its agent was
           deleted, deactivated, lost consult_kb, or had agent:kb_read stripped
           from its role. Nothing failed, so nothing else would say so. */}
-      {staleCount > 0 && (
-        <Alert variant={orphanedCount > 0 ? 'error' : 'warning'} title="Some documents are assigned to agents that can't read them">
+      {(staleCount > 0 || orphanedCount > 0) && (
+        <Alert
+          variant={orphanedCount > 0 ? 'error' : 'warning'}
+          title={staleCount > 0 ? "Some documents are assigned to agents that can't read them" : 'Some documents are read by no agent'}
+        >
           <span className="block">
-            {staleCount} document{staleCount === 1 ? '' : 's'} {staleCount === 1 ? 'is' : 'are'} assigned to agents that
-            no longer exist or can no longer consult the knowledge base
-            {orphanedCount > 0 && `, and ${orphanedCount} ${orphanedCount === 1 ? 'is' : 'are'} read by no agent at all`}.
+            {staleCount > 0 && (
+              <>
+                {staleCount} document{staleCount === 1 ? '' : 's'} {staleCount === 1 ? 'is' : 'are'} assigned to agents
+                that no longer exist or can no longer consult the knowledge base
+                {orphanedCount > 0 && `, and ${orphanedCount} ${orphanedCount === 1 ? 'is' : 'are'} read by no agent at all`}.
+              </>
+            )}
+            {staleCount === 0 &&
+              `${orphanedCount} document${orphanedCount === 1 ? ' is' : 's are'} ready but read by no agent, so ${
+                orphanedCount === 1 ? 'it' : 'they'
+              } will never be quoted.`}
           </span>
           {canManage && (
             <Button className="mt-3" variant="outline" size="small" onClick={() => setReconciling(true)}>
@@ -573,9 +587,13 @@ const KnowledgeBase = () => {
                 Indexing in progress
               </span>
             )}
-            <span>
-              {readyCount} ready · {documents.length} of {KB_MAX_DOCUMENTS_PER_ORG} used
-            </span>
+            {loading ? (
+              <Skeleton.Text size="xs" className="w-28" />
+            ) : (
+              <span>
+                {readyCount} ready · {documents.length} of {KB_MAX_DOCUMENTS_PER_ORG} used
+              </span>
+            )}
           </div>
         </div>
 
@@ -593,7 +611,23 @@ const KnowledgeBase = () => {
           </Table.Header>
           <Table.Body>
             {loading ? (
-              <TableLoading colSpan={7} rows={4} />
+              <TableLoading
+                rows={3}
+                cells={[
+                  <div key="f" className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded" />
+                    <Skeleton.Text className="w-56" />
+                  </div>,
+                  <Skeleton.Text key="s" size="xs" className="w-14" />,
+                  <div key="a" className="px-1.5 py-1">
+                    <Skeleton.Badge className="w-20" />
+                  </div>,
+                  <Skeleton.Badge key="st" className="w-16" />,
+                  <Skeleton.Text key="c" className="w-6" />,
+                  <Skeleton.Text key="u" size="xs" className="w-24" />,
+                  canManage ? <Skeleton key="x" className="ml-auto h-8 w-10 rounded-lg" /> : <span key="x" />,
+                ]}
+              />
             ) : documents.length === 0 ? (
               <Table.Empty
                 message="No documents uploaded"

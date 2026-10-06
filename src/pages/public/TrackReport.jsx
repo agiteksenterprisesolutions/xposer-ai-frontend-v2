@@ -6,7 +6,6 @@ import {
   EyeOff,
   Shield,
   Clock,
-  User,
   MessageSquare,
   FileText,
   CheckCircle,
@@ -42,6 +41,7 @@ import { isDraftReport, getReportDescription, getReportTitle } from "../../utils
 import { isIdentifiedUser, isStaffUser } from "../../utils/roles";
 import { copyToClipboard } from "../../utils/clipboard";
 import VoiceAnswers from "../../components/reports/VoiceAnswers";
+import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
 
 const TrackReport = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -529,7 +529,6 @@ const TrackReport = () => {
       priority,
       created_at,
       updated_at,
-      assigned_to,
       tags = [],
       form_data = {},
     } = report;
@@ -635,7 +634,11 @@ const TrackReport = () => {
                         <span className="block text-ink wrap-break-word whitespace-pre-wrap">
                           {value === null || value === undefined
                             ? "N/A"
-                            : String(value)}
+                            : isCurrencyAnswer(value)
+                              ? formatCurrencyAnswer(value)
+                              : Array.isArray(value)
+                                ? value.join(", ")
+                                : String(value)}
                         </span>
                       </div>
                     ))}
@@ -661,23 +664,6 @@ const TrackReport = () => {
                 </div>
               )}
 
-              {assigned_to && (
-                <div className="bg-subtle rounded-lg p-4">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-accent-soft rounded-full flex items-center justify-center mr-3">
-                      <User className="w-5 h-5 text-accent-fg" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-ink-muted">
-                        Assigned Investigator
-                      </p>
-                      <p className="font-medium text-ink">
-                        {assigned_to.full_name || assigned_to.username}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </Card>
 
             {/* Activity Timeline */}

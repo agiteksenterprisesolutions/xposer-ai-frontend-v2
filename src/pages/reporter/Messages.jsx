@@ -14,7 +14,7 @@ import { useReports } from '../../hooks/useReports';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import LoadingSpinner from '../../components/layout/LoadingSpinner';
+import Skeleton from '../../components/ui/Skeleton';
 import { StatusBadge } from '../../components/ui/Badge';
 import { formatRelativeTime, parseServerDate } from '../../utils/formatters';
 import useSEO from '../../hooks/useSEO';
@@ -53,10 +53,6 @@ const Messages = () => {
         return result.sort((a, b) => parseServerDate(b.updated_at) - parseServerDate(a.updated_at));
     }, [reports, searchQuery]);
 
-    if (isLoading) {
-        return <LoadingSpinner message="Loading messages..." />;
-    }
-
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -82,7 +78,26 @@ const Messages = () => {
                 </div>
 
                 <div className="space-y-2">
-                    {messageThreads.length === 0 ? (
+                    {isLoading ? (
+                        [0, 1, 2].map((i) => (
+                            <div key={i} className="flex items-center justify-between p-4 rounded-lg border border-line-subtle bg-surface" aria-hidden="true">
+                                <div className="flex items-start gap-4">
+                                    <Skeleton.Circle className="mt-1" />
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Skeleton.Text size="xs" className="w-16" />
+                                            <Skeleton.Text size="base" className="w-40" />
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Skeleton.Badge className="w-14" />
+                                            <Skeleton.Text className="w-40" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <Skeleton className="h-5 w-5 rounded" />
+                            </div>
+                        ))
+                    ) : messageThreads.length === 0 ? (
                         <div className="text-center py-12">
                             <MessageSquare className="w-12 h-12 text-ink-subtle mx-auto mb-3" />
                             <h3 className="text-lg font-medium text-ink">No messages found</h3>

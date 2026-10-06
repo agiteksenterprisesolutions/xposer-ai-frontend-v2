@@ -5,6 +5,10 @@ export const useUIStore = create((set, get) => ({
   // Sidebar state
   sidebarOpen: true,
   mobileSidebarOpen: false,
+
+  // A page that fills the whole content area (the workflow builder) rather
+  // than sitting in the padded, width-capped column.
+  fullBleed: false,
   
   // Modal states
   activeModal: null,

@@ -9,9 +9,15 @@ import {
   Check,
   PenBoxIcon,
   X,
+  Upload,
+  AlertTriangle,
 } from 'lucide-react';
+import DirectoryLinkModal from '../../components/users/DirectoryLinkModal';
+import ImportUsersModal from '../../components/users/ImportUsersModal';
+import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import Card from '../../components/ui/Card';
 import Table, { TableLoading } from '../../components/ui/Table';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge, { RoleBadge } from '../../components/ui/Badge';
@@ -92,8 +98,34 @@ const Users = () => {
   // Changing someone's role is a separate grant on top of editing them.
   const canChangeRoles = can(PERM.userUpdate, PERM.userManageRoles);
   const currentUserId = useAuthStore((state) => state.user?.id);
-  const { nameFor } = useOrgRoles();
+  const { nameFor, byCode } = useOrgRoles();
   const [roleChangeUser, setRoleChangeUser] = useState(null);
+
+  // The directory: who each account is linked to, and at what level. Level
+  // decides which reports someone sees; role decides what they can do.
+  const canReadHierarchy = can(PERM.hierarchyRead);
+  const canManageHierarchy = can(PERM.hierarchyManage);
+  const [members, setMembers] = useState([]);
+  const [levels, setLevels] = useState([]);
+  const [linkUser, setLinkUser] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const loadDirectory = useCallback(() => {
+    if (!canReadHierarchy) return;
+    Promise.all([orgHierarchyAPI.listMembers({ activeOnly: false }), orgHierarchyAPI.listLevels()])
+      .then(([memberList, levelList]) => {
+        setMembers(Array.isArray(memberList) ? memberList : []);
+        setLevels(Array.isArray(levelList) ? levelList : []);
+      })
+      .catch(() => {
+        setMembers([]);
+        setLevels([]);
+      });
+  }, [canReadHierarchy]);
+  useEffect(() => {
+    loadDirectory();
+  }, [loadDirectory]);
+  const memberFor = (user) => members.find((m) => m.external_id === user.hierarchy_member_id) || null;
+  const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -211,7 +243,17 @@ const Users = () => {
     resetPasswordFormData.auth_provider === AUTH_PROVIDERS.PASSWORD
     && !isPasswordAccount(selectedUser);
 
+  // A role can be deleted while its only holders are inactive, so someone
+  // reactivated onto it would come back with no permissions at all.
+  const roleMissing = (user) => byCode.size > 0 && user.role !== REPORTER_ROLE && !byCode.has(user.role);
+
   const handleStatusToggle = async (user) => {
+    if (!user.is_active && roleMissing(user)) {
+      setConfirmModal({ open: false, type: '', user: null });
+      toast.error(`The ${nameFor(user.role)} role no longer exists. Give ${user.full_name || user.username} a role first.`);
+      if (canChangeRoles) setRoleChangeUser(user);
+      return;
+    }
     try {
       if (user.is_active) {
         await usersAPI.deleteUser(user.id);
@@ -458,6 +500,11 @@ const Users = () => {
           </div>
           <TableSortControl {...sort} id="users" className="shrink-0" />
           {canCreateUsers && (
+            <Button variant="outline" startIcon={Upload} onClick={() => setImportOpen(true)}>
+              Import
+            </Button>
+          )}
+          {canCreateUsers && (
             <Button
               variant="secondary"
               startIcon={UserPlus}
@@ -500,7 +547,34 @@ const Users = () => {
           </Table.Header>
           <Table.Body>
             {loading ? (
-              <TableLoading colSpan={7} rows={5} />
+              <TableLoading
+                rows={DEFAULT_PAGE_SIZE}
+                cells={[
+                  <div key="u" className="flex items-center space-x-3">
+                    <Skeleton.Circle />
+                    <div className="space-y-0.5">
+                      <Skeleton.Text className="w-28" />
+                      <Skeleton.Text size="xs" className="w-36" />
+                    </div>
+                  </div>,
+                  <Skeleton.Text key="n" className="w-36" />,
+                  <div key="r" className="space-y-1.5">
+                    <Skeleton.Badge className="w-14" />
+                    {canReadHierarchy && <Skeleton.Badge className="w-20" />}
+                  </div>,
+                  <Skeleton.Badge key="s" tall className="w-18" />,
+                  <div key="c" className="space-y-0.5">
+                    <Skeleton.Text size="xs" className="w-20" />
+                    <Skeleton.Text size="xs" className="w-14" />
+                  </div>,
+                  <Skeleton.Badge key="a" tall className="w-16" />,
+                  <div key="x" className="flex justify-end gap-2">
+                    {[0, 1, 2].map((i) => (
+                      <Skeleton key={i} className="h-8 w-8 rounded-lg" />
+                    ))}
+                  </div>,
+                ]}
+              />
             ) : filteredUsers.length === 0 ? (
               <Table.Empty
                 message={debouncedSearch ? 'No matching users' : 'No users found'}
@@ -524,6 +598,48 @@ const Users = () => {
                   </Table.Cell>
                   <Table.Cell>
                     <RoleBadge role={user.role} label={nameFor(user.role)} />
+                    {/* Level and role are independent: where they sit (which
+                        reports they see) shown under what they can do. */}
+                    {canReadHierarchy && (
+                      <div className="mt-1.5">
+                        {user.role === REPORTER_ROLE ? (
+                        null
+                      ) : (() => {
+                        const member = memberFor(user);
+                        const seesTeam = byCode.get(user.role)?.permissions?.includes(PERM.reportReadSubordinates);
+                        const open = canUpdateUsers ? () => setLinkUser(user) : undefined;
+                        return member ? (
+                          <button
+                            type="button"
+                            onClick={open}
+                            disabled={!open}
+                            className="min-w-0 text-left disabled:cursor-default"
+                            title={open ? 'Change directory entry' : undefined}
+                          >
+                            <span className="block truncate text-sm font-medium text-ink">{member.name}</span>
+                            <span className="block truncate text-xs text-ink-muted">
+                              {member.level_code ? levelTitle(member.level_code) : 'No level'}
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={open}
+                            disabled={!open}
+                            title={
+                              seesTeam
+                                ? "Not linked, so they see only their own cases — not their team's."
+                                : 'Not linked to a directory entry.'
+                            }
+                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning-fg hover:bg-warning-line disabled:cursor-default"
+                          >
+                            <AlertTriangle className="h-3 w-3" />
+                            {user.hierarchy_member_id ? 'Entry missing' : 'Unlinked'}
+                          </button>
+                        );
+                      })()}
+                      </div>
+                    )}
                   </Table.Cell>
                   <Table.Cell>
                     <Badge variant={isPasswordAccount(user) ? 'default' : 'info'}>
@@ -538,6 +654,7 @@ const Users = () => {
                       {user.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </Table.Cell>
+
                   <Table.Cell className="text-right">
                     {canUpdateUsers && (
                       <div className="flex justify-end space-x-2">
@@ -603,10 +720,39 @@ const Users = () => {
         onClose={() => setConfirmModal({ open: false, type: '', user: null })}
         onConfirm={() => handleStatusToggle(confirmModal.user)}
         title={confirmModal.type === 'deactivate' ? 'Deactivate User' : 'Activate User'}
-        message={`Are you sure you want to ${confirmModal.type} user ${confirmModal.user?.full_name || confirmModal.user?.username}?`}
+        message={
+          confirmModal.type === 'activate' && confirmModal.user && roleMissing(confirmModal.user)
+            ? `${confirmModal.user.full_name || confirmModal.user.username}'s role, ${nameFor(confirmModal.user.role)}, no longer exists, so they would return with no permissions. You'll be asked to choose a new role.`
+            : `Are you sure you want to ${confirmModal.type} user ${confirmModal.user?.full_name || confirmModal.user?.username}?`
+        }
         variant={confirmModal.type === 'deactivate' ? 'danger' : 'success'}
         confirmText={confirmModal.type === 'deactivate' ? 'Deactivate' : 'Activate'}
       />
+
+      {linkUser && (
+        <DirectoryLinkModal
+          user={linkUser}
+          members={members}
+          levels={levels}
+          canEditLevel={canManageHierarchy}
+          onClose={() => setLinkUser(null)}
+          onSaved={() => {
+            setLinkUser(null);
+            fetchUsers();
+            loadDirectory();
+          }}
+        />
+      )}
+
+      {importOpen && (
+        <ImportUsersModal
+          onClose={() => setImportOpen(false)}
+          onImported={() => {
+            fetchUsers();
+            loadDirectory();
+          }}
+        />
+      )}
 
       {roleChangeUser && (
         <ChangeRoleModal
@@ -644,7 +790,7 @@ const Users = () => {
             onChange={handleFormChange}
             error={formErrors.email}
             required
-            helperText="Required — this is the identity the sign-in provider is keyed to."
+            helperText="Required — the sign-in identity, and how the account is linked to its directory entry automatically."
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input

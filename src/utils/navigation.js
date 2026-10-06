@@ -40,24 +40,29 @@ export const reporterPath = (orgSlug, subPath = 'dashboard') =>
 export const casePath = (orgSlug, reportId) => staffPath(orgSlug, `cases/${reportId}`);
 
 /**
- * The staff sidebar, in display order. `access` is the same rule the matching
- * route enforces. `name` also feeds the sidebar's data-tour ids, which the
- * dashboard tours target — rename with care.
+ * The staff sidebar, in display order and grouped under `section` headings.
+ * `access` is the same rule the matching route enforces. `name` also feeds the
+ * sidebar's data-tour ids, which the dashboard tours target — rename with care.
+ * The first page a user can open is their home page, so keep Dashboard first.
  */
 export const STAFF_NAV = [
-  { name: 'Dashboard', icon: Home, path: 'dashboard', access: ACCESS.caseReports },
-  { name: 'All Reports', icon: FileText, path: 'reports', access: ACCESS.caseReports },
-  { name: 'Report Types', icon: Settings, path: 'report-types', access: ACCESS.reportTypes },
-  { name: 'User Management', icon: Users, path: 'users', access: ACCESS.users },
-  { name: 'Roles & Permissions', icon: ShieldCheck, path: 'roles', access: ACCESS.roles },
-  { name: 'Reporting Hierarchy', icon: Network, path: 'hierarchy', access: ACCESS.hierarchy },
-  { name: 'AI Agents', icon: Bot, path: 'agents', access: ACCESS.agents },
-  { name: 'Summarizer', icon: ScrollText, path: 'summarizer', access: ACCESS.agents },
-  { name: 'Workflows', icon: GitBranch, path: 'workflows', access: ACCESS.agents },
-  { name: 'Knowledge Base', icon: BookOpen, path: 'agent-kb', access: ACCESS.agents },
-  { name: 'Voice Questions', icon: ListChecks, path: 'question-sets', access: ACCESS.questionSets },
-  { name: 'Voice Profile', icon: AudioLines, path: 'voice-profile', access: ACCESS.voiceProfile },
-  { name: 'AI Activity', icon: Activity, path: 'agent-runs', access: ACCESS.agents },
+  // Day-to-day case work
+  { section: 'Overview', name: 'Dashboard', icon: Home, path: 'dashboard', access: ACCESS.caseReports },
+  { section: 'Overview', name: 'All Reports', icon: FileText, path: 'reports', access: ACCESS.caseReports },
+  // What reporters fill in, by form or by voice
+  { section: 'Reporting', name: 'Report Types', icon: Settings, path: 'report-types', access: ACCESS.reportTypes },
+  { section: 'Reporting', name: 'Voice Questions', icon: ListChecks, path: 'question-sets', access: ACCESS.questionSets },
+  { section: 'Reporting', name: 'Voice Profile', icon: AudioLines, path: 'voice-profile', access: ACCESS.voiceProfile },
+  // How reports are handled once they arrive
+  { section: 'AI & Automation', name: 'AI Agents', icon: Bot, path: 'agents', access: ACCESS.agents },
+  { section: 'AI & Automation', name: 'Workflows', icon: GitBranch, path: 'workflows', access: ACCESS.agents },
+  { section: 'AI & Automation', name: 'Summarizer', icon: ScrollText, path: 'summarizer', access: ACCESS.agents },
+  { section: 'AI & Automation', name: 'Knowledge Base', icon: BookOpen, path: 'agent-kb', access: ACCESS.agents },
+  { section: 'AI & Automation', name: 'AI Activity', icon: Activity, path: 'agent-runs', access: ACCESS.agents },
+  // Who works here and what they may do
+  { section: 'Organization', name: 'User Management', icon: Users, path: 'users', access: ACCESS.users },
+  { section: 'Organization', name: 'Roles & Permissions', icon: ShieldCheck, path: 'roles', access: ACCESS.roles },
+  { section: 'Organization', name: 'Reporting Hierarchy', icon: Network, path: 'hierarchy', access: ACCESS.hierarchy },
 ];
 
 /** The staff nav items this user may open. */

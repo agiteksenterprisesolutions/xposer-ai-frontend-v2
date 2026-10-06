@@ -1,5 +1,26 @@
 import api from './axios';
 
+// Staff-only fields on a report: notes, who holds it, and escalation routing.
+const STAFF_ONLY_REPORT_FIELDS = [
+  'internal_notes',
+  'assigned_to',
+  'assigned_to_name',
+  'assigned_by',
+  'excluded_user_ids',
+  'implicated_member_id',
+  'escalated_to_member_id',
+  'escalated_reason',
+  'coi_bypass_applied',
+];
+
+/** A report as a reporter may see it. */
+export const toReporterView = (report) => {
+  if (!report || typeof report !== 'object') return report;
+  const view = { ...report };
+  STAFF_ONLY_REPORT_FIELDS.forEach((field) => delete view[field]);
+  return view;
+};
+
 export const reportsAPI = {
   // ============ Unified Multi-Step Flow (Works for both Anonymous & Authenticated) ============
 
@@ -214,10 +235,14 @@ export const reportsAPI = {
     }
   },
 
+  // The backend still returns the whole serialized report here, including
+  // the internal case notes and the investigator's identity. An anonymous
+  // reporter must never receive those, so they are dropped before the
+  // response reaches any screen.
   trackReport: async (data) => {
     try {
       const response = await api.post('/reports/track', data);
-      return response.data;
+      return toReporterView(response.data);
     } catch (error) {
       throw error;
     }

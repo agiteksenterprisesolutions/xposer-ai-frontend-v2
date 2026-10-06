@@ -12,9 +12,9 @@ import {
 } from 'lucide-react';
 import { reportsAPI, messagesAPI, reportTypesAPI } from '../../api';
 import Card from '../../components/ui/Card';
+import Skeleton from '../../components/ui/Skeleton';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import LoadingSpinner from '../../components/layout/LoadingSpinner';
 import { StatusBadge } from '../../components/ui/Badge';
 import { formatRelativeTime, parseServerDate } from '../../utils/formatters';
 import useSEO from '../../hooks/useSEO';
@@ -78,8 +78,6 @@ const ComplianceMessages = () => {
         return result.sort((a, b) => parseServerDate(b.updated_at) - parseServerDate(a.updated_at));
     }, [reports, searchTerm, activeTab]);
 
-    if (loading) return <LoadingSpinner message="Loading conversations..." />;
-
     return (
         <div className="space-y-6">
             <div>
@@ -103,7 +101,24 @@ const ComplianceMessages = () => {
                         </div>
 
                         <div className="divide-y divide-line-subtle max-h-[calc(100vh-20rem)] overflow-y-auto">
-                            {filteredThreads.length === 0 ? (
+                            {loading ? (
+                                Array.from({ length: 8 }).map((_, i) => (
+                                    <div key={i} className="p-4" aria-hidden="true">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="flex items-center space-x-2">
+                                                <Skeleton.Text size="xs" className="w-16" />
+                                                <Skeleton.Badge className="w-18" />
+                                            </div>
+                                            <Skeleton.Text size="xs" className="w-16" />
+                                        </div>
+                                        <Skeleton.Text className="mb-1 w-2/3" />
+                                        <div className="flex items-center justify-between mt-2">
+                                            <Skeleton.Text size="xs" className="w-40" />
+                                            <Skeleton className="h-4 w-4 rounded" />
+                                        </div>
+                                    </div>
+                                ))
+                            ) : filteredThreads.length === 0 ? (
                                 <div className="p-12 text-center">
                                     <MessageSquare className="h-12 w-12 text-ink-subtle mx-auto mb-4" />
                                     <h3 className="text-lg font-medium text-ink">No conversations found</h3>

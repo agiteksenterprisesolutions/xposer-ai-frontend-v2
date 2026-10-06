@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Table, { TableLoading } from '../../components/ui/Table';
+import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
@@ -109,7 +110,19 @@ const AuditLogs = () => {
           </Table.Header>
           <Table.Body>
             {loading ? (
-              <TableLoading colSpan={5} rows={8} />
+              <TableLoading
+                rows={8}
+                cells={[
+                  <Skeleton.Text key="t" size="xs" className="w-36" />,
+                  <div key="u" className="flex items-center space-x-2">
+                    <Skeleton.Circle size="h-6 w-6" />
+                    <Skeleton.Text className="w-36" />
+                  </div>,
+                  <Skeleton.Badge key="a" className="w-16" />,
+                  <Skeleton key="e" className="h-5 w-16 rounded" />,
+                  <Skeleton.Text key="d" className="w-56" />,
+                ]}
+              />
             ) : sortedLogs.length === 0 ? (
               <Table.Empty
                 message="No activity logs found"

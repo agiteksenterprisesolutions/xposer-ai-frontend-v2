@@ -12,6 +12,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Badge, { StatusBadge, PriorityBadge } from '../../components/ui/Badge';
 import Table, { TableLoading } from '../../components/ui/Table';
+import Skeleton from '../../components/ui/Skeleton';
 import { reportsAPI, reportTypesAPI } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import DashboardTour from '../../components/tour/DashboardTour';
@@ -159,17 +160,6 @@ const ReviewerDashboard = () => {
     return steps;
   }, [isDesktop]);
 
-  if (loading) {
-    return (
-      <div className="animate-pulse space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-active rounded-xl" />)}
-        </div>
-        <div className="h-96 bg-active rounded-xl" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       <DashboardTour ref={tourRef} storageKey={REVIEWER_TOUR_KEY} steps={tourSteps} />
@@ -196,7 +186,11 @@ const ReviewerDashboard = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-ink-muted">{stat.title}</p>
-                <h3 className="text-2xl font-bold text-ink mt-1">{stat.value}</h3>
+                {loading ? (
+                  <Skeleton.Text size="2xl" className="mt-1 w-10" />
+                ) : (
+                  <h3 className="text-2xl font-bold text-ink mt-1">{stat.value}</h3>
+                )}
               </div>
               <div className={`p-2 rounded-lg ${tone(stat.color).soft}`}>
                 <stat.icon className={`h-6 w-6 ${tone(stat.color).fg}`} />
@@ -226,7 +220,21 @@ const ReviewerDashboard = () => {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {recentReports.map((report) => (
+              {loading && (
+                <TableLoading
+                  rows={5}
+                  cells={[
+                    <div key="i">
+                      <Skeleton.Text className="w-20" />
+                      <Skeleton.Text size="xs" className="w-16" />
+                    </div>,
+                    <Skeleton.Text key="c" className="w-24" />,
+                    <Skeleton.Badge key="p" className="w-14" />,
+                    <Skeleton.Badge key="s" className="w-20" />,
+                  ]}
+                />
+              )}
+              {!loading && recentReports.map((report) => (
                 <Table.Row key={report.id} onClick={() => navigate(`/${user ? user?.organization_slug : ''}/staff/cases/${report.id}`)} className="cursor-pointer">
                   <Table.Cell>
                     <div className="flex flex-col">
@@ -249,7 +257,7 @@ const ReviewerDashboard = () => {
                   </Table.Cell>
                 </Table.Row>
               ))}
-              {recentReports.length === 0 && (
+              {!loading && recentReports.length === 0 && (
                 <Table.Empty message="No reports found" description="New reports will appear here." icon={FileText} />
               )}
             </Table.Body>
@@ -266,7 +274,17 @@ const ReviewerDashboard = () => {
           </Card.Header>
           <Card.Content>
             <div className="flex flex-col space-y-4">
-              {stats?.by_report_type?.length > 0 ? (
+              {loading ? (
+                [0, 1, 2].map((i) => (
+                  <div key={i} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Skeleton.Text size="xs" className="w-28" />
+                      <Skeleton.Text size="xs" className="w-12" />
+                    </div>
+                    <Skeleton className="h-1.5 w-full rounded-full" />
+                  </div>
+                ))
+              ) : stats?.by_report_type?.length > 0 ? (
                 stats.by_report_type.slice(0, 5).map((item, i) => {
                   const percentage = stats.total > 0
                     ? Math.round((item.count / stats.total) * 100)

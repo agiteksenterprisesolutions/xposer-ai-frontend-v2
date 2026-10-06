@@ -12,13 +12,17 @@
 // Hiding something here is a courtesy, not a control: every endpoint enforces the
 // same permission server-side, so a stale tab still gets a 403.
 
-/** All 29 permissions an organization can assign. */
+/** The permissions an organization can assign. The catalog endpoint is the full list. */
 export const PERM = {
   // Reports
   reportCreate: 'report:create',
   reportReadOwn: 'report:read_own',
   reportReadAll: 'report:read_all',
   reportReadAssigned: 'report:read_assigned',
+  // Their own reports plus everyone at or below them in the reporting tree,
+  // resolved through the account's linked directory entry. Unlinked, it falls
+  // back to their own caseload — never to the whole organization.
+  reportReadSubordinates: 'report:read_subordinates',
   reportUpdateAll: 'report:update_all',
   reportDeleteAll: 'report:delete_all',
   reportManage: 'report:manage',
@@ -75,6 +79,7 @@ export const PERMISSION_INFO = {
   'report:read_own': 'Read reports they filed themselves',
   'report:read_all': 'Read every report in the organization',
   'report:read_assigned': 'Read reports assigned to them',
+  'report:read_subordinates': "Read their team's reports — everyone below them in the hierarchy",
   'report:update_all': "Edit any report's details",
   'report:delete_all': 'Delete reports',
   'report:manage': 'Change status and priority, and assign reports',
@@ -103,6 +108,22 @@ export const PERMISSION_INFO = {
 };
 
 /**
+ * The words people see for a permission — "Submit reports", never
+ * "report:create". Codes stay internal; one the table doesn't know yet is
+ * turned into plain words rather than shown raw.
+ */
+export const permissionLabel = (permission) => {
+  if (!permission) return '';
+  if (PERMISSION_INFO[permission]) return PERMISSION_INFO[permission];
+  const text = permission.replace(/[:_]/g, ' ').trim();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+/** Several permissions in a sentence: “Read every report” or “Read reports assigned to them”. */
+export const permissionLabels = (permissions = [], joiner = ' or ') =>
+  permissions.map((permission) => `“${permissionLabel(permission)}”`).join(joiner);
+
+/**
  * Access rules for the areas of the app. A rule is `{ all: [...] }`,
  * `{ any: [...] }`, or both — every permission in `all` and at least one in
  * `any`. Routes and the sidebar share these so a nav item can never point at a
@@ -110,14 +131,20 @@ export const PERMISSION_INFO = {
  */
 export const ACCESS = {
   // Reports someone works on rather than filed themselves.
-  caseReports: { any: [PERM.reportReadAll, PERM.reportReadAssigned] },
+  caseReports: { any: [PERM.reportReadAll, PERM.reportReadSubordinates, PERM.reportReadAssigned] },
   orgOverview: { all: [PERM.systemStats, PERM.reportReadAll] },
   messagesInternal: { all: [PERM.messageReadInternal] },
   analytics: { all: [PERM.systemStats] },
   auditLogs: { all: [PERM.systemStats] },
   users: { all: [PERM.userReadAll] },
   team: { all: [PERM.userReadAll] },
-  reportTypes: { all: [PERM.reportTypeRead] },
+  // Reporters hold report_type:read too (to pick a type when filing), so
+  // reading alone doesn't open the staff page: it also takes managing types
+  // or working on other people's reports.
+  reportTypes: {
+    all: [PERM.reportTypeRead],
+    any: [PERM.reportTypeManage, PERM.reportReadAll, PERM.reportReadSubordinates, PERM.reportReadAssigned],
+  },
   reportTypesManage: { all: [PERM.reportTypeManage] },
   // The backend serves question sets to "Manager, Admin" — the pair that holds
   // report_type:manage by default.

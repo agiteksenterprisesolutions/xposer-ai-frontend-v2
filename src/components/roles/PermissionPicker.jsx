@@ -8,7 +8,7 @@
 // nobody can hand out access they don't have, and the save would 403.
 import { useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, Lock, Plus, XCircle } from 'lucide-react';
-import { PERMISSION_INFO } from '../../utils/permissions';
+import { permissionLabel, permissionLabels } from '../../utils/permissions';
 
 /** permission → catalog entry ({ permission, granted, requires_any_of }). */
 export const catalogEntries = (catalog) =>
@@ -23,7 +23,7 @@ export const localPrerequisiteErrors = (selected, entries) => {
   selected.forEach((permission) => {
     const requires = entries.get(permission)?.requires_any_of || [];
     if (requires.length && !requires.some((p) => selected.has(p))) {
-      errors.set(permission, { requires, message: `Needs ${requires.join(' or ')} as well.` });
+      errors.set(permission, { requires, message: `Needs ${permissionLabels(requires)} as well.` });
     }
   });
   return errors;
@@ -61,12 +61,9 @@ const PermissionOption = ({ entry, checked, readOnly, error, warning, fixes, onT
       <div className="flex items-start gap-3">
         <Checkbox checked={checked} disabled={readOnly || locked} onChange={onToggle} labelledBy={id} />
         <div className="min-w-0 flex-1">
-          <p id={id} className="text-sm font-medium text-ink">
-            {PERMISSION_INFO[permission] || permission}
-          </p>
-          <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-ink-subtle">
-            {permission}
-            {locked && !readOnly && <Lock className="h-3 w-3" aria-label="Not grantable by you" />}
+          <p id={id} className="flex items-center gap-1.5 text-sm font-medium text-ink">
+            {permissionLabel(permission)}
+            {locked && !readOnly && <Lock className="h-3 w-3 shrink-0 text-ink-subtle" aria-label="Not grantable by you" />}
           </p>
 
           {error && (
@@ -82,10 +79,10 @@ const PermissionOption = ({ entry, checked, readOnly, error, warning, fixes, onT
                       key={fix}
                       type="button"
                       onClick={() => onFix(fix)}
-                      className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2 py-0.5 font-mono text-[11px] text-ink-secondary transition-colors hover:border-line-accent hover:text-accent-fg"
+                      className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2 py-0.5 text-[11px] text-ink-secondary transition-colors hover:border-line-accent hover:text-accent-fg"
                     >
                       <Plus className="h-3 w-3" />
-                      {fix}
+                      {permissionLabel(fix)}
                     </button>
                   ))}
                 </div>
