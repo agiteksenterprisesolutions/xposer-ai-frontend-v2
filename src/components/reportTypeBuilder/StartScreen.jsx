@@ -1,17 +1,17 @@
 // src/components/reportTypeBuilder/StartScreen.jsx
 //
-// The first thing "New report type" shows: a name and a starting point — the
-// ten questions every report needs, or a copy of an existing type. Starting
-// from something already filled in is what keeps building a type short.
+// The first thing "New report type" shows: a name, a category, and a starting
+// point — a blank form, or a copy of an existing type.
 import { useEffect, useState } from 'react';
-import { ArrowRight, Copy, FileText, Info, X } from 'lucide-react';
+import { ArrowRight, Copy, FilePlus2, Info, X } from 'lucide-react';
 import Button from '../ui/Button';
 import { reportTypesAPI } from '../../api';
 import { useUIStore } from '../../store/uiStore';
 
 const StartScreen = ({ onStart, onCancel, starting = false }) => {
   const [name, setName] = useState('');
-  const [mode, setMode] = useState('essentials');
+  const [category, setCategory] = useState('');
+  const [mode, setMode] = useState('scratch');
   const [types, setTypes] = useState(null);
   const [copyId, setCopyId] = useState('');
 
@@ -35,12 +35,15 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
     setCopyId(id);
     const source = types?.find((t) => (t.id || t._id) === id);
     if (source && !name.trim()) setName(`${source.name} (copy)`);
+    if (source?.category && !category.trim()) setCategory(source.category);
   };
 
-  const ready = name.trim() && (mode === 'essentials' || copyId);
+  const ready = name.trim() && (mode === 'scratch' || copyId);
+  // Categories already in use, so types are grouped consistently.
+  const categories = [...new Set((types || []).map((t) => t.category?.trim()).filter(Boolean))].sort();
   const submit = (e) => {
     e.preventDefault();
-    if (ready) onStart({ name: name.trim(), mode, copyId });
+    if (ready) onStart({ name: name.trim(), category: category.trim(), mode, copyId });
   };
 
   const choice = (value, Icon, title, text) => {
@@ -107,10 +110,30 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
             <p className="text-xs text-ink-muted">Reporters see this when they choose what to report.</p>
           </div>
 
+          <div className="space-y-1.5">
+            <label htmlFor="rt-start-category" className="block text-sm font-medium text-ink-secondary">
+              Category <span className="font-normal text-ink-muted">optional</span>
+            </label>
+            <input
+              id="rt-start-category"
+              list="rt-start-categories"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g. Fraud, Conduct, Health & safety"
+              className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3.5 text-[0.9375rem] text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-line-accent focus:ring-3 focus:ring-accent-ring"
+            />
+            <datalist id="rt-start-categories">
+              {categories.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+            <p className="text-xs text-ink-muted">Groups related report types. Pick an existing one or type a new one.</p>
+          </div>
+
           <fieldset className="space-y-2.5">
             <legend className="mb-2.5 text-sm font-medium text-ink-secondary">Start from</legend>
             <div className="grid gap-2.5 sm:grid-cols-2">
-              {choice('essentials', FileText, 'The essentials', 'The 10 questions every report needs, ready for you to add your own.')}
+              {choice('scratch', FilePlus2, 'Start from scratch', 'A blank form. Add your own steps and questions.')}
               {choice('copy', Copy, 'A copy of an existing type', 'Its questions and handling rules, under the new name.')}
             </div>
           </fieldset>

@@ -1,7 +1,7 @@
 // src/pages/admin/CreateReportType.jsx
 //
-// New report type: a short start screen (a name, and the essentials or a copy
-// of an existing type), then the three-step builder.
+// New report type: a short start screen (a name, a category, and a blank form
+// or a copy of an existing type), then the three-step builder.
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -13,7 +13,7 @@ import DashboardTour from '../../components/tour/DashboardTour';
 import useSEO from '../../hooks/useSEO';
 import StartScreen from '../../components/reportTypeBuilder/StartScreen';
 import ReportTypeEditor from '../../components/reportTypeBuilder/ReportTypeEditor';
-import { asCopy, coreSections } from '../../components/reportTypeBuilder/model';
+import { asCopy, blankSections } from '../../components/reportTypeBuilder/model';
 
 const CREATE_REPORT_TYPE_TOUR_KEY = 'xposer_create_report_type_tour_v2_seen';
 
@@ -67,15 +67,16 @@ const CreateReportType = () => {
     [],
   );
 
-  const begin = async ({ name, mode, copyId }) => {
-    if (mode === 'essentials') {
-      setStart({ name, sections: coreSections() });
+  const begin = async ({ name, category, mode, copyId }) => {
+    if (mode === 'scratch') {
+      setStart({ name, category, sections: blankSections() });
       return;
     }
     setStarting(true);
     try {
       const source = await reportTypesAPI.getReportType(copyId);
-      setStart(asCopy(toBuilderShape(source), name));
+      const copy = asCopy(toBuilderShape(source), name);
+      setStart(category ? { ...copy, category } : copy);
     } catch {
       toast.error("Couldn't load that report type. Try again.");
     } finally {

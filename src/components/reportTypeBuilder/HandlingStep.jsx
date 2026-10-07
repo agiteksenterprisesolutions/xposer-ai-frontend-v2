@@ -7,8 +7,10 @@
 //
 // None of this is applied to cases yet (no case inherits a tier or an SLA
 // clock from its type); it is stored and exported. The page says so.
+import { useEffect, useState } from 'react';
 import { Archive, Check, Clock, Info, Lock, ShieldCheck, Users, FileText } from 'lucide-react';
 import { useOrgRoles, isStaffRole } from '../../hooks/useOrgRoles';
+import { reportTypesAPI } from '../../api';
 import { parseServerDate } from '../../utils/formatters';
 import { AUDIENCES, CONFIDENTIALITY_TIERS } from '../../utils/reportTypes';
 
@@ -90,6 +92,19 @@ const HandlingStep = ({ draft, codeLocked, nameError }) => {
   const audience = form.audience || [];
   const approvedAt = parseServerDate(form.approved_at);
 
+  // Categories already in use, offered as suggestions so types group consistently.
+  const [categories, setCategories] = useState([]);
+  useEffect(() => {
+    let live = true;
+    reportTypesAPI
+      .getReportTypes(false, false)
+      .then((list) => live && setCategories([...new Set(list.map((t) => t.category?.trim()).filter(Boolean))].sort()))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+
   const toggleAudience = (code) =>
     setField('audience', audience.includes(code) ? audience.filter((a) => a !== code) : [...audience, code]);
 
@@ -106,8 +121,8 @@ const HandlingStep = ({ draft, codeLocked, nameError }) => {
         </span>
       </div>
 
-      <Card icon={FileText} title="What reporters see" tour="rtb-handling-basics">
-        <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <Card icon={FileText} title="About this type" tour="rtb-handling-basics">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="rt-name">Name</Label>
             <input
@@ -121,6 +136,24 @@ const HandlingStep = ({ draft, codeLocked, nameError }) => {
             {nameError && <p className="mt-1 text-xs text-danger-fg">{nameError}</p>}
           </div>
           <div>
+            <Label htmlFor="rt-category" hint="optional">
+              Category
+            </Label>
+            <input
+              id="rt-category"
+              list="rt-categories"
+              value={form.category || ''}
+              onChange={(e) => setField('category', e.target.value)}
+              placeholder="e.g. Fraud, Conduct, Health & safety"
+              className={inputClass}
+            />
+            <datalist id="rt-categories">
+              {categories.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+          </div>
+          <div className="md:col-span-2">
             <Label htmlFor="rt-description" hint="optional">
               Description
             </Label>
@@ -270,19 +303,7 @@ const HandlingStep = ({ draft, codeLocked, nameError }) => {
             onChange={(years) => setField('retention_years', years)}
           />
           <Divider />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="rt-category" hint="optional">
-                Category
-              </Label>
-              <input
-                id="rt-category"
-                value={form.category || ''}
-                onChange={(e) => setField('category', e.target.value)}
-                placeholder="e.g. Conduct"
-                className={inputClass}
-              />
-            </div>
+          <div>
             <div>
               <Label htmlFor="rt-code" hint={codeLocked ? 'fixed' : 'optional'}>
                 Compliance code

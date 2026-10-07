@@ -19,7 +19,7 @@ import {
   Type,
   Upload,
 } from 'lucide-react';
-import { CORE_FIELDS, normalizeOptions, normalizeValidation } from '../../utils/reportTypes';
+import { normalizeOptions, normalizeValidation } from '../../utils/reportTypes';
 
 /** Every question type, in the order the type picker lists them. */
 export const QUESTION_TYPES = [
@@ -117,128 +117,8 @@ export const newQuestion = (type = 'text', overrides = {}) => ({
   ...overrides,
 });
 
-// ── The core fieldset ─────────────────────────────────────────────────────────
-// The ten questions every taxonomy-based report type carries, worded as the
-// backend's import template words them. Their field names drive routing,
-// analytics and the conflict-of-interest bypass, so they are locked.
-
-const opts = (pairs) => pairs.map(([value, label], index) => ({ value, label, display_order: index }));
-
-const CORE_QUESTIONS = {
-  incident_title: { type: 'text', label: 'Give this report a short title', validation: { max_length: 200 } },
-  incident_description: {
-    type: 'textarea',
-    label: 'Describe what happened, in as much detail as you can',
-    validation: { min_length: 50 },
-  },
-  incident_date: { type: 'date', label: 'When did this happen?', validation: { max_date: 'today' } },
-  entity: {
-    type: 'select',
-    label: 'Which entity does this concern?',
-    options: opts([
-      ['entity_a', 'Entity A'],
-      ['entity_b', 'Entity B'],
-      ['other', 'Other, or I am not sure'],
-    ]),
-  },
-  previously_reported: { type: 'boolean', label: 'Have you reported this before?' },
-  implicates_senior_person: {
-    type: 'select',
-    label: 'Does this involve someone senior to you?',
-    options: opts([
-      ['none', 'No one senior'],
-      ['line_manager', 'My line manager'],
-      ['function_head', 'A function head'],
-      ['executive', 'An executive'],
-      ['control_function', 'Someone in a control function'],
-      ['unsure', 'I am not sure'],
-    ]),
-  },
-  retaliation_concern: {
-    type: 'select',
-    label: 'Are you concerned about retaliation?',
-    options: opts([
-      ['yes', 'Yes'],
-      ['no', 'No'],
-      ['unsure', 'I am not sure'],
-    ]),
-  },
-  reporter_relationship: {
-    type: 'select',
-    label: 'What is your relationship to this organization?',
-    options: opts([
-      ['employee', 'Employee'],
-      ['contractor', 'Contractor'],
-      ['member', 'Member'],
-      ['provider', 'Provider'],
-      ['other', 'Other'],
-    ]),
-  },
-  anonymity_election: {
-    type: 'select',
-    label: 'How would you like to be identified?',
-    options: opts([
-      ['named', 'Named — handlers may contact me directly'],
-      ['confidential', 'Confidential — intake team only'],
-      ['anonymous', 'Anonymous — do not record who I am'],
-    ]),
-  },
-  good_faith_declaration: { type: 'boolean', label: 'I believe this report is true to the best of my knowledge' },
-};
-
-const coreQuestion = (name) =>
-  newQuestion(CORE_QUESTIONS[name].type, {
-    ...CORE_QUESTIONS[name],
-    name,
-    _autoName: false,
-    required: true,
-    is_core_field: true,
-  });
-
-const BASICS = ['incident_title', 'incident_description', 'incident_date', 'entity', 'previously_reported'];
-const PROTECTION = [
-  'implicates_senior_person',
-  'retaliation_concern',
-  'reporter_relationship',
-  'anonymity_election',
-  'good_faith_declaration',
-];
-
-/** The sections a new "essentials" type starts with. */
-export const coreSections = () => [
-  newSection({
-    section_key: 'sec_basics',
-    title: 'Report basics',
-    description: 'What happened, when, and where.',
-    questions: BASICS.map(coreQuestion),
-  }),
-  newSection({
-    section_key: 'sec_protection',
-    title: 'Protection and declarations',
-    description: 'Who is involved, and how you would like to be contacted.',
-    questions: PROTECTION.map(coreQuestion),
-  }),
-];
-
-/** The core field names a form does not have yet. */
-export const missingCoreFields = (sections) => {
-  const present = new Set(sections.flatMap((s) => s.questions).map((q) => q.name));
-  return CORE_FIELDS.filter((name) => !present.has(name));
-};
-
-/** A section holding the given core questions, to add what a form lacks. */
-export const sectionForCoreFields = (names) =>
-  newSection({
-    title: 'Required questions',
-    description: 'Questions every report needs.',
-    questions: names.map(coreQuestion),
-  });
-
-/** True when the entity question still offers the template's placeholders. */
-export const hasPlaceholderEntities = (sections) =>
-  sections
-    .flatMap((s) => s.questions)
-    .some((q) => q.name === 'entity' && (q.options || []).some((o) => ['entity_a', 'entity_b'].includes(o.value)));
+/** A blank form: one empty step, ready for its first question. */
+export const blankSections = () => [newSection()];
 
 // ── Field names ─────────────────────────────────────────────────────────────
 
@@ -367,18 +247,6 @@ export const findIssues = (form, { isNew = false } = {}) => {
     });
   });
 
-  const missing = missingCoreFields(sections);
-  if (missing.length > 0 && sections.length > 0)
-    push('warning', 'core', `${missing.length} of the 10 questions every report needs ${missing.length === 1 ? 'is' : 'are'} missing`, {
-      action: 'addCore',
-    });
-  if (hasPlaceholderEntities(sections)) {
-    const entity = allQuestions(sections).find(({ question }) => question.name === 'entity');
-    push('warning', 'entities', '"Which entity does this concern?" still lists Entity A and Entity B', {
-      sectionId: entity.section.id,
-      questionId: entity.question.id,
-    });
-  }
   if (!form.default_owner_role) push('warning', 'owner', 'No owner is set for these cases', { step: 'handling' });
   if (isNew && !form.code?.trim())
     push('warning', 'code', "No compliance code yet. It can't be added once the type is saved", { step: 'handling' });

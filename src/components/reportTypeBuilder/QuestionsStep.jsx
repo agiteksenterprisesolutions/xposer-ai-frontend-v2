@@ -20,15 +20,15 @@ import {
 } from 'lucide-react';
 import FieldPreview from './FieldPreview';
 import Inspector from './Inspector';
-import { QUESTION_TYPES, QUICK_TYPES, describeLogic, isConditional, isCore, missingCoreFields, typeInfo } from './model';
+import { QUESTION_TYPES, QUICK_TYPES, describeLogic, isConditional, isCore, typeInfo } from './model';
 
 // ── Outline ─────────────────────────────────────────────────────────────────
 
 const Outline = ({ draft, problemIds }) => {
-  const { form, selection, select, addSection, addMissingCore } = draft;
+  const { form, selection, select, addSection } = draft;
   const activeId = selection?.sectionId;
   const total = form.sections.reduce((n, s) => n + s.questions.length, 0);
-  const missing = missingCoreFields(form.sections).length;
+  const hasCore = form.sections.some((s) => s.questions.some(isCore));
 
   return (
     <nav aria-label="Form outline" className="flex h-full flex-col" data-tour="rtb-outline">
@@ -114,21 +114,12 @@ const Outline = ({ draft, problemIds }) => {
         </button>
       </div>
 
-      <div className="border-t border-line-subtle p-3">
-        {missing > 0 ? (
-          <div className="rounded-lg bg-warning-soft px-3 py-2.5 text-xs leading-relaxed text-warning-fg">
-            {missing} of the 10 questions every report needs {missing === 1 ? 'is' : 'are'} missing.{' '}
-            <button type="button" onClick={addMissingCore} className="font-semibold underline underline-offset-2">
-              Add {missing === 1 ? 'it' : 'them'}
-            </button>
-          </div>
-        ) : (
-          <p className="flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
-            <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
-            The 10 questions every report needs are in place. You can reword them, but not remove them.
-          </p>
-        )}
-      </div>
+      {hasCore && (
+        <p className="m-3 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
+          <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+          Locked questions are core fields. You can reword them, but not remove them or change their type.
+        </p>
+      )}
     </nav>
   );
 };

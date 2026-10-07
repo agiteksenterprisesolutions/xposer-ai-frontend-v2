@@ -15,7 +15,6 @@ const PASSED = {
   questions: 'Every question has wording and its own field name',
   answers: 'Every dropdown and checkbox question has answers',
   conditions: 'Conditions only look at earlier questions',
-  core: 'All 10 questions every report needs are in place',
 };
 
 const STATUS_HINTS = {
@@ -37,7 +36,7 @@ const Summary = ({ title, onEdit, children }) => (
 );
 
 const ReviewStep = ({ draft, issues, isNew, onFix }) => {
-  const { form, setField, addMissingCore } = draft;
+  const { form, setField } = draft;
   const { nameFor } = useOrgRoles();
   const [device, setDevice] = useState('phone');
 
@@ -51,6 +50,7 @@ const ReviewStep = ({ draft, issues, isNew, onFix }) => {
   const tier = CONFIDENTIALITY_TIERS.find((t) => t.value === (form.confidentiality_tier || 'standard'))?.label;
 
   const handling = [
+    ['Category', form.category?.trim() || 'None'],
     ['Who can report', `${audience.length ? audience.join(', ') : 'Not specified'} · ${form.allows_anonymous === false ? 'no anonymous reports' : 'anonymous allowed'}`],
     [
       'Owner',
@@ -70,19 +70,11 @@ const ReviewStep = ({ draft, issues, isNew, onFix }) => {
     ['Records', form.retention_years ? `Kept ${form.retention_years} years` : 'No retention period set'],
   ];
 
-  const fixButton = (issue) => {
-    if (issue.target?.action === 'addCore')
-      return (
-        <button type="button" onClick={addMissingCore} className="shrink-0 font-semibold underline underline-offset-2">
-          Add them
-        </button>
-      );
-    return (
-      <button type="button" onClick={() => onFix(issue.target)} className="shrink-0 font-semibold underline underline-offset-2">
-        {issue.level === 'error' ? 'Fix' : 'Review'}
-      </button>
-    );
-  };
+  const fixButton = (issue) => (
+    <button type="button" onClick={() => onFix(issue.target)} className="shrink-0 font-semibold underline underline-offset-2">
+      {issue.level === 'error' ? 'Fix' : 'Review'}
+    </button>
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-290 flex-wrap items-start gap-6 px-4 py-7 sm:px-6 lg:px-8">

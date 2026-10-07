@@ -11,8 +11,6 @@ import {
   isCore,
   newQuestion,
   newSection,
-  sectionForCoreFields,
-  missingCoreFields,
   uniqueFieldName,
 } from './model';
 
@@ -262,15 +260,6 @@ const useReportTypeDraft = (initialData) => {
     [updateQuestion, updateSection],
   );
 
-  /** Adds the core questions the form lacks, as one step at the end. */
-  const addMissingCore = useCallback(() => {
-    const missing = missingCoreFields(form.sections);
-    if (missing.length === 0) return;
-    const section = sectionForCoreFields(missing);
-    mapSections((sections) => [...sections, section]);
-    setSelection({ sectionId: section.id, questionId: null });
-  }, [form.sections, mapSections]);
-
   const selected = useMemo(() => {
     if (!selection) return null;
     const section = form.sections.find((s) => s.id === selection.sectionId);
@@ -299,7 +288,6 @@ const useReportTypeDraft = (initialData) => {
     duplicateQuestion,
     setOptions,
     setLogic,
-    addMissingCore,
   };
 };
 
