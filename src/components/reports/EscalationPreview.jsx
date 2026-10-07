@@ -24,6 +24,7 @@ import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { getReportTexts } from '../../utils/reports';
 import { describeError } from '../../utils/errors';
+import SkippedManagers from './SkippedManagers';
 
 const Person = ({ member, level, label }) => (
   <div className="flex items-start gap-3 rounded-lg border border-line bg-surface px-3 py-2.5">
@@ -103,18 +104,22 @@ const EscalationPreview = ({ report, hierarchyPath }) => {
               </p>
             )}
             {result.reason && <p className="text-xs text-ink-subtle">{result.reason}</p>}
+            <SkippedManagers skipped={result.skipped_managers} />
           </div>
         )}
 
         {result?.matched && !result.escalate_to_member && (
           <div className="space-y-2">
             <Person member={result.implicated_member} level={result.implicated_level} label="Named in the report" />
-            <Alert variant="warning" title="No one above them on file">
+            <Alert variant="warning" title="Needs manual triage">
               <p>
-                This person was identified, but the directory has no manager or more senior level to escalate to. A
-                person needs to decide where this report goes.
+                This person was identified, but no one above them on file can take the case. A person needs to decide
+                where this report goes.
               </p>
               {result.reason && <p className="mt-1 text-xs">{result.reason}</p>}
+              <div className="mt-2">
+                <SkippedManagers skipped={result.skipped_managers} />
+              </div>
               {hierarchyPath && (
                 <Link to={hierarchyPath} className="mt-2 inline-block text-sm font-medium text-link hover:underline">
                   Review the hierarchy →

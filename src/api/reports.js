@@ -363,7 +363,7 @@ export const reportsAPI = {
       const body = { report_number: reportNumber };
       if (password) body.password = password;
       const response = await api.post('/reports/track', body);
-      return { valid: true, report: response.data };
+      return { valid: true, report: toReporterView(response.data) };
     } catch (error) {
       return { valid: false, error: error.response?.data?.detail || 'Invalid credentials' };
     }
@@ -375,7 +375,7 @@ export const reportsAPI = {
       const progressResponse = await api.get(
         `/reports/${reportNumber}/progress?password=${encodeURIComponent(password)}`
       );
-      return { report: trackResponse.data, progress: progressResponse.data };
+      return { report: toReporterView(trackResponse.data), progress: progressResponse.data };
     } catch (error) {
       throw error;
     }

@@ -213,8 +213,23 @@ const PreviewResult = ({ preview }) => {
 
 const SyncResult = ({ result, onGoTo }) => {
   const unmatched = result.unmatched_designations || [];
+  const waiting = result.awaiting_approval_total ?? 0;
   return (
     <div className="space-y-4">
+      {waiting > 0 && (
+        <Alert variant="info" title={`${waiting} ${waiting === 1 ? 'person is' : 'people are'} waiting for approval`}>
+          <p>
+            {result.staged_for_approval
+              ? `${result.staged_for_approval} found for the first time in this sync. `
+              : ''}
+            New people aren't added until you give them a level, decide whether they sign in, and approve them.
+            {result.skipped_dismissed ? ` ${result.skipped_dismissed} dismissed ${result.skipped_dismissed === 1 ? 'person was' : 'people were'} skipped.` : ''}
+          </p>
+          <Button className="mt-3" variant="outline" size="small" onClick={() => onGoTo('approvals')}>
+            Review them in Approvals
+          </Button>
+        </Alert>
+      )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Figure label="Synced" value={result.synced} />
         <Figure label="Placed on a level" value={result.matched_to_a_level} />
@@ -366,7 +381,12 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
       const result = await orgHierarchyAPI.sync();
       setSyncResult(result);
       setPreview(null);
-      toast.success(`Synced ${result?.synced ?? 0} people from HR.`);
+      const staged = result?.staged_for_approval ?? 0;
+      toast.success(
+        staged > 0
+          ? `Synced ${result?.synced ?? 0} people. ${staged} new ${staged === 1 ? 'person is' : 'people are'} waiting for approval.`
+          : `Synced ${result?.synced ?? 0} people from HR.`,
+      );
       onChanged?.();
       load();
     } catch (err) {
@@ -467,6 +487,26 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
               />
             )}
           </div>
+
+          {/graph\.microsoft\.com/i.test(form.api_base_url) && (
+            <Alert variant="warning" title="Microsoft Graph: check these before syncing">
+              <ul className="list-disc space-y-1 pl-4">
+                <li>
+                  Set <span className="font-mono">Results path</span> to <span className="font-mono">value</span> — Graph wraps
+                  the list in it.
+                </li>
+                <li>
+                  Add <span className="font-mono">$expand=manager($select=id)</span> to the employees path and map{' '}
+                  <span className="font-mono">manager.id</span>, or nobody gets a manager and escalation can't route above
+                  anyone.
+                </li>
+                <li>
+                  Only the first 100 people are read — later pages are ignored, and people missing from them are marked as
+                  having left. The token isn't refreshed either, so scheduled syncs stop working after about an hour.
+                </li>
+              </ul>
+            </Alert>
+          )}
 
           <div className="space-y-2">
             <div>

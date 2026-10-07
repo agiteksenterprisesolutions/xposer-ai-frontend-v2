@@ -22,6 +22,7 @@ import {
   Network,
 } from 'lucide-react';
 import { ACCESS, userCan } from './permissions';
+import { SET_PASSWORD_PATH, mustChangePassword } from './passwordPolicy';
 
 export const STAFF_AREA = 'staff';
 export const REPORTER_AREA = 'reporter';
@@ -82,6 +83,9 @@ export const getHomePath = (user) => {
   const orgSlug = user.organization_slug;
 
   if (user.is_anonymous) return `${orgBase(orgSlug)}/track-report`;
+
+  // Nothing else loads until the default password is replaced.
+  if (mustChangePassword(user)) return SET_PASSWORD_PATH;
 
   const [firstStaffPage] = staffNavFor(user);
   if (firstStaffPage) return staffPath(orgSlug, firstStaffPage.path);

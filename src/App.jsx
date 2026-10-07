@@ -45,6 +45,7 @@ import AgentActivity from './pages/admin/AgentActivity'
 import QuestionSets from './pages/admin/QuestionSets'
 import VoiceProfile from './pages/admin/VoiceProfile'
 import ChangePassword from './pages/reporter/ChangePassword'
+import SetPassword from './pages/auth/SetPassword'
 
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AnonymousOnlyRoute from './components/auth/AnonymousOnlyRoute'
@@ -94,6 +95,10 @@ function App() {
       {/* Site-wide defaults; any <SEO /> mounted inside a page overrides these. */}
       <SEO />
       <Routes>
+        {/* Outside every layout: an account on its default password can call
+            nothing else, so nothing else may render around it. */}
+        <Route path="/set-password" element={<SetPassword />} />
+
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />

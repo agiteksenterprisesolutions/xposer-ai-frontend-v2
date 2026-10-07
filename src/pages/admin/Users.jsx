@@ -5,8 +5,6 @@ import {
   Shield,
   Eye,
   EyeOff,
-  Copy,
-  Check,
   PenBoxIcon,
   X,
   Upload,
@@ -14,6 +12,7 @@ import {
 } from 'lucide-react';
 import DirectoryLinkModal from '../../components/users/DirectoryLinkModal';
 import ImportUsersModal from '../../components/users/ImportUsersModal';
+import AddPersonModal from '../../components/users/AddPersonModal';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import Card from '../../components/ui/Card';
 import Table, { TableLoading } from '../../components/ui/Table';
@@ -38,7 +37,6 @@ import { useOrgRoles, REPORTER_ROLE } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import ChangeRoleModal from '../../components/roles/ChangeRoleModal';
 import RoleSelect from '../../components/roles/RoleSelect';
-import { copyToClipboard } from '../../utils/clipboard';
 import { toast } from 'react-toastify';
 import UserAvatar from '../../components/ui/UserAvatar';
 import Alert from '../../components/ui/Alert';
@@ -61,15 +59,6 @@ const SORT_COLUMNS = {
   auth_provider: { label: 'Sign-in', defaultOrder: 'asc', value: byText('auth_provider') },
   created_at: { label: 'Created On', defaultOrder: 'desc', value: byDate('created_at') },
   is_active: { label: 'Status', defaultOrder: 'desc', value: (user) => (user.is_active ? 1 : 0) },
-};
-
-const INITIAL_FORM = {
-  full_name: '',
-  email: '',
-  username: '',
-  role: REPORTER_ROLE,
-  auth_provider: AUTH_PROVIDERS.PASSWORD,
-  password: '',
 };
 
 const formatDate = (dateString) => {
@@ -141,14 +130,8 @@ const Users = () => {
   });
   const [resetPasswordFormErrors, setResetPasswordFormErrors] = useState({});
   const [resetPasswordFormLoading, setResetPasswordFormLoading] = useState(false);
-  const [formData, setFormData] = useState(INITIAL_FORM);
-  const [formErrors, setFormErrors] = useState({});
-  const [formLoading, setFormLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ open: false, type: '', user: null });
-  const [showPassword, setShowPassword] = useState(false);
-  const [createdUser, setCreatedUser] = useState(null);
-  const [copied, setCopied] = useState(false);
   const tourRef = useRef(null);
   const isDesktop = useIsDesktop();
 
@@ -158,13 +141,17 @@ const Users = () => {
   const statusFilter = searchParams.get('status') || 'all';
   // ?role=code — how the roles screen links to "who still has this role".
   const roleFilter = searchParams.get('role') || '';
-  const clearRoleFilter = useCallback(() => {
+  // ?level=code and ?unlinked=true — how the org chart drills into people.
+  const levelFilter = searchParams.get('level') || '';
+  const unlinkedFilter = searchParams.get('unlinked') === 'true';
+  const clearFilter = useCallback((key) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      next.delete('role');
+      next.delete(key);
       return next;
     }, { replace: true });
   }, [setSearchParams]);
+  const clearRoleFilter = useCallback(() => clearFilter('role'), [clearFilter]);
   const setStatusFilter = useCallback((value) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -196,6 +183,8 @@ const Users = () => {
         search: debouncedSearch || undefined,
         is_active: statusFilter === 'all' ? undefined : statusFilter === 'active',
         role: roleFilter || undefined,
+        level_code: levelFilter || undefined,
+        unlinked: unlinkedFilter || undefined,
       });
       const { items, total, totalPages: pages } = normalizeListResponse(response);
       setUsers(items);
@@ -206,7 +195,7 @@ const Users = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch, statusFilter, roleFilter]);
+  }, [currentPage, debouncedSearch, statusFilter, roleFilter, levelFilter, unlinkedFilter]);
 
   useEffect(() => {
     fetchUsers();
@@ -215,7 +204,7 @@ const Users = () => {
   // A narrower filter rarely has as many pages as the one it replaced.
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, roleFilter]);
+  }, [statusFilter, roleFilter, levelFilter, unlinkedFilter]);
 
   // The endpoint takes `search` and paginates the result, so filtering again
   // here would only hide rows it matched on fields this table doesn't show.
@@ -236,8 +225,6 @@ const Users = () => {
   }), [nameFor]);
   const sort = useTableSort(visibleUsers, sortColumns, { defaultSortBy: 'created_at' });
   const { sortedRows: filteredUsers, getHeaderProps } = sort;
-  // SSO accounts have no password field, no default password and no reset flow.
-  const isCreatingPasswordAccount = formData.auth_provider === AUTH_PROVIDERS.PASSWORD;
   // True only when moving an existing SSO account back onto a password.
   const isSwitchingToPassword =
     resetPasswordFormData.auth_provider === AUTH_PROVIDERS.PASSWORD
@@ -265,67 +252,6 @@ const Users = () => {
       console.error('Error toggling status:', error);
     } finally {
       setConfirmModal({ open: false, type: '', user: null });
-    }
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error on change
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    if (!formData.full_name.trim()) errors.full_name = 'Full name is required.';
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required.';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Enter a valid email address.';
-    }
-    if (!formData.username.trim()) errors.username = 'Username is required.';
-    // Password rules only apply to password accounts; SSO accounts must not
-    // carry one at all (the backend 422s if they do).
-    if (formData.auth_provider === AUTH_PROVIDERS.PASSWORD
-      && formData.password && formData.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters.';
-    }
-    return errors;
-  };
-
-  const handleCreateUser = async () => {
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-
-    setFormLoading(true);
-    const isPasswordAccount = formData.auth_provider === AUTH_PROVIDERS.PASSWORD;
-    // Sending a password alongside an SSO provider is a 422 — the credential
-    // belongs to Google/Microsoft, not to us.
-    const { password, ...withoutPassword } = formData;
-    const payload = isPasswordAccount ? formData : withoutPassword;
-
-    try {
-      const response = await usersAPI.createUser(payload);
-      setCreatedUser({
-        ...response,
-        auth_provider: formData.auth_provider,
-        // SSO users get an invite email from the backend instead of credentials.
-        password_used: isPasswordAccount ? (formData.password || 'User123!') : null,
-      });
-      setIsAddModalOpen(false);
-      setFormData(INITIAL_FORM);
-      setFormErrors({});
-      setShowPassword(false);
-      fetchUsers();
-    } catch (error) {
-      console.error('Error creating user:', error);
-    } finally {
-      setFormLoading(false);
     }
   };
 
@@ -393,32 +319,6 @@ const Users = () => {
     } finally {
       setResetPasswordFormLoading(false);
     }
-  };
-
-  const handleCloseModal = () => {
-    setIsAddModalOpen(false);
-    setFormData(INITIAL_FORM);
-    setFormErrors({});
-    setShowPassword(false);
-  };
-
-  const handleCopyDetails = async () => {
-    if (!createdUser) return;
-    const text = [
-      `Full Name: ${createdUser.full_name}`,
-      `Email: ${createdUser.email}`,
-      `Username: ${createdUser.username}`,
-      `Role: ${nameFor(createdUser.role)}`,
-      createdUser.password_used
-        ? `Password: ${createdUser.password_used}`
-        : `Sign-in: ${authProviderLabel(createdUser.auth_provider)}`,
-    ].join('\n');
-    if (!(await copyToClipboard(text))) {
-      toast.error('Could not copy — please select the credentials and copy them manually.');
-      return;
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const tourSteps = useMemo(() => {
@@ -511,24 +411,36 @@ const Users = () => {
               onClick={() => setIsAddModalOpen(true)}
               data-tour="users-add"
             >
-              Add New User
+              Add person
             </Button>
           )}
         </div>
       </div>
 
-      {roleFilter && (
-        <div className="flex items-center gap-2 text-sm text-ink-secondary">
-          Showing people with the role
-          <button
-            type="button"
-            onClick={clearRoleFilter}
-            className="inline-flex items-center gap-1.5 rounded-full border border-line-accent bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-fg hover:bg-hover"
-            aria-label={`Clear the ${nameFor(roleFilter)} filter`}
-          >
-            {nameFor(roleFilter)}
-            <X className="h-3 w-3" />
-          </button>
+      {(roleFilter || levelFilter || unlinkedFilter) && (
+        <div className="flex flex-wrap items-center gap-2 text-sm text-ink-secondary">
+          Showing
+          {[
+            roleFilter && { key: 'role', label: `Role: ${nameFor(roleFilter)}` },
+            levelFilter && { key: 'level', label: `Level: ${levelTitle(levelFilter)}` },
+            unlinkedFilter && { key: 'unlinked', label: 'Not linked to the directory' },
+          ]
+            .filter(Boolean)
+            .map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => clearFilter(chip.key)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-line-accent bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-fg hover:bg-hover"
+                aria-label={`Clear the filter ${chip.label}`}
+              >
+                {chip.label}
+                <X className="h-3 w-3" />
+              </button>
+            ))}
+          {unlinkedFilter && (
+            <span className="text-xs text-ink-muted">— these accounts see only their own cases until linked.</span>
+          )}
         </div>
       )}
 
@@ -653,6 +565,13 @@ const Users = () => {
                     <Badge variant={user.is_active ? 'success' : 'danger'} dot>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </Badge>
+                    {/* Still on the default password: they've never signed in
+                        properly, which is worth seeing after a bulk import. */}
+                    {user.must_change_password && (
+                      <span className="mt-1 block text-[11px] font-medium text-warning-fg" title="They must replace the temporary password at their next sign-in.">
+                        Hasn’t set a password
+                      </span>
+                    )}
                   </Table.Cell>
 
                   <Table.Cell className="text-right">
@@ -766,162 +685,16 @@ const Users = () => {
         />
       )}
 
-      {/* Add User Modal */}
-      <Modal
+      <AddPersonModal
         isOpen={isAddModalOpen}
-        onClose={handleCloseModal}
-        title="Add New User"
-        className="bg-surface absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Full Name"
-            name="full_name"
-            value={formData.full_name}
-            onChange={handleFormChange}
-            error={formErrors.full_name}
-            required
-          />
-          <Input
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleFormChange}
-            error={formErrors.email}
-            required
-            helperText="Required — the sign-in identity, and how the account is linked to its directory entry automatically."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Username"
-              name="username"
-              value={formData.username}
-              onChange={handleFormChange}
-              error={formErrors.username}
-              required
-            />
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-ink-secondary mb-1">
-                Sign-in Method <span className="text-danger-fg ml-1">*</span>
-              </label>
-              <select
-                name="auth_provider"
-                value={formData.auth_provider}
-                onChange={handleFormChange}
-                className="border border-line-strong rounded-lg shadow-sm focus:ring-accent-ring focus:border-line-accent p-2 text-sm"
-              >
-                {AUTH_PROVIDER_OPTIONS.map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <p className="text-xs text-ink-muted mt-1">
-                {isCreatingPasswordAccount
-                  ? 'The user receives their credentials by email.'
-                  : `The user signs in with ${authProviderLabel(formData.auth_provider)} — no password is set.`}
-              </p>
-            </div>
-            {/* SSO accounts own no password: the field is hidden rather than
-                disabled, so it can never be submitted by accident. */}
-            {isCreatingPasswordAccount && (
-              <div className="relative">
-                <Input
-                  label="Password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={handleFormChange}
-                  error={formErrors.password}
-                  className="pr-10"
-                  helperText={<span className="font-medium text-ink">Default password is User123!</span>}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-5.5 text-ink-muted hover:text-ink-secondary focus:outline-none z-10"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            )}
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-ink-secondary mb-1">
-                Role <span className="text-danger-fg ml-1">*</span>
-              </label>
-              <RoleSelect
-                name="role"
-                value={formData.role}
-                onChange={handleFormChange}
-                className="border border-line-strong rounded-lg shadow-sm focus:ring-accent-ring focus:border-line-accent p-2 text-sm"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
-            <Button variant="secondary" onClick={handleCloseModal} disabled={formLoading}>
-              Cancel
-            </Button>
-            <Button variant="secondary" onClick={handleCreateUser} disabled={formLoading}>
-              {formLoading ? 'Saving...' : 'Save User'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* User Created Success Modal */}
-      <Modal
-        isOpen={!!createdUser}
-        onClose={() => setCreatedUser(null)}
-        title="User Created Successfully"
-        className="bg-surface absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-ink-muted">
-            {createdUser?.password_used
-              ? 'Please make sure to copy the user credentials below. The password will not be shown again.'
-              : `This account signs in with ${authProviderLabel(createdUser?.auth_provider)}. They have been emailed an invitation — there is no password to share.`}
-          </p>
-
-          <div className="bg-subtle border border-line rounded-xl p-4 space-y-3 font-mono text-sm">
-            <div className="flex justify-between gap-3">
-              <span className="text-ink-muted font-sans">Full Name:</span>
-              <span className="font-semibold text-ink">{createdUser?.full_name}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-ink-muted font-sans shrink-0">Email:</span>
-              <span className="font-semibold text-ink break-all text-right">{createdUser?.email}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-ink-muted font-sans">Username:</span>
-              <span className="font-semibold text-ink">{createdUser?.username}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-ink-muted font-sans">Role:</span>
-              <span className="font-semibold text-ink">{nameFor(createdUser?.role)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-ink-muted font-sans">
-                {createdUser?.password_used ? 'Password:' : 'Sign-in:'}
-              </span>
-              <span className="font-semibold text-ink select-all">
-                {createdUser?.password_used || authProviderLabel(createdUser?.auth_provider)}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
-            <Button
-              variant="secondary"
-              startIcon={copied ? Check : Copy}
-              onClick={handleCopyDetails}
-            >
-              {copied ? 'Copied!' : 'Copy Credentials'}
-            </Button>
-            <Button variant="secondary" onClick={() => setCreatedUser(null)}>
-              Close
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onClose={() => setIsAddModalOpen(false)}
+        levels={levels}
+        members={members}
+        onAdded={() => {
+          fetchUsers();
+          loadDirectory();
+        }}
+      />
 
       {/* Manage Sign-in Modal — password reset and provider switching share a
           form because they are the same decision from an admin's point of view. */}

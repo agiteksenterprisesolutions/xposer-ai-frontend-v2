@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { ArrowLeft, Lock, Eye, EyeOff, Shield, AlertCircle } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -12,20 +11,7 @@ import { authAPI } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import useSEO from '../../hooks/useSEO';
 import { isSSOAccount, authProviderLabel } from '../../utils/authProviders';
-
-const changePasswordSchema = z.object({
-    current_password: z.string().min(1, 'Current password is required'),
-    new_password: z.string()
-        .min(8, 'New password must be at least 8 characters')
-        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-        .regex(/[0-9]/, 'Password must contain at least one number')
-        .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
-    confirm_password: z.string(),
-}).refine((data) => data.new_password === data.confirm_password, {
-    message: 'Passwords do not match',
-    path: ['confirm_password'],
-});
+import { changePasswordSchema } from '../../utils/passwordPolicy';
 
 const ChangePassword = () => {
   useSEO({

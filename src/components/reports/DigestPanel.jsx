@@ -27,32 +27,54 @@ import { formatDateTime, formatRelativeTime } from '../../utils/formatters';
  *   reportId
  *   attachmentCount – evidence files on the report, when known; with none,
  *                     the empty state can say exactly why there's no summary
+ *   canReadRun      – agent:read; the run's stage_log then says which reason
+ *                     applies (no files, attachments off, summarizer off)
  */
-const DigestPanel = ({ reportId, attachmentCount = null }) => {
+
+/** The summarizing pass in a run's stage_log: outcome ran | no_digest | skipped. */
+const summarizerEntry = (run) =>
+  (run?.stage_log || []).find(
+    (entry) =>
+      ['ran', 'no_digest', 'skipped'].includes(entry?.outcome) &&
+      (entry.kind === 'summarizer' || entry.summarizer || /summar/i.test(`${entry.stage || ''} ${entry.agent_code || ''}`)),
+  ) || null;
+
+const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false }) => {
   const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // { message, fault }
+  const [why, setWhy] = useState(null); // the stage_log sentence, when there's no digest
 
   const load = useCallback(async () => {
     if (!reportId) return;
     setLoading(true);
     try {
-      setDigest(await agentRunsAPI.getSummary(reportId));
+      const result = await agentRunsAPI.getSummary(reportId);
+      setDigest(result);
       setError(null);
+      // No digest: the run's log says why, as a sentence — show it rather
+      // than guessing. Optional; the panel works without it.
+      if (result && !result.available && canReadRun) {
+        const run = await agentRunsAPI.getRun(reportId, { quiet: true }).catch(() => null);
+        setWhy(summarizerEntry(run)?.detail || null);
+      } else {
+        setWhy(null);
+      }
     } catch (err) {
       setDigest(null);
       const status = err?.response?.status;
       if (status === 503) {
         setError({ message: "The AI service can't be reached right now, so the summary can't be loaded. Try again shortly.", fault: true });
       } else if (status === 404) {
-        setError({ message: 'There is no summary for this report.', fault: false });
+        // Only means the report isn't in this organization.
+        setError({ message: 'No summary is available for this report.', fault: false });
       } else {
         setError({ message: errorSummary(err), fault: true });
       }
     } finally {
       setLoading(false);
     }
-  }, [reportId]);
+  }, [reportId, canReadRun]);
 
   useEffect(() => {
     load();
@@ -101,9 +123,10 @@ const DigestPanel = ({ reportId, attachmentCount = null }) => {
         {digest && !available && (
           <div className="space-y-1">
             <p className="text-sm text-ink-muted">
-              {attachmentCount === 0
-                ? 'No evidence files were attached, so there is nothing to summarize. Summaries are written from attachments only.'
-                : digest.reason || 'No summary for this report yet. One can arrive a little after the evidence does.'}
+              {why ||
+                (attachmentCount === 0
+                  ? 'No evidence files were attached, so there is nothing to summarize. Summaries are written from attachments only.'
+                  : digest.reason || 'No summary for this report yet. One can arrive a little after the evidence does.')}
             </p>
             {(digest.problems || [])
               .filter((problem) => problem?.message && problem.message !== digest.reason)

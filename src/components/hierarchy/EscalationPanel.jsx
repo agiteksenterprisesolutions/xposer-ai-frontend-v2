@@ -17,6 +17,7 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import Badge from '../ui/Badge';
+import SkippedManagers from '../reports/SkippedManagers';
 import Skeleton from '../ui/Skeleton';
 import { orgEscalationAPI } from '../../api/orgEscalation';
 import { reportsAPI } from '../../api/reports';
@@ -81,7 +82,9 @@ const personName = (person) =>
 const PreviewResult = ({ result, levelName, nameFor }) => {
   const rule = result.rule || result.matched_rule;
   const implicated = personName(result.implicated_member);
-  const routedTo = personName(result.escalate_to || result.escalated_to || result.escalated_to_member || result.target_member);
+  const routedTo = personName(
+    result.escalate_to_member || result.escalate_to || result.escalated_to || result.escalated_to_member || result.target_member,
+  );
   return (
     <div className={`rounded-xl border p-4 ${result.matched ? 'border-line-accent bg-accent-soft' : 'border-line bg-subtle'}`}>
       <p className="text-sm font-semibold text-ink">{result.matched ? 'A rule would apply' : 'No rule would apply'}</p>
@@ -116,6 +119,16 @@ const PreviewResult = ({ result, levelName, nameFor }) => {
             </div>
           )}
         </dl>
+      )}
+      {result.matched && implicated && !routedTo && (
+        <p className="mt-3 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning-fg">
+          No one above them can take the case, so it would need manual triage.
+        </p>
+      )}
+      {result.skipped_managers?.length > 0 && (
+        <div className="mt-3">
+          <SkippedManagers skipped={result.skipped_managers} />
+        </div>
       )}
       <p className="mt-3 text-xs text-ink-subtle">Nothing was changed on the report.</p>
     </div>

@@ -18,8 +18,11 @@ import CoveragePanel from '../../components/hierarchy/CoveragePanel';
 import LevelsPanel from '../../components/hierarchy/LevelsPanel';
 import DirectoryPanel from '../../components/hierarchy/DirectoryPanel';
 import OrgChartPanel from '../../components/hierarchy/OrgChartPanel';
+import LevelChart from '../../components/hierarchy/LevelChart';
+import ChartViewSwitch from '../../components/hierarchy/ChartViewSwitch';
 import SyncPanel from '../../components/hierarchy/SyncPanel';
 import EscalationPanel from '../../components/hierarchy/EscalationPanel';
+import PendingPanel from '../../components/hierarchy/PendingPanel';
 import HierarchySkeleton from '../../components/hierarchy/HierarchySkeleton';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useCan } from '../../hooks/useCan';
@@ -34,6 +37,8 @@ const TABS = [
   { value: 'levels', label: 'Levels' },
   { value: 'directory', label: 'Directory' },
   { value: 'escalation', label: 'Escalation rules' },
+  // People an HR sync found, waiting for a level, a role and a login decision.
+  { value: 'approvals', label: 'Approvals' },
   // Every sync endpoint needs org_hierarchy:manage, including reading the config.
   { value: 'hr', label: 'HR connection', manageOnly: true },
 ];
@@ -63,22 +68,44 @@ const Hierarchy = () => {
     [setSearchParams],
   );
 
+  // Org chart: by level (the default — one cheap call) or by person.
+  const chartView = searchParams.get('view') === 'people' ? 'people' : 'levels';
+  const setChartView = useCallback(
+    (value) =>
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (value === 'people') next.set('view', 'people');
+          else next.delete('view');
+          return next;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+  const [reloadKey, setReloadKey] = useState(0);
+
   const [levels, setLevels] = useState([]);
   const [members, setMembers] = useState([]);
   const [coverage, setCoverage] = useState(null);
+  const [pendingCount, setPendingCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setReloadKey((k) => k + 1);
     try {
       // Inactive levels and people too: the panels filter them, and the
       // directory needs every name to label a manager reference.
-      const [levelData, memberData, coverageData] = await Promise.all([
+      const [levelData, memberData, coverageData, pendingData] = await Promise.all([
         orgHierarchyAPI.listLevels({ activeOnly: false }),
         orgHierarchyAPI.listMembers({ activeOnly: false }),
         orgHierarchyAPI.coverage(),
+        // For the Approvals badge; the queue is optional, never a reason to fail.
+        orgHierarchyAPI.listPending({ status: 'pending' }).catch(() => null),
       ]);
+      if (Array.isArray(pendingData)) setPendingCount(pendingData.length);
       setLevels(Array.isArray(levelData) ? levelData : []);
       setMembers(Array.isArray(memberData) ? memberData : []);
       setCoverage(coverageData);
@@ -141,12 +168,17 @@ const Hierarchy = () => {
                   {initialLoad && (value === 'levels' || value === 'directory') && <span className="invisible"> (0)</span>}
                   {!initialLoad && value === 'levels' && ` (${activeLevels.length})`}
                   {!initialLoad && value === 'directory' && ` (${members.filter((m) => m.is_active !== false).length})`}
+                  {value === 'approvals' && pendingCount > 0 && (
+                    <span className="ml-1.5 rounded-full bg-warning-soft px-1.5 text-[11px] font-semibold text-warning-fg">
+                      {pendingCount}
+                    </span>
+                  )}
                 </Tabs.Trigger>
               ))}
             </Tabs.List>
 
             {initialLoad ? (
-              <HierarchySkeleton tab={tab} canManage={canManage} />
+              <HierarchySkeleton tab={tab} view={chartView} canManage={canManage} />
             ) : (
             <>
 
@@ -161,19 +193,27 @@ const Hierarchy = () => {
               />
             </Tabs.Content>
             <Tabs.Content value="chart">
-              <OrgChartPanel
-                members={members}
-                levels={activeLevels}
-                canManage={canManage}
-                onChanged={load}
-                onGoTo={setTab}
-              />
+              <ChartViewSwitch value={chartView} onChange={setChartView} />
+              {chartView === 'people' ? (
+                <OrgChartPanel
+                  members={members}
+                  levels={activeLevels}
+                  canManage={canManage}
+                  onChanged={load}
+                  onGoTo={setTab}
+                />
+              ) : (
+                <LevelChart onGoTo={setTab} reloadKey={reloadKey} />
+              )}
             </Tabs.Content>
             <Tabs.Content value="levels">
               <LevelsPanel levels={levels} memberCounts={memberCounts} canManage={canManage} onChanged={load} />
             </Tabs.Content>
             <Tabs.Content value="directory">
               <DirectoryPanel members={members} levels={activeLevels} canManage={canManage} onChanged={load} />
+            </Tabs.Content>
+            <Tabs.Content value="approvals">
+              <PendingPanel levels={activeLevels} canManage={canManage} onChanged={load} onCount={setPendingCount} />
             </Tabs.Content>
             <Tabs.Content value="escalation">
               <EscalationPanel levels={activeLevels} canManage={canManage} onGoTo={setTab} />

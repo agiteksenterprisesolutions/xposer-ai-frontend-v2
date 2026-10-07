@@ -128,8 +128,8 @@ export const agentRunsAPI = {
   },
 
   /** Full run detail, keyed by report_id (not report_number). */
-  getRun: async (reportId) => {
-    const response = await api.get(`/agent-runs/${reportId}`);
+  getRun: async (reportId, { quiet = false } = {}) => {
+    const response = await api.get(`/agent-runs/${reportId}`, quiet ? { skipErrorToast: true } : undefined);
     return response.data;
   },
 

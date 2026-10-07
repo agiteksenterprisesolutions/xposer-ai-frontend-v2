@@ -18,6 +18,10 @@ import { errorSummary } from '../../utils/errors';
 
 const ALIAS_PREVIEW = 3;
 
+/** A level's roles: `escalation_roles`, or the old single `escalation_role`. */
+const levelRoles = (level) =>
+  Array.isArray(level.escalation_roles) ? level.escalation_roles : level.escalation_role ? [level.escalation_role] : [];
+
 const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
   const { nameFor } = useOrgRoles();
   const [showInactive, setShowInactive] = useState(false);
@@ -27,6 +31,8 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
 
   const ordered = sortLevels(levels);
   const visible = showInactive ? ordered : ordered.filter((l) => l.is_active !== false);
+  // Most senior first, so the last active level is the bottom of the ladder.
+  const lowestCode = ordered.filter((l) => l.is_active !== false).at(-1)?.code;
   const inactiveCount = ordered.length - ordered.filter((l) => l.is_active !== false).length;
 
   const move = async (index, delta) => {
@@ -137,6 +143,12 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
                       </span>
                       {level.department && <Badge size="small">{level.department}</Badge>}
                       {level.is_active === false && <Badge variant="warning" size="small">Inactive</Badge>}
+                      {/* Escalation never stops here: the bottom rung by rule, or an oversight level by choice. */}
+                      {level.code === lowestCode ? (
+                        <Badge size="small">Lowest level · never an escalation target</Badge>
+                      ) : (
+                        level.can_receive_escalations === false && <Badge size="small">Not an escalation target</Badge>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
                       {aliases.length === 0 ? (
@@ -151,7 +163,7 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
                           {aliases.length > ALIAS_PREVIEW && <span>+{aliases.length - ALIAS_PREVIEW} more</span>}
                         </>
                       )}
-                      {level.escalation_role && <span>· routes to {nameFor(level.escalation_role)}</span>}
+                      {levelRoles(level).length > 0 && <span>· {levelRoles(level).map(nameFor).join(', ')}</span>}
                       {count != null && (
                         <span>
                           · {count} {count === 1 ? 'person' : 'people'}

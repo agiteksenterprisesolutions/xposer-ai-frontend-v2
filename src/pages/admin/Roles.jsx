@@ -6,10 +6,11 @@
 // the bottom. Selecting a column shows that role's summary — who holds it,
 // which AI agents act as it, how much it grants — and its validation messages.
 //
-// Two codes are structural: `admin` (fixed, shown read-only with every
-// permission it holds) and `reporter` (the public self-service identity, not
-// a staff role, so not a column). The seeded roles — manager, officer,
-// reviewer — are a starting point and fully editable.
+// Two codes are fixed: `admin` (every permission) and `reporter` (the public
+// self-service identity, own-scoped). Both are columns, shown read-only so an
+// admin can see what each grants; edit and delete are gated on `is_fixed`,
+// never on the code. The seeded roles — manager, officer, reviewer — are a
+// starting point and fully editable.
 //
 // The rules the editor modal follows apply here too: a permission the
 // signed-in user doesn't hold can't be granted (`granted: false`), each
@@ -247,8 +248,9 @@ const RoleSummary = ({
 
       {role.is_fixed && (
         <p className="mt-3 text-xs text-ink-muted">
-          The organization's root role. It always holds every permission this organization can grant, and cannot be
-          edited or deleted.
+          {role.is_staff_role === false
+            ? 'The identity people use to file and follow their own reports. Its permissions are fixed, and it cannot be edited or deleted.'
+            : "The organization's root role. It always holds every permission this organization can grant, and cannot be edited or deleted."}
         </p>
       )}
 
@@ -329,7 +331,7 @@ const Roles = () => {
   const can = useCan();
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const [showInactive, setShowInactive] = useState(false);
-  const { roles: allRoles, loading, error, reload } = useOrgRoles({ activeOnly: !showInactive });
+  const { allRoles, loading, error, reload } = useOrgRoles({ activeOnly: !showInactive });
 
   const [catalog, setCatalog] = useState(null);
   const [catalogError, setCatalogError] = useState(null);
@@ -368,8 +370,9 @@ const Roles = () => {
 
   const canManage = can(PERM.roleManage) && catalog?.can_manage_roles !== false;
 
-  // The reporter identity is not a staff role; the matrix is for staff.
-  const roles = useMemo(() => allRoles.filter((role) => role.is_staff_role !== false), [allRoles]);
+  // Every role, fixed ones included — `reporter` is locked like `admin`, but an
+  // admin still needs to see what it grants.
+  const roles = allRoles;
   const entries = useMemo(() => catalogEntries(catalog), [catalog]);
   const total = catalog?.total ?? entries.size;
 
@@ -784,8 +787,7 @@ const Roles = () => {
           </div>
 
           <p className="text-xs text-ink-subtle">
-            Reporters aren't a column: the reporter identity is how the public files and follows their own reports, not a
-            staff role your organization manages.
+            Locked columns are fixed roles: admin and reporter can be inspected but not changed.
             {canManage && ' Greyed-out ticks are permissions you don\'t hold yourself, so you can\'t grant them.'}
           </p>
         </>

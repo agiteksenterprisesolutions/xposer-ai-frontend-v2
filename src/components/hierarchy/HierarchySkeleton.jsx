@@ -8,6 +8,8 @@ import Skeleton from '../ui/Skeleton';
 import Table, { TableLoading } from '../ui/Table';
 import { EscalationSkeleton } from './EscalationPanel';
 import { SyncSkeleton } from './SyncPanel';
+import ChartViewSwitch from './ChartViewSwitch';
+import { PendingSkeleton } from './PendingPanel';
 
 const Coverage = () => (
   <div className="space-y-6">
@@ -41,8 +43,32 @@ const Coverage = () => (
   </div>
 );
 
+const LevelsChart = () => (
+  <div>
+    <ChartViewSwitch value="levels" onChange={() => {}} />
+    <div className="space-y-4">
+      <Skeleton.Text size="xs" className="w-72" />
+      <ul className="space-y-3">
+        {[0, 1, 2].map((i) => (
+          <li key={i} className="rounded-xl border border-line bg-surface p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <Skeleton.Text size="base" className="w-48" />
+              <Skeleton.Text size="xs" className="w-56" />
+            </div>
+            <div className="mt-3 flex gap-1.5">
+              <Skeleton className="h-6.5 w-24 rounded-full" />
+              <Skeleton className="h-6.5 w-20 rounded-full" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+);
+
 const Chart = () => (
   <div className="space-y-3">
+    <ChartViewSwitch value="people" onChange={() => {}} />
     <Skeleton.Text size="xs" className="w-48" />
     <div className="relative h-[calc(100dvh-17rem)] min-h-[520px] overflow-hidden rounded-xl border border-line bg-canvas">
       <div className="flex h-full flex-col items-center justify-center gap-10">
@@ -146,10 +172,10 @@ const Panel = () => (
   </div>
 );
 
-const HierarchySkeleton = ({ tab, canManage }) => {
+const HierarchySkeleton = ({ tab, view, canManage }) => {
   switch (tab) {
     case 'chart':
-      return <Chart />;
+      return view === 'people' ? <Chart /> : <LevelsChart />;
     case 'levels':
       return <Levels canManage={canManage} />;
     case 'directory':
@@ -160,6 +186,8 @@ const HierarchySkeleton = ({ tab, canManage }) => {
       return <EscalationSkeleton />;
     case 'hr':
       return <SyncSkeleton />;
+    case 'approvals':
+      return <PendingSkeleton />;
     default:
       return <Panel />;
   }

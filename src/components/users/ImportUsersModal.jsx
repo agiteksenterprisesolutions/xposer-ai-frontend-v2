@@ -15,12 +15,18 @@ import Alert from '../ui/Alert';
 import { usersAPI } from '../../api';
 import { saveBlob } from '../../utils/download';
 import { describeError, errorSummary } from '../../utils/errors';
+import UndeliveredCredentials from './UndeliveredCredentials';
 
 const PROBLEM_HINTS = {
   'row.unknown_manager': 'Their manager needs an Employee ID on another row.',
   'row.role_escalates': "You can't grant a role carrying permissions you don't hold.",
   'row.unknown_level': 'Use a level your organization has defined.',
   'row.email_exists': 'Someone already has this email.',
+  'row.undeliverable_domain': 'Fine for a test import; a real person needs a real address.',
+  // The pre-flight check doesn't catch two emails that derive the same
+  // username (a.khan@eng… and a.khan@fin…), so the write fails with no row.
+  'import.failed':
+    'If two rows share an email name before the @ (a.khan@eng… and a.khan@fin…), they get the same username — give one of them a Username.',
 };
 
 /** The counts the server reports back, whatever it names them. */
@@ -29,8 +35,8 @@ const countsOf = (result) =>
 
 const humanize = (key) => key.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
-const ProblemTable = ({ problems }) => (
-  <div className="max-h-72 overflow-auto rounded-lg border border-line">
+const ProblemTable = ({ problems, tone = 'error' }) => (
+  <div className={`max-h-72 overflow-auto rounded-lg border ${tone === 'warning' ? 'border-warning-line' : 'border-line'}`}>
     <table className="w-full text-left text-xs">
       <thead className="sticky top-0 bg-subtle text-ink-subtle">
         <tr>
@@ -40,7 +46,7 @@ const ProblemTable = ({ problems }) => (
       </thead>
       <tbody className="divide-y divide-line-subtle">
         {problems.map((problem, index) => (
-          <tr key={index} className="align-top">
+          <tr key={index} className={`align-top ${tone === 'warning' ? 'bg-warning-soft/40' : ''}`}>
             <td className="whitespace-nowrap px-3 py-2 text-ink-muted">
               {problem.row != null ? `Row ${problem.row}` : 'File'}
               {problem.column && <span className="block text-ink-subtle">{problem.column}</span>}
@@ -58,6 +64,17 @@ const ProblemTable = ({ problems }) => (
     </table>
   </div>
 );
+
+/** Non-blocking: amber, apart from the red problems that stop an import. */
+const Warnings = ({ warnings }) =>
+  warnings?.length > 0 ? (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold text-warning-fg">
+        {warnings.length === 1 ? '1 thing to check' : `${warnings.length} things to check`} — these won't stop the import
+      </p>
+      <ProblemTable problems={warnings} tone="warning" />
+    </div>
+  ) : null;
 
 const ImportUsersModal = ({ onClose, onImported }) => {
   const inputRef = useRef(null);
@@ -128,17 +145,23 @@ const ImportUsersModal = ({ onClose, onImported }) => {
     >
       <div className="space-y-5">
         {done ? (
+          <>
           <div className="py-4 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-success-fg" />
             <p className="mt-3 text-base font-semibold text-ink">Imported</p>
-            {countsOf(done).length > 0 && (
-              <p className="mt-1 text-sm text-ink-muted">
-                {countsOf(done)
+            <p className="mx-auto mt-1 max-w-md text-sm text-ink-secondary">
+              {done.message ||
+                countsOf(done)
                   .map(([key, value]) => `${humanize(key)}: ${value}`)
                   .join(' · ')}
-              </p>
-            )}
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-xs text-ink-muted">
+              New accounts start on a temporary password and must set their own when they first sign in.
+            </p>
           </div>
+          <UndeliveredCredentials items={done.undelivered_credentials} />
+          <Warnings warnings={done.warnings} />
+          </>
         ) : (
           <>
             <ol className="space-y-3 text-sm text-ink-secondary">
@@ -188,6 +211,7 @@ const ImportUsersModal = ({ onClose, onImported }) => {
                   : 'Ready to import.'}
               </Alert>
             )}
+            {check?.ok && <Warnings warnings={check.result?.warnings} />}
 
             {check && !check.ok && (
               <div className="space-y-3">
@@ -197,7 +221,12 @@ const ImportUsersModal = ({ onClose, onImported }) => {
                 {fileProblems.length > 0 && (
                   <ul className="list-disc space-y-1 pl-5 text-sm text-danger-fg">
                     {fileProblems.map((problem, index) => (
-                      <li key={index}>{problem.message}</li>
+                      <li key={index}>
+                        {problem.message}
+                        {PROBLEM_HINTS[problem.code] && (
+                          <span className="block text-xs text-ink-muted">{PROBLEM_HINTS[problem.code]}</span>
+                        )}
+                      </li>
                     ))}
                   </ul>
                 )}

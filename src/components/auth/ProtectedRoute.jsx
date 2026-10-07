@@ -6,6 +6,7 @@ import NoAccess from './NoAccess';
 import { isOutsideOwnOrganization, toOwnOrganizationPath } from '../../utils/roles';
 import { satisfies, getPermissions } from '../../utils/permissions';
 import { getHomePath } from '../../utils/navigation';
+import { SET_PASSWORD_PATH, mustChangePassword } from '../../utils/passwordPolicy';
 
 // `access` is a rule from ACCESS ({ all, any }) or a predicate on the user.
 const isAllowed = (user, access) => {
@@ -66,6 +67,12 @@ const ProtectedRoute = ({ children, access, redirectIfDenied = false, allowAnony
     if (!isAuthenticated) {
         const slug = user?.organization_slug || orgSlug;
         return <Navigate to={slug ? `/${slug}/login` : '/login'} state={{ from: location }} replace />;
+    }
+
+    // Still on the default password: every call but three would 403, so
+    // nothing behind this route is rendered until it is replaced.
+    if (mustChangePassword(user)) {
+        return <Navigate to={SET_PASSWORD_PATH} replace />;
     }
 
     // A dashboard under another organization's slug: the account does not

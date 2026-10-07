@@ -141,7 +141,13 @@ export const usersAPI = {
         },
         withCredentials: true
       });
-      toast.success('Password updated successfully!');
+      // The new password reaches the person only by email; say so plainly
+      // when it didn't go.
+      if (response.data?.email_sent === false) {
+        toast.warning('Password reset, but the email with it was not delivered — they still can’t sign in.');
+      } else {
+        toast.success('Password reset and sent to the user.');
+      }
       return response.data;
     } catch (error) {
       throw error;
@@ -164,6 +170,17 @@ export const usersAPI = {
    */
   linkDirectoryEntry: async (id, hierarchyMemberId) => {
     const response = await api.put(`/users/${id}`, { hierarchy_member_id: hierarchyMemberId ?? '' }, { skipErrorToast: true });
+    return response.data;
+  },
+
+  /**
+   * Add one person: a directory entry, and a login when `create_login` is
+   * true (then `role` is required). Replaces POST /users, which can create an
+   * account with no directory entry. The account starts on the default
+   * password and must change it at first sign-in.
+   */
+  createPerson: async (person) => {
+    const response = await api.post('/users/person', person, { skipErrorToast: true });
     return response.data;
   },
 

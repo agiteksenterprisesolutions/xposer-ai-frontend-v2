@@ -94,7 +94,8 @@ export const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await authAPI.login({ username, password });
-          const { access_token, user } = response;
+          const { access_token } = response;
+          const user = withPasswordFlag(response);
 
           set({
             user,
@@ -176,7 +177,8 @@ export const useAuthStore = create(
             profile: session.profile,
             organization_slug: options.organizationSlug,
           });
-          const { access_token, user } = response;
+          const { access_token } = response;
+          const user = withPasswordFlag(response);
 
           set({
             user,
@@ -290,6 +292,18 @@ export const useAuthStore = create(
 
       // ─── Setters ─────────────────────────────────────────────────
       setUser: (userData) => set({ user: userData }),
+
+      // A provisioned account must replace its default password before any
+      // other call succeeds. Set from the login response, /users/me, or a
+      // `password_change_required` 403 caught by the HTTP client.
+      markPasswordChangeRequired: () => {
+        const { user } = get();
+        if (user && !user.must_change_password) set({ user: { ...user, must_change_password: true } });
+      },
+      markPasswordChanged: () => {
+        const { user } = get();
+        if (user) set({ user: { ...user, must_change_password: false } });
+      },
       setToken: (token) => set({ token }),
       clearError: () => set({ error: null }),
       clearFieldErrors: () => set({ fieldErrors: null }),
@@ -353,6 +367,16 @@ export const useAuthStore = create(
 );
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * The user off a login response, carrying `must_change_password`. The flag is
+ * at the top level and on `user`; either being true means the account is still
+ * on the password it was created with. Missing reads as false.
+ */
+function withPasswordFlag(response) {
+  const user = response?.user || {};
+  return { ...user, must_change_password: Boolean(response?.must_change_password || user.must_change_password) };
+}
 
 /**
  * Good enough to decide which sign-in path to take. This is a routing

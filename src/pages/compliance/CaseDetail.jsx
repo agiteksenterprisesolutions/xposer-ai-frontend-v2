@@ -487,7 +487,7 @@ const CaseDetail = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* The AI digest — agent:summary_read, deliberately not agent:read:
               reading a case's summary is not administering the agents. */}
-          {can(PERM.agentSummaryRead) && <DigestPanel reportId={report?.id || id} attachmentCount={report ? (report.attachments || []).length : null} />}
+          {can(PERM.agentSummaryRead) && <DigestPanel reportId={report?.id || id} attachmentCount={report ? (report.attachments || []).length : null} canReadRun={can(PERM.agentRead)} />}
 
           {/* Report Summary */}
           <Card>

@@ -14,9 +14,6 @@ import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import { describeError } from '../../utils/errors';
 
-const selectClass =
-  'w-full rounded-lg border border-line bg-subtle px-3 py-2.5 text-sm text-ink hover:border-line-strong disabled:opacity-60';
-
 /**
  * Props:
  *   level       – the level to edit; omit to create one
@@ -25,7 +22,10 @@ const selectClass =
  */
 const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, onClose, onSaved }) => {
   const isCreate = !level;
-  const { roles } = useOrgRoles();
+  // Unfiltered: reporter belongs here. Nothing is assigned from this list —
+  // it describes what a level corresponds to; routing picks a person who can
+  // take a case.
+  const { allRoles: roles, nameFor } = useOrgRoles();
 
   const [title, setTitle] = useState(level?.title || '');
   const [code, setCode] = useState(level?.code || '');
@@ -33,7 +33,12 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
   const [rank, setRank] = useState(String(level?.rank ?? defaultRank));
   const [department, setDepartment] = useState(level?.department || '');
   const [aliases, setAliases] = useState(level?.designation_aliases || []);
-  const [escalationRole, setEscalationRole] = useState(level?.escalation_role || '');
+  // Was a single `escalation_role`; a level often holds several jobs.
+  const [escalationRoles, setEscalationRoles] = useState(() => {
+    if (Array.isArray(level?.escalation_roles)) return level.escalation_roles;
+    return level?.escalation_role ? [level.escalation_role] : [];
+  });
+  const [receivesEscalations, setReceivesEscalations] = useState(level?.can_receive_escalations ?? true);
   const [isActive, setIsActive] = useState(level?.is_active ?? true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -56,7 +61,8 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
       rank: rankNumber,
       department: department.trim() || null,
       designation_aliases: aliases,
-      escalation_role: escalationRole || null,
+      escalation_roles: escalationRoles,
+      can_receive_escalations: receivesEscalations,
     };
     try {
       const saved = isCreate
@@ -168,32 +174,57 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="level-escalation-role" className="text-sm font-medium text-ink">
-            Escalation role
-          </label>
-          <select
-            id="level-escalation-role"
-            value={escalationRole}
-            onChange={(event) => setEscalationRole(event.target.value)}
-            disabled={readOnly}
-            className={selectClass}
-          >
-            <option value="">None</option>
-            {roles.map((role) => (
-              <option key={role.code} value={role.code}>
-                {role.name}
-              </option>
-            ))}
-            {escalationRole && !roles.some((role) => role.code === escalationRole) && (
-              <option value={escalationRole}>{escalationRole}</option>
-            )}
-          </select>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-ink">Roles at this level</legend>
           <p className="text-xs text-ink-muted">
-            Optional. The role a report is routed to when it escalates to this level — the same role report types name as
-            their default owner.
+            The jobs people at this level do — pick every one that applies, reporter included. This describes the level;
+            cases are only ever routed to someone whose account can take one.
           </p>
-        </div>
+          <div className="flex flex-wrap gap-1.5">
+            {[...roles.map((role) => role.code), ...escalationRoles.filter((code) => !roles.some((r) => r.code === code))].map(
+              (code) => {
+                const on = escalationRoles.includes(code);
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    aria-pressed={on}
+                    disabled={readOnly}
+                    onClick={() =>
+                      setEscalationRoles((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]))
+                    }
+                    className={`rounded-full border px-3 py-1 text-sm transition-colors disabled:cursor-default ${
+                      on
+                        ? 'border-line-accent bg-accent-soft font-medium text-accent-fg'
+                        : 'border-line text-ink-secondary hover:border-line-strong hover:text-ink'
+                    }`}
+                  >
+                    {nameFor(code)}
+                  </button>
+                );
+              },
+            )}
+          </div>
+        </fieldset>
+
+        <label className="flex items-start gap-3">
+          <Checkbox
+            checked={!receivesEscalations}
+            disabled={readOnly}
+            onChange={() => setReceivesEscalations((value) => !value)}
+            labelledBy="level-no-escalation-label"
+          />
+          <span>
+            <span id="level-no-escalation-label" className="block text-sm font-medium text-ink">
+              Not an escalation target
+            </span>
+            <span className="block text-xs text-ink-muted">
+              Escalation passes through this level without stopping on it. For levels that oversee cases rather than
+              handle them — an audit committee, external counsel. Leave it off otherwise; people who can't take a case
+              are already skipped one by one. The lowest level is never a target either way.
+            </span>
+          </span>
+        </label>
 
         {!isCreate && (
           <label className="flex items-start gap-3">

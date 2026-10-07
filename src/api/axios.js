@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-toastify';
 import { normaliseError } from '../utils/errors';
+import { SET_PASSWORD_PATH } from '../utils/passwordPolicy';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://demo.agiteks.com/wbbe';
 
@@ -74,6 +75,13 @@ api.interceptors.response.use(
           }
           break;
         case 403:
+          // The account is still on its default password. Not an access
+          // problem — send the person to set one, and say nothing else.
+          if (data?.detail?.code === 'password_change_required') {
+            useAuthStore.getState().markPasswordChangeRequired();
+            if (!window.location.pathname.startsWith(SET_PASSWORD_PATH)) window.location.assign(SET_PASSWORD_PATH);
+            break;
+          }
           if (!quiet) {
             // Prefer the backend's wording — 403 also covers "This account has
             // been disabled" and expired organisation subscriptions, which the

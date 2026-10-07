@@ -139,6 +139,62 @@ export const orgHierarchyAPI = {
     return response.data;
   },
 
+  // ─── Org chart ─────────────────────────────────────────────────────────
+  /**
+   * Levels, most senior first, each with its role counts — one call, no
+   * paging. A role chip drills into GET /users/?level_code=&role=. Read
+   * `receives_escalations` (effective), not `can_receive_escalations` (stored).
+   */
+  chart: async () => {
+    const response = await api.get('/org-hierarchy/chart');
+    return response.data;
+  },
+
+  // ─── Sync approval queue ───────────────────────────────────────────────
+  // People an HR sync found for the first time wait here until an admin sets
+  // their level, role and whether they get a login. Oldest first.
+  //   status: pending | approved | dismissed | all
+  //   ready:  true → can be approved as they stand; false → still missing answers
+  listPending: async ({ status = 'pending', search, ready } = {}) => {
+    const params = { status_filter: status };
+    if (search) params.search = search;
+    if (ready !== undefined && ready !== null) params.ready = ready;
+    const response = await api.get('/org-hierarchy/pending', { params });
+    return response.data;
+  },
+
+  /** Saves answers on one person (id or external_id) without admitting them. */
+  updatePending: async (id, decision) => {
+    const response = await api.put(`/org-hierarchy/pending/${encodeURIComponent(id)}`, decision, inline);
+    return response.data;
+  },
+
+  /** Same answer for many: `{ ids }` or `{ all_pending: true }`, plus `decision`. */
+  bulkPending: async (body) => {
+    const response = await api.post('/org-hierarchy/pending/bulk', body, inline);
+    return response.data;
+  },
+
+  /**
+   * Admits people. Per person, not all-or-nothing: a 200 carries `approved`
+   * AND `problems`. `defaults` fill only what a person has not set.
+   */
+  approvePending: async ({ ids, defaults }) => {
+    const response = await api.post('/org-hierarchy/pending/approve', { ids, defaults: defaults || null }, inline);
+    return response.data;
+  },
+
+  /** Turned away, and skipped by later syncs. Reversible with restage. */
+  dismissPending: async (id) => {
+    const response = await api.post(`/org-hierarchy/pending/${encodeURIComponent(id)}/dismiss`, null, inline);
+    return response.data;
+  },
+
+  restagePending: async (id) => {
+    const response = await api.post(`/org-hierarchy/pending/${encodeURIComponent(id)}/restage`, null, inline);
+    return response.data;
+  },
+
   // ─── Health ────────────────────────────────────────────────────────────
   coverage: async () => {
     const response = await api.get('/org-hierarchy/coverage');
