@@ -410,6 +410,11 @@ const Summarizer = () => {
   }
 
   const problems = settings.problems || [];
+  // "triage, investigate and review" — what the switch actually turns off.
+  const stageList = (() => {
+    const names = runsBefore.map((stage) => stage.name);
+    return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0] || '';
+  })();
   const resolved = settings.resolved_agent;
   const access = settings.access;
   const readers = (access?.granted_to || []).filter((r) => r.code !== REPORTER);
@@ -474,6 +479,13 @@ const Summarizer = () => {
               {status === 'stalled' && 'Switched on, but no report will get a summary until the problems below are fixed.'}
               {status === 'off' && 'No report is summarized. Switching back on needs nothing else changed.'}
             </p>
+            {stageList && (
+              <p className="mt-1 text-xs text-ink-subtle">
+                {settings.enabled
+                  ? `Switching off means ${stageList} will see no evidence digest. Those agents still run, on the report text alone.`
+                  : `${stageList.charAt(0).toUpperCase()}${stageList.slice(1)} get no evidence digest while this is off. Those agents still run, on the report text alone.`}
+              </p>
+            )}
           </div>
           <Switch
             checked={Boolean(settings.enabled)}
@@ -782,7 +794,8 @@ const Summarizer = () => {
                 </>
               )}
               <p className="mt-4 text-xs text-ink-subtle">
-                Set by “{permissionLabel(access.permission)}” on each role. Reporters never see summaries.
+                {access.how_to_change || `Set by “${permissionLabel(access.permission)}” on each role.`} Reporters never see
+                summaries.
               </p>
             </Panel>
           )}

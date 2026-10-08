@@ -20,7 +20,6 @@ const initialForm = (data) => ({
   approved_at: null,
   name: '',
   description: '',
-  is_active: true,
   sections: [],
   ...data,
 });

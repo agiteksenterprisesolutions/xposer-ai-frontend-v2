@@ -21,6 +21,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { REPORT_TYPE_STATUSES, reportTypeStatus } from "../../utils/reportTypes";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Table, { TableLoading } from "../../components/ui/Table";
@@ -45,6 +46,13 @@ import TableSortControl from '../../components/ui/TableSortControl';
 import { useTableSort, byText, byDate } from '../../hooks/useTableSort';
 import { parseServerDate } from '../../utils/formatters';
 
+const STATUS_BADGE = { active: 'success', draft: 'default', inactive: 'warning' };
+const STATUS_STYLE = {
+  active: 'border-success-line bg-success-soft text-success-fg',
+  draft: 'border-line-strong bg-surface text-ink-secondary',
+  inactive: 'border-warning-line bg-warning-soft text-warning-fg',
+};
+
 const REPORT_TYPES_TOUR_KEY = 'xposer_report_types_tour_seen';
 
 // Column order here is the column order in the table. Actions is not sortable,
@@ -52,7 +60,8 @@ const REPORT_TYPES_TOUR_KEY = 'xposer_report_types_tour_seen';
 const SORT_COLUMNS = {
   name: { label: 'Name', defaultOrder: 'asc', value: byText('name') },
   category: { label: 'Category', defaultOrder: 'asc', value: (type) => (type.category || 'General').toLowerCase() },
-  is_active: { label: 'Status', defaultOrder: 'desc', value: (type) => (type.is_active ? 1 : 0) },
+  // Active first, then drafts, then withdrawn.
+  status: { label: 'Status', defaultOrder: 'asc', value: (type) => ({ active: 0, draft: 1, inactive: 2 })[reportTypeStatus(type)] },
   created_at: { label: 'Created On', defaultOrder: 'desc', value: byDate('created_at') },
 };
 
@@ -133,16 +142,27 @@ const ReportTypes = () => {
     fetchTypes();
   }, [fetchTypes]);
 
-  const handleToggleStatus = async (type) => {
+  // `status` is a type's whole availability: draft and inactive are both
+  // offered to nobody; only active reaches reporters.
+  const [statusSaving, setStatusSaving] = useState(null);
+  const handleStatusChange = async (type, status) => {
+    if (status === reportTypeStatus(type)) return;
+    setStatusSaving(type.id);
     try {
-      if (type.is_active) {
-        await reportTypesAPI.deactivateReportType(type.id);
-      } else {
-        await reportTypesAPI.activateReportType(type.id);
-      }
-      fetchTypes();
+      await reportTypesAPI.setReportTypeStatus(type.id, status);
+      setTypes((prev) => prev.map((t) => (t.id === type.id ? { ...t, status } : t)));
+      toast.success(
+        status === "active"
+          ? `"${type.name}" is active — reporters can file it.`
+          : status === "inactive"
+            ? `"${type.name}" is withdrawn. Existing cases are unaffected.`
+            : `"${type.name}" is a draft again — hidden from reporters.`,
+      );
+      if (showActiveOnly) fetchTypes();
     } catch (error) {
-      console.error("Error toggling report type status:", error);
+      console.error("Error changing report type status:", error);
+    } finally {
+      setStatusSaving(null);
     }
   };
 
@@ -442,13 +462,33 @@ const ReportTypes = () => {
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant={type.is_active ? "success" : "default"} dot>
-                        {type.is_active ? "Active" : "Inactive"}
+                    {canManage ? (
+                      // Inside a clickable row, so the change must not open the type.
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <select
+                          aria-label={`Status of ${type.name}`}
+                          value={reportTypeStatus(type)}
+                          disabled={statusSaving === type.id}
+                          onChange={(e) => handleStatusChange(type, e.target.value)}
+                          title={REPORT_TYPE_STATUSES.find((s) => s.value === reportTypeStatus(type))?.hint}
+                          className={`h-8 rounded-lg border px-2 text-xs font-semibold outline-none focus:border-line-accent disabled:opacity-60 ${STATUS_STYLE[reportTypeStatus(type)]}`}
+                        >
+                          {REPORT_TYPE_STATUSES.map((s) => (
+                            <option key={s.value} value={s.value}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <Badge
+                        variant={STATUS_BADGE[reportTypeStatus(type)]}
+                        dot
+                        title={REPORT_TYPE_STATUSES.find((s) => s.value === reportTypeStatus(type))?.hint}
+                      >
+                        {REPORT_TYPE_STATUSES.find((s) => s.value === reportTypeStatus(type))?.label}
                       </Badge>
-                      {type.status === "draft" && <Badge size="small">Draft</Badge>}
-                      {type.status === "retired" && <Badge size="small">Retired</Badge>}
-                    </div>
+                    )}
                   </Table.Cell>
                   <Table.Cell>
                     <span className="text-xs text-ink-muted whitespace-nowrap">
@@ -484,17 +524,6 @@ const ReportTypes = () => {
                             }
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleToggleStatus(type)}
-                            title={type.is_active ? "Deactivate" : "Activate"}
-                          >
-                            <div className={`w-10 h-5 rounded-full transition-all relative ${type.is_active ? 'bg-success-solid' : 'bg-active'
-                              }`}>
-                              <div className={`absolute top-1 w-3 h-3 rounded-full bg-surface shadow-sm transition-all ${type.is_active ? 'left-6' : 'left-1'
-                                }`} />
-                            </div>
                           </Button>
                         </>
                       )}

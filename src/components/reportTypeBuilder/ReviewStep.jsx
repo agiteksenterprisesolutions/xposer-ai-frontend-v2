@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Check, X } from 'lucide-react';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
-import { CONFIDENTIALITY_TIERS, REPORT_TYPE_STATUSES } from '../../utils/reportTypes';
+import { CONFIDENTIALITY_TIERS, REPORT_TYPE_STATUSES, reportTypeStatus } from '../../utils/reportTypes';
 import ReporterPreview from './ReporterPreview';
 import { GovernanceProblems } from './HandlingStep';
 import { countQuestions, estimateMinutes } from './model';
@@ -16,12 +16,6 @@ const PASSED = {
   questions: 'Every question has wording and its own field name',
   answers: 'Every dropdown and checkbox question has answers',
   conditions: 'Conditions only look at earlier questions',
-};
-
-const STATUS_HINTS = {
-  draft: 'Hidden from reporters until you publish it.',
-  active: 'Reporters can choose it straight away.',
-  retired: 'Hidden from reporters. Existing reports keep it.',
 };
 
 const Summary = ({ title, onEdit, children }) => (
@@ -135,23 +129,20 @@ const ReviewStep = ({ draft, issues, isNew, onFix, problems = [] }) => {
             </h2>
             <div role="radiogroup" aria-labelledby="rt-status-label" className="grid gap-2 sm:grid-cols-3">
               {REPORT_TYPE_STATUSES.map((status) => {
-                const on = (form.status || 'active') === status.value;
+                const on = reportTypeStatus(form) === status.value;
                 return (
                   <button
                     key={status.value}
                     type="button"
                     role="radio"
                     aria-checked={on}
-                    onClick={() => {
-                      setField('status', status.value);
-                      setField('is_active', status.value === 'active');
-                    }}
+                    onClick={() => setField('status', status.value)}
                     className={`rounded-xl border px-3.5 py-3 text-left transition-colors ${
                       on ? 'border-accent bg-accent-soft/60 shadow-[0_0_0_1px_var(--color-accent)]' : 'border-line hover:border-line-strong'
                     }`}
                   >
-                    <span className="block text-sm font-semibold text-ink">{status.value === 'active' ? 'Published' : status.label}</span>
-                    <span className="mt-0.5 block text-xs text-ink-muted">{STATUS_HINTS[status.value]}</span>
+                    <span className="block text-sm font-semibold text-ink">{status.label}</span>
+                    <span className="mt-0.5 block text-xs text-ink-muted">{status.hint}</span>
                   </button>
                 );
               })}

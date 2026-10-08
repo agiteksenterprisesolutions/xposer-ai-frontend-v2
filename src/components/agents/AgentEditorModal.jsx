@@ -286,7 +286,9 @@ const AgentEditorModal = ({
       instructions: instructions.trim() || null,
       model_name: modelName.trim() || null,
       temperature: temperature === '' || temperature === null ? null : Number(temperature),
-      is_active: isActive,
+      // The summarizer's state is the organization's summarizer switch
+      // (PUT /org-agents/summarizer); sending is_active for it is a 400.
+      ...(isSummarizer ? {} : { is_active: isActive }),
     };
 
     try {
@@ -606,7 +608,14 @@ const AgentEditorModal = ({
           />
         </Section>
 
-        {!isCreate && (
+        {!isCreate && isSummarizer && (
+          <p className="rounded-lg bg-subtle px-3 py-2.5 text-xs text-ink-muted">
+            The summarizer is switched on and off in its own settings, on the Summarizer page — not here. It is currently{' '}
+            <span className="font-semibold text-ink">{agent?.is_active === false ? 'off' : 'on'}</span>.
+          </p>
+        )}
+
+        {!isCreate && !isSummarizer && (
           <label className="flex items-start gap-3">
             <Checkbox
               checked={isActive}

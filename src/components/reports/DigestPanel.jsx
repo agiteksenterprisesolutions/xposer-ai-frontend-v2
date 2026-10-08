@@ -113,10 +113,14 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, emb
       {digest && !available && (
         <div className="space-y-1">
           <p className="text-sm text-ink-muted">
-            {why ||
+            {/* The server's reason, verbatim: it separates "switched off" from
+                "no attachments" from "not run yet", each needing a different
+                response. Our own wording only when it sends none. */}
+            {digest.reason ||
+              why ||
               (attachmentCount === 0
                 ? 'No evidence files were attached, so there is nothing to summarize. Summaries are written from attachments only.'
-                : digest.reason || 'No summary for this report yet. One can arrive a little after the evidence does.')}
+                : 'No summary for this report yet. One can arrive a little after the evidence does.')}
           </p>
           {(digest.problems || [])
             .filter((problem) => problem?.message && problem.message !== digest.reason)

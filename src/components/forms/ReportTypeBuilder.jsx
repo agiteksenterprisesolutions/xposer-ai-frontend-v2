@@ -1772,7 +1772,7 @@ const ReportTypeBuilder = ({
                   <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
                     {[
                       formData.code && { label: formData.code, mono: true },
-                      formData.status && formData.status !== 'active' && { label: formData.status === 'draft' ? 'Draft' : 'Retired' },
+                      formData.status && formData.status !== 'active' && { label: formData.status === 'draft' ? 'Draft' : 'Inactive' },
                       formData.category && { label: formData.category },
                       formData.confidentiality_tier &&
                         formData.confidentiality_tier !== 'standard' && {

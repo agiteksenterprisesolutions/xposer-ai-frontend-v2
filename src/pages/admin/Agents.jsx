@@ -369,7 +369,9 @@ const AgentDetail = ({
   onEdit,
   onToken,
   onDelete,
+  onToggleSummarizer,
 }) => {
+  const [switching, setSwitching] = useState(false);
   const kind = AGENT_KIND_INFO[agent.kind];
   const fromRole = agent.role_source === 'org_role';
   const isSummarizer = agent.kind === 'summarizer';
@@ -435,6 +437,26 @@ const AgentDetail = ({
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
+          {/* The summarizer is switched on and off through the organization's
+              summarizer settings (PUT /org-agents/summarizer), never with
+              is_active on the agent — that is refused. */}
+          {isSummarizer && canManage && (
+            <Button
+              variant="outline"
+              size="small"
+              isLoading={switching}
+              onClick={async () => {
+                setSwitching(true);
+                try {
+                  await onToggleSummarizer(agent.is_active === false);
+                } finally {
+                  setSwitching(false);
+                }
+              }}
+            >
+              {agent.is_active === false ? 'Switch on' : 'Switch off'}
+            </Button>
+          )}
           <Button variant={canManage ? 'secondary' : 'outline'} size="small" startIcon={Pencil} onClick={onEdit}>
             {canManage ? 'Edit agent' : 'View settings'}
           </Button>
@@ -455,11 +477,17 @@ const AgentDetail = ({
                 <KeyRound className="h-4 w-4 shrink-0" />
                 {agent.has_token ? 'Rotate access token' : 'Create access token'}
               </Dropdown.Item>
-              <Dropdown.Divider />
-              <Dropdown.Item onClick={onDelete} className="text-danger-fg hover:text-danger-fg">
-                <Trash2 className="h-4 w-4 shrink-0" />
-                Delete agent
-              </Dropdown.Item>
+              {/* One summarizer per organization, recreated by the platform:
+                  deleting it is refused, so it isn't offered. */}
+              {!isSummarizer && (
+                <>
+                  <Dropdown.Divider />
+                  <Dropdown.Item onClick={onDelete} className="text-danger-fg hover:text-danger-fg">
+                    <Trash2 className="h-4 w-4 shrink-0" />
+                    Delete agent
+                  </Dropdown.Item>
+                </>
+              )}
             </Dropdown>
           )}
         </div>
@@ -981,6 +1009,20 @@ const Agents = () => {
                 onEdit={() => capabilityCatalog && setEditing({ agent: selected })}
                 onToken={(mode) => setTokenAction({ agent: selected, mode })}
                 onDelete={() => setDeleting(selected)}
+                onToggleSummarizer={async (on) => {
+                  try {
+                    await orgAgentsAPI.updateSummarizer({ enabled: on });
+                    toast.success(
+                      on
+                        ? 'Summaries switched on.'
+                        : 'Summaries switched off. The other agents still run, on the report text alone.',
+                    );
+                  } catch (err) {
+                    toast.error(errorSummary(err));
+                  }
+                  // The switch changes the agent row's state; re-read so this list agrees.
+                  await fetchAgents();
+                }}
               />
             )}
           </div>

@@ -16,6 +16,7 @@ import HandlingStep from './HandlingStep';
 import ReviewStep from './ReviewStep';
 import ReporterPreview from './ReporterPreview';
 import { findIssues, saveErrorFields } from './model';
+import { reportTypeStatus } from '../../utils/reportTypes';
 import { describeError } from '../../utils/errors';
 
 const STEPS = [
@@ -27,8 +28,8 @@ const STEPS = [
 const STATUS_PILL = {
   new: ['New', 'bg-active text-ink-secondary'],
   draft: ['Draft', 'bg-active text-ink-secondary'],
-  active: ['Published', 'bg-success-soft text-success-fg'],
-  retired: ['Retired', 'bg-warning-soft text-warning-fg'],
+  active: ['Active', 'bg-success-soft text-success-fg'],
+  inactive: ['Inactive', 'bg-warning-soft text-warning-fg'],
 };
 
 /**
@@ -105,7 +106,7 @@ const ReportTypeEditor = ({
       return;
     }
     try {
-      await onSave({ ...form, ...(status ? { status, is_active: status === 'active' } : {}) });
+      await onSave({ ...form, ...(status ? { status } : {}) });
       draft.setDirty(false);
       setServerErrors({});
     } catch (err) {
@@ -124,7 +125,7 @@ const ReportTypeEditor = ({
   const exit = () => (dirty ? setConfirmLeave(true) : onExit());
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
-  const [pillLabel, pillClass] = STATUS_PILL[isNew ? 'new' : form.status || 'active'] || STATUS_PILL.active;
+  const [pillLabel, pillClass] = STATUS_PILL[isNew ? 'new' : reportTypeStatus(form)] || STATUS_PILL.draft;
 
   return (
     <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-canvas lg:h-[calc(100dvh-4rem)]">

@@ -7,11 +7,24 @@
 // builder doesn't edit must still survive a round trip, or saving a type
 // silently strips it (core-field flags, option labels, section keys).
 
+/**
+ * A report type's availability — the whole of it. There is no separate
+ * `is_active`: draft and inactive are both offered to nobody, the difference
+ * being why (never signed off, versus signed off and later withdrawn).
+ * "retired" is the old name for inactive; the API still accepts it but never
+ * returns it, so it is not offered here.
+ */
 export const REPORT_TYPE_STATUSES = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'active', label: 'Active' },
-  { value: 'retired', label: 'Retired' },
+  { value: 'draft', label: 'Draft', hint: 'Not available to reporters. Use while the type is being written or reviewed.' },
+  { value: 'active', label: 'Active', hint: 'Reporters can file reports of this type.' },
+  { value: 'inactive', label: 'Inactive', hint: 'Withdrawn. Existing cases are unaffected.' },
 ];
+
+/** A type's status, reading older payloads that still say "retired". */
+export const reportTypeStatus = (type) => {
+  const status = type?.status === 'retired' ? 'inactive' : type?.status;
+  return REPORT_TYPE_STATUSES.some((s) => s.value === status) ? status : 'draft';
+};
 
 export const CONFIDENTIALITY_TIERS = [
   { value: 'standard', label: 'Standard' },
@@ -160,7 +173,8 @@ const OPTION_TYPES = ['select', 'multiselect'];
 export const GOVERNANCE_DEFAULTS = {
   code: '',
   category: '',
-  status: 'active',
+  // Unsaved types start as drafts, offered to nobody until published.
+  status: 'draft',
   default_owner_role: '',
   alternate_owner_role: '',
   confidentiality_tier: 'standard',
@@ -224,10 +238,9 @@ const cleanRules = (logic) => {
 export const toReportTypePayload = (formData, { keepIds = false } = {}) => ({
   name: formData.name?.trim(),
   description: formData.description || '',
-  is_active: formData.is_active,
   code: blankToNull(formData.code?.trim()),
   category: blankToNull(formData.category?.trim()),
-  status: formData.status || 'active',
+  status: reportTypeStatus(formData),
   default_owner_role: blankToNull(formData.default_owner_role),
   alternate_owner_role: blankToNull(formData.alternate_owner_role),
   confidentiality_tier: formData.confidentiality_tier || 'standard',

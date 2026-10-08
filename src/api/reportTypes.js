@@ -110,7 +110,8 @@ export const reportTypesAPI = {
   deleteReportType: async (id) => {
     try {
       const response = await api.delete(`/report-types/${id}`);
-      toast.success('Report type deleted successfully!');
+      // A soft delete: it sets the type inactive (a draft stays a draft).
+      toast.success('Report type deactivated.');
       return response.data;
     } catch (error) {
       const errorMsg = error.response?.data?.detail || 'Failed to delete report type';
@@ -119,30 +120,10 @@ export const reportTypesAPI = {
     }
   },
 
-  // Activate report type
-  activateReportType: async (id) => {
-    try {
-      const response = await api.patch(`/report-types/${id}`, { is_active: true }, { withCredentials: true });
-      toast.success('Report type activated successfully!');
-      return response.data;
-    } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'Failed to activate report type';
-      toast.error(errorMsg);
-      throw error;
-    }
-  },
-
-  // Deactivate report type
-  deactivateReportType: async (id) => {
-    try {
-      const response = await api.patch(`/report-types/${id}`, { is_active: false }, { withCredentials: true });
-      toast.success('Report type deactivated successfully!');
-      return response.data;
-    } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'Failed to deactivate report type';
-      toast.error(errorMsg);
-      throw error;
-    }
+  /** Draft, active or inactive — `status` is a type's whole availability. */
+  setReportTypeStatus: async (id, status) => {
+    const response = await api.patch(`/report-types/${id}`, { status });
+    return response.data;
   },
 
   // Get report type statistics
