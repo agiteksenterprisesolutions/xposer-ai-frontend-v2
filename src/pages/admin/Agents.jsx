@@ -29,6 +29,8 @@ import {
   ScrollText,
   Search,
   Trash2,
+  EyeOff,
+  Lock,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Button from '../../components/ui/Button';
@@ -333,6 +335,26 @@ const AgentsSkeleton = () => (
   </div>
 );
 
+/**
+ * Which confidentiality levels an agent can read: its role's clearance (or its
+ * custom set's). The summarizer is cleared for every level — its only output
+ * is a note on the same case, which only cleared people can read. Null when
+ * the permissions aren't known.
+ */
+const readableTiers = (agent, byCode) => {
+  if (agent.kind === 'summarizer') return ['Standard', 'Confidential', 'Restricted'];
+  const permissions =
+    agent.effective_permissions ||
+    (agent.role_source === 'org_role' ? byCode?.get(agent.role_code)?.permissions : agent.permissions);
+  if (!Array.isArray(permissions)) return null;
+  const tiers = ['Standard'];
+  if (permissions.includes(PERM.reportReadConfidential)) {
+    tiers.push('Confidential');
+    if (permissions.includes(PERM.reportReadRestricted)) tiers.push('Restricted');
+  }
+  return tiers;
+};
+
 const AgentDetail = ({
   agent,
   tab,
@@ -342,6 +364,7 @@ const AgentDetail = ({
   usage,
   roleLink,
   nameFor,
+  byCode,
   paths,
   onEdit,
   onToken,
@@ -396,6 +419,19 @@ const AgentDetail = ({
               )}
               {updated && ` · Updated ${updated}`}
             </p>
+            {readableTiers(agent, byCode) && (
+              <p
+                className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted"
+                title={
+                  isSummarizer
+                    ? 'The summarizer is cleared for every level. Its summary is a note on the same case, which only cleared staff can read.'
+                    : "An agent can read only the case levels its role is cleared for. Change that on the role's confidentiality permissions."
+                }
+              >
+                <Lock className="h-3 w-3 shrink-0" aria-hidden="true" />
+                Reads: {readableTiers(agent, byCode).join(', ')} cases{isSummarizer ? ' (fixed)' : ''}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -632,7 +668,7 @@ const Agents = () => {
   const canManage = can(PERM.agentManage);
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const roleLink = can(ACCESS.roles) ? staffPath(orgSlug, 'roles') : null;
-  const { nameFor } = useOrgRoles();
+  const { nameFor, byCode } = useOrgRoles();
   const paths = {
     workflows: staffPath(orgSlug, 'workflows'),
     summarizer: staffPath(orgSlug, 'summarizer'),
@@ -766,6 +802,10 @@ const Agents = () => {
           <h1 className="text-xl font-bold text-ink">AI Agents</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
             Each agent acts with the permissions of one of your roles and reaches the decisions your workflows branch on.
+          </p>
+          <p className="mt-1.5 flex max-w-2xl items-center gap-1.5 text-xs text-ink-muted">
+            <EyeOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            AI agents never see answers marked sensitive; they see •••• instead.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -936,6 +976,7 @@ const Agents = () => {
                 usage={usageByCode.get(selected.code) || []}
                 roleLink={roleLink}
                 nameFor={nameFor}
+                byCode={byCode}
                 paths={paths}
                 onEdit={() => capabilityCatalog && setEditing({ agent: selected })}
                 onToken={(mode) => setTokenAction({ agent: selected, mode })}

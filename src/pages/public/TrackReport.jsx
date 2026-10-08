@@ -33,7 +33,7 @@ import ChatInterface from "../../components/reports/ChatInterface";
 import { reportsAPI } from "../../api/reports";
 import { messagesAPI } from "../../api/messages";
 import { formatDate, formatFileSize, formatRelativeTime } from "../../utils/formatters";
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 import { useAuthStore } from "../../store/authStore";
 import { SUPPORT_EMAIL } from "../../utils/constants";
 import useSEO from '../../hooks/useSEO';

@@ -1781,7 +1781,6 @@ const ReportTypeBuilder = ({
                       formData.allows_anonymous === false && { label: 'No anonymous reports' },
                       formData.ack_sla_days && { label: `Acknowledge in ${formData.ack_sla_days}d` },
                       formData.triage_sla_days && { label: `Triage in ${formData.triage_sla_days}d` },
-                      formData.audience?.length > 0 && { label: `For: ${formData.audience.join(', ')}` },
                     ]
                       .filter(Boolean)
                       .map((chip) => (

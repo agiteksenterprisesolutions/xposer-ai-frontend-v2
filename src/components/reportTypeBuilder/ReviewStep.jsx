@@ -6,8 +6,9 @@
 import { useState } from 'react';
 import { AlertTriangle, Check, X } from 'lucide-react';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
-import { AUDIENCES, CONFIDENTIALITY_TIERS, REPORT_TYPE_STATUSES } from '../../utils/reportTypes';
+import { CONFIDENTIALITY_TIERS, REPORT_TYPE_STATUSES } from '../../utils/reportTypes';
 import ReporterPreview from './ReporterPreview';
+import { GovernanceProblems } from './HandlingStep';
 import { countQuestions, estimateMinutes } from './model';
 
 const PASSED = {
@@ -35,7 +36,7 @@ const Summary = ({ title, onEdit, children }) => (
   </section>
 );
 
-const ReviewStep = ({ draft, issues, isNew, onFix }) => {
+const ReviewStep = ({ draft, issues, isNew, onFix, problems = [] }) => {
   const { form, setField } = draft;
   const { nameFor } = useOrgRoles();
   const [device, setDevice] = useState('phone');
@@ -46,17 +47,16 @@ const ReviewStep = ({ draft, issues, isNew, onFix }) => {
   const passed = Object.entries(PASSED).filter(([check]) => !failing.has(check));
   const questions = countQuestions(form.sections);
   const minutes = estimateMinutes(form.sections);
-  const audience = (form.audience || []).map((code) => AUDIENCES.find((a) => a.value === code)?.label || code);
   const tier = CONFIDENTIALITY_TIERS.find((t) => t.value === (form.confidentiality_tier || 'standard'))?.label;
 
   const handling = [
     ['Category', form.category?.trim() || 'None'],
-    ['Who can report', `${audience.length ? audience.join(', ') : 'Not specified'} · ${form.allows_anonymous === false ? 'no anonymous reports' : 'anonymous allowed'}`],
+    ['Anonymous reports', form.allows_anonymous === false ? 'Not allowed — reporters must sign in' : 'Allowed'],
     [
       'Owner',
       form.default_owner_role
         ? `${nameFor(form.default_owner_role)}${form.alternate_owner_role ? ` · backup ${nameFor(form.alternate_owner_role)}` : ''}`
-        : 'Not set',
+        : 'Not set — cases wait unassigned',
     ],
     ['Confidentiality', tier],
     [
@@ -67,7 +67,7 @@ const ReviewStep = ({ draft, issues, isNew, onFix }) => {
             .join(' · ')
         : 'No targets set',
     ],
-    ['Records', form.retention_years ? `Kept ${form.retention_years} years` : 'No retention period set'],
+    ['Records', form.retention_years ? `Deleted ${form.retention_years} years after closing` : 'Kept until deleted by hand'],
   ];
 
   const fixButton = (issue) => (
@@ -95,6 +95,8 @@ const ReviewStep = ({ draft, issues, isNew, onFix }) => {
                 : 'Your changes apply to new reports. Reports already filed keep their answers.'}
           </p>
         </div>
+
+        <GovernanceProblems problems={problems} />
 
         <section className="rounded-2xl border border-line bg-surface py-2" data-tour="rtb-checklist" aria-label="Checks">
           <ul>

@@ -1,15 +1,11 @@
 // src/components/forms/ReportTypeGovernance.jsx
 //
 // The compliance side of a report type: code, status, owners, tier, SLAs,
-// audience, retention. All of it is stored and exported, but nothing on the
-// submission side reads it yet — no case inherits a tier or an SLA clock from
-// its type. The panel says so, so nobody assumes these are in force.
-//
-// `audience` can only be set here: it is not in the import/export workbook.
+// retention. Each is copied onto a case when it is filed and enforced there.
 import { Info, Lock } from 'lucide-react';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { parseServerDate } from '../../utils/formatters';
-import { AUDIENCES, CONFIDENTIALITY_TIERS, REPORT_TYPE_STATUSES } from '../../utils/reportTypes';
+import { CONFIDENTIALITY_TIERS, REPORT_TYPE_STATUSES } from '../../utils/reportTypes';
 
 const fieldClass =
   'w-full rounded-lg border border-line bg-subtle px-3 py-2 text-sm text-ink outline-none transition-colors hover:border-line-strong focus:border-line-accent disabled:cursor-not-allowed disabled:opacity-60';
@@ -66,18 +62,14 @@ const RoleField = ({ id, label, hint, value, onChange, roles, nameFor, disabled 
  */
 const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = false }) => {
   const { roles, nameFor } = useOrgRoles();
-  const audience = value.audience || [];
   const approvedAt = parseServerDate(value.approved_at);
-
-  const toggleAudience = (code) =>
-    onChange('audience', audience.includes(code) ? audience.filter((a) => a !== code) : [...audience, code]);
 
   return (
     <div className="space-y-5">
       <p className="flex items-start gap-2 rounded-lg bg-info-soft px-3 py-2.5 text-xs leading-relaxed text-info-fg">
         <Info className="mt-px h-3.5 w-3.5 shrink-0" />
-        Saved and exported with the type, but not applied to reports yet — cases don't inherit the tier, SLAs, owners or
-        retention set here.
+        These settings apply to every new case of this type. Cases already filed keep the settings they were filed
+        under.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -210,35 +202,6 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
           <p className="mt-1 text-[11px] text-ink-subtle">A reminder for handlers. Nobody is notified automatically.</p>
         </div>
       </div>
-
-      <fieldset>
-        <legend className="mb-1.5 text-xs font-medium text-ink-secondary">Who can file it</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {AUDIENCES.map((option) => {
-            const on = audience.includes(option.value);
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="checkbox"
-                aria-checked={on}
-                disabled={readOnly}
-                onClick={() => toggleAudience(option.value)}
-                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed ${
-                  on
-                    ? 'border-line-accent bg-accent-soft text-accent-fg'
-                    : 'border-line text-ink-muted hover:border-line-strong hover:text-ink'
-                }`}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-        <p className="mt-1.5 text-[11px] text-ink-subtle">
-          Only set here — spreadsheet imports and exports don't include it.
-        </p>
-      </fieldset>
 
       <label className="flex items-center justify-between gap-3">
         <span>

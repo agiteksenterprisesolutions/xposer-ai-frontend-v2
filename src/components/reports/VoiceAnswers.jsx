@@ -21,6 +21,7 @@ import {
   formatVoiceAnswer,
   getVoiceAnswers,
 } from '../../utils/questionSets';
+import { MaskedValue } from './CaseGovernance';
 
 const Chips = ({ values }) => (
   <div className="flex flex-wrap gap-1.5">
@@ -35,7 +36,11 @@ const Chips = ({ values }) => (
   </div>
 );
 
-const VoiceAnswers = ({ report, title = 'Answers from the call', className = '' }) => {
+/**
+ * `masked` – answer keys hidden from this viewer (`masked_fields`); their
+ * values arrive as "••••" and are shown with a lock instead of as an answer.
+ */
+const VoiceAnswers = ({ report, title = 'Answers from the call', className = '', masked = new Set() }) => {
   const answers = getVoiceAnswers(report);
   const version = report?.question_set?.version ?? report?.question_set_version ?? null;
 
@@ -64,7 +69,9 @@ const VoiceAnswers = ({ report, title = 'Answers from the call', className = '' 
             >
               <dt className="text-xs font-medium text-ink-muted">{row.label}</dt>
               <dd className="mt-1 min-w-0">
-                {row.skipped || value === null ? (
+                {masked.has(row.key) ? (
+                  <MaskedValue value={row.answer} />
+                ) : row.skipped || value === null ? (
                   <span className="inline-flex items-center gap-1.5 text-sm italic text-ink-subtle">
                     <MessageSquareOff className="h-3.5 w-3.5 shrink-0" />
                     {/* Asked and refused is not the same as never asked. */}

@@ -268,7 +268,7 @@ const RunDrawer = ({ run, casePath, onClose }) => {
     setDetail(null);
     setTab('timeline');
     agentRunsAPI
-      .getRun(reportId)
+      .getRun(reportId, { quiet: true })
       .then((data) => !cancelled && setDetail(data))
       .catch((err) => !cancelled && setError(agentErrorMessage(err, 'This run could not be loaded.')))
       .finally(() => !cancelled && setLoading(false));

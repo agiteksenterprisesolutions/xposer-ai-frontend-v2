@@ -22,14 +22,15 @@ import Input from '../../components/ui/Input';
 import Badge, { RoleBadge } from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
 import Modal, { ConfirmationModal } from '../../components/ui/Modal';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { usersAPI } from '../../api';
 import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
 import { parseServerDate } from '../../utils/formatters';
 import useSEO from '../../hooks/useSEO';
 import { useCan } from '../../hooks/useCan';
-import { PERM } from '../../utils/permissions';
+import { ACCESS, PERM } from '../../utils/permissions';
+import { staffPath } from '../../utils/navigation';
 import { DEFAULT_PAGE_SIZE, normalizeListResponse } from '../../utils/pagination';
 import TableSortControl from '../../components/ui/TableSortControl';
 import { useTableSort, byDate, byText } from '../../hooks/useTableSort';
@@ -87,8 +88,11 @@ const Users = () => {
   // Changing someone's role is a separate grant on top of editing them.
   const canChangeRoles = can(PERM.userUpdate, PERM.userManageRoles);
   const currentUserId = useAuthStore((state) => state.user?.id);
+  const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const { nameFor, byCode } = useOrgRoles();
   const [roleChangeUser, setRoleChangeUser] = useState(null);
+  // After a role change or deactivation: open cases the person can no longer work.
+  const [stranded, setStranded] = useState(null);
 
   // The directory: who each account is linked to, and at what level. Level
   // decides which reports someone sees; role decides what they can do.
@@ -243,7 +247,8 @@ const Users = () => {
     }
     try {
       if (user.is_active) {
-        await usersAPI.deleteUser(user.id);
+        const result = await usersAPI.deleteUser(user.id);
+        if (result?.warnings?.length) setStranded({ user, warnings: result.warnings });
       } else {
         await usersAPI.activateUser(user.id);
       }
@@ -368,6 +373,32 @@ const Users = () => {
   return (
     <div className="space-y-6">
       <DashboardTour ref={tourRef} storageKey={USERS_TOUR_KEY} steps={tourSteps} />
+
+      {stranded && (
+        <Alert
+          variant="warning"
+          title={`Saved — ${stranded.user.full_name || stranded.user.username} has cases to hand over`}
+          dismissible
+          onDismiss={() => setStranded(null)}
+        >
+          <ul className="list-disc space-y-1 pl-4">
+            {stranded.warnings.map((warning, i) => (
+              <li key={i}>{warning.message}</li>
+            ))}
+          </ul>
+          {can(ACCESS.caseReports) && (
+            <Link
+              to={`${staffPath(orgSlug, 'reports')}?${new URLSearchParams({
+                assigned_to: stranded.user.id,
+                assignee: stranded.user.full_name || stranded.user.username || '',
+              })}`}
+              className="mt-2 inline-block font-semibold underline underline-offset-2"
+            >
+              See their cases
+            </Link>
+          )}
+        </Alert>
+      )}
 
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -678,7 +709,8 @@ const Users = () => {
           user={roleChangeUser}
           isSelf={roleChangeUser.id === currentUserId}
           onClose={() => setRoleChangeUser(null)}
-          onChanged={() => {
+          onChanged={(_role, warnings) => {
+            if (warnings?.length) setStranded({ user: roleChangeUser, warnings });
             setRoleChangeUser(null);
             fetchUsers();
           }}

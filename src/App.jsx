@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
 // App.css is imported by index.css so Tailwind can read its tokens in @theme
 // import Home from './pages/public/Home'
 import Login from './pages/public/Login'

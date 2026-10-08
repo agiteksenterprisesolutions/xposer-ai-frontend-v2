@@ -200,11 +200,20 @@ const ruleProblem = (rule, earlier) => {
   return rule.value === '' || rule.value === null || rule.value === undefined ? 'a condition has no answer picked' : null;
 };
 
+export const RETENTION_MESSAGE = 'Enter a whole number of years from 1 to 100.';
+
+/** The retention period is optional, but when set the server takes 1–100 whole years. */
+export const retentionProblem = (value) => {
+  if (value === '' || value === null || value === undefined) return null;
+  const years = Number(value);
+  return Number.isInteger(years) && years >= 1 && years <= 100 ? null : RETENTION_MESSAGE;
+};
+
 /**
  * Everything worth flagging before save. `error`s block saving; `warning`s are
  * suggestions. Each carries where to fix it: a question, a section, or a step.
  */
-export const findIssues = (form, { isNew = false } = {}) => {
+export const findIssues = (form) => {
   const issues = [];
   const sections = form.sections || [];
   // `blank` marks what is simply not filled in yet — not worth flagging on a
@@ -247,9 +256,9 @@ export const findIssues = (form, { isNew = false } = {}) => {
     });
   });
 
-  if (!form.default_owner_role) push('warning', 'owner', 'No owner is set for these cases', { step: 'handling' });
-  if (isNew && !form.code?.trim())
-    push('warning', 'code', "No compliance code yet. It can't be added once the type is saved", { step: 'handling' });
+  if (retentionProblem(form.retention_years)) push('error', 'retention', retentionProblem(form.retention_years), { step: 'handling' });
+  if (!form.default_owner_role)
+    push('warning', 'owner', 'No owner is set, so new cases will wait unassigned', { step: 'handling' });
 
   return issues;
 };
@@ -308,4 +317,34 @@ export const describeLogic = (logic, sections) => {
   const more = rules.length > 1 ? ` ${logic.logic_type === 'or' ? 'or' : 'and'} ${rules.length - 1} more` : '';
   const verb = rule.condition_type === 'skip' || rule.condition_type === 'hide' ? 'Skipped' : 'Only shown';
   return `${verb} when ${name} ${operator}${answer ? ` ${answer}` : ''}${more}`;
+};
+
+/**
+ * A refused save, pinned to the field it is about, so the reason shows under
+ * that field instead of in a toast:
+ *   409 changing or clearing a compliance code     → code
+ *   400 an owner role that is unknown or can't own cases → that owner field
+ *   422 (PUT) / 400 (PATCH) retention outside 1–100  → retention_years
+ * Returns {} when the error isn't about one of these fields.
+ */
+export const saveErrorFields = ({ status, summary, problems = [] }, form) => {
+  const text = summary || '';
+  const fields = {};
+  problems.forEach((p) => {
+    const field = String(p.field || '').split('.').pop();
+    if (field === 'retention_years') fields.retention_years = RETENTION_MESSAGE;
+    else if (['default_owner_role', 'alternate_owner_role', 'code'].includes(field)) fields[field] = p.message;
+  });
+  if (Object.keys(fields).length) return fields;
+
+  if (/retention/i.test(text)) return { retention_years: RETENTION_MESSAGE };
+  if (status === 409 && /code/i.test(text)) return { code: text };
+  if (status === 400 && /role/i.test(text)) {
+    // The message names the role it refused; pin it to the field holding that role.
+    const names = (role) => Boolean(role) && text.toLowerCase().includes(String(role).toLowerCase());
+    const aboutBackup =
+      /alternate|backup/i.test(text) || (names(form.alternate_owner_role) && !names(form.default_owner_role));
+    return { [aboutBackup ? 'alternate_owner_role' : 'default_owner_role']: text };
+  }
+  return {};
 };

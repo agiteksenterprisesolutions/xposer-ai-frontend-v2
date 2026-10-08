@@ -4,7 +4,7 @@
 // reseeded from the server's copy, so new questions pick up their real ids
 // and the next save edits them in place.
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
@@ -21,6 +21,7 @@ const EditReportType = () => {
   const { id } = useParams();
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const listPath = staffPath(user?.organization_slug, 'report-types');
 
   const [loading, setLoading] = useState(true);
@@ -29,7 +30,7 @@ const EditReportType = () => {
   const [version, setVersion] = useState(0);
   const [error, setError] = useState('');
   // The step open when a save reseeds the editor, so it stays put.
-  const stepRef = useRef('questions');
+  const stepRef = useRef(location.state?.step || 'questions');
 
   useSEO({
     enabled: !loading && !!reportType,
@@ -57,14 +58,16 @@ const EditReportType = () => {
       // Every field survives the round trip — governance fields, core-field
       // flags, option labels and section keys included.
       const saved = await reportTypesAPI.updateReportType(id, toReportTypePayload(form, { keepIds: true }));
-      if (saved?.sections) {
-        setReportType(saved);
+      // governance_problems reflect the settings just saved; fetch them if
+      // the save didn't send them back.
+      const fresh =
+        saved?.sections && Array.isArray(saved.governance_problems)
+          ? saved
+          : await reportTypesAPI.getReportType(id).catch(() => saved);
+      if (fresh?.sections) {
+        setReportType(fresh);
         setVersion((v) => v + 1);
       }
-      return true;
-    } catch {
-      // updateReportType has already shown the server's reason.
-      return false;
     } finally {
       setSaving(false);
     }
@@ -89,6 +92,7 @@ const EditReportType = () => {
       initialData={fromLoaded(toBuilderShape(reportType))}
       isNew={false}
       codeLocked={Boolean(reportType.code)}
+      problems={reportType.governance_problems || []}
       saving={saving}
       onSave={save}
       onExit={() => navigate(listPath)}

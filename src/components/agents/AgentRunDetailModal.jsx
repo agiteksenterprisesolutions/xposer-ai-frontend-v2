@@ -183,7 +183,7 @@ const AgentRunDetailModal = ({ run, isOpen, onClose, orgSlug }) => {
     setDetail(null);
 
     agentRunsAPI
-      .getRun(reportId)
+      .getRun(reportId, { quiet: true })
       .then((data) => {
         if (!cancelled) setDetail(data);
       })

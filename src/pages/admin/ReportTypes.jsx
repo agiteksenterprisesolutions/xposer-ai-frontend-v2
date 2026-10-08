@@ -35,7 +35,7 @@ import Pagination from "../../components/ui/Pagination";
 import { reportTypesAPI } from "../../api";
 import { useAuthStore } from "../../store/authStore";
 import { useCan } from "../../hooks/useCan";
-import { PERM } from "../../utils/permissions";
+import { ACCESS, PERM } from "../../utils/permissions";
 import { saveBlob } from "../../utils/download";
 import DashboardTour from "../../components/tour/DashboardTour";
 import { useIsDesktop } from "../../components/tour/useIsDesktop";
@@ -591,6 +591,11 @@ const ReportTypes = () => {
             // Import matches on name and never updates, so a re-import of a
             // corrected file fails once per existing type.
             const alreadyExists = importResult.problems.some((p) => errorsOf(p).some((e) => /already exists/i.test(e)));
+            // Default Owner / Alternate Owner naming a role the organization
+            // doesn't have. The usual fix is to create that role.
+            const unknownOwner = importResult.problems.some((p) =>
+              errorsOf(p).some((e) => /is not a role in this organization|cannot own cases/i.test(e)),
+            );
             return (
               <div className="space-y-4">
                 {fileProblems.length > 0 && (
@@ -631,6 +636,20 @@ const ReportTypes = () => {
                       ))}
                     </ul>
                   </div>
+                )}
+                {unknownOwner && (
+                  <p className="text-xs text-ink-muted">
+                    Owner columns must name one of your roles, by code or name. Change the file to use an existing
+                    role, or{" "}
+                    {can(ACCESS.roles) ? (
+                      <Link to={`/${user?.organization_slug}/staff/roles`} className="font-medium text-link hover:underline">
+                        create the role
+                      </Link>
+                    ) : (
+                      "ask an admin to create the role"
+                    )}{" "}
+                    first.
+                  </p>
                 )}
               </div>
             );

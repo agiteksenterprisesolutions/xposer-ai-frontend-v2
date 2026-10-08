@@ -44,9 +44,34 @@ import {
   fromMinorUnits,
   normalizeOptions,
   normalizeValidation,
+  optionValue,
   toMinorUnits,
 } from "../../utils/reportTypes";
-import toast from "react-hot-toast";
+import { describeError } from "../../utils/errors";
+
+/**
+ * A type that refuses anonymous reports doesn't offer "anonymous" on its
+ * identity question — the server would refuse the submission anyway.
+ */
+const withoutRefusedAnonymity = (type) => {
+  if (!type || type.allows_anonymous !== false) return type;
+  return {
+    ...type,
+    sections: (type.sections || []).map((section) => ({
+      ...section,
+      questions: (section.questions || []).map((question) =>
+        question.name === "anonymity_election"
+          ? {
+              ...question,
+              options: (question.options || []).filter((option) => optionValue(option) !== "anonymous"),
+              default_value: question.default_value === "anonymous" ? "" : question.default_value,
+            }
+          : question,
+      ),
+    })),
+  };
+};
+import { toast } from 'react-toastify';
 import { useNavigate, useParams } from "react-router-dom";
 
 // ============ FILE SIZE HELPER ============
@@ -420,7 +445,20 @@ const MultiStepReportForm = ({
       setError("");
 
       try {
-        const type = await reportTypesAPI.getReportType(reportTypeId, true);
+        let type;
+        try {
+          type = withoutRefusedAnonymity(await reportTypesAPI.getReportType(reportTypeId, true, { quiet: true }));
+        } catch (err) {
+          // Types that need sign-in are hidden from anonymous reporters, and
+          // answer 404 to a direct link.
+          throw new Error(
+            err?.response?.status === 404
+              ? isAnonymous
+                ? "This report type isn't available here. Some report types are only available after you sign in."
+                : "This report type isn't available."
+              : "Couldn't load the report form. Please try again.",
+          );
+        }
         setReportType(type);
 
         let currentReportNumber = existingReportNumber || reportNumber;
@@ -446,18 +484,22 @@ const MultiStepReportForm = ({
               currentReportNumber,
               reportTypeId,
               !isAuthenticated ? currentPassword : null,
-              isAnonymous ? (anonymousOrgSlug || undefined) : (organizationSlug || undefined)
+              isAnonymous ? (anonymousOrgSlug || undefined) : (organizationSlug || undefined),
+              { quiet: true },
             );
             toast.success(`Report type "${type.name}" selected`);
           } catch (err) {
+            // 403 anonymous_not_allowed: this type needs a signed-in reporter
+            // (an old link, say). Nothing else can be filed on it.
+            if (err?.response?.status === 403) throw new Error(describeError(err).summary);
             console.error("Failed to select report type:", err);
           }
         }
 
         setStage("form");
       } catch (err) {
-        setError(err.message || err.response?.data?.detail || "Failed to load report form");
-        toast.error("Failed to load report form");
+        setError(err.message || describeError(err).summary || "Failed to load report form");
+        setStage("unavailable");
       } finally {
         setIsLoading(false);
         initPromiseRef.current = null;
@@ -847,13 +889,28 @@ const MultiStepReportForm = ({
       toast.success("Report submitted successfully!");
       if (onSuccess) onSuccess(response);
     } catch (err) {
-      const message = err.response?.data?.detail || "Failed to submit report";
+      // Old errors put a string in `detail`; the new ones an object with
+      // `code`, `message` and sometimes `field`.
+      const detail = err?.response?.data?.detail;
+      const message = describeError(err).summary || "Failed to submit report";
       setError(message);
       toast.error(message);
+      // A refused answer (anonymity on a type that needs a name): take the
+      // reporter back to the step holding it, with the field marked. The
+      // report is still an editable draft.
+      const field = detail && typeof detail === "object" ? detail.field : null;
+      const stepIndex = field
+        ? visibleSections.findIndex((section) => (section.questions || []).some((q) => q.name === field))
+        : -1;
+      if (stepIndex !== -1) {
+        setStepErrors((prev) => ({ ...prev, [stepIndex]: { ...(prev[stepIndex] || {}), [field]: message } }));
+        setCurrentStep(stepIndex);
+        setStage("form");
+      }
     } finally {
       setIsSubmitting(false);
     }
-  }, [currentReportNumber, isAnonymous, password, onSuccess, attachments, allFormData, extractFormAttachmentKeys, anonymousOrgSlug]);
+  }, [currentReportNumber, isAnonymous, password, onSuccess, attachments, allFormData, extractFormAttachmentKeys, anonymousOrgSlug, visibleSections]);
 
   const handleCopyCredentials = useCallback(async () => {
     const text = `Report Number: ${reportNumber}\nPassword: ${password}`;
@@ -1559,8 +1616,10 @@ const MultiStepReportForm = ({
       <Card>
         <div className="text-center py-12">
           <AlertCircle className="w-12 h-12 text-ink-subtle mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-ink mb-2">Something went wrong</h2>
-          <p className="text-ink-muted mb-4">Unable to load the report form. Please try again.</p>
+          <h2 className="text-xl font-semibold text-ink mb-2">
+            {stage === "unavailable" ? "This form can't be opened" : "Something went wrong"}
+          </h2>
+          <p className="mx-auto mb-4 max-w-md text-ink-muted">{error || "Unable to load the report form. Please try again."}</p>
           <Button onClick={onCancel} variant="secondary">Go Back</Button>
         </div>
       </Card>

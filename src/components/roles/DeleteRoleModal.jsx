@@ -1,9 +1,11 @@
 // src/components/roles/DeleteRoleModal.jsx
 //
-// Deleting a role can be refused for two reasons, both 409s worth explaining
-// rather than retrying: active users still hold it (offer the filtered user
-// list, so they can be reassigned), or it is the last role that can manage
-// roles (deleting it would lock the organization out of this screen).
+// Deleting a role can be refused, with a 409 worth explaining rather than
+// retrying, when: active users still hold it (offer the filtered user list, so
+// they can be reassigned); it is the last role that can manage roles (deleting
+// it would lock the organization out of this screen); report types send their
+// cases to it as Owner or Backup owner (offer the report types page); or an
+// escalation rule routes to it (offer the hierarchy page).
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -19,6 +21,8 @@ import { staffPath } from '../../utils/navigation';
 import { describeError } from '../../utils/errors';
 
 const StillAssigned = /user\(s\)|\busers?\b.*(still|reassign)/i;
+const OwnsReportTypes = /report types?\b/i;
+const EscalationTarget = /escalation/i;
 
 const DeleteRoleModal = ({ role, onClose, onDeleted }) => {
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
@@ -42,7 +46,10 @@ const DeleteRoleModal = ({ role, onClose, onDeleted }) => {
     }
   };
 
-  const assignedUsersBlock = error?.status === 409 && StillAssigned.test(error.summary);
+  const refused = error?.status === 409;
+  const assignedUsersBlock = refused && StillAssigned.test(error.summary);
+  const ownerBlock = refused && OwnsReportTypes.test(error.summary);
+  const escalationBlock = refused && EscalationTarget.test(error.summary);
 
   return (
     <Modal
@@ -77,6 +84,16 @@ const DeleteRoleModal = ({ role, onClose, onDeleted }) => {
               className="mt-2 inline-block font-medium text-link hover:underline"
             >
               See who has this role →
+            </Link>
+          )}
+          {ownerBlock && can(ACCESS.reportTypes) && (
+            <Link to={staffPath(orgSlug, 'report-types')} className="mt-2 block font-medium text-link hover:underline">
+              Choose another owner on those report types →
+            </Link>
+          )}
+          {escalationBlock && can(ACCESS.hierarchy) && (
+            <Link to={staffPath(orgSlug, 'hierarchy')} className="mt-2 block font-medium text-link hover:underline">
+              Change the escalation rules →
             </Link>
           )}
         </Alert>

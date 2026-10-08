@@ -10,7 +10,7 @@ import { agentsAPI } from '../../api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
 import useSEO from '../../hooks/useSEO';

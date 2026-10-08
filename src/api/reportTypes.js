@@ -79,22 +79,19 @@ export const reportTypesAPI = {
   },
 
   // Create report type
+  // Quiet on failure: the editor shows a refused save under the field it is
+  // about (an owner role, the compliance code, the retention period).
   createReportType: async (data) => {
-    try {
-      const response = await api.post('/report-types/', data);
-      return response.data;
-    } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'Failed to create report type';
-      toast.error(errorMsg);
-      throw error;
-    }
+    const response = await api.post('/report-types/', data, { skipErrorToast: true });
+    return response.data;
   },
 
   // Get report type by ID
-  getReportType: async (id, includeSections = true) => {
+  getReportType: async (id, includeSections = true, { quiet = false } = {}) => {
     try {
       const response = await api.get(`/report-types/${id}`, {
-        params: { include_sections: includeSections }
+        params: { include_sections: includeSections },
+        skipErrorToast: quiet,
       });
       return response.data;
     } catch (error) {
@@ -104,15 +101,9 @@ export const reportTypesAPI = {
 
   // Update report type
   updateReportType: async (id, data) => {
-    try {
-      const response = await api.patch(`/report-types/${id}`, data);
-      toast.success('Report type updated successfully!');
-      return response.data;
-    } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'Failed to update report type';
-      toast.error(errorMsg);
-      throw error;
-    }
+    const response = await api.patch(`/report-types/${id}`, data, { skipErrorToast: true });
+    toast.success('Report type updated successfully!');
+    return response.data;
   },
 
   // Delete report type (soft delete)

@@ -44,12 +44,50 @@ import { usersAPI } from '../../api/users';
 import { invalidateOrgRoles, useOrgRoles } from '../../hooks/useOrgRoles';
 import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
-import { PERM, permissionLabel, permissionLabels } from '../../utils/permissions';
+import { PERM, PERMISSION_HINTS, permissionLabel, permissionLabels, togglePermissionIn } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
 import { describeError, errorSummary } from '../../utils/errors';
 import useSEO from '../../hooks/useSEO';
 
 const VALIDATE_DEBOUNCE_MS = 350;
+
+// Warnings that come back from a save that went through. The ones about cases
+// (assigned_cases_hidden, owner_cannot_handle) need someone to reassign cases
+// or pick another owner, so they stay on screen until dismissed.
+const CASE_WARNINGS = new Set(['assigned_cases_hidden']);
+const OWNER_WARNINGS = new Set(['owner_cannot_handle']);
+
+const SavedWarnings = ({ warnings, orgSlug, onDismiss }) => {
+  if (!warnings.length) return null;
+  const linkCases = warnings.some((w) => CASE_WARNINGS.has(w.code));
+  const linkTypes = warnings.some((w) => OWNER_WARNINGS.has(w.code));
+  return (
+    <Alert variant="warning" title="Saved — but check this" dismissible onDismiss={onDismiss}>
+      <ul className="list-disc space-y-1 pl-4">
+        {warnings.map((warning, i) => (
+          <li key={i}>
+            {warning.role && <span className="font-semibold">{warning.role}: </span>}
+            {warning.message}
+          </li>
+        ))}
+      </ul>
+      {(linkCases || linkTypes) && (
+        <p className="mt-2 flex flex-wrap gap-x-4">
+          {linkCases && (
+            <Link to={staffPath(orgSlug, 'reports')} className="font-semibold underline underline-offset-2">
+              Go to cases
+            </Link>
+          )}
+          {linkTypes && (
+            <Link to={staffPath(orgSlug, 'report-types')} className="font-semibold underline underline-offset-2">
+              Go to report types
+            </Link>
+          )}
+        </p>
+      )}
+    </Alert>
+  );
+};
 
 const setKey = (permissions) => [...permissions].sort().join(',');
 
@@ -346,6 +384,8 @@ const Roles = () => {
   const [agents, setAgents] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  // Saved, but with consequences to act on (cases their holders can no longer open).
+  const [savedWarnings, setSavedWarnings] = useState([]);
   const [confirmEscalation, setConfirmEscalation] = useState(false);
 
   const canSeePeople = can(PERM.userReadAll);
@@ -414,9 +454,7 @@ const Roles = () => {
     setSaveError(null);
     setSelectedCode(code);
     setDrafts((prev) => {
-      const next = new Set(prev[code] || savedSets[code] || []);
-      if (next.has(permission)) next.delete(permission);
-      else next.add(permission);
+      const next = togglePermissionIn(prev[code] || savedSets[code] || [], permission);
       const out = { ...prev };
       if (sameSet(next, savedSets[code] || new Set())) delete out[code];
       else out[code] = next;
@@ -493,18 +531,20 @@ const Roles = () => {
     setSaving(true);
     setSaveError(null);
     const failed = {};
+    const warnings = [];
     let savedCount = 0;
     for (const code of changedCodes) {
       const role = roles.find((r) => r.code === code);
       try {
         const saved = await orgRolesAPI.update(role.id, { permissions: [...drafts[code]] });
-        (saved?.warnings || []).forEach((warning) => toast.warning(warning.message));
+        (saved?.warnings || []).forEach((warning) => warnings.push({ ...warning, role: role.name }));
         savedCount += 1;
       } catch (err) {
         failed[code] = describeError(err);
       }
     }
     setSaving(false);
+    setSavedWarnings(warnings);
     if (savedCount) {
       invalidateOrgRoles();
       // Changing roles can change what the signed-in user holds.
@@ -609,6 +649,8 @@ const Roles = () => {
           </button>
         </Alert>
       )}
+
+      <SavedWarnings warnings={savedWarnings} orgSlug={orgSlug} onDismiss={() => setSavedWarnings([])} />
 
       {(loading || !catalog) && roles.length === 0 && !error && !catalogError && <RolesSkeleton />}
 
@@ -752,6 +794,9 @@ const Roles = () => {
                           <tr key={entry.permission} className="border-b border-line-subtle last:border-b-0 hover:bg-hover/50">
                             <th scope="row" className="sticky left-0 z-10 bg-surface px-4 py-3 font-normal">
                               <span className="block text-sm text-ink">{label}</span>
+                              {PERMISSION_HINTS[entry.permission] && (
+                                <span className="mt-0.5 block max-w-80 text-xs text-ink-muted">{PERMISSION_HINTS[entry.permission]}</span>
+                              )}
                             </th>
                             {roles.map((role) => (
                               <Cell
@@ -844,6 +889,7 @@ const Roles = () => {
           catalog={catalog}
           onClose={() => setEditing(null)}
           onSaved={(saved) => {
+            setSavedWarnings((saved?.warnings || []).map((warning) => ({ ...warning, role: saved.name })));
             afterWrite();
             if (saved?.code) setSelectedCode(saved.code);
           }}

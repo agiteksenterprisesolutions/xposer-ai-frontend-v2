@@ -1,23 +1,11 @@
 // src/utils/reportTypes.js
 //
 // A report type is a governed compliance object, not just a form: it carries
-// a compliance code, status, owners, a confidentiality tier, SLAs, audience,
+// a compliance code, status, owners, a confidentiality tier, SLAs,
 // retention and approval alongside its sections. These helpers keep every
 // field intact between the API, the builder and the save payload — a field the
 // builder doesn't edit must still survive a round trip, or saving a type
 // silently strips it (core-field flags, option labels, section keys).
-
-/** Who may file a report of this type. Stored singular and lower-case. */
-export const AUDIENCES = [
-  { value: 'employee', label: 'Employees' },
-  { value: 'contractor', label: 'Contractors' },
-  { value: 'board', label: 'Board members' },
-  { value: 'member', label: 'Members' },
-  { value: 'broker', label: 'Brokers' },
-  { value: 'provider', label: 'Providers' },
-  { value: 'supplier', label: 'Suppliers' },
-  { value: 'public', label: 'The public' },
-];
 
 export const REPORT_TYPE_STATUSES = [
   { value: 'draft', label: 'Draft' },
@@ -179,7 +167,6 @@ export const GOVERNANCE_DEFAULTS = {
   ack_sla_days: '',
   triage_sla_days: '',
   allows_anonymous: true,
-  audience: [],
   retention_years: '',
   regulatory_trigger: '',
 };
@@ -247,7 +234,6 @@ export const toReportTypePayload = (formData, { keepIds = false } = {}) => ({
   ack_sla_days: toIntOrNull(formData.ack_sla_days),
   triage_sla_days: toIntOrNull(formData.triage_sla_days),
   allows_anonymous: formData.allows_anonymous ?? true,
-  audience: formData.audience || [],
   retention_years: toIntOrNull(formData.retention_years),
   regulatory_trigger: blankToNull(formData.regulatory_trigger?.trim()),
   sections: (formData.sections || []).map((section, sectionIndex) => ({

@@ -27,7 +27,7 @@ import { orgAgentsAPI } from '../../api/orgAgents';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
-import { ACCESS, permissionLabel } from '../../utils/permissions';
+import { ACCESS, permissionLabel, togglePermissionIn } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
 import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import { describeError } from '../../utils/errors';
@@ -40,6 +40,12 @@ import {
   SUMMARIZER_PERMISSIONS,
   capabilityLabel,
 } from '../../utils/agents';
+
+
+// Sensitive answers are masked for every AI agent, whatever its permissions.
+const AGENT_PERMISSION_HINTS = {
+  'report:read_sensitive': 'No effect on AI agents: they always see answers marked sensitive as ••••.',
+};
 
 const SUMMARIZER = SUMMARIZER_KIND;
 const ORG_ROLE = 'org_role';
@@ -256,7 +262,7 @@ const AgentEditorModal = ({
       return next;
     });
   const toggleCapability = toggleIn(setCapabilities);
-  const togglePermission = toggleIn(setPermissions);
+  const togglePermission = (permission) => setPermissions((prev) => togglePermissionIn(prev, permission));
 
   const save = async () => {
     if (blocked || saving) return;
@@ -473,6 +479,7 @@ const AgentEditorModal = ({
               onToggle={togglePermission}
               onAdd={(p) => setPermissions((prev) => new Set(prev).add(p))}
               errorsByPermission={permissionErrors}
+              hints={AGENT_PERMISSION_HINTS}
               readOnly={readOnly}
             />
           )}

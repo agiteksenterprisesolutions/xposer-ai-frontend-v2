@@ -15,7 +15,8 @@ import QuestionsStep from './QuestionsStep';
 import HandlingStep from './HandlingStep';
 import ReviewStep from './ReviewStep';
 import ReporterPreview from './ReporterPreview';
-import { findIssues } from './model';
+import { findIssues, saveErrorFields } from './model';
+import { describeError } from '../../utils/errors';
 
 const STEPS = [
   { id: 'questions', label: 'Questions' },
@@ -30,8 +31,25 @@ const STATUS_PILL = {
   retired: ['Retired', 'bg-warning-soft text-warning-fg'],
 };
 
-/** Use a fresh `key` per report type: the draft is seeded once. */
-const ReportTypeEditor = ({ initialData, isNew, codeLocked = false, saving = false, onSave, onExit, initialStep, onStepChange }) => {
+/**
+ * Use a fresh `key` per report type: the draft is seeded once.
+ *
+ * `onSave(form)` resolves when saved and throws the server's error when
+ * refused; a refusal about one field (an owner role, the compliance code, the
+ * retention period) is shown under that field. `problems` is the server's
+ * governance_problems for the saved type.
+ */
+const ReportTypeEditor = ({
+  initialData,
+  isNew,
+  codeLocked = false,
+  saving = false,
+  problems = [],
+  onSave,
+  onExit,
+  initialStep,
+  onStepChange,
+}) => {
   const draft = useReportTypeDraft(initialData);
   const { form, dirty, select } = draft;
   const [step, setStep] = useState(initialStep || 'questions');
@@ -39,8 +57,9 @@ const ReportTypeEditor = ({ initialData, isNew, codeLocked = false, saving = fal
   const [previewDevice, setPreviewDevice] = useState('desktop');
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [triedSave, setTriedSave] = useState(false);
+  const [serverErrors, setServerErrors] = useState({});
 
-  const issues = useMemo(() => findIssues(form, { isNew }), [form, isNew]);
+  const issues = useMemo(() => findIssues(form), [form]);
   const errors = issues.filter((issue) => issue.level === 'error');
   // Until a save is tried, only flag what's actually been touched, not the
   // empty step a brand-new type starts with.
@@ -85,8 +104,21 @@ const ReportTypeEditor = ({ initialData, isNew, codeLocked = false, saving = fal
       toast.error(`Fix ${errors.length === 1 ? 'one thing' : `${errors.length} things`} before saving.`);
       return;
     }
-    const ok = await onSave({ ...form, ...(status ? { status, is_active: status === 'active' } : {}) });
-    if (ok) draft.setDirty(false);
+    try {
+      await onSave({ ...form, ...(status ? { status, is_active: status === 'active' } : {}) });
+      draft.setDirty(false);
+      setServerErrors({});
+    } catch (err) {
+      const described = describeError(err);
+      const fields = saveErrorFields(described, form);
+      if (Object.keys(fields).length) {
+        setServerErrors(fields);
+        goTo('handling');
+        toast.error('Not saved. The reason is shown under the field.');
+      } else {
+        toast.error(described.summary);
+      }
+    }
   };
 
   const exit = () => (dirty ? setConfirmLeave(true) : onExit());
@@ -214,9 +246,12 @@ const ReportTypeEditor = ({ initialData, isNew, codeLocked = false, saving = fal
             draft={draft}
             codeLocked={codeLocked}
             nameError={triedSave && !form.name?.trim() ? 'Give the report type a name' : null}
+            problems={problems}
+            serverErrors={serverErrors}
+            onClearError={(field) => setServerErrors(({ [field]: _cleared, ...rest }) => rest)}
           />
         )}
-        {step === 'review' && <ReviewStep draft={draft} issues={issues} isNew={isNew} onFix={fix} />}
+        {step === 'review' && <ReviewStep draft={draft} issues={issues} isNew={isNew} onFix={fix} problems={problems} />}
       </div>
 
       <Modal

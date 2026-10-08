@@ -4,6 +4,9 @@
 // whether it was routed around the implicated person, who that is, where it
 // went and why (`escalated_reason`, a sentence shown verbatim).
 //
+// The case's confidentiality level isn't repeated here: it comes from the
+// report type as well as from escalation, and has its own badge in the header.
+//
 // `excluded_user_ids` is never read here. A locked-out person gets a 404 for
 // the case, and nothing on any screen may hint at who else is excluded.
 import { useEffect, useState } from 'react';
@@ -11,9 +14,6 @@ import { ShieldAlert } from 'lucide-react';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
-import { CONFIDENTIALITY_TIERS } from '../../utils/reportTypes';
-
-const tierLabel = (tier) => CONFIDENTIALITY_TIERS.find((t) => t.value === tier)?.label || tier;
 
 /** True when the report carries anything worth showing. */
 export const hasEscalationRecord = (report) =>
@@ -21,8 +21,7 @@ export const hasEscalationRecord = (report) =>
     report?.coi_bypass_applied ||
       report?.escalated_reason ||
       report?.implicated_member_id ||
-      report?.escalated_to_member_id ||
-      (report?.confidentiality_tier && report.confidentiality_tier !== 'standard'),
+      report?.escalated_to_member_id,
   );
 
 const EscalationRecord = ({ report, canReadHierarchy = false }) => {
@@ -53,11 +52,6 @@ const EscalationRecord = ({ report, canReadHierarchy = false }) => {
           {report.coi_bypass_applied && (
             <Badge variant="warning" size="small">
               Routed around the implicated person
-            </Badge>
-          )}
-          {report.confidentiality_tier && report.confidentiality_tier !== 'standard' && (
-            <Badge variant="danger" size="small">
-              {tierLabel(report.confidentiality_tier)}
             </Badge>
           )}
         </Card.Title>

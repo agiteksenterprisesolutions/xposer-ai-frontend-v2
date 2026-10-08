@@ -87,13 +87,16 @@ const CreateReportType = () => {
   const save = async (form) => {
     setSaving(true);
     try {
-      await reportTypesAPI.createReportType(toReportTypePayload(form));
+      const created = await reportTypesAPI.createReportType(toReportTypePayload(form));
       toast.success(form.status === 'draft' ? `"${form.name}" saved as a draft` : `"${form.name}" is published`);
-      navigate(listPath);
-      return true;
-    } catch {
-      // createReportType has already shown the server's reason.
-      return false;
+      // Saved, but the server found something that will stop cases being
+      // handled (an owner role nobody holds, say): open it where that shows.
+      const createdId = created?.id || created?._id;
+      if (createdId && created.governance_problems?.length) {
+        navigate(staffPath(user?.organization_slug, `report-types/${createdId}`), { state: { step: 'handling' } });
+      } else {
+        navigate(listPath);
+      }
     } finally {
       setSaving(false);
     }

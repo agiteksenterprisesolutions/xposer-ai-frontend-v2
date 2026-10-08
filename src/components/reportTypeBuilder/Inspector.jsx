@@ -299,7 +299,7 @@ const QuestionInspector = ({ draft, section, question, issuesFor }) => {
         <p className="text-xs text-ink-muted">
           {sensitive?.value === 'none'
             ? 'Stored and shown like any other answer.'
-            : 'Masked and access-logged for anyone without clearance for this kind of data.'}
+            : 'Encrypted when stored. Hidden from staff who lack the View sensitive answers permission, and every time it is shown, the view is logged.'}
         </p>
       </Group>
 

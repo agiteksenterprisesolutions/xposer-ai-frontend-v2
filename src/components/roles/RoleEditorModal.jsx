@@ -22,7 +22,7 @@ import Badge from '../ui/Badge';
 import { orgRolesAPI } from '../../api/orgRoles';
 import { invalidateOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
-import { PERM, permissionLabels } from '../../utils/permissions';
+import { PERM, permissionLabels, togglePermissionIn } from '../../utils/permissions';
 import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import PermissionPicker, { Checkbox, catalogEntries, localPrerequisiteErrors } from './PermissionPicker';
 import { describeError } from '../../utils/errors';
@@ -130,12 +130,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
   const toggle = (permission) => {
     setSaveError(null);
     setConfirmingEscalation(false);
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(permission)) next.delete(permission);
-      else next.add(permission);
-      return next;
-    });
+    setSelected((prev) => togglePermissionIn(prev, permission));
   };
 
   const add = (permission) => {
@@ -158,8 +153,8 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
         : await orgRolesAPI.update(role.id, { name: name.trim(), permissions, is_active: isActive });
 
       toast.success(isCreate ? `Role "${name.trim()}" created.` : `Role "${name.trim()}" saved.`);
-      (saved?.warnings || []).forEach((warning) => toast.warning(warning.message));
 
+      // saved.warnings are shown on the roles page, which stays open after this closes.
       invalidateOrgRoles();
       // The change applies on the server's next request; our copy of the
       // signed-in user's permissions has to be told.

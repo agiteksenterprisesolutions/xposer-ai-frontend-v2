@@ -206,8 +206,15 @@ export const AGENT_ORG_REQUIRED_MESSAGE =
   'These settings belong to an organization. Sign in with an organization admin account to manage them.';
 
 /** Pulls the readable reason out of a FastAPI {"detail": "..."} error. */
-export const agentErrorMessage = (error, fallback = 'Something went wrong.') =>
-  error?.response?.data?.detail || error?.message || fallback;
+export const agentErrorMessage = (error, fallback = 'Something went wrong.') => {
+  // A run on a case this person can't open is a plain 404, like the case
+  // itself; nothing may hint that it exists.
+  if (error?.response?.status === 404) return 'Not found.';
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string') return detail;
+  if (detail && typeof detail === 'object' && typeof detail.message === 'string') return detail.message;
+  return error?.message || fallback;
+};
 
 /** 503 means the feature is switched off server-side, not that it crashed. */
 export const isServiceUnavailable = (error) => error?.response?.status === 503;

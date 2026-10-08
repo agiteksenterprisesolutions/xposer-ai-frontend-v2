@@ -23,6 +23,7 @@ import { reportTypesAPI } from '../../api/reportTypes';
 import { reportsAPI } from '../../api/reports';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../store/authStore';
+import { describeError } from '../../utils/errors';
 import useSEO from '../../hooks/useSEO';
 import { copyToClipboard } from '../../utils/clipboard';
 import { isStaffUser } from '../../utils/roles';
@@ -168,7 +169,8 @@ const SubmitAnonymous = () => {
         credentials.reportNumber,
         typeId,
         credentials.password,
-        effectiveOrgSlug || credentials.organization_slug || undefined
+        effectiveOrgSlug || credentials.organization_slug || undefined,
+        { quiet: true },
       );
 
       // Ensure credentials are in localStorage before moving to form stage
@@ -179,8 +181,8 @@ const SubmitAnonymous = () => {
       setStage('form');
       // toast.success(`Report type "${type.name}" selected.`);
     } catch (error) {
-      console.error('Failed to select report type:', error);
-      toast.error(error.response?.data?.detail || 'Failed to select report type');
+      // 403 anonymous_not_allowed carries { code, message }; older errors a string.
+      toast.error(describeError(error).summary || 'Failed to select report type');
     } finally {
       setIsLoading(false);
     }
@@ -525,6 +527,16 @@ Generated on: ${new Date().toLocaleString()}
       <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
         {/* Report Types Grid */}
         <div className="lg:col-span-2" data-tour="anon-types">
+          {/* Types that refuse anonymous reports aren't listed to a signed-out reporter at all. */}
+          {!user && !isLoadingTypes && (
+            <p className="mb-3 text-sm text-ink-muted">
+              Some report types are only available after you{' '}
+              <Link to={effectiveOrgSlug ? `/${effectiveOrgSlug}/login` : '/login'} className="font-medium text-link hover:underline">
+                sign in
+              </Link>
+              .
+            </p>
+          )}
           {isLoadingTypes ? (
             // Skeletons rather than a bare string — keeps the layout from jumping
             <div className="grid sm:grid-cols-2 gap-4">

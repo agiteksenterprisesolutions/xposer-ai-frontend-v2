@@ -26,6 +26,11 @@ export const PERM = {
   reportUpdateAll: 'report:update_all',
   reportDeleteAll: 'report:delete_all',
   reportManage: 'report:manage',
+  // Clearance for a case's confidentiality level, on top of access to it.
+  reportReadConfidential: 'report:read_confidential',
+  reportReadRestricted: 'report:read_restricted',
+  // Answers marked sensitive in clear; every unmasked view is logged.
+  reportReadSensitive: 'report:read_sensitive',
 
   // Messages
   messageCreate: 'message:create',
@@ -83,6 +88,9 @@ export const PERMISSION_INFO = {
   'report:update_all': "Edit any report's details",
   'report:delete_all': 'Delete reports',
   'report:manage': 'Change status and priority, and assign reports',
+  'report:read_confidential': 'See confidential cases',
+  'report:read_restricted': 'See restricted cases',
+  'report:read_sensitive': 'View sensitive answers',
   'message:create': 'Send messages on reports',
   'message:read_own': 'Read messages on their own reports',
   'message:read_internal': 'Read and write internal notes',
@@ -105,6 +113,28 @@ export const PERMISSION_INFO = {
   'voice_profile:manage': 'Edit the voice profile',
   'role:manage': 'Create and edit roles — including their own',
   'system:stats': 'View organization statistics and analytics',
+};
+
+/** A line under a permission whose label alone doesn't say what it changes. */
+export const PERMISSION_HINTS = {
+  'report:read_confidential': 'Cases marked Confidential are hidden without this.',
+  'report:read_restricted': 'Cases marked Restricted are hidden without this.',
+  'report:read_sensitive':
+    'Without this, answers marked PII, special category, financial or government ID show as ••••. Every unmasked view is logged.',
+};
+
+/**
+ * Ticks or unticks one permission. Ticking *See restricted cases* ticks *See
+ * confidential cases* too — the server refuses one without the other.
+ */
+export const togglePermissionIn = (current, permission) => {
+  const next = new Set(current);
+  if (next.has(permission)) next.delete(permission);
+  else {
+    next.add(permission);
+    if (permission === 'report:read_restricted') next.add('report:read_confidential');
+  }
+  return next;
 };
 
 /**

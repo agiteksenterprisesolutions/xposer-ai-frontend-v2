@@ -26,6 +26,8 @@ import useSEO from '../../hooks/useSEO';
 import { casePath } from '../../utils/navigation';
 import { DEFAULT_PAGE_SIZE, normalizeListResponse } from '../../utils/pagination';
 import TableSortControl from '../../components/ui/TableSortControl';
+import { OwnerCell, SLA_FILTERS, SlaCell, TierBadge, ownerName, slaUrgency } from '../../components/reports/CaseGovernance';
+import { useOrgRoles } from '../../hooks/useOrgRoles';
 import {
   useTableSort,
   byDate,
@@ -38,7 +40,7 @@ import {
 const ALL_REPORTS_TOUR_KEY = 'xposer_all_reports_tour_seen';
 
 // Column order here is the column order in the table.
-const buildSortColumns = (typeNameFor) => ({
+const buildSortColumns = (typeNameFor, nameFor) => ({
   report_number: { label: 'Report ID', defaultOrder: 'desc', value: byText('report_number') },
   created_at: { label: 'Submitted On', defaultOrder: 'desc', value: byDate('created_at') },
   report_type_name: {
@@ -47,15 +49,16 @@ const buildSortColumns = (typeNameFor) => ({
     value: (report) => typeNameFor(report).toLowerCase(),
   },
   priority: { label: 'Priority', defaultOrder: 'desc', value: byRank('priority', PRIORITY_RANK) },
-  assigned_by: {
-    label: 'Assigned By',
-    defaultOrder: 'asc',
-    value: (report) => (report?.assigned_by?.username || '').toLowerCase(),
-  },
   assigned_to: {
-    label: 'Assigned To',
+    label: 'Owner',
     defaultOrder: 'asc',
-    value: (report) => (report?.assigned_to?.username || '').toLowerCase(),
+    value: (report) => ownerName(report, nameFor).toLowerCase(),
+  },
+  sla: {
+    label: 'Deadlines',
+    defaultOrder: 'asc',
+    // Overdue first, then due soon, then everything else.
+    value: slaUrgency,
   },
   status: { label: 'Status', defaultOrder: 'asc', value: byRank('status', STATUS_RANK) },
 });
@@ -79,6 +82,12 @@ const AllReports = () => {
   const typeNameParam = searchParams.get('report_type') || '';
   const priorityParam = searchParams.get('priority') || '';
   const anonymousOnly = searchParams.get('anonymous') === 'true';
+  // Cases with either deadline in this state (breached = overdue).
+  const slaParam = searchParams.get('sla') || '';
+  // One person's cases, from the Users page after a role change strands them.
+  const assigneeParam = searchParams.get('assigned_to') || '';
+  const assigneeName = searchParams.get('assignee') || '';
+  const { nameFor } = useOrgRoles();
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '');
   // Search hits the server, so it is debounced rather than filtered locally.
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
@@ -168,7 +177,7 @@ const AllReports = () => {
 
   // The Category column sorts on the resolved type name, so the columns are
   // rebuilt whenever that resolver changes.
-  const sortColumns = useMemo(() => buildSortColumns(typeNameFor), [typeNameFor]);
+  const sortColumns = useMemo(() => buildSortColumns(typeNameFor, nameFor), [typeNameFor, nameFor]);
 
   // Sorting gets the same treatment as the anonymous filter: `sort_by`/`order`
   // go to the API, and the rows on screen are ordered here too so the column
@@ -189,7 +198,10 @@ const AllReports = () => {
         report_type_id: resolvedTypeId || undefined,
         priority: priorityParam || undefined,
         is_anonymous: anonymousOnly ? true : undefined,
-        sort_by: sortBy,
+        sla: slaParam || undefined,
+        assigned_to: assigneeParam || undefined,
+        // The deadlines column is ordered on this page only.
+        sort_by: sortBy === 'sla' ? undefined : sortBy,
         order: sortOrder,
       };
       const response = await reportsAPI.getAllReports(params);
@@ -203,7 +215,7 @@ const AllReports = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, activeStatus, resolvedTypeId, priorityParam, anonymousOnly, sortBy, sortOrder]);
+  }, [currentPage, searchQuery, activeStatus, resolvedTypeId, priorityParam, anonymousOnly, slaParam, assigneeParam, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchReports();
@@ -223,7 +235,7 @@ const AllReports = () => {
   // rarely a valid page of the new one.
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeStatus, resolvedTypeId, priorityParam, anonymousOnly, sortBy, sortOrder]);
+  }, [activeStatus, resolvedTypeId, priorityParam, anonymousOnly, slaParam, assigneeParam, sortBy, sortOrder]);
 
   const statusTabs = [
     { id: 'all', label: 'All Reports' },
@@ -249,6 +261,13 @@ const AllReports = () => {
         clear: () => updateFilters({ priority: '' }),
       });
     }
+    if (assigneeParam) {
+      chips.push({
+        key: 'assignee',
+        label: `Assigned to: ${assigneeName || 'one person'}`,
+        clear: () => updateFilters({ assigned_to: '', assignee: '' }),
+      });
+    }
     if (anonymousOnly) {
       chips.push({
         key: 'anonymous',
@@ -257,7 +276,9 @@ const AllReports = () => {
       });
     }
     return chips;
-  }, [activeTypeName, priorityParam, anonymousOnly, updateFilters]);
+  }, [activeTypeName, priorityParam, assigneeParam, assigneeName, anonymousOnly, updateFilters]);
+
+  const slaLabel = SLA_FILTERS.find((f) => f.value === slaParam)?.label;
 
   const tourSteps = useMemo(() => {
     const steps = [];
@@ -328,6 +349,21 @@ const AllReports = () => {
           <Button variant="ghost" startIcon={Filter}>Advanced Filters</Button>
         </div> */}
         <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto">
+          <select
+            aria-label="Deadlines"
+            value={slaParam}
+            onChange={(e) => updateFilters({ sla: e.target.value })}
+            className={`h-9 shrink-0 rounded-lg border bg-surface px-2.5 text-sm outline-none focus:border-line-accent ${
+              slaParam ? 'border-line-accent text-accent-fg' : 'border-line-strong text-ink-secondary'
+            }`}
+          >
+            <option value="">Any deadline</option>
+            {SLA_FILTERS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
           <TableSortControl {...sort} id="reports" className="shrink-0" data-tour="reports-sort" />
           {loading ? (
             <Skeleton.Text className="w-20" />
@@ -357,7 +393,7 @@ const AllReports = () => {
           ))}
           <button
             type="button"
-            onClick={() => updateFilters({ report_type_id: '', report_type: '', priority: '', anonymous: '' })}
+            onClick={() => updateFilters({ report_type_id: '', report_type: '', priority: '', anonymous: '', assigned_to: '', assignee: '' })}
             className="text-xs font-medium text-ink-muted underline underline-offset-4 hover:text-ink"
           >
             Clear all
@@ -406,14 +442,14 @@ const AllReports = () => {
                   <Skeleton.Text key="d" className="w-20" />,
                   <Skeleton.Text key="c" className="w-24" />,
                   <Skeleton.Badge key="p" className="w-14" />,
-                  <Skeleton.Text key="b" className="w-16" />,
-                  <Skeleton.Text key="t" className="w-16" />,
+                  <Skeleton.Text key="t" className="w-20" />,
+                  <Skeleton.Badge key="sla" className="w-16" />,
                   <Skeleton.Badge key="s" className="w-20" />,
                 ]}
               />
             ) : filteredReports.length === 0 ? (
               <Table.Empty
-                message={searchTerm ? 'No matching reports' : 'No reports found'}
+                message={searchTerm ? 'No matching reports' : slaLabel ? `No cases ${slaLabel.toLowerCase()}` : 'No reports found'}
                 description={searchTerm ? 'Try a different search term.' : 'Try adjusting your filters.'}
                 icon={FileText}
               />
@@ -425,7 +461,10 @@ const AllReports = () => {
                   className="cursor-pointer"
                 >
                   <Table.Cell className="font-medium text-ink">
-                    #{report.report_number}
+                    <div className="flex flex-col items-start gap-1">
+                      <span>#{report.report_number}</span>
+                      <TierBadge tier={report.confidentiality_tier} />
+                    </div>
                   </Table.Cell>
                   <Table.Cell className="text-ink-muted">
                     <div className="flex items-center">
@@ -444,15 +483,11 @@ const AllReports = () => {
                   <Table.Cell>
                     <PriorityBadge priority={report.priority} />
                   </Table.Cell>
-                  <Table.Cell className="text-sm text-ink-muted">
-                    <div className="flex items-center space-x-2">
-                      <span>{report?.assigned_by?.username || ""}</span>
-                    </div>
+                  <Table.Cell className="text-sm text-ink-secondary">
+                    <OwnerCell report={report} nameFor={nameFor} />
                   </Table.Cell>
-                  <Table.Cell className="text-sm text-ink-muted">
-                    <div className="flex items-center space-x-2">
-                      <span>{report?.assigned_to?.username || ""}</span>
-                    </div>
+                  <Table.Cell>
+                    <SlaCell report={report} />
                   </Table.Cell>
                   <Table.Cell>
                     <StatusBadge status={report.status} />

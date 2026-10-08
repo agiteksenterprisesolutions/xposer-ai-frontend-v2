@@ -1,7 +1,14 @@
 import api from './axios';
 
-// Staff-only fields on a report: notes, who holds it, and escalation routing.
+// Staff-only fields on a report: notes, who holds it, escalation and owner
+// routing, and the records hold.
 const STAFF_ONLY_REPORT_FIELDS = [
+  'routing_note',
+  'routed_to_role',
+  'owner_role',
+  'alternate_owner_role',
+  'eligibility_warnings',
+  'legal_hold',
   'internal_notes',
   'assigned_to',
   'assigned_to_name',
@@ -34,13 +41,17 @@ export const reportsAPI = {
     }
   },
 
-  selectReportType: async (reportNumber, reportTypeId, password = null, organizationSlug = null) => {
+  // Refused with 403 anonymous_not_allowed when an anonymous reporter picks a
+  // type that needs sign-in; `quiet` lets the screen show that sentence.
+  selectReportType: async (reportNumber, reportTypeId, password = null, organizationSlug = null, { quiet = false } = {}) => {
     try {
       const params = new URLSearchParams();
       params.append('report_type_id', reportTypeId);
       if (password) params.append('password', password);
       if (organizationSlug) params.append('organization_slug', organizationSlug);
-      const response = await api.post(`/reports/${reportNumber}/select-type?${params.toString()}`);
+      const response = await api.post(`/reports/${reportNumber}/select-type?${params.toString()}`, undefined, {
+        skipErrorToast: quiet,
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -80,7 +91,9 @@ export const reportsAPI = {
 
       if (requestPassword) requestData.password = requestPassword;
       if (organizationSlug) requestData.organization_slug = organizationSlug;
-      const response = await api.post(`/reports/${reportNumber}/submit`, requestData);
+      // The form shows a refusal itself, and takes the reporter to the
+      // question it names (400 anonymous_election_not_allowed + field).
+      const response = await api.post(`/reports/${reportNumber}/submit`, requestData, { skipErrorToast: true });
       return response.data;
     } catch (error) {
       throw error;
@@ -268,22 +281,28 @@ export const reportsAPI = {
     }
   },
 
-  getReport: async (id) => {
-    try {
-      const response = await api.get(`/reports/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  // `quiet` for screens that show the reason themselves — a case the user may
+  // not open is a plain 404, rendered as "Case not found".
+  getReport: async (id, { quiet = false } = {}) => {
+    const response = await api.get(`/reports/${id}`, { skipErrorToast: quiet });
+    return response.data;
   },
 
-  updateReport: async (id, data) => {
-    try {
-      const response = await api.put(`/reports/${id}`, data);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  // Refusals (400 not cleared / excluded / the reporter, 403, 409 disposed)
+  // come back worded for the screen; pass `quiet` and show them there.
+  updateReport: async (id, data, { quiet = false } = {}) => {
+    const response = await api.put(`/reports/${id}`, data, { skipErrorToast: quiet });
+    return response.data;
+  },
+
+  /**
+   * Records that the reporter was acknowledged (by letter or phone — the first
+   * message to them counts on its own). Returns the full case plus
+   * `acknowledgement_recorded`, false when it already had been.
+   */
+  acknowledgeReport: async (id) => {
+    const response = await api.post(`/reports/${id}/acknowledge`, {}, { skipErrorToast: true });
+    return response.data;
   },
 
   deleteReport: async (id) => {

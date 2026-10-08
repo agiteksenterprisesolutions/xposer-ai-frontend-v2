@@ -4,13 +4,11 @@ import { toast } from 'react-toastify';
 
 export const messagesAPI = {
   // Send message (compliance team)
-  sendMessage: async (data) => {
-    try {
-      const response = await api.post('/messages/', data);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  // `quiet`: a staff member without access to the case gets a 404, which the
+  // case page shows as "Case not found" rather than a toast.
+  sendMessage: async (data, { quiet = false } = {}) => {
+    const response = await api.post('/messages/', data, { skipErrorToast: quiet });
+    return response.data;
   },
 
   // Send message from reporter
@@ -33,13 +31,13 @@ export const messagesAPI = {
   },
 
   // Get report messages (unified endpoint)
-  getReportMessages: async (reportNumber, includeInternal = false, password = null) => {
+  getReportMessages: async (reportNumber, includeInternal = false, password = null, { quiet = false } = {}) => {
     try {
       const params = {};
       if (includeInternal) params.include_internal = includeInternal;
       if (password) params.password = password;
 
-      const response = await api.get(`/messages/report/${reportNumber}`, { params });
+      const response = await api.get(`/messages/report/${reportNumber}`, { params, skipErrorToast: quiet });
       return response.data;
     } catch (error) {
       throw error;

@@ -29,6 +29,7 @@ import {
   PRIORITY_RANK,
   STATUS_RANK,
 } from '../../hooks/useTableSort';
+import { SlaCell, TierBadge, slaUrgency } from '../../components/reports/CaseGovernance';
 
 // Column order here is the column order in the table. The trailing action
 // column is not sortable, so it keeps a plain header.
@@ -41,6 +42,7 @@ const buildSortColumns = (typeNameFor) => ({
   },
   priority: { label: 'Priority', defaultOrder: 'desc', value: byRank('priority', PRIORITY_RANK) },
   updated_at: { label: 'Last Updated', defaultOrder: 'desc', value: byDate('updated_at') },
+  sla: { label: 'Deadlines', defaultOrder: 'asc', value: slaUrgency },
   status: { label: 'Status', defaultOrder: 'asc', value: byRank('status', STATUS_RANK) },
 });
 
@@ -134,6 +136,7 @@ const MyCases = () => {
                   <Skeleton.Text key="c" className="w-24" />,
                   <Skeleton.Badge key="p" className="w-14" />,
                   <Skeleton.Text key="u" className="w-20" />,
+                  <Skeleton.Badge key="sla" className="w-16" />,
                   <Skeleton.Badge key="s" className="w-20" />,
                   <Skeleton key="a" className="ml-auto h-8 w-10 rounded-lg" />,
                 ]}
@@ -148,7 +151,10 @@ const MyCases = () => {
               sortedReports.map((report) => (
                 <Table.Row key={report.id}>
                   <Table.Cell className="font-medium text-ink">
-                    #{report.report_number}
+                    <div className="flex flex-col items-start gap-1">
+                      <span>#{report.report_number}</span>
+                      <TierBadge tier={report.confidentiality_tier} />
+                    </div>
                   </Table.Cell>
                   <Table.Cell className="text-sm text-ink-secondary">
                     {typeNameFor(report)}
@@ -158,6 +164,9 @@ const MyCases = () => {
                   </Table.Cell>
                   <Table.Cell className="text-sm text-ink-muted">
                     {parseServerDate(report.updated_at)?.toLocaleDateString() || 'N/A'}
+                  </Table.Cell>
+                  <Table.Cell>
+                    <SlaCell report={report} />
                   </Table.Cell>
                   <Table.Cell>
                     <StatusBadge status={report.status} />

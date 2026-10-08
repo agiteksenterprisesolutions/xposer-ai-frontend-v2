@@ -8,7 +8,7 @@
 // nobody can hand out access they don't have, and the save would 403.
 import { useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, Lock, Plus, XCircle } from 'lucide-react';
-import { permissionLabel, permissionLabels } from '../../utils/permissions';
+import { PERMISSION_HINTS, permissionLabel, permissionLabels } from '../../utils/permissions';
 
 /** permission → catalog entry ({ permission, granted, requires_any_of }). */
 export const catalogEntries = (catalog) =>
@@ -46,7 +46,7 @@ export const Checkbox = ({ checked, disabled, onChange, labelledBy, title }) => 
   </button>
 );
 
-const PermissionOption = ({ entry, checked, readOnly, error, warning, fixes, onToggle, onFix }) => {
+const PermissionOption = ({ entry, checked, readOnly, error, warning, fixes, onToggle, onFix, hint }) => {
   const { permission, granted } = entry;
   const locked = !granted;
   const id = `perm-${permission.replace(/[^a-z0-9]/g, '-')}`;
@@ -65,6 +65,7 @@ const PermissionOption = ({ entry, checked, readOnly, error, warning, fixes, onT
             {permissionLabel(permission)}
             {locked && !readOnly && <Lock className="h-3 w-3 shrink-0 text-ink-subtle" aria-label="Not grantable by you" />}
           </p>
+          {hint && <p className="mt-0.5 text-xs text-ink-muted">{hint}</p>}
 
           {error && (
             <div className="mt-2 space-y-2">
@@ -133,6 +134,8 @@ const PermissionGroup = ({ group, children, selectedCount }) => {
  *   onAdd(p)           – tick one (the quick-fix buttons under an error)
  *   errorsByPermission – Map permission → { message, requires }
  *   warningsByPermission – Map permission → message
+ *   hints              – permission → explanation, over PERMISSION_HINTS (an
+ *                        agent's set explains some permissions differently)
  *   readOnly
  */
 const PermissionPicker = ({
@@ -142,6 +145,7 @@ const PermissionPicker = ({
   onAdd,
   errorsByPermission = new Map(),
   warningsByPermission = new Map(),
+  hints = {},
   readOnly = false,
 }) => {
   const entries = catalogEntries(catalog);
@@ -167,6 +171,7 @@ const PermissionPicker = ({
                 fixes={(error?.requires || []).filter((p) => entries.get(p)?.granted && !selected.has(p))}
                 onToggle={() => onToggle(entry.permission)}
                 onFix={onAdd}
+                hint={hints[entry.permission] ?? PERMISSION_HINTS[entry.permission]}
               />
             );
           })}

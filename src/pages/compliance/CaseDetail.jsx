@@ -14,6 +14,8 @@ import {
   Send,
   Sparkles,
   Route,
+  ShieldAlert,
+  EyeOff,
 } from "lucide-react";
 import Card from "../../components/ui/Card";
 import Skeleton from '../../components/ui/Skeleton';
@@ -31,11 +33,20 @@ import EscalationPreview from '../../components/reports/EscalationPreview';
 import EscalationRecord, { hasEscalationRecord } from '../../components/reports/EscalationRecord';
 import { staffPath } from '../../utils/navigation';
 import { getReportDescription, getReportTitle } from '../../utils/reports';
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 import { formatFileSize, formatRelativeTime, formatDateTime, formatDate } from "../../utils/formatters";
 import useSEO from "../../hooks/useSEO";
 import { normalizeListResponse } from '../../utils/pagination';
 import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
+import { errorSummary } from '../../utils/errors';
+import { MaskedValue, TierBadge, isAutoAssigned, maskedKeys, slaClock } from '../../components/reports/CaseGovernance';
+import { CaseNotices, DeadlinesCard, DisposedCase, RecordsCard, isDisposed } from '../../components/reports/CasePanels';
+
+/** The permission that clears a role for a case's confidentiality level. */
+const TIER_CLEARANCE = {
+  confidential: PERM.reportReadConfidential,
+  restricted: PERM.reportReadRestricted,
+};
 
 const STATUS_OPTIONS = [
   // { value: "draft", label: "Draft" },
@@ -130,7 +141,7 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
             <Card.Title>Case Details</Card.Title>
           </Card.Header>
           <Card.Content className="space-y-6">
-            {['Status', 'Priority', 'Assigned By', 'Assigned To'].map((label, index) => (
+            {['Status', 'Priority', 'Assigned To'].map((label, index) => (
               <div key={label} className="space-y-1">
                 <p className="text-xs font-semibold text-ink-muted uppercase">{label}</p>
                 {index < 2 ? <Skeleton.Badge className="w-20" /> : <Skeleton.Text className="w-28" />}
@@ -199,17 +210,35 @@ const CaseDetail = () => {
   // Roles are organization-defined, so who can take a case comes from the
   // organization's own role list rather than a fixed table: anyone whose role
   // can open the report once it is theirs.
-  const { roles: orgRoles } = useOrgRoles({ enabled: canAssignReports });
+  const { roles: orgRoles, nameFor } = useOrgRoles({ enabled: canAssignReports });
   const assignableUsers = useMemo(() => {
     const assigneeRoles = new Set(orgRoles.filter(roleCanWorkReports).map((role) => role.code));
     return users.filter((user) => assigneeRoles.has(user.role));
   }, [users, orgRoles]);
+  // Why a person can't take this case, worked out before asking the server:
+  // their role isn't cleared for its level, or they filed it. (Exclusions are
+  // left to the server's refusal — nothing may hint at who is excluded.)
+  const assignBlockFor = useCallback(
+    (person) => {
+      const needs = TIER_CLEARANCE[report?.confidentiality_tier];
+      const rolePermissions = orgRoles.find((role) => role.code === person.role)?.permissions || [];
+      if (needs && !rolePermissions.includes(needs)) {
+        return `Their role isn't cleared for ${report.confidentiality_tier} cases.`;
+      }
+      const reporterId = report?.reporter_id || report?.user_id || report?.submitted_by?.id;
+      if (reporterId && String(reporterId) === String(person.id)) return 'They reported this case.';
+      return null;
+    },
+    [orgRoles, report],
+  );
+  // Labels and sensitivity of the type's questions, for the answers below.
+  const [typeQuestions, setTypeQuestions] = useState(null);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
       const [reportData, typesData] = await Promise.all([
-        reportsAPI.getReport(id),
+        reportsAPI.getReport(id, { quiet: true }),
         reportTypes.length === 0
           ? reportTypesAPI.getReportTypes()
           : Promise.resolve(reportTypes),
@@ -217,8 +246,11 @@ const CaseDetail = () => {
 
       setReport(reportData);
       if (reportTypes.length === 0) setReportTypes(typesData);
+      if (isDisposed(reportData)) return;
       const reportNumber = reportData?.report_number || reportData?.reportNumber || id;
-      const messagesData = await messagesAPI.getReportMessages(reportNumber, true);
+      // The chat answers 404 for a case this person can't open, exactly like
+      // the case itself — so treat it the same way.
+      const messagesData = await messagesAPI.getReportMessages(reportNumber, true, null, { quiet: true });
       setMessages(messagesData);
 
       // Users for assignee/assigner display and the assignment modal. Loaded
@@ -230,6 +262,7 @@ const CaseDetail = () => {
         .catch(() => setUsers([]));
     } catch (error) {
       if (error?.response?.status === 404) {
+        setReport(null);
         setNotFound(true);
       } else {
         console.error("Error fetching report detail:", error);
@@ -243,6 +276,23 @@ const CaseDetail = () => {
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
+
+  const reportTypeId = report?.report_type_id;
+  useEffect(() => {
+    if (!reportTypeId) return undefined;
+    let live = true;
+    reportTypesAPI
+      .getReportType(reportTypeId, true, { quiet: true })
+      .then((type) => {
+        if (!live) return;
+        const questions = (type?.sections || []).flatMap((section) => section.questions || []);
+        setTypeQuestions(new Map(questions.map((q) => [q.name, q])));
+      })
+      .catch(() => live && setTypeQuestions(new Map()));
+    return () => {
+      live = false;
+    };
+  }, [reportTypeId]);
 
   const handleUpdateStatus = async (newStatus) => {
     if (!canUpdateStatus) {
@@ -259,12 +309,11 @@ const CaseDetail = () => {
 
     setUpdating(true);
     try {
-      await reportsAPI.updateReport(report?.id || id, { status: newStatus });
+      await reportsAPI.updateReport(report?.id || id, { status: newStatus }, { quiet: true });
       toast.success("Status updated");
       fetchReport();
     } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("Failed to update status");
+      toast.error(errorSummary(error));
     } finally {
       setUpdating(false);
     }
@@ -350,7 +399,7 @@ const CaseDetail = () => {
         report_number: report.report_number,
         is_internal: isInternal,
       };
-      const created = await messagesAPI.sendMessage(payload);
+      const created = await messagesAPI.sendMessage(payload, { quiet: true });
       setMessages((prev) =>
         [...prev, created].sort(
           (a, b) => (a?.timestamp || 0) - (b?.timestamp || 0),
@@ -358,9 +407,16 @@ const CaseDetail = () => {
       );
       setMessageText("");
       toast.success(isInternal ? "Internal note added" : "Message sent");
+      // The first reply to the reporter records the acknowledgement; fetch
+      // the case again so the deadline shows as met.
+      if (!isInternal && !slaClock(report, "acknowledge")?.done_at) fetchReport();
     } catch (error) {
-      console.error("Failed to send message:", error);
-      toast.error("Failed to send message");
+      if (error?.response?.status === 404) {
+        setReport(null);
+        setNotFound(true);
+        return;
+      }
+      toast.error(errorSummary(error));
     } finally {
       setSendingMessage(false);
     }
@@ -379,13 +435,14 @@ const CaseDetail = () => {
 
     setUpdating(true);
     try {
-      await reportsAPI.updateReport(report?.id || id, { assigned_to: userId });
+      await reportsAPI.updateReport(report?.id || id, { assigned_to: userId }, { quiet: true });
       setShowAssignModal(false);
       toast.success("Case assigned");
       fetchReport();
     } catch (error) {
-      console.error("Error assigning case:", error);
-      toast.error("Failed to assign case");
+      // Not cleared for the case's level, excluded from it, or its reporter —
+      // the server's sentence says which.
+      toast.error(errorSummary(error));
     } finally {
       setUpdating(false);
     }
@@ -433,10 +490,26 @@ const CaseDetail = () => {
     );
   }
 
+  const typeName =
+    report.report_type_name || reportTypes.find((t) => t.id === report.report_type_id)?.name || "AI Assisstant";
+
+  if (isDisposed(report)) {
+    return <DisposedCase report={report} typeName={typeName} onBack={() => navigate(-1)} />;
+  }
+
   // Both optional: written by the voice agent when it files a report, absent
   // on plenty of others. Shown only when present.
   const reportTitle = getReportTitle(report);
   const reportDescription = getReportDescription(report);
+  const masked = maskedKeys(report);
+  const isSensitive = (key) => {
+    const kind = typeQuestions?.get(key)?.sensitive_data_class;
+    return Boolean(kind) && kind !== "none";
+  };
+  // Answers in clear that are marked sensitive: this view was logged.
+  const viewingLogged =
+    can(PERM.reportReadSensitive) && Object.keys(report.form_data || {}).some((key) => isSensitive(key) && !masked.has(key));
+  const ackOutstanding = !slaClock(report, "acknowledge")?.done_at;
 
   return (
     <div className="space-y-6">
@@ -447,14 +520,11 @@ const CaseDetail = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center space-x-4">
           <div className="flex flex-col">
-            <h2 className="text-xl font-bold text-ink">
+            <h2 className="flex flex-wrap items-center gap-2 text-xl font-bold text-ink">
               Case #{report.report_number}
+              <TierBadge tier={report.confidentiality_tier} size="medium" />
             </h2>
-            <p className="text-sm text-ink-muted">
-              {report.report_type_name ||
-                reportTypes.find((t) => t.id === report.report_type_id)?.name ||
-                "AI Assisstant"}
-            </p>
+            <p className="text-sm text-ink-muted">{typeName}</p>
           </div>
         </div>
         <div className="flex space-x-2">
@@ -481,6 +551,8 @@ const CaseDetail = () => {
           </select>
         </div>
       </div>
+
+      <CaseNotices report={report} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
@@ -515,7 +587,7 @@ const CaseDetail = () => {
               {/* Collected by the voice agent. Preferred over the flat
                   form_data map: it keeps the question as it was asked and
                   distinguishes a declined answer from a missing one. */}
-              <VoiceAnswers report={report} />
+              <VoiceAnswers report={report} masked={masked} />
 
               {/* Custom Questionnaire Answers */}
               {report.form_data && Object.keys(report.form_data).length > 0 && (
@@ -523,13 +595,29 @@ const CaseDetail = () => {
                   <h4 className="text-sm font-semibold text-ink">
                     Additional Details
                   </h4>
+                  {viewingLogged && (
+                    <p className="flex items-center gap-1.5 text-xs text-ink-muted">
+                      <ShieldAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      Some answers here are marked sensitive. Viewing this is logged.
+                    </p>
+                  )}
+                  {masked.size > 0 && (
+                    <p className="flex items-center gap-1.5 text-xs text-ink-muted">
+                      <EyeOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      Answers marked sensitive are hidden. You need the View sensitive answers permission to see them.
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Object.entries(report.form_data).map(([key, value]) => (
                       <div key={key} className="space-y-1">
                         <p className="text-xs font-medium text-ink-muted uppercase">
-                          {key.replace(/_/g, " ")}
+                          {typeQuestions?.get(key)?.label || key.replace(/_/g, " ")}
                         </p>
-                        <p className="text-sm text-ink wrap-break-word">{formatFormValue(value)}</p>
+                        {masked.has(key) ? (
+                          <MaskedValue value={value} />
+                        ) : (
+                          <p className="text-sm text-ink wrap-break-word">{formatFormValue(value)}</p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -641,6 +729,11 @@ const CaseDetail = () => {
                       value={messageText}
                       onChange={(e) => setMessageText(e.target.value)}
                     />
+                    {!isInternal && ackOutstanding && (
+                      <p className="mt-1.5 text-xs text-ink-muted">
+                        Your first reply to the reporter counts as the acknowledgement.
+                      </p>
+                    )}
                     <div className="flex justify-between items-center mt-3">
                       <Button
                         variant="secondary"
@@ -680,19 +773,31 @@ const CaseDetail = () => {
                 <PriorityBadge priority={report.priority} />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-ink-muted uppercase">Assigned By</p>
-                <p className="text-sm font-medium text-ink wrap-break-word">
-                  {getUserNameFromRef(report.assigned_by || report.assigned_by_user)}
-                </p>
-              </div>
-              <div className="space-y-1">
                 <p className="text-xs font-semibold text-ink-muted uppercase">Assigned To</p>
-                <p className="text-sm font-medium text-ink wrap-break-word">
-                  {getUserNameFromRef(report.assigned_to || report.assigned_to_user)}
+                <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink wrap-break-word">
+                  {report.assigned_to || report.assigned_to_user
+                    ? getUserNameFromRef(report.assigned_to || report.assigned_to_user)
+                    : report.routed_to_role
+                      ? `Waiting for ${nameFor(report.routed_to_role)}`
+                      : "Unassigned"}
+                  {isAutoAssigned(report) && (
+                    <span className="rounded bg-active px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                      auto
+                    </span>
+                  )}
                 </p>
                 {report.assigned_at && (
-                  <p className="text-xs text-ink-muted">Assigned {formatRelativeTime(report.assigned_at)}</p>
+                  <p className="text-xs text-ink-muted">
+                    {isAutoAssigned(report)
+                      ? `Assigned automatically ${formatRelativeTime(report.assigned_at)}`
+                      : `Assigned ${formatRelativeTime(report.assigned_at)}`}
+                    {!isAutoAssigned(report) && (report.assigned_by || report.assigned_by_user)
+                      ? ` by ${getUserNameFromRef(report.assigned_by || report.assigned_by_user)}`
+                      : ""}
+                  </p>
                 )}
+                {/* Why routing did what it did — unassigned, or sent to the backup owner. */}
+                {report.routing_note && <p className="text-xs text-ink-muted">{report.routing_note}</p>}
               </div>
 
             </Card.Content>
@@ -702,6 +807,14 @@ const CaseDetail = () => {
               </Button>
             </Card.Footer> */}
           </Card>
+
+          <DeadlinesCard report={report} canAcknowledge={can(PERM.reportManage)} onUpdated={(updated) => updated?.id ? setReport(updated) : fetchReport()} />
+
+          <RecordsCard
+            report={report}
+            canHold={can(PERM.reportManage) && can(PERM.reportReadAll)}
+            onUpdated={(updated) => (updated?.id ? setReport(updated) : fetchReport())}
+          />
 
           {/* What escalation routing did to this case */}
           {hasEscalationRecord(report) && (
@@ -782,7 +895,7 @@ const CaseDetail = () => {
             <Card.Header>
               <Card.Title>Assign Case</Card.Title>
               <Card.Description>
-                Select an assignee. Only people whose role can open reports are listed.
+                Select an assignee. Only people whose role can open reports are listed; those who can't take this case are greyed out.
               </Card.Description>
             </Card.Header>
             <Card.Content className="space-y-4">
@@ -792,11 +905,15 @@ const CaseDetail = () => {
                     No eligible assignees available.
                   </div>
                 )}
-                {assignableUsers.map((user) => (
+                {assignableUsers.map((user) => {
+                  const blocked = assignBlockFor(user);
+                  return (
                   <button
                     key={user.id}
                     onClick={() => handleAssign(user.id)}
-                    className="w-full flex items-center justify-between p-3 hover:bg-subtle rounded-lg transition-colors group"
+                    disabled={Boolean(blocked) || updating}
+                    title={blocked || undefined}
+                    className="w-full flex items-center justify-between p-3 hover:bg-subtle rounded-lg transition-colors group disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="h-10 w-10 rounded-full bg-accent-soft flex items-center justify-center text-accent-fg font-bold">
@@ -807,14 +924,15 @@ const CaseDetail = () => {
                         <p className="text-sm font-semibold text-ink group-hover:text-accent-fg transition-colors">
                           {user.full_name || user.username}
                         </p>
-                        <p className="text-xs text-ink-muted uppercase">
-                          {user.role}
+                        <p className="text-xs text-ink-muted">
+                          {blocked || nameFor(user.role)}
                         </p>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-ink-subtle group-hover:text-accent-fg" />
+                    {!blocked && <ArrowRight className="h-4 w-4 text-ink-subtle group-hover:text-accent-fg" />}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </Card.Content>
             <Card.Footer className="flex justify-end space-x-3 bg-subtle p-4">

@@ -25,10 +25,12 @@ const ChangeRoleModal = ({ user, isSelf = false, onClose, onChanged }) => {
     setSaving(true);
     setError(null);
     try {
-      await usersAPI.changeRole(user.id, role);
+      const result = await usersAPI.changeRole(user.id, role);
       toast.success(`${displayName} is now ${nameFor(role)}.`);
       if (isSelf) useAuthStore.getState().refreshUser();
-      onChanged?.(role);
+      // `warnings` — e.g. assigned_cases_stranded: open cases they can no
+      // longer work. The page shows them, since this modal closes.
+      onChanged?.(role, Array.isArray(result?.warnings) ? result.warnings : []);
     } catch (err) {
       setError(describeError(err));
     } finally {
