@@ -123,8 +123,13 @@ const TABS = [
   { value: 'token', label: 'Access token' },
 ];
 
-/** Inactive, or something ticked that its permissions won't allow. */
-const needsAttention = (agent) => agent.is_active === false || (agent.disabled_capabilities || []).length > 0;
+/**
+ * Inactive, or something ticked that its permissions won't allow. Never the
+ * summarizer: it is off only because the organization switched summaries off,
+ * which is a choice, not a fault.
+ */
+const needsAttention = (agent) =>
+  agent.kind !== 'summarizer' && (agent.is_active === false || (agent.disabled_capabilities || []).length > 0);
 
 const formatDate = (value) => {
   const date = parseServerDate(value);

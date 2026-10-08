@@ -409,7 +409,12 @@ const Summarizer = () => {
     );
   }
 
-  const problems = settings.problems || [];
+  // Switching summaries on or off is a choice, not a fault, so it never raises
+  // a warning here. `summarizer_inactive` is only the agent record following
+  // the switch, and while switched off nothing else matters.
+  const problems = settings.enabled
+    ? (settings.problems || []).filter((problem) => problem.code !== 'summarizer_inactive')
+    : [];
   // "triage, investigate and review" — what the switch actually turns off.
   const stageList = (() => {
     const names = runsBefore.map((stage) => stage.name);
@@ -419,7 +424,7 @@ const Summarizer = () => {
   const access = settings.access;
   const readers = (access?.granted_to || []).filter((r) => r.code !== REPORTER);
   const nonReaders = (access?.not_granted_to || []).filter((r) => r.code !== REPORTER);
-  const status = settings.active ? 'running' : settings.enabled ? 'stalled' : 'off';
+  const status = !settings.enabled ? 'off' : settings.active || problems.length === 0 ? 'running' : 'stalled';
   const attachmentsWork = capabilities.includes('read_attachments');
   // Orgs created before summarizers wrote to the case still lack this, so
   // digests reach the agents but never show in the case history.
