@@ -12,7 +12,6 @@ import {
   MessageSquare,
   Clock,
   Send,
-  Sparkles,
   Route,
   ShieldAlert,
   EyeOff,
@@ -75,25 +74,6 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        {showDigest && (
-          <Card>
-            <Card.Header>
-              <Card.Title className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-accent-fg" />
-                AI summary
-              </Card.Title>
-              <Card.Description>A factual digest of the evidence files on this report.</Card.Description>
-            </Card.Header>
-            <Card.Content>
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-11/12" />
-                <Skeleton className="h-3 w-4/6" />
-              </div>
-            </Card.Content>
-          </Card>
-        )}
-
         <Card>
           <Card.Header>
             <Card.Title>Original Submission</Card.Title>
@@ -112,6 +92,25 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
                 </div>
               ))}
             </div>
+          </Card.Content>
+        </Card>
+
+        <Card>
+          <Card.Header>
+            <Card.Title className="flex items-center">
+              <FileText className="h-5 w-5 mr-2 text-accent-fg" />
+              Evidence & Files
+            </Card.Title>
+          </Card.Header>
+          <Card.Content className="space-y-4">
+            {showDigest && (
+              <div className="space-y-2 rounded-xl border border-line-subtle p-4">
+                <Skeleton.Text className="w-48" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-4/6" />
+              </div>
+            )}
+            <Skeleton className="h-14 w-full rounded-lg sm:w-1/2" />
           </Card.Content>
         </Card>
 
@@ -171,17 +170,6 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
           </Card>
         )}
 
-        <Card>
-          <Card.Header>
-            <Card.Title className="flex items-center">
-              <FileText className="h-5 w-5 mr-2 text-accent-fg" />
-              Evidence & Files
-            </Card.Title>
-          </Card.Header>
-          <Card.Content>
-            <Skeleton.Text className="w-40" />
-          </Card.Content>
-        </Card>
       </div>
     </div>
   </div>
@@ -557,10 +545,6 @@ const CaseDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* The AI digest — agent:summary_read, deliberately not agent:read:
-              reading a case's summary is not administering the agents. */}
-          {can(PERM.agentSummaryRead) && <DigestPanel reportId={report?.id || id} attachmentCount={report ? (report.attachments || []).length : null} canReadRun={can(PERM.agentRead)} />}
-
           {/* Report Summary */}
           <Card>
             <Card.Header>
@@ -622,6 +606,76 @@ const CaseDetail = () => {
                     ))}
                   </div>
                 </div>
+              )}
+            </Card.Content>
+          </Card>
+
+          {/* Evidence, with the AI summary of it. The summarizer reads the
+              attached files only, so its digest belongs here rather than at
+              the top of the case, where it would read as a summary of the
+              whole report. Gated on agent:summary_read, deliberately not
+              agent:read: reading a summary is not administering the agents. */}
+          <Card>
+            <Card.Header>
+              <Card.Title className="flex items-center">
+                <FileText className="h-5 w-5 mr-2 text-accent-fg" />
+                Evidence & Files
+                {report.attachments?.length > 0 && (
+                  <span className="ml-2 text-sm font-normal text-ink-muted">{report.attachments.length}</span>
+                )}
+              </Card.Title>
+            </Card.Header>
+            <Card.Content className="space-y-4">
+              {can(PERM.agentSummaryRead) && report.attachments?.length > 0 && (
+                <DigestPanel
+                  embedded
+                  reportId={report.id || id}
+                  attachmentCount={report.attachments.length}
+                  canReadRun={can(PERM.agentRead)}
+                />
+              )}
+              {report.attachments && report.attachments.length > 0 ? (
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {report.attachments.map((file, idx) => (
+                    <li
+                      key={file.key || idx}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-line-subtle px-3 py-2.5"
+                    >
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <div className="p-2 bg-active rounded shrink-0">
+                          <FileText className="h-4 w-4 text-ink-muted" />
+                        </div>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate text-sm font-medium text-ink-secondary" title={file.filename}>
+                            {file.filename || "Unnamed file"}
+                          </span>
+                          <span className="text-xs text-ink-muted">
+                            {formatFileSize(file.size || 0)}
+                            {file.uploaded_at && ` · uploaded ${formatRelativeTime(file.uploaded_at)}`}
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="small"
+                        onClick={() => handleDownloadAttachment(file)}
+                        disabled={downloadingKey === file.key}
+                        aria-label={`Download ${file.filename || "file"}`}
+                      >
+                        {downloadingKey === file.key ? (
+                          <Loader className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="py-2 text-sm text-ink-muted">
+                  No evidence attached.
+                  {can(PERM.agentSummaryRead) && " AI summaries are written from attached files, so there's nothing to summarize."}
+                </p>
               )}
             </Card.Content>
           </Card>
@@ -829,62 +883,6 @@ const CaseDetail = () => {
             />
           )}
 
-          {/* Evidence Card */}
-          <Card>
-            <Card.Header>
-              <Card.Title className="flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-accent-fg" />
-                Evidence & Files
-              </Card.Title>
-            </Card.Header>
-            <Card.Content>
-              {report.attachments && report.attachments.length > 0 ? (
-                <ul className="divide-y divide-line-subtle">
-                  {report.attachments.map((file, idx) => (
-                    <li
-                      key={idx}
-                      className="py-3 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <div className="p-2 bg-active rounded">
-                          <FileText className="h-4 w-4 text-ink-muted" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-ink-secondary truncate max-w-30">
-                            {file.filename || "Unnamed file"}
-                          </span>
-                          <span className="text-xs text-ink-muted">
-                            {formatFileSize(file.size || 0)}
-                          </span>
-                          {file.uploaded_at && (
-                            <span className="text-xs text-ink-subtle">
-                              Uploaded {formatRelativeTime(file.uploaded_at)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="small"
-                        onClick={() => handleDownloadAttachment(file)}
-                        disabled={downloadingKey === file.key}
-                      >
-                        {downloadingKey === file.key ? (
-                          <Loader className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Download className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center py-6 text-ink-muted">
-                  <p className="text-sm">No evidence attached.</p>
-                </div>
-              )}
-            </Card.Content>
-          </Card>
         </div>
       </div>
 

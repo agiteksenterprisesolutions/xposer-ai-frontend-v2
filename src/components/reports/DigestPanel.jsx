@@ -29,6 +29,9 @@ import { formatDateTime, formatRelativeTime } from '../../utils/formatters';
  *                     the empty state can say exactly why there's no summary
  *   canReadRun      – agent:read; the run's stage_log then says which reason
  *                     applies (no files, attachments off, summarizer off)
+ *   embedded        – drawn as a section inside the case's Evidence card
+ *                     rather than as a card of its own: the summary covers
+ *                     the evidence files only, never the whole report
  */
 
 /** The summarizing pass in a run's stage_log: outcome ran | no_digest | skipped. */
@@ -39,7 +42,7 @@ const summarizerEntry = (run) =>
       (entry.kind === 'summarizer' || entry.summarizer || /summar/i.test(`${entry.stage || ''} ${entry.agent_code || ''}`)),
   ) || null;
 
-const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false }) => {
+const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, embedded = false }) => {
   const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // { message, fault }
@@ -82,13 +85,114 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false }) =
 
   const available = digest?.available;
 
+  const refreshButton = (
+    <Button
+      variant="ghost"
+      size="small"
+      onClick={load}
+      isLoading={loading}
+      aria-label="Refresh the summary"
+      title="Refresh — a summary can arrive a little after the evidence does"
+    >
+      {!loading && <RefreshCw className="h-4 w-4" />}
+    </Button>
+  );
+
+  const content = (
+    <>
+        {loading && !digest && !error && (
+        <div className="space-y-2" aria-busy="true">
+          <div className="h-3 w-full animate-pulse rounded bg-active" />
+          <div className="h-3 w-11/12 animate-pulse rounded bg-active" />
+          <div className="h-3 w-4/6 animate-pulse rounded bg-active" />
+        </div>
+      )}
+
+      {error && <p className={`text-sm ${error.fault ? 'text-danger-fg' : 'text-ink-muted'}`}>{error.message}</p>}
+
+      {digest && !available && (
+        <div className="space-y-1">
+          <p className="text-sm text-ink-muted">
+            {why ||
+              (attachmentCount === 0
+                ? 'No evidence files were attached, so there is nothing to summarize. Summaries are written from attachments only.'
+                : digest.reason || 'No summary for this report yet. One can arrive a little after the evidence does.')}
+          </p>
+          {(digest.problems || [])
+            .filter((problem) => problem?.message && problem.message !== digest.reason)
+            .map((problem, index) => (
+              <p key={index} className="text-xs text-ink-subtle">
+                {problem.message}
+              </p>
+            ))}
+        </div>
+      )}
+
+      {available && (
+        <div className="space-y-4">
+          <div className="text-sm text-ink-secondary">
+            <MarkdownMessage content={digest.summary || ''} />
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-subtle pt-3 text-xs text-ink-subtle">
+            {digest.agent_code && (
+              <span>
+                By <span className="font-mono text-ink-muted">{digest.agent_code}</span>
+                {digest.stage && (
+                  <>
+                    {' '}
+                    at stage <span className="font-mono text-ink-muted">{digest.stage}</span>
+                  </>
+                )}
+              </span>
+            )}
+            {digest.workflow?.name && (
+              <span>
+                · {digest.workflow.name}
+                {digest.workflow.version != null && ` v${digest.workflow.version}`}
+              </span>
+            )}
+            {digest.generated_at && (
+              <span title={formatDateTime(digest.generated_at)}>· {formatRelativeTime(digest.generated_at)}</span>
+            )}
+          </div>
+          <p className="text-xs text-ink-subtle">
+            Written by an AI agent from the evidence files. Check it against the originals before relying on it.
+          </p>
+        </div>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <section aria-label="AI summary of the evidence" className="rounded-xl border border-line-accent/40 bg-accent-soft/30 p-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Sparkles className="h-4 w-4 text-accent-fg" />
+              AI summary of the evidence
+              {available && (
+                <Badge variant="primary" size="small">
+                  AI-generated
+                </Badge>
+              )}
+            </h4>
+            <p className="mt-0.5 text-xs text-ink-muted">A factual digest of the files below — not of the report as a whole.</p>
+          </div>
+          {refreshButton}
+        </div>
+        {content}
+      </section>
+    );
+  }
+
   return (
     <Card>
       <Card.Header className="flex items-start justify-between gap-3">
         <div>
           <Card.Title className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent-fg" />
-            AI summary
+            AI summary of the evidence
             {available && (
               <Badge variant="primary" size="small">
                 AI-generated
@@ -97,80 +201,9 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false }) =
           </Card.Title>
           <Card.Description>A factual digest of the evidence files on this report.</Card.Description>
         </div>
-        <Button
-          variant="ghost"
-          size="small"
-          onClick={load}
-          isLoading={loading}
-          aria-label="Refresh the summary"
-          title="Refresh — a summary can arrive a little after the report does"
-        >
-          {!loading && <RefreshCw className="h-4 w-4" />}
-        </Button>
+        {refreshButton}
       </Card.Header>
-
-      <Card.Content>
-        {loading && !digest && !error && (
-          <div className="space-y-2" aria-busy="true">
-            <div className="h-3 w-full animate-pulse rounded bg-active" />
-            <div className="h-3 w-11/12 animate-pulse rounded bg-active" />
-            <div className="h-3 w-4/6 animate-pulse rounded bg-active" />
-          </div>
-        )}
-
-        {error && <p className={`text-sm ${error.fault ? 'text-danger-fg' : 'text-ink-muted'}`}>{error.message}</p>}
-
-        {digest && !available && (
-          <div className="space-y-1">
-            <p className="text-sm text-ink-muted">
-              {why ||
-                (attachmentCount === 0
-                  ? 'No evidence files were attached, so there is nothing to summarize. Summaries are written from attachments only.'
-                  : digest.reason || 'No summary for this report yet. One can arrive a little after the evidence does.')}
-            </p>
-            {(digest.problems || [])
-              .filter((problem) => problem?.message && problem.message !== digest.reason)
-              .map((problem, index) => (
-                <p key={index} className="text-xs text-ink-subtle">
-                  {problem.message}
-                </p>
-              ))}
-          </div>
-        )}
-
-        {available && (
-          <div className="space-y-4">
-            <div className="text-sm text-ink-secondary">
-              <MarkdownMessage content={digest.summary || ''} />
-            </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-subtle pt-3 text-xs text-ink-subtle">
-              {digest.agent_code && (
-                <span>
-                  By <span className="font-mono text-ink-muted">{digest.agent_code}</span>
-                  {digest.stage && (
-                    <>
-                      {' '}
-                      at stage <span className="font-mono text-ink-muted">{digest.stage}</span>
-                    </>
-                  )}
-                </span>
-              )}
-              {digest.workflow?.name && (
-                <span>
-                  · {digest.workflow.name}
-                  {digest.workflow.version != null && ` v${digest.workflow.version}`}
-                </span>
-              )}
-              {digest.generated_at && (
-                <span title={formatDateTime(digest.generated_at)}>· {formatRelativeTime(digest.generated_at)}</span>
-              )}
-            </div>
-            <p className="text-xs text-ink-subtle">
-              Written by an AI agent from the evidence files. Check it against the originals before relying on it.
-            </p>
-          </div>
-        )}
-      </Card.Content>
+      <Card.Content>{content}</Card.Content>
     </Card>
   );
 };
