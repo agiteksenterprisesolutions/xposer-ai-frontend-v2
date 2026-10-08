@@ -17,6 +17,9 @@ import Card from '../ui/Card';
 import Table from '../ui/Table';
 import { ConfirmationModal } from '../ui/Modal';
 import MemberEditorModal from './MemberEditorModal';
+import AddPersonModal from '../users/AddPersonModal';
+import { useCan } from '../../hooks/useCan';
+import { PERM } from '../../utils/permissions';
 import BulkImportModal from './BulkImportModal';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { errorSummary } from '../../utils/errors';
@@ -41,6 +44,11 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
   const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState(null); // { member } — null member means add
   const [importing, setImporting] = useState(false);
+  // Adding someone goes through the same form as Users → Add person, with its
+  // "Create a login" switch, when the viewer may create users (POST
+  // /users/person needs user:create). Without it, the directory-only form.
+  const canCreateUsers = useCan()(PERM.userCreate);
+  const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -134,7 +142,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
             <Button variant="outline" startIcon={Upload} onClick={() => setImporting(true)}>
               Paste from spreadsheet
             </Button>
-            <Button startIcon={Plus} onClick={() => setEditing({ member: null })}>
+            <Button startIcon={Plus} onClick={() => (canCreateUsers ? setAdding(true) : setEditing({ member: null }))}>
               Add person
             </Button>
           </div>
@@ -245,6 +253,14 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
           }}
         />
       )}
+
+      <AddPersonModal
+        isOpen={adding}
+        onClose={() => setAdding(false)}
+        levels={levels.filter((l) => l.is_active !== false)}
+        members={members}
+        onAdded={() => onChanged()}
+      />
 
       {importing && (
         <BulkImportModal
