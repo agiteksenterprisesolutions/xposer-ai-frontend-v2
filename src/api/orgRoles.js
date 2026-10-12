@@ -48,13 +48,22 @@ export const orgRolesAPI = {
     return response.data;
   },
 
-  /** Create a role. The response carries a `warnings` array worth surfacing. */
-  create: async ({ code, name, permissions }) => {
-    const response = await api.post('/org-roles/', { code, name, permissions }, inline);
+  /**
+   * Create a role. `level_code` — the hierarchy level its holders sit at — is
+   * required once the organization has any level (400 level_required, which
+   * carries `available_levels`). The response carries `warnings` worth surfacing.
+   */
+  create: async ({ code, name, permissions, level_code: levelCode }) => {
+    const response = await api.post('/org-roles/', { code, name, permissions, level_code: levelCode ?? null }, inline);
     return response.data;
   },
 
-  /** Rename, re-permission or (de)activate. Fixed roles answer 409. */
+  /**
+   * Rename, re-permission, move to another level or (de)activate. On the fixed
+   * roles (admin, reporter) only `level_code` may change; anything else is 409.
+   * A level move that would put someone at or above their manager is 409
+   * level_move_inverts_chain, with `conflicts`.
+   */
   update: async (roleId, changes) => {
     const response = await api.put(`/org-roles/${encodeURIComponent(roleId)}`, changes, inline);
     return response.data;

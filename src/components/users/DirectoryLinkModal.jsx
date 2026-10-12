@@ -1,10 +1,11 @@
 // src/components/users/DirectoryLinkModal.jsx
 //
-// Which directory entry an account belongs to, and that person's level.
+// Which directory entry an account belongs to.
 //
-// Level and role are independent: level is where someone sits and decides
-// WHICH reports they see (report:read_subordinates resolves through it); role
-// is what they can DO. So this is its own screen, not part of the role picker.
+// Where someone sits in the hierarchy decides WHICH reports they see
+// (report:read_subordinates resolves through it), and it comes from their
+// role: each role sits at one level. So the level is shown here, read-only —
+// to move someone, change their role; to move a whole role, edit the role.
 //
 // The link is `hierarchy_member_id` (the member's external_id). New accounts
 // are auto-matched on email; this corrects or removes that. An unlinked
@@ -15,17 +16,15 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { usersAPI } from '../../api';
-import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { describeError } from '../../utils/errors';
 
 const fieldClass =
   'w-full rounded-lg border border-line-strong bg-subtle px-3 py-2 text-sm text-ink outline-none focus:border-line-accent disabled:opacity-60';
 
-const DirectoryLinkModal = ({ user, members = [], levels = [], canEditLevel = false, onClose, onSaved }) => {
+const DirectoryLinkModal = ({ user, members = [], levels = [], onClose, onSaved }) => {
   const displayName = user.full_name || user.username;
   const [memberId, setMemberId] = useState(user.hierarchy_member_id || '');
   const member = members.find((m) => m.external_id === memberId) || null;
-  const [levelCode, setLevelCode] = useState(member?.level_code || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -39,20 +38,15 @@ const DirectoryLinkModal = ({ user, members = [], levels = [], canEditLevel = fa
   const sortedMembers = useMemo(() => [...members].sort((a, b) => (a.name || '').localeCompare(b.name || '')), [members]);
   const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
 
-  const pick = (externalId) => {
-    setMemberId(externalId);
-    setLevelCode(members.find((m) => m.external_id === externalId)?.level_code || '');
-  };
+  const pick = (externalId) => setMemberId(externalId);
 
   const linkChanged = memberId !== (user.hierarchy_member_id || '');
-  const levelChanged = Boolean(member) && levelCode !== (member.level_code || '');
 
   const save = async () => {
     setSaving(true);
     setError(null);
     try {
       if (linkChanged) await usersAPI.linkDirectoryEntry(user.id, memberId);
-      if (levelChanged) await orgHierarchyAPI.updateMember(member.id, { level_code: levelCode || null });
       toast.success(memberId ? `${displayName} is linked to ${member?.name || memberId}.` : `${displayName} is unlinked.`);
       onSaved?.();
     } catch (err) {
@@ -73,7 +67,7 @@ const DirectoryLinkModal = ({ user, members = [], levels = [], canEditLevel = fa
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={save} isLoading={saving} disabled={!linkChanged && !levelChanged}>
+          <Button onClick={save} isLoading={saving} disabled={!linkChanged}>
             Save
           </Button>
         </div>
@@ -112,23 +106,13 @@ const DirectoryLinkModal = ({ user, members = [], levels = [], canEditLevel = fa
 
         {member && (
           <div>
-            <label htmlFor="link-level" className="mb-1 block text-xs font-medium text-ink-secondary">
-              Level
-            </label>
-            {canEditLevel ? (
-              <select id="link-level" value={levelCode} onChange={(event) => setLevelCode(event.target.value)} className={fieldClass}>
-                <option value="">No level</option>
-                {levels.map((level) => (
-                  <option key={level.code} value={level.code}>
-                    {level.title}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="text-sm text-ink">{member.level_code ? levelTitle(member.level_code) : 'No level'}</p>
-            )}
+            <p className="mb-1 text-xs font-medium text-ink-secondary">Level</p>
+            <p className="text-sm text-ink">
+              {member.level_code ? levelTitle(member.level_code) : 'Not placed yet'}
+            </p>
             <p className="mt-1 text-[11px] text-ink-subtle">
-              Changes {member.name}'s directory entry, which the org chart and escalation use too.
+              Comes from {displayName}'s role. To move them, change their role; to move everyone in a role, change the
+              role's level in Roles &amp; Permissions.
             </p>
           </div>
         )}

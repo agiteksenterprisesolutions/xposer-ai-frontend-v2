@@ -19,6 +19,7 @@ import CanvasControls, { CanvasDivider, canvasIconButton } from '../canvas/Canva
 import MemberEditorModal from './MemberEditorModal';
 import PersonNode from './PersonNode';
 import { OrgChartContext } from './orgChartContext';
+import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useThemeStore } from '../../store/themeStore';
 import { errorSummary } from '../../utils/errors';
@@ -56,6 +57,7 @@ const PersonLink = ({ member, onSelect }) => (
 
 /** The selected person, their place in the chart, and anything wrong with it. */
 const PersonPanel = ({ member, tree, levelTitle, canManage, onSelect, onEdit, onClose }) => {
+  const { nameFor } = useOrgRoles();
   const manager = tree.byId.get(tree.parent.get(member.external_id));
   const reports = (tree.children.get(member.external_id) || []).map((id) => tree.byId.get(id));
   const flags = tree.flags.get(member.external_id) || [];
@@ -95,6 +97,7 @@ const PersonPanel = ({ member, tree, levelTitle, canManage, onSelect, onEdit, on
         <div className="space-y-2">
           <Detail label="Job title">{member.designation || '—'}</Detail>
           <Detail label="Department">{member.department || '—'}</Detail>
+          <Detail label="Role">{member.role_code ? nameFor(member.role_code) : '—'}</Detail>
           <Detail label="Level">{levelTitle || member.level_code || '—'}</Detail>
           <Detail label="Manager">
             {manager ? (

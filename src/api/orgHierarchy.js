@@ -5,12 +5,16 @@
 // Finance Manager — never their peers and never themselves.
 //
 //   levels    – the ladder. Any number; `rank` higher = more senior, with gaps
-//               left on purpose so a tier can be slotted in later.
+//               left on purpose so a tier can be slotted in later. A level's
+//               `roles` are derived from the roles that sit at it (read-only).
 //   members   – the directory of people, from an HR sync and/or added by hand.
-//               `level_code` and `manager_external_id` are the EFFECTIVE values
-//               (a manual correction where one exists); `*_from_hr` are the raw
-//               synced ones, for provenance only. Never compute the effective
-//               value client-side.
+//               A person is placed by their ROLE: each role sits at one level
+//               (org_roles.level_code), so `member.level_code` is resolved
+//               from `role_code` and can't be written. `level_from` is "role",
+//               or "legacy" for an entry not yet given a role.
+//               `manager_external_id` is the effective manager (a manual
+//               correction where one exists), `manager_external_id_from_hr`
+//               the synced one.
 //   coverage  – the "is it working" answer: unmapped job titles, vacant
 //               levels, people with no manager on file.
 //
@@ -23,8 +27,8 @@ const inline = { skipErrorToast: true };
 export const orgHierarchyAPI = {
   // ─── Levels ────────────────────────────────────────────────────────────
   /** Most senior first. */
-  listLevels: async ({ activeOnly = true } = {}) => {
-    const response = await api.get('/org-hierarchy/levels', { params: { active_only: activeOnly } });
+  listLevels: async ({ activeOnly = true, quiet = false } = {}) => {
+    const response = await api.get('/org-hierarchy/levels', { params: { active_only: activeOnly }, skipErrorToast: quiet });
     return response.data;
   },
 
@@ -59,8 +63,9 @@ export const orgHierarchyAPI = {
   },
 
   /**
-   * Correct one entry. `level_code` and `manager_external_id` are stored as
-   * overrides, so they survive the next sync.
+   * Correct one entry: `role_code` (which places them, and also updates every
+   * linked account's role) and `manager_external_id`, kept as an override so
+   * it survives the next sync. 400 manager_not_above / role_has_no_level.
    */
   updateMember: async (memberId, changes) => {
     const response = await api.put(`/org-hierarchy/members/${memberId}`, changes, inline);

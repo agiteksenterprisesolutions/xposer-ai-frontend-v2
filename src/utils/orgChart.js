@@ -194,8 +194,8 @@ export const layoutOrgTree = (tree, collapsed) => {
 
 export const FLAG_INFO = {
   no_level: {
-    label: 'No level',
-    description: 'Has no level, so a report naming them cannot be escalated by rank.',
+    label: 'Not placed',
+    description: 'Has no role, or a role with no level, so a report naming them cannot be escalated by rank. Give them a role, or give their role a level.',
   },
   manager_missing: {
     label: 'Manager not on file',

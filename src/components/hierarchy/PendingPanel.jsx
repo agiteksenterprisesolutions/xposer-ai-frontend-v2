@@ -1,8 +1,14 @@
 // src/components/hierarchy/PendingPanel.jsx
 //
 // The sync approval queue: people an HR sync found for the first time, waiting
-// for the three answers a sync can't give — which level they sit at, which role
-// they hold, and whether they get a login at all.
+// for the answers a sync can't give — which role they hold (which also places
+// them: each role sits at one level), whether they get a login, and if so how
+// they sign in (password, Google or Microsoft).
+//
+// A matched job title gives `suggested_level_code`; `suggested_role_code` is
+// set only when exactly one role sits there, and `candidate_role_codes` lists
+// them when several do — choosing between those decides what the person may
+// do, so it is the admin's call, offered first in the picker.
 //
 // Driven by the API's own verdicts: `missing` lists what each person still
 // needs and `ready_to_approve` enables Approve, so the rule is never redone
@@ -23,6 +29,7 @@ import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import { deriveUsername, usernameNeedsAttention } from '../../utils/usernames';
 import { errorSummary } from '../../utils/errors';
+import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
 
 const VIEWS = [
   { value: 'attention', label: 'Needs attention' },
@@ -33,13 +40,20 @@ const VIEWS = [
 const MISSING_LABEL = {
   full_name: 'name',
   create_login: 'login decision',
-  level_code: 'level',
   role: 'role',
+  auth_provider: 'sign-in method',
   email: 'email',
 };
 
 const selectClass =
   'h-9 w-full rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-ink outline-none focus:border-line-accent disabled:opacity-60';
+
+/** Firebase's own sign_in_provider values. */
+export const SIGN_IN_METHODS = [
+  { value: 'password', label: 'Password' },
+  { value: 'google.com', label: 'Google' },
+  { value: 'microsoft.com', label: 'Microsoft' },
+];
 
 const LoginChoice = ({ value, onChange, disabled, name }) => (
   <div role="radiogroup" aria-label={`Login for ${name}`} className="grid grid-cols-2 gap-1 rounded-lg bg-active p-1">
@@ -70,6 +84,9 @@ const LoginChoice = ({ value, onChange, disabled, name }) => (
 const PendingRow = ({ person, levels, roles, nameFor, canManage, dismissed, selected, onSelect, onSave, onApprove, onDismiss, onRestage, busy, orgName }) => {
   const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
   const editable = canManage && !dismissed;
+  const suggested = person.suggested_role_code ? [person.suggested_role_code] : person.candidate_role_codes || [];
+  const suggestedRoles = roles.filter((role) => suggested.includes(role.code));
+  const otherRoles = roles.filter((role) => !suggested.includes(role.code));
   const username = person.create_login ? deriveUsername(person, orgName) : '';
   const missing = person.missing || [];
 
@@ -91,6 +108,9 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, dismissed, sele
           {person.manager_external_id && (
             <p className="text-xs text-ink-subtle">Reports to {person.manager_external_id}</p>
           )}
+          {person.suggested_level_code && (
+            <p className="text-xs text-ink-subtle">Their title matched {levelTitle(person.suggested_level_code)}</p>
+          )}
           {!dismissed && missing.length > 0 && (
             <p className="mt-1.5 text-xs font-medium text-warning-fg">
               Needs: {missing.map((m) => MISSING_LABEL[m] || m).join(', ')}
@@ -107,31 +127,47 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, dismissed, sele
       {!dismissed && (
         <div className="grid w-full gap-2.5 sm:grid-cols-3 lg:w-[34rem] lg:shrink-0">
           <div className="space-y-1">
-            <label htmlFor={`pl-level-${person.id}`} className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-muted">
-              Level
+            <label htmlFor={`pl-role-${person.id}`} className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-muted">
+              Role
             </label>
             <select
-              id={`pl-level-${person.id}`}
-              value={person.level_code || ''}
+              id={`pl-role-${person.id}`}
+              value={person.role || ''}
               disabled={!editable || busy}
-              onChange={(e) => onSave(person, { level_code: e.target.value || null })}
+              onChange={(e) => onSave(person, { role: e.target.value || null })}
               className={selectClass}
             >
-              <option value="">{person.suggested_level_code ? `Suggested: ${levelTitle(person.suggested_level_code)}` : 'Choose a level'}</option>
-              {levels.map((level) => (
-                <option key={level.code} value={level.code}>
-                  {level.title}
-                </option>
-              ))}
+              <option value="">
+                {person.suggested_role_code ? `Suggested: ${nameFor(person.suggested_role_code)}` : 'Choose a role'}
+              </option>
+              {suggestedRoles.length > 0 && (
+                <optgroup label={suggestedRoles.length === 1 ? 'Suggested' : 'Suggested — at the level their title matched'}>
+                  {suggestedRoles.map((role) => (
+                    <option key={role.code} value={role.code}>
+                      {roleWithLevel(role)}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label={suggestedRoles.length ? 'All roles' : 'Roles'}>
+                {otherRoles.map((role) => (
+                  <option key={role.code} value={role.code}>
+                    {roleWithLevel(role)}
+                  </option>
+                ))}
+              </optgroup>
             </select>
-            {!person.level_code && person.suggested_level_code && editable && (
+            {!person.role && person.suggested_role_code && editable && (
               <button
                 type="button"
-                onClick={() => onSave(person, { level_code: person.suggested_level_code })}
+                onClick={() => onSave(person, { role: person.suggested_role_code })}
                 className="text-xs font-medium text-link hover:underline"
               >
                 Use suggestion
               </button>
+            )}
+            {!person.role && !person.suggested_role_code && suggestedRoles.length > 1 && (
+              <p className="text-[11px] text-ink-muted">{suggestedRoles.length} roles sit at that level — pick one.</p>
             )}
           </div>
           <div className="space-y-1">
@@ -149,27 +185,31 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, dismissed, sele
             )}
           </div>
           <div className="space-y-1">
-            <label htmlFor={`pl-role-${person.id}`} className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-muted">
-              Role
+            <label htmlFor={`pl-method-${person.id}`} className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-muted">
+              Signs in with
             </label>
             {person.create_login ? (
               <select
-                id={`pl-role-${person.id}`}
-                value={person.role || ''}
+                id={`pl-method-${person.id}`}
+                value={person.auth_provider || 'password'}
                 disabled={!editable || busy}
-                onChange={(e) => onSave(person, { role: e.target.value || null })}
+                onChange={(e) => onSave(person, { auth_provider: e.target.value })}
                 className={selectClass}
+                title={
+                  (person.auth_provider || 'password') === 'password'
+                    ? 'A one-time password, emailed, to change at first sign-in'
+                    : 'No password is created; they sign in with that account'
+                }
               >
-                <option value="">Choose a role</option>
-                {roles.map((role) => (
-                  <option key={role.code} value={role.code}>
-                    {nameFor(role.code)}
+                {SIGN_IN_METHODS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
                   </option>
                 ))}
               </select>
             ) : (
               <p className="flex h-9 items-center text-xs text-ink-muted">
-                {person.create_login === false ? 'Not needed — no login' : 'Decide sign-in first'}
+                {person.create_login === false ? 'No login' : 'Decide sign-in first'}
               </p>
             )}
           </div>
@@ -198,7 +238,7 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, dismissed, sele
   );
 };
 
-const ApprovalResult = ({ result, onClose }) => (
+const ApprovalResult = ({ result, onClose, nameFor, levelTitle }) => (
   <section className="space-y-3 rounded-xl border border-line bg-surface p-4" aria-live="polite">
     <div className="flex items-start justify-between gap-3">
       <div>
@@ -213,6 +253,17 @@ const ApprovalResult = ({ result, onClose }) => (
         Dismiss
       </Button>
     </div>
+    {result.approved?.length > 0 && (
+      <ul className="max-h-48 space-y-1 overflow-auto rounded-lg bg-subtle px-3 py-2.5 text-sm">
+        {result.approved.map((a, i) => (
+          <li key={a.external_id || i} className="text-ink-secondary">
+            <span className="font-medium text-ink">{a.full_name || a.name || a.external_id}</span>
+            {a.role && ` — ${nameFor(a.role)}`}
+            {a.level_code && ` (${levelTitle(a.level_code)})`}
+          </li>
+        ))}
+      </ul>
+    )}
     {result.problems?.length > 0 && (
       <ul className="space-y-1.5 rounded-lg bg-danger-soft px-3 py-2.5 text-sm text-danger-fg">
         {result.problems.map((p, i) => (
@@ -248,7 +299,7 @@ const QueueSkeleton = () => (
 );
 
 const INTRO =
-  'People your HR sync found for the first time. Give each a level, decide whether they sign in, and pick a role for those who do — then approve. Answers save as you go and survive the next sync.';
+  'People your HR sync found for the first time. Give each a role — it also places them in the org chart — and decide whether they sign in, and how. Then approve. Answers save as you go and survive the next sync.';
 
 /** The queue while the hierarchy loads: same intro, search, tabs and rows. */
 export const PendingSkeleton = () => (
@@ -284,7 +335,8 @@ export const PendingSkeleton = () => (
  *   onCount    – (pendingTotal) for the tab badge
  */
 const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
-  const { allRoles: roles, nameFor } = useOrgRoles();
+  const { allRoles: unsortedRoles, nameFor } = useOrgRoles();
+  const roles = useMemo(() => sortRolesByLevel(unsortedRoles.filter((r) => r.is_active !== false)), [unsortedRoles]);
   const orgName = useAuthStore((s) => s.user?.organization_name);
   const [view, setView] = useState('attention');
   const [search, setSearch] = useState('');
@@ -410,12 +462,32 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
   const selectedRows = rows.filter((r) => selected.has(r.id));
   const selectedReady = selectedRows.filter((r) => r.ready_to_approve);
   const counts = { attention: attention.length, ready: ready.length, dismissed: dismissed?.length ?? 0 };
+  // People with no role yet whose title matched a level holding exactly one role.
+  const suggestable = (pending || []).filter((p) => !p.role && p.suggested_role_code);
+  const applySuggestedRoles = async () => {
+    setBusy(true);
+    const results = await Promise.allSettled(
+      suggestable.map((p) => orgHierarchyAPI.updatePending(p.id, { role: p.suggested_role_code })),
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    if (failed) toast.error(`${failed} of ${suggestable.length} couldn't be set.`);
+    else toast.success(`Suggested roles set for ${suggestable.length} ${suggestable.length === 1 ? 'person' : 'people'}.`);
+    await load();
+    setBusy(false);
+  };
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-ink-secondary">{INTRO}</p>
 
-      {result && <ApprovalResult result={result} onClose={() => setResult(null)} />}
+      {result && (
+        <ApprovalResult
+          result={result}
+          onClose={() => setResult(null)}
+          nameFor={nameFor}
+          levelTitle={(code) => levels.find((l) => l.code === code)?.title || code}
+        />
+      )}
 
       <div className="rounded-xl border border-line bg-surface">
         <div className="space-y-3 border-b border-line-subtle p-4">
@@ -472,20 +544,6 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                       Directory only
                     </Button>
                     <select
-                      aria-label="Set a level for the selected people"
-                      disabled={busy}
-                      value=""
-                      onChange={(e) => e.target.value && bulk({ ids: selectedRows.map((r) => r.id), decision: { level_code: e.target.value } }, 'Level set.')}
-                      className="h-8 rounded-lg border border-line bg-surface px-2 text-xs text-ink"
-                    >
-                      <option value="">Set level…</option>
-                      {levels.map((l) => (
-                        <option key={l.code} value={l.code}>
-                          {l.title}
-                        </option>
-                      ))}
-                    </select>
-                    <select
                       aria-label="Set a role for the selected people"
                       disabled={busy}
                       value=""
@@ -495,7 +553,27 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                       <option value="">Set role…</option>
                       {roles.map((r) => (
                         <option key={r.code} value={r.code}>
-                          {nameFor(r.code)}
+                          {roleWithLevel(r)}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="Set a sign-in method for the selected people"
+                      disabled={busy}
+                      value=""
+                      onChange={(e) =>
+                        e.target.value &&
+                        bulk(
+                          { ids: selectedRows.map((r) => r.id), decision: { create_login: true, auth_provider: e.target.value } },
+                          'Sign-in method set.',
+                        )
+                      }
+                      className="h-8 rounded-lg border border-line bg-surface px-2 text-xs text-ink"
+                    >
+                      <option value="">Sign in with…</option>
+                      {SIGN_IN_METHODS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
                         </option>
                       ))}
                     </select>
@@ -511,6 +589,25 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                     <Button variant="secondary" size="small" disabled={busy} onClick={() => setConfirm('directory')}>
                       Directory only for all
                     </Button>
+                    {suggestable.length > 0 && (
+                      <Button variant="secondary" size="small" disabled={busy} onClick={applySuggestedRoles}>
+                        Use {suggestable.length} suggested role{suggestable.length === 1 ? '' : 's'}
+                      </Button>
+                    )}
+                    <select
+                      aria-label="Give everyone waiting one role"
+                      disabled={busy}
+                      value=""
+                      onChange={(e) => e.target.value && setConfirm({ role: e.target.value })}
+                      className="h-8 rounded-lg border border-line bg-surface px-2 text-xs text-ink"
+                    >
+                      <option value="">Role for all…</option>
+                      {roles.map((r) => (
+                        <option key={r.code} value={r.code}>
+                          {roleWithLevel(r)}
+                        </option>
+                      ))}
+                    </select>
                     {view === 'ready' && ready.length > 0 && (
                       <Button size="small" startIcon={UserCheck} disabled={busy} onClick={() => approve(ready.map((r) => r.id))}>
                         Approve all {ready.length}
@@ -577,8 +674,8 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
 
       {canManage && (
         <p className="text-xs text-ink-muted">
-          Accounts approved here start on the default password and must change it at first sign-in. Bulk answers only
-          touch people still waiting, never anyone already approved.
+          Password accounts approved here start on the default password and must change it at first sign-in; Google and
+          Microsoft accounts get no password. Bulk answers only touch people still waiting, never anyone already approved.
         </p>
       )}
 
@@ -586,15 +683,30 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
         isOpen={Boolean(confirm)}
         onClose={() => setConfirm(null)}
         onConfirm={() => {
-          const login = confirm === 'login';
+          const choice = confirm;
           setConfirm(null);
+          if (choice?.role) {
+            bulk({ all_pending: true, decision: { role: choice.role } }, `Everyone waiting is now ${nameFor(choice.role)}.`);
+            return;
+          }
+          const login = choice === 'login';
           bulk({ all_pending: true, decision: { create_login: login } }, login ? 'Logins set for everyone waiting.' : 'Everyone waiting set to directory only.');
         }}
-        title={confirm === 'login' ? 'Create logins for everyone waiting?' : 'Directory only for everyone waiting?'}
+        title={
+          confirm?.role
+            ? `Make everyone waiting ${nameFor(confirm.role)}?`
+            : confirm === 'login'
+              ? 'Create logins for everyone waiting?'
+              : 'Directory only for everyone waiting?'
+        }
         message={
-          confirm === 'login'
-            ? `All ${pending?.length ?? 0} people waiting will be set to get a login. Each still needs a role before they can be approved. Nobody is admitted yet.`
-            : `All ${pending?.length ?? 0} people waiting will be added without a login. Nobody is admitted yet.`
+          confirm?.role
+            ? `All ${pending?.length ?? 0} people waiting will get the ${nameFor(confirm.role)} role, which also places them in the org chart${
+                roles.find((r) => r.code === confirm.role)?.level_title ? ` at ${roles.find((r) => r.code === confirm.role).level_title}` : ''
+              }. Nobody is admitted yet.`
+            : confirm === 'login'
+              ? `All ${pending?.length ?? 0} people waiting will be set to get a login, signing in with a password unless you choose otherwise. Nobody is admitted yet.`
+              : `All ${pending?.length ?? 0} people waiting will be added without a login. Nobody is admitted yet.`
         }
         confirmText="Set it"
         variant="primary"

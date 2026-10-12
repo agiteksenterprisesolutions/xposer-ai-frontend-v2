@@ -6,8 +6,9 @@
 // response; this is the standing answer.
 //
 // Each unmapped job title gets the two one-click fixes: add the title to a
-// level's aliases (so future syncs place those people), or put the people with
-// that title on a level now.
+// level's aliases (so future syncs suggest that level), or give the people
+// with that title a role now — a person is placed by their role, never by a
+// level set on them.
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Layers, UserX, Users } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -17,6 +18,8 @@ import Badge from '../ui/Badge';
 import Alert from '../ui/Alert';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { errorSummary } from '../../utils/errors';
+import { useOrgRoles } from '../../hooks/useOrgRoles';
+import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
 
 const Stat = ({ icon: Icon, label, value }) => (
   <div className="rounded-xl border border-line bg-surface p-4">
@@ -30,8 +33,13 @@ const Stat = ({ icon: Icon, label, value }) => (
 
 const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
   const [levelCode, setLevelCode] = useState('');
+  const [roleCode, setRoleCode] = useState('');
   const [busy, setBusy] = useState(null); // 'alias' | 'assign'
   const level = levels.find((l) => l.code === levelCode);
+  const { allRoles } = useOrgRoles();
+  // Only roles that sit somewhere can place anyone.
+  const placingRoles = sortRolesByLevel(allRoles.filter((r) => r.level_code && r.is_active !== false));
+  const role = placingRoles.find((r) => r.code === roleCode);
 
   // The people carrying this title with no level yet, by id, from the directory.
   const unplaced = members.filter(
@@ -56,11 +64,13 @@ const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
   const assignPeople = async () => {
     setBusy('assign');
     const results = await Promise.allSettled(
-      unplaced.map((m) => orgHierarchyAPI.updateMember(m.id, { level_code: level.code })),
+      unplaced.map((m) => orgHierarchyAPI.updateMember(m.id, { role_code: role.code })),
     );
     const failed = results.filter((r) => r.status === 'rejected');
     if (failed.length === 0) {
-      toast.success(`${unplaced.length} ${unplaced.length === 1 ? 'person' : 'people'} placed on ${level.title}.`);
+      toast.success(
+        `${unplaced.length} ${unplaced.length === 1 ? 'person is' : 'people are'} now ${role.name} (${role.level_title}).`,
+      );
     } else {
       toast.error(`${failed.length} of ${unplaced.length} couldn't be updated: ${errorSummary(failed[0].reason)}`);
     }
@@ -97,19 +107,36 @@ const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
             disabled={!level || Boolean(busy)}
             isLoading={busy === 'alias'}
             onClick={addAlias}
-            title="Future syncs place everyone with this title on the level"
+            title="Future syncs suggest this level, and the role at it, for everyone with this title"
           >
             Add title to level
           </Button>
+        </div>
+      )}
+      {canManage && unplaced.length > 0 && placingRoles.length > 0 && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select
+            value={roleCode}
+            onChange={(event) => setRoleCode(event.target.value)}
+            aria-label={`Role for the people titled ${entry.designation}`}
+            className="rounded-lg border border-line bg-subtle px-3 py-2 text-sm text-ink sm:w-56"
+          >
+            <option value="">Choose a role…</option>
+            {placingRoles.map((r) => (
+              <option key={r.code} value={r.code}>
+                {roleWithLevel(r)}
+              </option>
+            ))}
+          </select>
           <Button
             variant="outline"
             size="small"
-            disabled={!level || Boolean(busy) || unplaced.length === 0}
+            disabled={!role || Boolean(busy)}
             isLoading={busy === 'assign'}
             onClick={assignPeople}
-            title="Set the level on these people now, as corrections that survive syncs"
+            title="Their role places them — and becomes the role on any account linked to them"
           >
-            Put {unplaced.length === 1 ? 'this person' : 'these people'} on it
+            Give {unplaced.length === 1 ? 'this person' : `these ${unplaced.length} people`} this role
           </Button>
         </div>
       )}

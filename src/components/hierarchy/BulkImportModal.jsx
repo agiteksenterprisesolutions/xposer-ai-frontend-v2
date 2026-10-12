@@ -18,6 +18,7 @@ import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { BULK_FIELDS, BULK_TEMPLATE_HEADER, membersFromPaste } from '../../utils/hierarchy';
 import { copyToClipboard } from '../../utils/clipboard';
 import { describeError } from '../../utils/errors';
+import { useOrgRoles } from '../../hooks/useOrgRoles';
 
 const PREVIEW_LIMIT = 200;
 
@@ -28,7 +29,19 @@ const BulkImportModal = ({ onClose, onImported }) => {
   // The outcome of the last check, for the exact text it was run on.
   const [check, setCheck] = useState(null); // { text, ok, wouldCreate, summary, problems }
 
-  const parsed = useMemo(() => membersFromPaste(text), [text]);
+  const { allRoles } = useOrgRoles();
+  const raw = useMemo(() => membersFromPaste(text), [text]);
+  // A Role cell may hold the role's name ("Officer") or its code ("officer");
+  // send the code. Anything unknown goes as typed, for the server to refuse.
+  const parsed = useMemo(() => {
+    const lookup = new Map(allRoles.flatMap((r) => [[r.code.toLowerCase(), r.code], [String(r.name || '').toLowerCase(), r.code]]));
+    return {
+      ...raw,
+      members: raw.members.map((m) =>
+        m.role_code ? { ...m, role_code: lookup.get(String(m.role_code).trim().toLowerCase()) || m.role_code } : m,
+      ),
+    };
+  }, [raw, allRoles]);
   const current = check && check.text === text ? check : null;
   const shownFields = BULK_FIELDS.filter((f) => parsed.columns.includes(f.field));
 

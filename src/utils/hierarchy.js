@@ -34,9 +34,10 @@ export const BULK_FIELDS = [
   { field: 'name', label: 'Name', aliases: ['name', 'full name', 'employee name', 'display name'] },
   { field: 'external_id', label: 'Employee ID', aliases: ['external id', 'external_id', 'employee id', 'employee_id', 'id', 'emp id', 'staff id'] },
   { field: 'email', label: 'Email', aliases: ['email', 'e-mail', 'work email', 'email address'] },
-  { field: 'designation', label: 'Job title', aliases: ['designation', 'job title', 'title', 'position', 'role'] },
+  { field: 'designation', label: 'Job title', aliases: ['designation', 'job title', 'title', 'position'] },
   { field: 'department', label: 'Department', aliases: ['department', 'dept', 'function', 'division'] },
-  { field: 'level_code', label: 'Level', aliases: ['level', 'level code', 'level_code', 'grade'] },
+  // The role places the person: each role sits at one level. Code or name.
+  { field: 'role_code', label: 'Role', aliases: ['role', 'role code', 'role_code', 'access role', 'system role'] },
   {
     field: 'manager_external_id',
     label: 'Manager ID',

@@ -156,9 +156,10 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <p className="min-w-0 flex-1">
             <span className="font-semibold">
-              {chart.unplaced_members} {chart.unplaced_members === 1 ? 'person has' : 'people have'} no level.
+              {chart.unplaced_members} {chart.unplaced_members === 1 ? 'person isn’t' : 'people aren’t'} placed.
             </span>{' '}
-            Escalation can't route a report around someone who isn't placed.
+            They have no role, or a role with no level. Escalation can't route a report around someone who isn't placed —
+            give them a role, or give their role a level.
           </p>
           <button type="button" onClick={() => onGoTo?.('directory')} className="font-semibold underline underline-offset-2">
             Place them

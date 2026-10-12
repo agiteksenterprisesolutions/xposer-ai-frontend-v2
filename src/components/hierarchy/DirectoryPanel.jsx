@@ -2,12 +2,13 @@
 //
 // The people escalation resolves against.
 //
-// `level_code` and `manager_external_id` on each entry are already the
-// effective values; the `*_from_hr` fields are shown only as provenance
-// ("HR says …") where a human corrected them. Two badges carry different
+// A person sits where their role sits: `role_code` places them and
+// `level_code` is resolved from it (read-only). `manager_external_id` is the
+// effective manager; `manager_external_id_from_hr` is shown as provenance
+// ("HR says …") where a human corrected it. Two badges carry different
 // meanings and are kept apart:
 //   source "manual"       — added by hand; untouched by every sync.
-//   has_manual_override   — synced from HR, then corrected by a person.
+//   has_manual_override   — synced from HR, then the manager corrected.
 import { useMemo, useState } from 'react';
 import { Pencil, Plus, Search, Trash2, Upload, Users } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -22,6 +23,7 @@ import { useCan } from '../../hooks/useCan';
 import { PERM } from '../../utils/permissions';
 import BulkImportModal from './BulkImportModal';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
+import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { errorSummary } from '../../utils/errors';
 
 const SourceBadge = ({ member }) =>
@@ -48,6 +50,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
   // "Create a login" switch, when the viewer may create users (POST
   // /users/person needs user:create). Without it, the directory-only form.
   const canCreateUsers = useCan()(PERM.userCreate);
+  const { nameFor } = useOrgRoles();
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -155,7 +158,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
             <Table.Row hover={false}>
               <Table.Head>Person</Table.Head>
               <Table.Head>Job title</Table.Head>
-              <Table.Head>Level</Table.Head>
+              <Table.Head>Role · level</Table.Head>
               <Table.Head>Manager</Table.Head>
               <Table.Head>Source</Table.Head>
               {canManage && <Table.Head className="text-right">Actions</Table.Head>}
@@ -184,12 +187,21 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
                     {member.department && <p className="text-xs text-ink-subtle">{member.department}</p>}
                   </Table.Cell>
                   <Table.Cell>
-                    {member.level_code ? (
-                      <p className="text-sm text-ink">{levelTitle.get(member.level_code) || member.level_code}</p>
+                    {member.role_code ? (
+                      <p className="text-sm text-ink">{nameFor(member.role_code)}</p>
                     ) : (
-                      <Badge variant="warning" size="small">No level</Badge>
+                      <Badge variant="warning" size="small" title="A person is placed by their role">
+                        No role
+                      </Badge>
                     )}
-                    {provenance(member, 'level_code', (code) => levelTitle.get(code) || code)}
+                    {member.level_code ? (
+                      <p className="text-xs text-ink-muted">
+                        {levelTitle.get(member.level_code) || member.level_code}
+                        {member.level_from === 'legacy' && ' · old level, needs a role'}
+                      </p>
+                    ) : (
+                      member.role_code && <p className="text-xs text-warning-fg">Role has no level</p>
+                    )}
                   </Table.Cell>
                   <Table.Cell>
                     <p className="text-sm text-ink-secondary">
@@ -201,7 +213,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
                     <div className="flex flex-wrap gap-1">
                       <SourceBadge member={member} />
                       {member.has_manual_override && (
-                        <Badge variant="info" size="small" title="A person corrected what HR sent. The correction survives syncs.">
+                        <Badge variant="info" size="small" title="A person corrected the manager HR sent. The correction survives syncs.">
                           Corrected
                         </Badge>
                       )}
@@ -257,7 +269,6 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
       <AddPersonModal
         isOpen={adding}
         onClose={() => setAdding(false)}
-        levels={levels.filter((l) => l.is_active !== false)}
         members={members}
         onAdded={() => onChanged()}
       />

@@ -6,7 +6,14 @@
 // The file is always checked first (dry run) and every problem is shown at
 // once, pinned to its sheet, row and column. Importing is all-or-nothing:
 // nothing is written unless the whole file is clean.
+//
+// The Role column places each person (every role sits at one level); there is
+// no level column. Sign-in Method picks Password, Google or Microsoft for rows
+// that create a login. A blank Manager Employee ID is filled in when exactly
+// one person sits one level above in the same department — those reporting
+// lines are listed after the import, since they decide escalation routing.
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CheckCircle2, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from '../ui/Modal';
@@ -16,11 +23,18 @@ import { usersAPI } from '../../api';
 import { saveBlob } from '../../utils/download';
 import { describeError, errorSummary } from '../../utils/errors';
 import UndeliveredCredentials from './UndeliveredCredentials';
+import { useAuthStore } from '../../store/authStore';
+import { staffPath } from '../../utils/navigation';
 
 const PROBLEM_HINTS = {
   'row.unknown_manager': 'Their manager needs an Employee ID on another row.',
   'row.role_escalates': "You can't grant a role carrying permissions you don't hold.",
-  'row.unknown_level': 'Use a level your organization has defined.',
+  'row.unknown_role': 'Use the code or name of a role your organization has.',
+  'row.role_has_no_level': 'The role exists but has no level, so the person can’t be placed. Give it one in Roles & Permissions.',
+  'row.manager_not_above': 'A manager has to sit above the people who report to them. Check this row’s role or its manager.',
+  'row.unknown_sign_in_method': 'Use Password, Google or Microsoft — or leave it blank for Password.',
+  'row.ambiguous_sign_in_method': '“SSO” could be Google or Microsoft. Say which.',
+  'row.sign_in_method_without_login': 'This row creates no login, so a sign-in method doesn’t apply. Clear it, or set Create Login.',
   'row.email_exists': 'Someone already has this email.',
   'row.undeliverable_domain': 'Fine for a test import; a real person needs a real address.',
   // The pre-flight check doesn't catch two emails that derive the same
@@ -65,6 +79,31 @@ const ProblemTable = ({ problems, tone = 'error' }) => (
   </div>
 );
 
+/** Reporting lines the file didn't state and the backend worked out. */
+const InferredManagers = ({ items }) =>
+  items?.length > 0 ? (
+    <div className="space-y-2 rounded-xl border border-line bg-subtle p-4">
+      <p className="text-sm font-semibold text-ink">
+        {items.length === 1 ? '1 manager was' : `${items.length} managers were`} filled in from the hierarchy
+      </p>
+      <p className="text-xs text-ink-muted">
+        These rows named no manager, and exactly one person sat one level above them in the same department. Reporting
+        lines decide who hears about an allegation, so check they're right.
+      </p>
+      <ul className="max-h-48 space-y-1 overflow-auto text-sm">
+        {items.map((item, index) => (
+          <li key={index} className="flex flex-wrap gap-x-2">
+            {item.row != null && <span className="text-ink-subtle">Row {item.row}</span>}
+            <span className="font-medium text-ink">{item.full_name}</span>
+            <span className="text-ink-muted">
+              reports to <span className="font-mono">{item.manager_name || item.manager_external_id}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
+
 /** Non-blocking: amber, apart from the red problems that stop an import. */
 const Warnings = ({ warnings }) =>
   warnings?.length > 0 ? (
@@ -77,6 +116,7 @@ const Warnings = ({ warnings }) =>
   ) : null;
 
 const ImportUsersModal = ({ onClose, onImported }) => {
+  const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const inputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [checking, setChecking] = useState(false);
@@ -156,9 +196,11 @@ const ImportUsersModal = ({ onClose, onImported }) => {
                   .join(' · ')}
             </p>
             <p className="mx-auto mt-2 max-w-md text-xs text-ink-muted">
-              New accounts start on a temporary password and must set their own when they first sign in.
+              New password accounts start on a temporary password and must set their own when they first sign in. Google
+              and Microsoft accounts have no password; they sign in with that account.
             </p>
           </div>
+          <InferredManagers items={done.managers_inferred} />
           <UndeliveredCredentials items={done.undelivered_credentials} />
           <Warnings warnings={done.warnings} />
           </>
@@ -168,7 +210,9 @@ const ImportUsersModal = ({ onClose, onImported }) => {
               <li className="flex items-start justify-between gap-3">
                 <span>
                   <span className="font-medium text-ink">1. Fill in the template.</span> It comes with a working
-                  four-person example — read it before replacing it. Level and role are separate columns on purpose.
+                  example — read it before replacing it. The template changed: download a fresh copy rather than reusing
+                  an old one. The Role column now places each person (there's no level column), and Sign-in Method
+                  chooses Password, Google or Microsoft.
                 </span>
                 <Button variant="outline" size="small" startIcon={Download} onClick={downloadTemplate} className="shrink-0">
                   Template
@@ -231,6 +275,11 @@ const ImportUsersModal = ({ onClose, onImported }) => {
                   </ul>
                 )}
                 {rowProblems.length > 0 && <ProblemTable problems={rowProblems} />}
+                {rowProblems.some((p) => p.code === 'row.role_has_no_level' || p.code === 'row.unknown_role') && (
+                  <Link to={staffPath(orgSlug, 'roles')} className="inline-block text-sm font-semibold text-link hover:underline">
+                    Open Roles &amp; Permissions →
+                  </Link>
+                )}
               </div>
             )}
           </>

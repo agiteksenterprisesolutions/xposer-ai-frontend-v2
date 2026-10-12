@@ -1,7 +1,13 @@
 // src/components/hierarchy/LevelEditorModal.jsx
 //
 // Create or edit one rung of the reporting hierarchy.
+//
+// Which roles sit at a level is not edited here: a level is a property of the
+// role, so `roles` is derived from where the roles are placed and shown
+// read-only, each linking to the role it is changed on.
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowUpRight } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -11,6 +17,8 @@ import TagInput from '../ui/TagInput';
 import { Checkbox } from '../roles/PermissionPicker';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
+import { useAuthStore } from '../../store/authStore';
+import { staffPath } from '../../utils/navigation';
 import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import { describeError } from '../../utils/errors';
 
@@ -22,10 +30,12 @@ import { describeError } from '../../utils/errors';
  */
 const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, onClose, onSaved }) => {
   const isCreate = !level;
-  // Unfiltered: reporter belongs here. Nothing is assigned from this list —
-  // it describes what a level corresponds to; routing picks a person who can
-  // take a case.
-  const { allRoles: roles, nameFor } = useOrgRoles();
+  const { allRoles, nameFor } = useOrgRoles();
+  const orgSlug = useAuthStore((state) => state.user?.organization_slug);
+  // Derived on the server; for a level not yet saved, nothing sits there.
+  const levelRoles = Array.isArray(level?.roles)
+    ? level.roles
+    : allRoles.filter((role) => level && role.level_code === level.code).map((role) => role.code);
 
   const [title, setTitle] = useState(level?.title || '');
   const [code, setCode] = useState(level?.code || '');
@@ -33,11 +43,6 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
   const [rank, setRank] = useState(String(level?.rank ?? defaultRank));
   const [department, setDepartment] = useState(level?.department || '');
   const [aliases, setAliases] = useState(level?.designation_aliases || []);
-  // Was a single `escalation_role`; a level often holds several jobs.
-  const [escalationRoles, setEscalationRoles] = useState(() => {
-    if (Array.isArray(level?.escalation_roles)) return level.escalation_roles;
-    return level?.escalation_role ? [level.escalation_role] : [];
-  });
   const [receivesEscalations, setReceivesEscalations] = useState(level?.can_receive_escalations ?? true);
   const [isActive, setIsActive] = useState(level?.is_active ?? true);
   const [saving, setSaving] = useState(false);
@@ -61,7 +66,6 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
       rank: rankNumber,
       department: department.trim() || null,
       designation_aliases: aliases,
-      escalation_roles: escalationRoles,
       can_receive_escalations: receivesEscalations,
     };
     try {
@@ -162,50 +166,42 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
           <p className="text-sm font-medium text-ink">Job titles from your HR system</p>
           <p className="text-xs text-ink-muted">
             The exact titles your HR system uses for people at this level — e.g. "Finance Manager" and "Sr. Finance
-            Manager". During a sync, anyone whose title matches one of these is placed on this level.
+            Manager". During a sync, a matching title suggests this level, and the role that sits at it.
           </p>
           <TagInput
             value={aliases}
             onChange={setAliases}
             readOnly={readOnly}
             placeholder="Type a job title and press Enter"
-            emptyText="No job titles yet — people can still be placed on this level by hand."
+            emptyText="No job titles yet. People are placed here by their role either way."
             ariaLabel="Job titles"
           />
         </div>
 
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-ink">Roles at this level</legend>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-ink">Roles at this level</p>
+          {levelRoles.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {levelRoles.map((code) => (
+                <Link
+                  key={code}
+                  to={`${staffPath(orgSlug, 'roles')}?role=${encodeURIComponent(code)}`}
+                  className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1 text-sm text-ink-secondary transition-colors hover:border-line-accent hover:text-accent-fg"
+                  title={`Open ${nameFor(code)} in Roles & Permissions`}
+                >
+                  {nameFor(code)}
+                  <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-ink-muted">{isCreate ? 'None yet.' : 'No role sits here yet.'}</p>
+          )}
           <p className="text-xs text-ink-muted">
-            The jobs people at this level do — pick every one that applies, reporter included. This describes the level;
-            cases are only ever routed to someone whose account can take one.
+            A role's level is set on the role, and everyone holding it sits there. To put a role here, change its level in
+            Roles &amp; Permissions. Several roles can share a level.
           </p>
-          <div className="flex flex-wrap gap-1.5">
-            {[...roles.map((role) => role.code), ...escalationRoles.filter((code) => !roles.some((r) => r.code === code))].map(
-              (code) => {
-                const on = escalationRoles.includes(code);
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    aria-pressed={on}
-                    disabled={readOnly}
-                    onClick={() =>
-                      setEscalationRoles((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]))
-                    }
-                    className={`rounded-full border px-3 py-1 text-sm transition-colors disabled:cursor-default ${
-                      on
-                        ? 'border-line-accent bg-accent-soft font-medium text-accent-fg'
-                        : 'border-line text-ink-secondary hover:border-line-strong hover:text-ink'
-                    }`}
-                  >
-                    {nameFor(code)}
-                  </button>
-                );
-              },
-            )}
-          </div>
-        </fieldset>
+        </div>
 
         <label className="flex items-start gap-3">
           <Checkbox

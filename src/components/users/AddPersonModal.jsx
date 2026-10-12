@@ -7,9 +7,17 @@
 //
 // A directory-only person is a success, not a half-failure: most of an
 // organization never signs in, but must be placeable for escalation to route a
-// report above the person it names. A login starts on the default password,
-// which the person must replace at first sign-in; it reaches them only in the
-// welcome email, so a failed delivery is shown with a way to resend.
+// report above the person it names. So a role is required for everyone — the
+// role is what places them (each role sits at one level) — defaulting to
+// reporter, the right answer for most of an organization.
+//
+// A login signs in one of three ways. Password: an account on the default
+// password, emailed, to be replaced at first sign-in — it reaches them only
+// in that email, so a failed delivery is shown with a way to resend. Google
+// or Microsoft: no password is created at all; they sign in with that account.
+//
+// The manager is optional: left blank, the server fills it in when exactly
+// one person sits one level above in the same department, and says so.
 import { useMemo, useState } from 'react';
 import { CheckCircle2, UserPlus } from 'lucide-react';
 import Modal from '../layout/Modal';
@@ -20,6 +28,7 @@ import { usersAPI } from '../../api/users';
 import { useOrgRoles, REPORTER_ROLE } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import { deriveUsername, usernameNeedsAttention } from '../../utils/usernames';
+import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
 import { describeError } from '../../utils/errors';
 
 const EMPTY = {
@@ -28,12 +37,19 @@ const EMPTY = {
   employee_id: '',
   designation: '',
   department: '',
-  level_code: '',
   manager_external_id: '',
-  create_login: true,
   role: REPORTER_ROLE,
+  create_login: true,
+  auth_provider: 'password',
   username: '',
 };
+
+/** Sent as Firebase's own sign_in_provider values. */
+const SIGN_IN_METHODS = [
+  { value: 'password', label: 'Password', hint: "We'll email them a one-time password they must change at first sign-in." },
+  { value: 'google.com', label: 'Google', hint: 'No password is created. They sign in with their Google account.' },
+  { value: 'microsoft.com', label: 'Microsoft', hint: 'No password is created. They sign in with their Microsoft account.' },
+];
 
 const inputClass =
   'h-10 w-full rounded-lg border bg-surface px-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-line-accent';
@@ -54,18 +70,20 @@ const blankToNull = (v) => (typeof v === 'string' && !v.trim() ? null : typeof v
 /**
  * Props:
  *   isOpen, onClose
- *   levels   – hierarchy levels (may be empty without org_hierarchy:read)
  *   members  – directory entries, for the manager picker
  *   onAdded  – after a person is added, to refresh the lists
  */
-const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded }) => {
-  const { allRoles, nameFor } = useOrgRoles();
+const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
+  const { allRoles: unsortedRoles, nameFor, byCode } = useOrgRoles();
+  const allRoles = useMemo(() => sortRolesByLevel(unsortedRoles.filter((r) => r.is_active !== false)), [unsortedRoles]);
   const orgName = useAuthStore((s) => s.user?.organization_name);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState(null);
   const [result, setResult] = useState(null);
+  const chosenRole = byCode.get(form.role);
+  const method = SIGN_IN_METHODS.find((m) => m.value === form.auth_provider) || SIGN_IN_METHODS[0];
 
   const managers = useMemo(
     () => members.filter((m) => m.is_active !== false && m.external_id).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
@@ -93,7 +111,7 @@ const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded })
     if (!form.full_name.trim()) next.full_name = 'Enter their full name — escalation matches report text against it.';
     if (!form.email.trim()) next.email = 'Enter their email.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) next.email = 'Enter a valid email address.';
-    if (form.create_login && !form.role) next.role = 'Pick a role for their login.';
+    if (!form.role) next.role = 'Pick a role — it places them in the org chart.';
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -106,14 +124,15 @@ const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded })
         employee_id: blankToNull(form.employee_id),
         designation: blankToNull(form.designation),
         department: blankToNull(form.department),
-        level_code: blankToNull(form.level_code),
         manager_external_id: blankToNull(form.manager_external_id),
+        // Required on every request, account or not: the role places them.
+        role: form.role,
         create_login: form.create_login,
-        role: form.create_login ? form.role : null,
+        auth_provider: form.create_login ? form.auth_provider : null,
         username: form.create_login ? blankToNull(form.username) : null,
       };
       const res = await usersAPI.createPerson(body);
-      setResult(res);
+      setResult({ ...res, sentManager: body.manager_external_id, sentProvider: body.auth_provider });
       onAdded?.(res);
     } catch (err) {
       setServerError(describeError(err));
@@ -124,6 +143,13 @@ const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded })
 
   if (result) {
     const user = result.user;
+    const resultRole = byCode.get(result.role || user?.role);
+    const placedLevel = result.level_code
+      ? resultRole?.level_code === result.level_code
+        ? resultRole.level_title
+        : result.level_code
+      : null;
+    const managerName = (id) => members.find((m) => m.external_id === id)?.name || id;
     return (
       <Modal
         isOpen={isOpen}
@@ -153,15 +179,35 @@ const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded })
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 rounded-xl border border-line bg-subtle p-4">
             <dt className="text-ink-muted">Employee ID</dt>
             <dd className="font-mono text-ink">{result.external_id}</dd>
+            {(result.role || user?.role) && (
+              <>
+                <dt className="text-ink-muted">Added as</dt>
+                <dd className="text-ink">
+                  {nameFor(result.role || user.role)}
+                  {placedLevel ? ` (${placedLevel})` : ' — not placed yet: the role has no level'}
+                </dd>
+              </>
+            )}
+            {result.manager_external_id && (
+              <>
+                <dt className="text-ink-muted">Reports to</dt>
+                <dd className="text-ink">
+                  {managerName(result.manager_external_id)}
+                  {(result.manager_inferred || result.manager_external_id !== result.sentManager) && (
+                    <span className="text-ink-muted"> — from the hierarchy, as the only person one level above</span>
+                  )}
+                </dd>
+              </>
+            )}
             {result.account_created && user && (
               <>
                 <dt className="text-ink-muted">Signs in as</dt>
                 <dd className="font-mono text-ink">{user.username}</dd>
-                <dt className="text-ink-muted">Role</dt>
-                <dd className="text-ink">{nameFor(user.role)}</dd>
-                <dt className="text-ink-muted">Password</dt>
+                <dt className="text-ink-muted">Sign-in</dt>
                 <dd className="text-ink">
-                  {result.emails_sent ? 'Emailed to them. ' : ''}A temporary one they must replace when they first sign in.
+                  {result.sentProvider === 'google.com' || result.sentProvider === 'microsoft.com'
+                    ? `With their ${result.sentProvider === 'google.com' ? 'Google' : 'Microsoft'} account. No password was created.`
+                    : `${result.emails_sent ? 'Password emailed to them. ' : ''}A temporary one they must replace when they first sign in.`}
                 </dd>
               </>
             )}
@@ -221,19 +267,31 @@ const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded })
           <Field id="ap-dept" label="Department" hint="optional">
             <input id="ap-dept" value={form.department} onChange={set('department')} className={`${inputClass} border-line-strong`} />
           </Field>
-          <Field id="ap-level" label="Level" hint="optional">
-            <select id="ap-level" value={form.level_code} onChange={set('level_code')} className={`${inputClass} border-line-strong`}>
-              <option value="">{levels.length ? 'Not placed yet' : 'No levels to choose from'}</option>
-              {levels.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {l.title}
+          <Field id="ap-role" label="Role" error={errors.role}>
+            <select
+              id="ap-role"
+              value={form.role}
+              onChange={set('role')}
+              className={`${inputClass} ${errors.role ? 'border-danger-line' : 'border-line-strong'}`}
+            >
+              {allRoles.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {roleWithLevel(r)}
                 </option>
               ))}
+              {!allRoles.some((r) => r.code === REPORTER_ROLE) && <option value={REPORTER_ROLE}>Reporter</option>}
             </select>
+            <p className={`text-xs ${chosenRole && !chosenRole.level_code ? 'text-warning-fg' : 'text-ink-muted'}`}>
+              {chosenRole && !chosenRole.level_code
+                ? 'This role has no level yet, so they can’t be placed in the org chart until it gets one.'
+                : form.create_login
+                  ? 'What they can do once signed in, and where they sit in the org chart.'
+                  : 'Places them in the org chart. Reporter fits most people who never sign in.'}
+            </p>
           </Field>
           <Field id="ap-manager" label="Manager" hint="optional">
             <select id="ap-manager" value={form.manager_external_id} onChange={set('manager_external_id')} className={`${inputClass} border-line-strong`}>
-              <option value="">No manager on file</option>
+              <option value="">Work it out from the hierarchy</option>
               {managers.map((m) => (
                 <option key={m.external_id} value={m.external_id}>
                   {m.name}
@@ -241,6 +299,9 @@ const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded })
                 </option>
               ))}
             </select>
+            <p className="text-xs text-ink-muted">
+              Leave blank and we'll work it out from the hierarchy where there's only one possible answer.
+            </p>
           </Field>
           <Field id="ap-empid" label="Employee ID" hint="optional — made from the name if blank">
             <input id="ap-empid" value={form.employee_id} onChange={set('employee_id')} className={`${inputClass} border-line-strong font-mono`} />
@@ -269,16 +330,29 @@ const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded })
 
           {form.create_login && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="ap-role" label="Role" error={errors.role}>
-                <select id="ap-role" value={form.role} onChange={set('role')} className={`${inputClass} border-line-strong`}>
-                  {allRoles.map((r) => (
-                    <option key={r.code} value={r.code}>
-                      {nameFor(r.code)}
-                    </option>
-                  ))}
-                  {!allRoles.some((r) => r.code === REPORTER_ROLE) && <option value={REPORTER_ROLE}>Reporter</option>}
-                </select>
-              </Field>
+              <fieldset className="sm:col-span-2">
+                <legend className="mb-1.5 text-sm font-medium text-ink-secondary">Sign-in method</legend>
+                <div role="radiogroup" aria-label="Sign-in method" className="grid grid-cols-3 gap-1 rounded-lg bg-active p-1">
+                  {SIGN_IN_METHODS.map((option) => {
+                    const on = form.auth_provider === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => set('auth_provider')(option.value)}
+                        className={`rounded-md py-1.5 text-sm transition-colors ${
+                          on ? 'bg-surface font-semibold text-ink shadow-sm' : 'font-medium text-ink-muted hover:text-ink'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-xs text-ink-muted">{method.hint}</p>
+              </fieldset>
               <Field id="ap-username" label="Username" hint="optional">
                 <input
                   id="ap-username"
@@ -295,9 +369,6 @@ const AddPersonModal = ({ isOpen, onClose, levels = [], members = [], onAdded })
                     ' — capitals and symbols are kept exactly and must be typed the same at sign-in. Set a plain lowercase username to avoid that.'}
                 </p>
               )}
-              <p className="sm:col-span-2 text-xs text-ink-muted">
-                They get a temporary password by email and must replace it when they first sign in.
-              </p>
             </div>
           )}
         </div>

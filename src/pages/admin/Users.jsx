@@ -97,7 +97,6 @@ const Users = () => {
   // The directory: who each account is linked to, and at what level. Level
   // decides which reports someone sees; role decides what they can do.
   const canReadHierarchy = can(PERM.hierarchyRead);
-  const canManageHierarchy = can(PERM.hierarchyManage);
   const [members, setMembers] = useState([]);
   const [levels, setLevels] = useState([]);
   const [linkUser, setLinkUser] = useState(null);
@@ -684,7 +683,6 @@ const Users = () => {
           user={linkUser}
           members={members}
           levels={levels}
-          canEditLevel={canManageHierarchy}
           onClose={() => setLinkUser(null)}
           onSaved={() => {
             setLinkUser(null);
@@ -720,7 +718,6 @@ const Users = () => {
       <AddPersonModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        levels={levels}
         members={members}
         onAdded={() => {
           fetchUsers();

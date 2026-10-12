@@ -2,11 +2,18 @@
 //
 // Add a person to the reporting directory by hand, or correct an entry.
 //
-// For a person who came from the HR sync, the level and manager set here are
-// stored as corrections: the next sync refreshes the raw HR fields around
-// them without undoing the fix. Only changed fields are sent on an edit, so
-// opening and saving an entry never turns an HR value into a correction.
+// A person is placed in the chart by their ROLE: each role sits at one level,
+// and `level_code` on the entry is resolved from it, read-only. Moving someone
+// means changing their role; if the role itself is at the wrong level, that
+// is an edit to the role and moves everyone holding it. Changing the role
+// here also changes the role on every account linked to this entry.
+//
+// For a person who came from the HR sync, the manager set here is stored as a
+// correction: the next sync refreshes the raw HR value around it without
+// undoing the fix. Only changed fields are sent on an edit, so opening and
+// saving an entry never turns an HR value into a correction.
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from '../ui/Modal';
@@ -15,16 +22,20 @@ import Input from '../ui/Input';
 import Alert from '../ui/Alert';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { describeError } from '../../utils/errors';
+import { useOrgRoles } from '../../hooks/useOrgRoles';
+import { useAuthStore } from '../../store/authStore';
+import { staffPath } from '../../utils/navigation';
+import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
 
 const selectClass =
   'w-full rounded-lg border border-line bg-subtle px-3 py-2.5 text-sm text-ink hover:border-line-strong disabled:opacity-60';
 
-const FIELDS = ['name', 'email', 'designation', 'department', 'level_code', 'manager_external_id'];
+const FIELDS = ['name', 'email', 'designation', 'department', 'role_code', 'manager_external_id'];
 
 /**
  * Props:
  *   member   – the entry to edit; omit to add one
- *   levels   – for the level picker (most senior first)
+ *   levels   – to name the level a role resolves to
  *   members  – the directory, for the manager picker
  *   readOnly, onClose, onSaved
  */
@@ -38,10 +49,18 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
   }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  // 400 role_has_no_level names the role: a one-field fix on the Roles screen.
+  const [roleWithoutLevel, setRoleWithoutLevel] = useState(null);
+  const { allRoles } = useOrgRoles();
+  const roles = useMemo(() => sortRolesByLevel(allRoles.filter((r) => r.is_active !== false)), [allRoles]);
+  const chosenRole = allRoles.find((r) => r.code === form.role_code);
+  const orgSlug = useAuthStore((state) => state.user?.organization_slug);
 
   const set = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
 
   const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
+  // Where they will sit: the chosen role's level, else what the server resolved.
+  const resolvedLevel = chosenRole ? chosenRole.level_title || (chosenRole.level_code && levelTitle(chosenRole.level_code)) : null;
   const nameById = useMemo(() => new Map(members.map((m) => [m.external_id, m.name])), [members]);
   const managerOptions = useMemo(
     () =>
@@ -55,6 +74,7 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
     if (!form.name.trim() || saving) return;
     setSaving(true);
     setError(null);
+    setRoleWithoutLevel(null);
     try {
       let saved;
       if (isCreate) {
@@ -78,6 +98,8 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
       }
       onSaved?.(saved);
     } catch (err) {
+      const detail = err?.response?.data?.detail;
+      if (detail?.code === 'role_has_no_level') setRoleWithoutLevel(detail.role_code || form.role_code);
       setError(describeError(err));
     } finally {
       setSaving(false);
@@ -120,8 +142,7 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
       <div className="space-y-5">
         {fromHr && !readOnly && (
           <Alert variant="info" title="This person comes from your HR system">
-            Level and manager changes are kept as corrections and survive the next sync. Other fields may be overwritten
-            by it.
+            A manager change is kept as a correction and survives the next sync. Other fields may be overwritten by it.
           </Alert>
         )}
 
@@ -133,6 +154,14 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
                   <li key={index}>{problem.message}</li>
                 ))}
               </ul>
+            )}
+            {roleWithoutLevel && (
+              <Link
+                to={`${staffPath(orgSlug, 'roles')}?role=${encodeURIComponent(roleWithoutLevel)}`}
+                className="mt-2 inline-block font-semibold underline underline-offset-2"
+              >
+                Give that role a level
+              </Link>
             )}
           </Alert>
         )}
@@ -167,26 +196,45 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <label htmlFor="member-level" className="text-xs font-medium text-ink-secondary">
-              Level
+            <label htmlFor="member-role" className="text-xs font-medium text-ink-secondary">
+              Role
             </label>
-            <select id="member-level" value={form.level_code} onChange={set('level_code')} disabled={readOnly} className={selectClass}>
-              <option value="">No level</option>
-              {levels.map((level) => (
-                <option key={level.code} value={level.code}>
-                  {level.title} ({level.rank})
+            <select id="member-role" value={form.role_code} onChange={set('role_code')} disabled={readOnly} className={selectClass}>
+              <option value="">No role</option>
+              {roles.map((role) => (
+                <option key={role.code} value={role.code}>
+                  {roleWithLevel(role)}
                 </option>
               ))}
-              {form.level_code && !levels.some((l) => l.code === form.level_code) && (
-                <option value={form.level_code}>{form.level_code} (not found)</option>
+              {form.role_code && !roles.some((r) => r.code === form.role_code) && (
+                <option value={form.role_code}>{form.role_code} (not found)</option>
               )}
             </select>
-            {hrNote('level_code', member?.level_code_from_hr, levelTitle)}
-            {!form.level_code && (
+            {form.role_code ? (
+              resolvedLevel ? (
+                <p className="text-xs text-ink-muted">
+                  Sits at <span className="font-medium text-ink">{resolvedLevel}</span>, with everyone else in this role.
+                </p>
+              ) : (
+                <p className="flex items-start gap-1.5 text-xs text-warning-fg">
+                  <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                  This role has no level yet, so this person can't be placed until it gets one.
+                </p>
+              )
+            ) : (
               <p className="flex items-start gap-1.5 text-xs text-warning-fg">
                 <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
-                Without a level, a report naming this person can't be escalated.
+                {member?.level_from === 'legacy' && member?.level_code
+                  ? `Still on the old level (${levelTitle(member.level_code)}). Give them a role to place them properly.`
+                  : "Without a role, a report naming this person can't be escalated."}
               </p>
+            )}
+            <p className="text-xs text-ink-subtle">
+              To move someone, change their role. If the role itself is at the wrong level, change it in Roles &amp;
+              Permissions — that moves everyone who holds it.
+            </p>
+            {!isCreate && (
+              <p className="text-xs text-ink-subtle">Their account, if they have one, gets the same role.</p>
             )}
           </div>
 
@@ -213,7 +261,9 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
               )}
             </select>
             {hrNote('manager_external_id', member?.manager_external_id_from_hr, (id) => nameById.get(id) || id)}
-            <p className="text-xs text-ink-muted">Escalation goes to the direct manager first, before the level ladder.</p>
+            <p className="text-xs text-ink-muted">
+              Escalation goes to the direct manager first, before the level ladder. A manager has to sit above this person.
+            </p>
           </div>
         </div>
       </div>

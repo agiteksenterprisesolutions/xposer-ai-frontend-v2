@@ -9,7 +9,11 @@
 // Two codes are fixed: `admin` (every permission) and `reporter` (the public
 // self-service identity, own-scoped). Both are columns, shown read-only so an
 // admin can see what each grants; edit and delete are gated on `is_fixed`,
-// never on the code. The seeded roles — manager, officer, reviewer — are a
+// never on the code — except a fixed role's level, which can be changed.
+//
+// Each role sits at one hierarchy level, and its holders sit there with it,
+// so the columns run most senior first: the role list is the org chart. A
+// role with no level is flagged — nobody holding it can be placed. The seeded roles — manager, officer, reviewer — are a
 // starting point and fully editable.
 //
 // The rules the editor modal follows apply here too: a permission the
@@ -17,7 +21,7 @@
 // permission's `requires_any_of` is checked instantly, the server's
 // /validate has the final word, and granting role:manage asks first.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   Check,
@@ -46,6 +50,7 @@ import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
 import { PERM, PERMISSION_HINTS, permissionLabel, permissionLabels, togglePermissionIn } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
+import { sortRolesByLevel } from '../../utils/roleLevels';
 import { describeError, errorSummary } from '../../utils/errors';
 import useSEO from '../../hooks/useSEO';
 
@@ -230,6 +235,11 @@ const RoleSummary = ({
               {role.is_active === false && <Badge variant="warning" size="small">Inactive</Badge>}
             </div>
             <p className="font-mono text-xs text-ink-subtle">{role.code}</p>
+            <p className={`mt-0.5 text-xs ${role.level_code ? 'text-ink-muted' : 'font-medium text-warning-fg'}`}>
+              {role.level_code
+                ? `Level: ${role.level_title || role.level_code}`
+                : 'No level — its holders can’t be placed in the org chart'}
+            </p>
           </div>
         </div>
 
@@ -260,9 +270,13 @@ const RoleSummary = ({
         </div>
 
         <div className="flex shrink-0 gap-2">
-          {role.is_fixed || !canManage ? (
+          {!canManage ? (
             <Button variant="outline" size="small" onClick={onEdit}>
               View
+            </Button>
+          ) : role.is_fixed ? (
+            <Button variant="outline" size="small" startIcon={Pencil} onClick={onEdit} title="Only the level of a fixed role can change">
+              Change level
             </Button>
           ) : (
             <>
@@ -272,7 +286,7 @@ const RoleSummary = ({
                 startIcon={Pencil}
                 onClick={onEdit}
                 disabled={changed}
-                title={changed ? 'Save or discard the changes in the grid first.' : 'Rename, deactivate or edit in a list'}
+                title={changed ? 'Save or discard the changes in the grid first.' : 'Rename, change its level, deactivate or edit in a list'}
               >
                 Edit details
               </Button>
@@ -287,8 +301,8 @@ const RoleSummary = ({
       {role.is_fixed && (
         <p className="mt-3 text-xs text-ink-muted">
           {role.is_staff_role === false
-            ? 'The identity people use to file and follow their own reports. Its permissions are fixed, and it cannot be edited or deleted.'
-            : "The organization's root role. It always holds every permission this organization can grant, and cannot be edited or deleted."}
+            ? 'The identity people use to file and follow their own reports. Its permissions are fixed and it cannot be deleted; only its level can change.'
+            : "The organization's root role. It always holds every permission this organization can grant and cannot be deleted; only its level can change."}
         </p>
       )}
 
@@ -375,7 +389,9 @@ const Roles = () => {
   const [catalogError, setCatalogError] = useState(null);
   const [editing, setEditing] = useState(null); // { role } — role null means create
   const [deleting, setDeleting] = useState(null);
-  const [selectedCode, setSelectedCode] = useState(null);
+  // ?role=officer (from a level's role chips) opens on that role.
+  const [searchParams] = useSearchParams();
+  const [selectedCode, setSelectedCode] = useState(() => searchParams.get('role'));
   const [drafts, setDrafts] = useState({}); // code → Set of permissions, for roles changed in the grid
   const [validations, setValidations] = useState({}); // code → { key, result }
   const [collapsed, setCollapsed] = useState(() => new Set());
@@ -412,7 +428,12 @@ const Roles = () => {
 
   // Every role, fixed ones included — `reporter` is locked like `admin`, but an
   // admin still needs to see what it grants.
-  const roles = allRoles;
+  const roles = useMemo(() => sortRolesByLevel(allRoles), [allRoles]);
+  // Only once a ladder is in use (some role has a level): before any level
+  // exists there is nothing to place a role on yet.
+  const unplacedRoles = roles.some((role) => role.level_code)
+    ? roles.filter((role) => !role.level_code && role.is_active !== false)
+    : [];
   const entries = useMemo(() => catalogEntries(catalog), [catalog]);
   const total = catalog?.total ?? entries.size;
 
@@ -652,6 +673,13 @@ const Roles = () => {
 
       <SavedWarnings warnings={savedWarnings} orgSlug={orgSlug} onDismiss={() => setSavedWarnings([])} />
 
+      {unplacedRoles.length > 0 && (
+        <Alert variant="warning" title={`${unplacedRoles.length === 1 ? '1 role has' : `${unplacedRoles.length} roles have`} no level`}>
+          Nobody holding {unplacedRoles.map((r) => r.name).join(', ')} can be placed in the org chart, so escalation can’t
+          route a report around them. Select the role and give it a level.
+        </Alert>
+      )}
+
       {(loading || !catalog) && roles.length === 0 && !error && !catalogError && <RolesSkeleton />}
 
       {selected && catalog && (
@@ -738,6 +766,16 @@ const Roles = () => {
                             {role.is_fixed && <Lock className="h-3 w-3 text-ink-subtle" aria-label="Fixed role" />}
                             {role.name}
                           </span>
+                          {role.level_code ? (
+                            <span className="text-[11px] font-medium text-ink-muted">{role.level_title || role.level_code}</span>
+                          ) : (
+                            <span
+                              className="rounded-full bg-warning-soft px-1.5 py-px text-[10px] font-semibold text-warning-fg"
+                              title="Nobody holding this role can be placed in the org chart until it has a level."
+                            >
+                              No level
+                            </span>
+                          )}
                           <span className="text-[11px] font-normal text-ink-subtle">
                             {heldBy(role.code).size} of {total}
                           </span>
@@ -832,7 +870,8 @@ const Roles = () => {
           </div>
 
           <p className="text-xs text-ink-subtle">
-            Locked columns are fixed roles: admin and reporter can be inspected but not changed.
+            Locked columns are fixed roles: admin's and reporter's permissions can't change, only their level. Columns run
+            most senior level first.
             {canManage && ' Greyed-out ticks are permissions you don\'t hold yourself, so you can\'t grant them.'}
           </p>
         </>

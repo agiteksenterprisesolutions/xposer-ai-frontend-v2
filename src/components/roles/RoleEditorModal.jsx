@@ -2,6 +2,12 @@
 //
 // Create, edit or (for the fixed admin role) view a role.
 //
+// Every role sits at one hierarchy level, and every holder of the role sits
+// there with it: the Level picker is how a person is placed in the org chart.
+// It is required once the organization has any level, editable on the fixed
+// roles too (admin and reporter — their name and permissions are not), and
+// moving an existing role asks first, since it moves everyone who holds it.
+//
 // The checkbox tree is built from GET /org-roles/permissions, never from a
 // hardcoded list, and validated in two layers:
 //   - locally, from each permission's `requires_any_of`, so ticking a box gives
@@ -20,6 +26,9 @@ import Input from '../ui/Input';
 import Alert from '../ui/Alert';
 import Badge from '../ui/Badge';
 import { orgRolesAPI } from '../../api/orgRoles';
+import { orgHierarchyAPI } from '../../api/orgHierarchy';
+import { usersAPI } from '../../api/users';
+import { sortLevels } from '../../utils/roleLevels';
 import { invalidateOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import { PERM, permissionLabels, togglePermissionIn } from '../../utils/permissions';
@@ -35,6 +44,49 @@ const VALIDATE_DEBOUNCE_MS = 350;
 
 const setKey = (permissions) => [...permissions].sort().join(',');
 
+/** Which level the role sits at — and so where everyone holding it sits. */
+const LevelField = ({ levels, value, onChange, disabled, missing, currentTitle }) => {
+  if (levels === null) return null;
+  if (levels.length === 0) {
+    return (
+      <p className="rounded-lg bg-subtle px-3 py-2.5 text-xs text-ink-muted">
+        No hierarchy levels yet. Once you add levels under Reporting Hierarchy, give this role one — it decides where its
+        holders sit in the org chart.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor="role-level" className="block text-sm font-medium text-ink-secondary">
+        Level
+      </label>
+      <select
+        id="role-level"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        aria-invalid={missing}
+        className={`h-10 w-full rounded-lg border bg-surface px-3 text-sm text-ink outline-none focus:border-line-accent disabled:cursor-not-allowed disabled:bg-subtle ${
+          missing ? 'border-warning-line' : 'border-line-strong'
+        }`}
+      >
+        <option value="">Choose a level…</option>
+        {levels.map((level) => (
+          <option key={level.code} value={level.code}>
+            {level.title}
+          </option>
+        ))}
+        {value && !levels.some((l) => l.code === value) && <option value={value}>{currentTitle || value}</option>}
+      </select>
+      <p className={`text-xs ${missing ? 'text-warning-fg' : 'text-ink-muted'}`}>
+        {missing
+          ? 'Not placed yet — nobody holding this role can appear in the org chart until it has a level.'
+          : 'Everyone holding this role sits at this level in the org chart. Several roles can share a level.'}
+      </p>
+    </div>
+  );
+};
+
 /**
  * Props:
  *   role     – the role to edit or view; omit to create one
@@ -45,7 +97,9 @@ const setKey = (permissions) => [...permissions].sort().join(',');
  */
 const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onClose, onSaved }) => {
   const isCreate = !role;
-  const readOnly = Boolean(role?.is_fixed) || viewOnly;
+  const isFixed = Boolean(role?.is_fixed);
+  // Name, permissions and active state. A fixed role's level stays editable.
+  const readOnly = isFixed || viewOnly;
 
   const [name, setName] = useState(role?.name || '');
   const [code, setCode] = useState(role?.code || '');
@@ -56,6 +110,29 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [confirmingEscalation, setConfirmingEscalation] = useState(false);
+  const [levelCode, setLevelCode] = useState(role?.level_code || '');
+  const [levels, setLevels] = useState(null); // null while loading
+  // A level move, waiting for the admin to confirm: { from, to, holders }.
+  const [confirmingMove, setConfirmingMove] = useState(null);
+  // 409 level_move_inverts_chain: the people the move would put at or above their manager.
+  const [conflicts, setConflicts] = useState([]);
+
+  // The ladder to choose from. Quiet: a role editor without hierarchy access
+  // still works, and a 400 level_required brings the choices with it.
+  useEffect(() => {
+    let live = true;
+    orgHierarchyAPI
+      .listLevels({ activeOnly: true, quiet: true })
+      .then((data) => live && setLevels(sortLevels(Array.isArray(data) ? data : [])))
+      .catch(() => live && setLevels([]));
+    return () => {
+      live = false;
+    };
+  }, []);
+  const levelTitle = (code) => levels?.find((l) => l.code === code)?.title || role?.level_title || code;
+  const levelChanged = !isCreate && levelCode !== (role.level_code || '');
+  // Required as soon as any level exists; optional only on an empty ladder.
+  const levelMissing = Boolean(levels?.length) && !levelCode;
 
   const entries = useMemo(() => catalogEntries(catalog), [catalog]);
   const currentKey = setKey(selected);
@@ -120,12 +197,13 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
 
   const isDirty =
     isCreate ||
-    name.trim() !== role.name ||
-    isActive !== (role.is_active ?? true) ||
-    currentKey !== setKey(role.permissions || []);
+    levelChanged ||
+    (!isFixed &&
+      (name.trim() !== role.name || isActive !== (role.is_active ?? true) || currentKey !== setKey(role.permissions || [])));
 
-  const blocked =
-    errorsByPermission.size > 0 || serverResult?.valid === false || !name.trim() || Boolean(codeError);
+  const blocked = isFixed
+    ? levelMissing
+    : errorsByPermission.size > 0 || serverResult?.valid === false || !name.trim() || Boolean(codeError) || levelMissing;
 
   const toggle = (permission) => {
     setSaveError(null);
@@ -139,18 +217,38 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
 
   const save = async () => {
     if (blocked || saving) return;
-    if (addsRoleManage && !confirmingEscalation) {
+    if (!isFixed && addsRoleManage && !confirmingEscalation) {
       setConfirmingEscalation(true);
+      return;
+    }
+    // Moving a role moves every holder in the org chart: say how many first.
+    if (levelChanged && !confirmingMove) {
+      setSaving(true);
+      const holders = await usersAPI
+        .getAllUsers({ role: role.code, page: 1, page_size: 1 })
+        .then((data) => (typeof data?.total === 'number' ? data.total : null))
+        .catch(() => null);
+      setSaving(false);
+      setConfirmingMove({ from: role.level_code, to: levelCode, holders });
       return;
     }
 
     setSaving(true);
     setSaveError(null);
+    setConflicts([]);
     const permissions = [...selected];
     try {
       const saved = isCreate
-        ? await orgRolesAPI.create({ code, name: name.trim(), permissions })
-        : await orgRolesAPI.update(role.id, { name: name.trim(), permissions, is_active: isActive });
+        ? await orgRolesAPI.create({ code, name: name.trim(), permissions, level_code: levelCode || null })
+        : isFixed
+          ? // Only the level of admin and reporter may change; sending anything else is a 409.
+            await orgRolesAPI.update(role.id, { level_code: levelCode || null })
+          : await orgRolesAPI.update(role.id, {
+              name: name.trim(),
+              permissions,
+              is_active: isActive,
+              ...(levelChanged ? { level_code: levelCode || null } : {}),
+            });
 
       toast.success(isCreate ? `Role "${name.trim()}" created.` : `Role "${name.trim()}" saved.`);
 
@@ -161,8 +259,15 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
       useAuthStore.getState().refreshUser();
       onSaved?.(saved);
     } catch (error) {
+      const detail = error?.response?.data?.detail;
+      // 400 level_required carries the levels to choose from.
+      if (detail?.code === 'level_required' && Array.isArray(detail.available_levels) && !levels?.length) {
+        setLevels(sortLevels(detail.available_levels));
+      }
+      if (detail?.code === 'level_move_inverts_chain') setConflicts(Array.isArray(detail.conflicts) ? detail.conflicts : []);
       setSaveError(describeError(error));
       setConfirmingEscalation(false);
+      setConfirmingMove(null);
     } finally {
       setSaving(false);
     }
@@ -170,7 +275,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
 
   const title = isCreate ? 'New role' : readOnly ? role.name : `Edit ${role.name}`;
 
-  const footer = readOnly ? (
+  const footer = viewOnly ? (
     <div className="flex justify-end">
       <Button variant="secondary" onClick={onClose}>
         Close
@@ -189,6 +294,19 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
         </div>
       )}
 
+      {confirmingMove && (
+        <Alert variant="warning" title="Move everyone who holds this role?">
+          Moving {role.name} from {confirmingMove.from ? levelTitle(confirmingMove.from) : 'no level'} to{' '}
+          {confirmingMove.to ? levelTitle(confirmingMove.to) : 'no level'} will move{' '}
+          {confirmingMove.holders == null
+            ? 'everyone who holds it'
+            : confirmingMove.holders === 1
+              ? 'the 1 person who holds it'
+              : `all ${confirmingMove.holders} people who hold it`}{' '}
+          in the org chart.
+        </Alert>
+      )}
+
       {confirmingEscalation && (
         <Alert variant="warning" title="This role will be able to manage roles">
           Anyone holding it can rewrite every role's permissions — including their own. Only give it to people you
@@ -198,19 +316,29 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-ink-subtle">
-          {selected.size} permission{selected.size === 1 ? '' : 's'} selected
-          {!serverResult && selected.size > 0 && ' · checking…'}
+          {!isFixed && (
+            <>
+              {selected.size} permission{selected.size === 1 ? '' : 's'} selected
+              {!serverResult && selected.size > 0 && ' · checking…'}
+            </>
+          )}
         </p>
         <div className="flex flex-col-reverse gap-2 sm:flex-row">
           <Button
             variant="secondary"
-            onClick={confirmingEscalation ? () => setConfirmingEscalation(false) : onClose}
+            onClick={
+              confirmingMove
+                ? () => setConfirmingMove(null)
+                : confirmingEscalation
+                  ? () => setConfirmingEscalation(false)
+                  : onClose
+            }
             disabled={saving}
           >
-            {confirmingEscalation ? 'Back' : 'Cancel'}
+            {confirmingEscalation || confirmingMove ? 'Back' : 'Cancel'}
           </Button>
           <Button onClick={save} isLoading={saving} disabled={blocked || !isDirty}>
-            {confirmingEscalation ? 'Save anyway' : isCreate ? 'Create role' : 'Save changes'}
+            {confirmingMove ? 'Move them' : confirmingEscalation ? 'Save anyway' : isCreate ? 'Create role' : 'Save changes'}
           </Button>
         </div>
       </div>
@@ -222,8 +350,10 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
       <div className="space-y-5">
         {role?.is_fixed && (
           <Alert variant="dark" title="Fixed role">
-            {role.name} is the organization's root role. It always holds every permission this organization can
-            grant, and cannot be edited or deleted.
+            {role.code === 'reporter'
+              ? `${role.name} is the public self-service role: it files and tracks its own reports. Its permissions are fixed and it can't be deleted.`
+              : `${role.name} is the organization's root role. It always holds every permission this organization can grant, and can't be deleted.`}{' '}
+            {!viewOnly && 'Only its level in the hierarchy can be changed.'}
           </Alert>
         )}
 
@@ -235,6 +365,16 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
                   <li key={index}>{problem.message}</li>
                 ))}
               </ul>
+            )}
+            {conflicts.length > 0 && (
+              <>
+                <ul className="list-disc space-y-1 pl-4">
+                  {conflicts.map((conflict, index) => (
+                    <li key={index}>{conflict}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs">Choose another level, or change those reporting lines in the hierarchy first.</p>
+              </>
             )}
           </Alert>
         )}
@@ -268,6 +408,19 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
             />
           </div>
         )}
+
+        <LevelField
+          levels={levels}
+          value={levelCode}
+          onChange={(code) => {
+            setLevelCode(code);
+            setConfirmingMove(null);
+            setSaveError(null);
+          }}
+          disabled={viewOnly}
+          missing={levelMissing}
+          currentTitle={role?.level_title}
+        />
 
         {!isCreate && !readOnly && (
           <label className="flex items-start gap-3">

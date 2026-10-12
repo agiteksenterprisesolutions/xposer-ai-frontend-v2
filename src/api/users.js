@@ -186,7 +186,12 @@ export const usersAPI = {
 
   /** The blank people workbook, with a four-person example that imports as is. */
   downloadImportTemplate: async () => {
-    const response = await api.get('/users/import/template', { responseType: 'blob' });
+    // The template changes with the backend (columns come and go): never
+    // let a browser or proxy hand back a cached copy.
+    const response = await api.get('/users/import/template', {
+      responseType: 'blob',
+      params: { _: Date.now() },
+    });
     return blobDownload(response, 'users_import_template.xlsx');
   },
 

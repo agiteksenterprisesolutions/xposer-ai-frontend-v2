@@ -4,23 +4,26 @@
 // as the organization has. Reordering rewrites ranks in steps of 10 (keeping
 // room to slot a tier in later) rather than packing them contiguously.
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, Eye, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
+import Alert from '../ui/Alert';
 import { ConfirmationModal } from '../ui/Modal';
 import LevelEditorModal from './LevelEditorModal';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { nextRank, reRank, sortLevels } from '../../utils/hierarchy';
 import { errorSummary } from '../../utils/errors';
+import { useAuthStore } from '../../store/authStore';
+import { staffPath } from '../../utils/navigation';
 
 const ALIAS_PREVIEW = 3;
 
-/** A level's roles: `escalation_roles`, or the old single `escalation_role`. */
-const levelRoles = (level) =>
-  Array.isArray(level.escalation_roles) ? level.escalation_roles : level.escalation_role ? [level.escalation_role] : [];
+/** The roles that sit at a level — derived from the roles, read-only. */
+const levelRoles = (level) => (Array.isArray(level.roles) ? level.roles : []);
 
 const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
   const { nameFor } = useOrgRoles();
@@ -28,6 +31,9 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
   const [editing, setEditing] = useState(null); // { level } — null level means create
   const [deleting, setDeleting] = useState(null);
   const [busy, setBusy] = useState(false);
+  // 409 level_in_use from the last delete: { title, message, roles }.
+  const [deleteBlocked, setDeleteBlocked] = useState(null);
+  const orgSlug = useAuthStore((state) => state.user?.organization_slug);
 
   const ordered = sortLevels(levels);
   const visible = showInactive ? ordered : ordered.filter((l) => l.is_active !== false);
@@ -61,9 +67,18 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
       await orgHierarchyAPI.deleteLevel(deleting.id);
       toast.success(`Level "${deleting.title}" deleted.`);
       setDeleting(null);
+      setDeleteBlocked(null);
       onChanged();
     } catch (error) {
-      toast.error(errorSummary(error));
+      const detail = error?.response?.data?.detail;
+      // 409 level_in_use: roles still sit here; deleting it would leave
+      // everyone holding them unplaceable.
+      if (detail?.code === 'level_in_use') {
+        setDeleteBlocked({ title: deleting.title, message: detail.message, roles: detail.roles || [] });
+        setDeleting(null);
+      } else {
+        toast.error(errorSummary(error));
+      }
     } finally {
       setBusy(false);
     }
@@ -71,6 +86,25 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
 
   return (
     <div className="space-y-4">
+      {deleteBlocked && (
+        <Alert variant="warning" title={`"${deleteBlocked.title}" can't be deleted yet`} dismissible onDismiss={() => setDeleteBlocked(null)}>
+          <p>{deleteBlocked.message}</p>
+          {deleteBlocked.roles.length > 0 && (
+            <p className="mt-2 flex flex-wrap items-center gap-1.5">
+              {deleteBlocked.roles.map((code) => (
+                <Link
+                  key={code}
+                  to={`${staffPath(orgSlug, 'roles')}?role=${encodeURIComponent(code)}`}
+                  className="rounded-full border border-warning-line bg-surface px-2.5 py-0.5 text-xs font-semibold hover:underline"
+                >
+                  {nameFor(code)}
+                </Link>
+              ))}
+            </p>
+          )}
+          <p className="mt-2 text-xs">Move these roles to another level first, then delete it.</p>
+        </Alert>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-ink-muted">Most senior first. A report escalates up this ladder.</p>
         <div className="flex items-center gap-3">
@@ -163,7 +197,11 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
                           {aliases.length > ALIAS_PREVIEW && <span>+{aliases.length - ALIAS_PREVIEW} more</span>}
                         </>
                       )}
-                      {levelRoles(level).length > 0 && <span>· {levelRoles(level).map(nameFor).join(', ')}</span>}
+                      {levelRoles(level).length > 0 ? (
+                        <span>· {levelRoles(level).map(nameFor).join(', ')}</span>
+                      ) : (
+                        <span>· no role here yet</span>
+                      )}
                       {count != null && (
                         <span>
                           · {count} {count === 1 ? 'person' : 'people'}
@@ -220,7 +258,7 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
         title="Delete this level?"
         message={
           deleting
-            ? `"${deleting.title}" will be removed from the ladder. People on it will have no level until they are moved, and can't be escalated from meanwhile. To keep it for reference instead, edit it and turn off Active.`
+            ? `"${deleting.title}" will be removed from the ladder. A level can only be deleted once no role sits at it. To keep it for reference instead, edit it and turn off Active.`
             : ''
         }
         confirmText="Delete level"
