@@ -4,9 +4,11 @@ import { toast } from 'react-toastify';
 import { DEFAULT_PAGE_SIZE, normalizeListResponse } from '../utils/pagination';
 import { blobDownload } from '../utils/download';
 
-// Page size used when pulling the full list for pickers; large enough that one
-// request almost always covers an organization, with paging as the fallback.
-const FULL_LIST_PAGE_SIZE = 10;
+// Page size used when pulling the full list for pickers: the most the API
+// allows, so one request almost always covers an organization, with paging as
+// the fallback. (At 10, an organization with ~110 types took 11 requests in a
+// row, which is what made case lists show placeholder categories for seconds.)
+const FULL_LIST_PAGE_SIZE = 100;
 
 // The import endpoint answers with { detail: { message, imported, problems: [...] } }
 // on success and on validation failure alike, so both paths get flattened here into
@@ -26,6 +28,11 @@ const normalizeImportResult = (data) => {
     created: Array.isArray(detail.created) ? detail.created : [],
   };
 };
+
+// Memoised promise for supportsSearch().
+let searchSupport = null;
+// Memoised promise for typeIndex(); cleared by every write below.
+let typeIndexPromise = null;
 
 export const reportTypesAPI = {
   // Get one page of report types. Returns the raw envelope
@@ -54,6 +61,39 @@ export const reportTypesAPI = {
     } catch (error) {
       throw error;
     }
+  },
+
+  /**
+   * Whether the server filters on `search` (name, category, compliance code)
+   * before paging. Older backends ignore the parameter and return everything,
+   * so the answer is probed once — a term nothing can contain must come back
+   * empty — and remembered for the session. An organization with no types at
+   * all reads as supported, which is harmless: there is nothing to search.
+   */
+  supportsSearch: async () => {
+    if (searchSupport === null) {
+      searchSupport = reportTypesAPI
+        .listReportTypes({ page: 1, pageSize: 1, includeSections: false, search: `zz-no-such-type-${Date.now()}` })
+        .then((data) => (data?.total ?? data?.items?.length ?? 0) === 0)
+        .catch(() => false);
+    }
+    return searchSupport;
+  },
+
+  /**
+   * Every report type, without its form definition, fetched once and shared by
+   * every screen that only needs names (case lists, dashboards, the case
+   * page). Cleared whenever a type is created, changed or removed, so a rename
+   * shows on the next screen opened.
+   */
+  typeIndex: async () => {
+    if (!typeIndexPromise) {
+      typeIndexPromise = reportTypesAPI.getReportTypes(false, false).catch((error) => {
+        typeIndexPromise = null;
+        throw error;
+      });
+    }
+    return typeIndexPromise;
   },
 
   // Get every report type as a flat array — for dropdowns and id → name lookups
@@ -114,8 +154,7 @@ export const reportTypesAPI = {
       toast.success('Report type deactivated.');
       return response.data;
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'Failed to delete report type';
-      toast.error(errorMsg);
+      // The interceptor has already shown the server's reason.
       throw error;
     }
   },
@@ -143,8 +182,7 @@ export const reportTypesAPI = {
       toast.success('Report type cloned successfully!');
       return response.data;
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'Failed to clone report type';
-      toast.error(errorMsg);
+      // The interceptor has already shown the server's reason.
       throw error;
     }
   },
@@ -268,8 +306,7 @@ export const reportTypesAPI = {
       toast.success('Sections reordered successfully!');
       return response.data;
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'Failed to reorder sections';
-      toast.error(errorMsg);
+      // The interceptor has already shown the server's reason.
       throw error;
     }
   },
@@ -291,9 +328,24 @@ export const reportTypesAPI = {
       toast.success('Report type created from template!');
       return response.data;
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || 'Failed to create from template';
-      toast.error(errorMsg);
+      // The interceptor has already shown the server's reason.
       throw error;
     }
   }
 };
+
+// Anything that can add, rename or remove a type makes the shared name index
+// stale; drop it after the call, whether or not the call succeeded.
+['createReportType', 'updateReportType', 'deleteReportType', 'setReportTypeStatus', 'cloneReportType', 'importReportTypes', 'createFromTemplate'].forEach(
+  (name) => {
+    const call = reportTypesAPI[name];
+    if (typeof call !== 'function') return;
+    reportTypesAPI[name] = async (...args) => {
+      try {
+        return await call(...args);
+      } finally {
+        typeIndexPromise = null;
+      }
+    };
+  },
+);

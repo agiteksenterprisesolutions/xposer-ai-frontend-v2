@@ -164,6 +164,7 @@ const Users = () => {
     }, { replace: true });
   }, [setSearchParams]);
 
+  console.log(users)
   // Debounce the search term so we don't fire a request on every keystroke
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const debounceRef = useRef(null);
@@ -540,46 +541,53 @@ const Users = () => {
                   </Table.Cell>
                   <Table.Cell>
                     <RoleBadge role={user.role} label={nameFor(user.role)} />
-                    {/* Level and role are independent: where they sit (which
-                        reports they see) shown under what they can do. */}
+                    {/* Where they sit in the hierarchy, under what they can do.
+                        Their level comes from their role, via their directory entry. */}
                     {canReadHierarchy && (
                       <div className="mt-1.5">
                         {user.role === REPORTER_ROLE ? (
-                        null
-                      ) : (() => {
-                        const member = memberFor(user);
-                        const seesTeam = byCode.get(user.role)?.permissions?.includes(PERM.reportReadSubordinates);
-                        const open = canUpdateUsers ? () => setLinkUser(user) : undefined;
-                        return member ? (
-                          <button
-                            type="button"
-                            onClick={open}
-                            disabled={!open}
-                            className="min-w-0 text-left disabled:cursor-default"
-                            title={open ? 'Change directory entry' : undefined}
-                          >
-                            <span className="block truncate text-sm font-medium text-ink">{member.name}</span>
-                            <span className="block truncate text-xs text-ink-muted">
-                              {member.level_code ? levelTitle(member.level_code) : 'No level'}
-                            </span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={open}
-                            disabled={!open}
-                            title={
-                              seesTeam
-                                ? "Not linked, so they see only their own cases — not their team's."
-                                : 'Not linked to a directory entry.'
-                            }
-                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning-fg hover:bg-warning-line disabled:cursor-default"
-                          >
-                            <AlertTriangle className="h-3 w-3" />
-                            {user.hierarchy_member_id ? 'Entry missing' : 'Unlinked'}
-                          </button>
-                        );
-                      })()}
+                          null
+                        ) : (() => {
+                          const member = memberFor(user);
+                          const seesTeam = byCode.get(user.role)?.permissions?.includes(PERM.reportReadSubordinates);
+                          const open = canUpdateUsers ? () => setLinkUser(user) : undefined;
+                          return member ? (
+                            <button
+                              type="button"
+                              onClick={open}
+                              disabled={!open}
+                              className="min-w-0 text-left disabled:cursor-default"
+                              title={open ? 'Change directory entry' : undefined}
+                            >
+                              <span className="block truncate text-sm font-medium text-ink">{member.name}</span>
+                              <span className="block truncate text-xs text-ink-muted">
+                                {member.level_code ? levelTitle(member.level_code) : 'No level'}
+                              </span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={open}
+                              disabled={!open}
+                              title={[
+                                // Unlinked: no link at all. Entry missing: linked to an
+                                // employee ID that is no longer in the directory —
+                                // usually a person removed after the account was linked.
+                                user.hierarchy_member_id
+                                  ? `Linked to employee ID ${user.hierarchy_member_id}, which is no longer in the directory — the entry was probably removed. Re-link them to an existing entry, or unlink them.`
+                                  : 'Not linked to anyone in the directory, so they aren’t placed in the org chart. Link them to their directory entry, or add them to the directory.',
+                                seesTeam && "Until then they see only their own cases, not their team's.",
+                                open && 'Click to fix.',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                              className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning-fg hover:bg-warning-line disabled:cursor-default"
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              {user.hierarchy_member_id ? 'Entry missing' : 'Unlinked'}
+                            </button>
+                          );
+                        })()}
                       </div>
                     )}
                   </Table.Cell>

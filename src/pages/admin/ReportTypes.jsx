@@ -118,14 +118,62 @@ const ReportTypes = () => {
     }, 400);
   };
 
+  // A search must cover every type, not just the page on screen. When the
+  // server supports `search` it filters and pages; until it does (older
+  // backends ignore the parameter), every page is fetched once per term
+  // (cached while paging through the matches), filtered here and paged here.
+  const searchCache = useRef({ key: null, matches: [] });
   const fetchTypes = useCallback(async () => {
     setLoading(true);
     try {
+      const term = debouncedSearch.trim().toLowerCase();
+      if (term && (await reportTypesAPI.supportsSearch())) {
+        searchCache.current = { key: null, matches: [] };
+        const response = await reportTypesAPI.listReportTypes({
+          page: currentPage,
+          pageSize: DEFAULT_PAGE_SIZE,
+          activeOnly: showActiveOnly,
+          search: debouncedSearch.trim(),
+        });
+        const { items, total, totalPages: pages } = normalizeListResponse(response);
+        setTypes(items);
+        setTotalPages(pages);
+        setTotalTypes(total);
+        return;
+      }
+      if (term) {
+        const key = `${term}|${showActiveOnly}`;
+        if (searchCache.current.key !== key) {
+          const all = [];
+          for (let page = 1; page <= 50; page += 1) {
+            const data = await reportTypesAPI.listReportTypes({
+              page,
+              pageSize: 100,
+              activeOnly: showActiveOnly,
+              includeSections: false,
+            });
+            const { items, hasNext } = normalizeListResponse(data);
+            all.push(...items);
+            if (!hasNext || items.length === 0) break;
+          }
+          searchCache.current = {
+            key,
+            matches: all.filter((t) =>
+              [t.name, t.category, t.code].some((v) => (v || '').toLowerCase().includes(term)),
+            ),
+          };
+        }
+        const { matches } = searchCache.current;
+        setTypes(matches.slice((currentPage - 1) * DEFAULT_PAGE_SIZE, currentPage * DEFAULT_PAGE_SIZE));
+        setTotalPages(Math.max(1, Math.ceil(matches.length / DEFAULT_PAGE_SIZE)));
+        setTotalTypes(matches.length);
+        return;
+      }
+      searchCache.current = { key: null, matches: [] };
       const response = await reportTypesAPI.listReportTypes({
         page: currentPage,
         pageSize: DEFAULT_PAGE_SIZE,
         activeOnly: showActiveOnly,
-        search: debouncedSearch || undefined,
       });
       const { items, total, totalPages: pages } = normalizeListResponse(response);
       setTypes(items);
@@ -151,6 +199,7 @@ const ReportTypes = () => {
     try {
       await reportTypesAPI.setReportTypeStatus(type.id, status);
       setTypes((prev) => prev.map((t) => (t.id === type.id ? { ...t, status } : t)));
+      searchCache.current.matches = searchCache.current.matches.map((t) => (t.id === type.id ? { ...t, status } : t));
       toast.success(
         status === "active"
           ? `"${type.name}" is active — reporters can file it.`
@@ -158,7 +207,11 @@ const ReportTypes = () => {
             ? `"${type.name}" is withdrawn. Existing cases are unaffected.`
             : `"${type.name}" is a draft again — hidden from reporters.`,
       );
-      if (showActiveOnly) fetchTypes();
+      if (showActiveOnly) {
+        // It may have left the filter; re-read rather than trust the cache.
+        searchCache.current.key = null;
+        fetchTypes();
+      }
     } catch (error) {
       console.error("Error changing report type status:", error);
     } finally {
@@ -230,7 +283,8 @@ const ReportTypes = () => {
       const q = searchTerm.toLowerCase();
       return (
         t.name?.toLowerCase().includes(q) ||
-        t.category?.toLowerCase().includes(q)
+        t.category?.toLowerCase().includes(q) ||
+        t.code?.toLowerCase().includes(q)
       );
     })
     : types;

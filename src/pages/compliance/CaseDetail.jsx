@@ -22,6 +22,7 @@ import Button from "../../components/ui/Button";
 import Badge, { StatusBadge, PriorityBadge } from "../../components/ui/Badge";
 import { Textarea } from "../../components/ui/Input";
 import { reportsAPI, reportTypesAPI, messagesAPI, usersAPI } from "../../api";
+import { useReportTypeNames } from "../../hooks/useReportTypeNames";
 import { useCan } from "../../hooks/useCan";
 import { useOrgRoles, roleCanWorkReports } from "../../hooks/useOrgRoles";
 import { PERM } from "../../utils/permissions";
@@ -179,7 +180,8 @@ const CaseDetail = () => {
   const { id, orgSlug } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
-  const [reportTypes, setReportTypes] = useState([]);
+  // The type's name, from the shared cached list; never holds up the case.
+  const { typeName: typeNameOf } = useReportTypeNames();
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState([]);
   const [downloadingKey, setDownloadingKey] = useState(null);
@@ -225,15 +227,9 @@ const CaseDetail = () => {
   const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
-      const [reportData, typesData] = await Promise.all([
-        reportsAPI.getReport(id, { quiet: true }),
-        reportTypes.length === 0
-          ? reportTypesAPI.getReportTypes()
-          : Promise.resolve(reportTypes),
-      ]);
+      const reportData = await reportsAPI.getReport(id, { quiet: true });
 
       setReport(reportData);
-      if (reportTypes.length === 0) setReportTypes(typesData);
       if (isDisposed(reportData)) return;
       const reportNumber = reportData?.report_number || reportData?.reportNumber || id;
       // The chat answers 404 for a case this person can't open, exactly like
@@ -259,7 +255,7 @@ const CaseDetail = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, reportTypes.length]);
+  }, [id]);
 
   useEffect(() => {
     fetchReport();
@@ -478,11 +474,11 @@ const CaseDetail = () => {
     );
   }
 
-  const typeName =
-    report.report_type_name || reportTypes.find((t) => t.id === report.report_type_id)?.name || "AI Assisstant";
+  // null until the type list arrives — shown as a placeholder, never as a guess.
+  const typeName = typeNameOf(report);
 
   if (isDisposed(report)) {
-    return <DisposedCase report={report} typeName={typeName} onBack={() => navigate(-1)} />;
+    return <DisposedCase report={report} typeName={typeName || 'Report'} onBack={() => navigate(-1)} />;
   }
 
   // Both optional: written by the voice agent when it files a report, absent
@@ -512,7 +508,7 @@ const CaseDetail = () => {
               Case #{report.report_number}
               <TierBadge tier={report.confidentiality_tier} size="medium" />
             </h2>
-            <p className="text-sm text-ink-muted">{typeName}</p>
+            <p className="text-sm text-ink-muted">{typeName ?? <Skeleton.Text className="w-32" />}</p>
           </div>
         </div>
         <div className="flex space-x-2">

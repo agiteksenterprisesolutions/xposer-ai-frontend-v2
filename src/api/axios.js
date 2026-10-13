@@ -1,7 +1,7 @@
 // src/api/axios.js
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
-import { toast } from 'react-toastify';
+import { apiErrorToast } from '../utils/toastGuard';
 import { normaliseError } from '../utils/errors';
 import { SET_PASSWORD_PATH } from '../utils/passwordPolicy';
 
@@ -37,6 +37,11 @@ api.interceptors.request.use(
   }
 );
 
+// One failure shows one error toast: these go through apiErrorToast, which
+// lets a screen's own, more specific message replace a generic one here and
+// drops a screen's restatement of a message the server already wrote (see
+// utils/toastGuard).
+//
 // A request can opt out of the toasts below with `{ skipErrorToast: true }` in
 // its config — for screens that render the structured problems inline (a
 // role's permission errors, a bulk import's bad rows), where a toast would only
@@ -69,7 +74,7 @@ api.interceptors.response.use(
           if (hasAuthContext && !isSignInAttempt && !isReportCredentialCheck) {
             useAuthStore.getState().logout();
             if (!window.location.pathname.includes('/login')) {
-              toast.error('Session expired. Please login again.');
+              apiErrorToast('Session expired. Please login again.');
               window.location.href = '/login';
             }
           }
@@ -86,7 +91,8 @@ api.interceptors.response.use(
             // Prefer the backend's wording — 403 also covers "This account has
             // been disabled" and expired organisation subscriptions, which the
             // generic permission message would hide.
-            toast.error(typeof data?.detail === 'string' ? data.detail : 'You do not have permission to perform this action.');
+            if (typeof data?.detail === 'string') apiErrorToast(data.detail);
+            else apiErrorToast('You do not have permission to perform this action.', { generic: true });
           }
           // Permissions resolve per request on the server, so a 403 usually
           // means ours are stale — a role was edited since we last asked.
@@ -97,27 +103,31 @@ api.interceptors.response.use(
           break;
         case 429:
           if (!quiet) {
-            toast.error(typeof data?.detail === 'string' ? data.detail : 'Too many requests. Please try again later.');
+            if (typeof data?.detail === 'string') apiErrorToast(data.detail);
+            else apiErrorToast('Too many requests. Please try again later.', { generic: true });
           }
           break;
         case 404:
-          if (!quiet) toast.error('Resource not found.');
+          if (!quiet) apiErrorToast('Resource not found.', { generic: true });
           break;
         case 422:
           // Validation errors handled by forms
           break;
         case 500:
-          if (!quiet) toast.error('Server error. Please try again later.');
+          if (!quiet) apiErrorToast('Server error. Please try again later.', { generic: true });
           break;
         default:
           // 400 business rules, 409 guards, 502 upstream failures, … — the
           // normalised summary is always a string, where `detail` may be an
           // object that would crash the toast.
           if (quiet) break;
-          if (data?.detail || data?.message) toast.error(error.normalised.summary);
+          if (data?.detail || data?.message) apiErrorToast(error.normalised.summary);
       }
+    } else if (axios.isCancel(error)) {
+      // Cancelled on purpose (a superseded search, a page left mid-load).
     } else if (error.request) {
-      toast.error('Network error. Please check your connection.');
+      // Several requests failing together collapse into this one toast.
+      apiErrorToast('Network error. Please check your connection.', { generic: true });
     } else {
       console.error('Error:', error.message);
     }

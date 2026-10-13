@@ -14,7 +14,8 @@ import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { StatusBadge, PriorityBadge } from '../../components/ui/Badge';
-import { reportsAPI, reportTypesAPI } from '../../api';
+import { reportsAPI } from '../../api';
+import { useReportTypeNames } from '../../hooks/useReportTypeNames';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate, useParams } from 'react-router-dom';
 import { parseServerDate } from '../../utils/formatters';
@@ -38,7 +39,7 @@ const buildSortColumns = (typeNameFor) => ({
   report_type_name: {
     label: 'Category',
     defaultOrder: 'asc',
-    value: (report) => typeNameFor(report).toLowerCase(),
+    value: (report) => (typeNameFor(report) || '').toLowerCase(),
   },
   priority: { label: 'Priority', defaultOrder: 'desc', value: byRank('priority', PRIORITY_RANK) },
   updated_at: { label: 'Last Updated', defaultOrder: 'desc', value: byDate('updated_at') },
@@ -54,19 +55,15 @@ const MyCases = () => {
   });
   const { user } = useAuthStore();
   const [reports, setReports] = useState([]);
-  const [reportTypes, setReportTypes] = useState([]);
+  // Names for the Category column, from the shared cached list of types —
+  // loaded alongside the cases, never in front of them.
+  const { typeName: typeNameFor } = useReportTypeNames();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   const fetchMyCases = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch report types for name mapping
-      if (reportTypes.length === 0) {
-        const types = await reportTypesAPI.getReportTypes();
-        setReportTypes(types);
-      }
-
       const response = await reportsAPI.getAllReports({
         assigned_to: user?.id,
         search: searchTerm || undefined,
@@ -78,18 +75,11 @@ const MyCases = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, searchTerm, reportTypes.length]);
+  }, [user?.id, searchTerm]);
 
   useEffect(() => {
     fetchMyCases();
   }, [fetchMyCases]);
-
-  // Both the Category column and its sort key need the same fallback chain.
-  const typeNameFor = useCallback((report) => (
-    report.report_type_name
-    || reportTypes.find((t) => t.id === report.report_type_id)?.name
-    || 'AI Assisstant'
-  ), [reportTypes]);
 
   const sortColumns = useMemo(() => buildSortColumns(typeNameFor), [typeNameFor]);
   const sort = useTableSort(reports, sortColumns, { defaultSortBy: 'updated_at' });
@@ -157,7 +147,7 @@ const MyCases = () => {
                     </div>
                   </Table.Cell>
                   <Table.Cell className="text-sm text-ink-secondary">
-                    {typeNameFor(report)}
+                    {typeNameFor(report) ?? <Skeleton.Text className="w-24" />}
                   </Table.Cell>
                   <Table.Cell>
                     <PriorityBadge priority={report.priority} />

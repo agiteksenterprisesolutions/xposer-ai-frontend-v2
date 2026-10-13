@@ -10,7 +10,8 @@ import {
     Layers,
     AlertCircle
 } from 'lucide-react';
-import { reportsAPI, messagesAPI, reportTypesAPI } from '../../api';
+import { reportsAPI, messagesAPI } from '../../api';
+import { useReportTypeNames } from '../../hooks/useReportTypeNames';
 import Card from '../../components/ui/Card';
 import Skeleton from '../../components/ui/Skeleton';
 import Input from '../../components/ui/Input';
@@ -29,7 +30,8 @@ const ComplianceMessages = () => {
   });
   const { orgSlug } = useParams();
     const [reports, setReports] = useState([]);
-    const [reportTypes, setReportTypes] = useState([]);
+    // Type names from the shared cached list; never holds up the inbox.
+    const { typeName } = useReportTypeNames();
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('all'); // 'all', 'unread', 'assigned'
@@ -37,16 +39,12 @@ const ComplianceMessages = () => {
     const fetchThreads = useCallback(async () => {
         setLoading(true);
         try {
-            const [reportsData, typesData] = await Promise.all([
-                reportsAPI.getAllReports(),
-                reportTypesAPI.getReportTypes()
-            ]);
+            const reportsData = await reportsAPI.getAllReports();
 
             const reportsList = normalizeReportsResponse(reportsData).items;
             // In a more complex backend, we'd have a specific "message-threads" endpoint.
             // Here we show reports that have activity.
             setReports(reportsList);
-            setReportTypes(typesData);
         } catch (error) {
             console.error('Error fetching message threads:', error);
         } finally {
@@ -144,7 +142,10 @@ const ComplianceMessages = () => {
                                             </div>
 
                                             <h4 className="text-sm font-semibold text-ink truncate mb-1">
-                                                {thread.title || reportTypes.find(t => t.id === thread.report_type_id)?.name || 'General Report'}
+                                                {thread.title ||
+                                                    (thread.report_type_id
+                                                        ? typeName(thread) ?? <Skeleton.Text className="inline-flex w-28 align-middle" />
+                                                        : 'General Report')}
                                             </h4>
 
                                             <div className="flex items-center justify-between mt-2">

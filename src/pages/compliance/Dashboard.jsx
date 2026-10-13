@@ -11,7 +11,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../components/ui/Badge';
 import Table from '../../components/ui/Table';
-import { reportsAPI, reportTypesAPI } from '../../api';
+import Skeleton from '../../components/ui/Skeleton';
+import { reportsAPI } from '../../api';
+import { useReportTypeNames } from '../../hooks/useReportTypeNames';
 import { useAuthStore } from '../../store/authStore';
 import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
@@ -26,7 +28,8 @@ const ComplianceDashboard = () => {
   const { user } = useAuthStore();
   const [stats, setStats] = useState(null);
   const [recentReports, setRecentReports] = useState([]);
-  const [reportTypes, setReportTypes] = useState([]);
+  // Category names from the shared cached list; never holds up the dashboard.
+  const { typeName } = useReportTypeNames();
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const tourRef = useRef(null);
@@ -40,14 +43,12 @@ const ComplianceDashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsData, reportsData, typesData] = await Promise.all([
+        const [statsData, reportsData] = await Promise.all([
           reportsAPI.getDashboardStats(),
           reportsAPI.getAllReports({ page_size: 5 }),
-          reportTypesAPI.getReportTypes()
         ]);
         setStats(statsData);
         setRecentReports(normalizeReportsResponse(reportsData).items);
-        setReportTypes(typesData);
       } catch (error) {
         console.error('Error fetching compliance dashboard data:', error);
       } finally {
@@ -235,9 +236,7 @@ const ComplianceDashboard = () => {
                   </Table.Cell>
                   <Table.Cell>
                     <span className="text-sm font-medium text-ink-secondary">
-                      {report.report_type_name ||
-                        reportTypes.find(t => t.id === report.report_type_id)?.name ||
-                        'AI Assisstant'}
+                      {typeName(report) ?? <Skeleton.Text className="w-24" />}
                     </span>
                   </Table.Cell>
                   <Table.Cell>

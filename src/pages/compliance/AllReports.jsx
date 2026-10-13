@@ -16,7 +16,8 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { StatusBadge, PriorityBadge } from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
-import { reportsAPI, reportTypesAPI, usersAPI } from '../../api';
+import { reportsAPI, usersAPI } from '../../api';
+import { useReportTypeNames } from '../../hooks/useReportTypeNames';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import DashboardTour from '../../components/tour/DashboardTour';
@@ -46,7 +47,7 @@ const buildSortColumns = (typeNameFor, nameFor) => ({
   report_type_name: {
     label: 'Category',
     defaultOrder: 'asc',
-    value: (report) => typeNameFor(report).toLowerCase(),
+    value: (report) => (typeNameFor(report) || '').toLowerCase(),
   },
   priority: { label: 'Priority', defaultOrder: 'desc', value: byRank('priority', PRIORITY_RANK) },
   assigned_to: {
@@ -70,7 +71,8 @@ const AllReports = () => {
     noIndex: true,
   });
   const [reports, setReports] = useState([]);
-  const [reportTypes, setReportTypes] = useState([]);
+  // Names for the Category column, from the shared cached list of types.
+  const { types: reportTypes, typeName: typeNameFor } = useReportTypeNames();
   const [usersById, setUsersById] = useState({});
   const [loading, setLoading] = useState(true);
   // The query string is the source of truth for every filter, so a dashboard
@@ -106,13 +108,6 @@ const AllReports = () => {
     let cancelled = false;
 
     const fetchLookups = async () => {
-      try {
-        const types = await reportTypesAPI.getReportTypes();
-        if (!cancelled) setReportTypes(normalizeListResponse(types).items);
-      } catch (typesError) {
-        console.warn('Unable to fetch report types:', typesError);
-      }
-
       try {
         const usersResponse = await usersAPI.getAllUsers({ page_size: 100 });
         const usersMap = normalizeListResponse(usersResponse).items.reduce((acc, item) => {
@@ -158,13 +153,6 @@ const AllReports = () => {
   const activeTypeName = useMemo(() => (
     reportTypes.find((t) => t.id === resolvedTypeId)?.name || typeNameParam
   ), [reportTypes, resolvedTypeId, typeNameParam]);
-
-  // Both the Category column and its sort key need the same fallback chain.
-  const typeNameFor = useCallback((report) => (
-    report.report_type_name
-    || reportTypes.find((t) => t.id === report.report_type_id)?.name
-    || 'AI Assisstant'
-  ), [reportTypes]);
 
   // The API filters and paginates; re-filtering here would hide rows that
   // matched on fields this page doesn't render. The one exception is the
@@ -476,7 +464,7 @@ const AllReports = () => {
                     <div className="flex items-center space-x-2">
                       <Layers className="h-3 w-3 text-ink-subtle" />
                       <span className="text-sm text-ink-secondary">
-                        {typeNameFor(report)}
+                        {typeNameFor(report) ?? <Skeleton.Text className="w-24" />}
                       </span>
                     </div>
                   </Table.Cell>
