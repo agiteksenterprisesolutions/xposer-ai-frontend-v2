@@ -23,6 +23,7 @@ import {
   Tooltip
 } from 'recharts';
 import useSEO from '../../hooks/useSEO';
+import { NO_TYPE_LABEL, useReportTypeNames } from '../../hooks/useReportTypeNames';
 
 const CHART_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#0891b2', '#e11d48', '#4f46e5'];
 
@@ -117,16 +118,22 @@ const ComplianceAnalytics = () => {
   };
 
   const totalReports = Number(getSummaryValue('Total Reports')) || 0;
+  const { loaded: typesLoaded, categoryFor } = useReportTypeNames();
+  // Categories read the same as in every case list: the AI assistant's
+  // placeholder type (named "Flexible Reporting" by the stats) reads "AI
+  // Assistant", and buckets that end up with the same label are merged.
   const reportTypeData = useMemo(() => {
-    const list = data?.report_types || [];
-    return list
-      .map((item) => ({
-        name: item.name || 'Unknown',
-        total: Number(item.total) || 0
-      }))
-      .filter((item) => item.total > 0)
-      .sort((a, b) => b.total - a.total);
-  }, [data]);
+    if (!typesLoaded) return [];
+    const merged = new globalThis.Map(); // `Map` here is the lucide icon
+    (data?.report_types || []).forEach((item) => {
+      const id = item.id || item.report_type_id || item.type_id || '';
+      const name = categoryFor(id, item.name) || item.name || NO_TYPE_LABEL;
+      const total = Number(item.total) || 0;
+      const prev = merged.get(name);
+      merged.set(name, prev ? { ...prev, total: prev.total + total } : { name, total });
+    });
+    return [...merged.values()].filter((item) => item.total > 0).sort((a, b) => b.total - a.total);
+  }, [data, typesLoaded, categoryFor]);
 
   const metrics = data ? [
     { label: 'Total Reports', value: getSummaryValue('Total Reports'), trend: '+5%', icon: BarChart3 },
@@ -241,7 +248,7 @@ const ComplianceAnalytics = () => {
           </Card.Header>
           <Card.Content>
             <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pr-3">
-              {loading ? (
+              {loading || !typesLoaded ? (
                 <Skeleton.Bars />
               ) : reportTypeData.length > 0 ? (
                 reportTypeData.map((type, i) => {

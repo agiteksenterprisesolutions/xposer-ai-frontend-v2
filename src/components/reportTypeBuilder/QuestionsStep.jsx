@@ -25,7 +25,7 @@ import { QUESTION_TYPES, QUICK_TYPES, describeLogic, isConditional, isCore, type
 // ── Outline ─────────────────────────────────────────────────────────────────
 
 const Outline = ({ draft, problemIds }) => {
-  const { form, selection, select, addSection } = draft;
+  const { form, selection, select, addSection, addQuestion, removeSection } = draft;
   const activeId = selection?.sectionId;
   const total = form.sections.reduce((n, s) => n + s.questions.length, 0);
   const hasCore = form.sections.some((s) => s.questions.some(isCore));
@@ -45,18 +45,19 @@ const Outline = ({ draft, problemIds }) => {
           const stepSelected = open && !selection?.questionId;
           return (
             <div key={section.id} className={`rounded-xl ${open ? 'bg-accent-soft/60 p-1' : ''}`}>
+              <div
+                className={`flex items-center rounded-lg transition-colors ${stepSelected ? 'bg-surface shadow-[0_0_0_1.5px_var(--color-accent)]' : open ? '' : 'hover:bg-hover'
+                  }`}
+              >
               <button
                 type="button"
                 aria-expanded={open}
                 onClick={() => select({ sectionId: section.id, questionId: null })}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
-                  stepSelected ? 'bg-surface shadow-[0_0_0_1.5px_var(--color-accent)]' : open ? '' : 'hover:bg-hover'
-                }`}
+                className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-2 text-left"
               >
                 <span
-                  className={`flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${
-                    open ? 'bg-accent text-on-accent' : 'bg-active text-ink-secondary'
-                  }`}
+                  className={`flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${open ? 'bg-accent text-on-accent' : 'bg-active text-ink-secondary'
+                    }`}
                 >
                   {index + 1}
                 </span>
@@ -67,6 +68,37 @@ const Outline = ({ draft, problemIds }) => {
                 {isConditional(section) && <GitBranch className="h-3.5 w-3.5 shrink-0 text-accent-fg" aria-label="Has a condition" />}
                 <span className="text-xs text-ink-muted">{section.questions.length}</span>
               </button>
+              {/* On the open step: add a question, or delete the step, without
+                  leaving the outline. A step holding core questions can't go. */}
+              {open && (
+                <span className="flex shrink-0 items-center pr-1">
+                  <button
+                    type="button"
+                    onClick={() => addQuestion(section.id, 'text', selection?.questionId ?? null)}
+                    aria-label={`Add a question to ${section.title || `step ${index + 1}`}`}
+                    title="Add a question"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-accent-fg transition-colors hover:bg-accent-soft"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                  {!section.questions.some(isCore) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (section.questions.length === 0 || window.confirm('Delete this step and its questions?')) {
+                          removeSection(section.id);
+                        }
+                      }}
+                      aria-label={`Delete ${section.title || `step ${index + 1}`}`}
+                      title="Delete step"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger-fg"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  )}
+                </span>
+              )}
+              </div>
 
               {open && section.questions.length > 0 && (
                 <ul className="space-y-px py-1 pl-3">
@@ -79,11 +111,10 @@ const Outline = ({ draft, problemIds }) => {
                           type="button"
                           aria-current={active ? 'true' : undefined}
                           onClick={() => select({ sectionId: section.id, questionId: question.id })}
-                          className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${
-                            active
-                              ? 'bg-surface font-medium text-ink shadow-[0_0_0_1.5px_var(--color-accent)]'
-                              : 'text-ink-secondary hover:bg-surface/70'
-                          }`}
+                          className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${active
+                            ? 'bg-surface font-medium text-ink shadow-[0_0_0_1.5px_var(--color-accent)]'
+                            : 'text-ink-secondary hover:bg-surface/70'
+                            }`}
                         >
                           <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-accent-fg' : 'text-ink-muted'}`} aria-hidden="true" />
                           <span className="min-w-0 flex-1 truncate">
@@ -128,7 +159,19 @@ const Outline = ({ draft, problemIds }) => {
 
 const AddQuestionBar = ({ onAdd }) => {
   const [moreOpen, setMoreOpen] = useState(false);
+  // Opens downward, flipping up only when there isn't room below — near the
+  // top of the canvas (the first question) an upward menu ran under the header.
+  const [openUp, setOpenUp] = useState(false);
   const menuRef = useRef(null);
+
+  const toggleMore = () => {
+    if (!moreOpen && menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect();
+      const menuHeight = (QUESTION_TYPES.length - QUICK_TYPES.length) * 40 + 16;
+      setOpenUp(window.innerHeight - rect.bottom < menuHeight + 12 && rect.top > menuHeight + 12);
+    }
+    setMoreOpen((v) => !v);
+  };
 
   useEffect(() => {
     if (!moreOpen) return undefined;
@@ -155,8 +198,7 @@ const AddQuestionBar = ({ onAdd }) => {
       data-tour="rtb-add-question"
     >
       <span className="mr-1 flex items-center gap-1.5 text-sm font-medium text-ink-secondary">
-        <Plus className="h-4 w-4 text-accent-fg" aria-hidden="true" />
-        Add a question
+        Add a question :
       </span>
       {QUICK_TYPES.map((value) => {
         const type = typeInfo(value);
@@ -177,14 +219,17 @@ const AddQuestionBar = ({ onAdd }) => {
           type="button"
           aria-expanded={moreOpen}
           aria-haspopup="menu"
-          onClick={() => setMoreOpen((v) => !v)}
+          onClick={toggleMore}
           className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-sm font-medium text-link hover:bg-accent-soft"
         >
           More types
           <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
         {moreOpen && (
-          <div role="menu" className="absolute bottom-full left-0 z-20 mb-2 w-52 rounded-xl border border-line bg-surface p-1.5 shadow-lg">
+          <div
+            role="menu"
+            className={`absolute left-0 z-20 w-52 rounded-xl border border-line bg-surface p-1.5 shadow-lg ${openUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+          >
             {QUESTION_TYPES.filter((t) => !QUICK_TYPES.includes(t.value)).map((type) => (
               <button
                 key={type.value}
@@ -213,9 +258,8 @@ const ToolButton = ({ label, onClick, disabled, danger, children }) => (
     title={label}
     onClick={onClick}
     disabled={disabled}
-    className={`flex h-7.5 w-7.5 items-center justify-center rounded-md transition-colors disabled:opacity-30 ${
-      danger ? 'text-danger-fg hover:bg-danger-soft' : 'text-ink-muted hover:bg-hover hover:text-ink'
-    }`}
+    className={`flex h-7.5 w-7.5 items-center justify-center rounded-md transition-colors disabled:opacity-30 ${danger ? 'text-danger-fg hover:bg-danger-soft' : 'text-ink-muted hover:bg-hover hover:text-ink'
+      }`}
   >
     {children}
   </button>
@@ -267,13 +311,12 @@ const QuestionCard = ({ draft, section, question, index, count, problem }) => {
       <div
         {...selectable(() => select({ sectionId: section.id, questionId: question.id }))}
         aria-pressed={active}
-        className={`cursor-pointer space-y-2 rounded-2xl border bg-surface px-6 py-4.5 text-left outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
-          active
-            ? 'border-accent shadow-[0_0_0_1px_var(--color-accent),0_6px_20px_-8px_color-mix(in_srgb,var(--color-accent)_35%,transparent)]'
-            : problem
-              ? 'border-danger-line hover:border-danger-fg'
-              : 'border-line hover:border-line-strong'
-        }`}
+        className={`cursor-pointer space-y-2 rounded-2xl border bg-surface px-6 py-4.5 text-left outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${active
+          ? 'border-accent shadow-[0_0_0_1px_var(--color-accent),0_6px_20px_-8px_color-mix(in_srgb,var(--color-accent)_35%,transparent)]'
+          : problem
+            ? 'border-danger-line hover:border-danger-fg'
+            : 'border-line hover:border-line-strong'
+          }`}
       >
         {condition && (
           <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-fg">
@@ -390,13 +433,12 @@ const Canvas = ({ draft, issuesFor }) => {
         <div
           {...selectable(() => select({ sectionId: section.id, questionId: null }))}
           aria-pressed={stepActive}
-          className={`cursor-pointer space-y-1 rounded-2xl border bg-surface px-6 py-5 outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
-            stepActive
-              ? 'border-accent shadow-[0_0_0_1px_var(--color-accent)]'
-              : stepProblem
-                ? 'border-danger-line'
-                : 'border-line hover:border-line-strong'
-          }`}
+          className={`cursor-pointer space-y-1 rounded-2xl border bg-surface px-6 py-5 outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${stepActive
+            ? 'border-accent shadow-[0_0_0_1px_var(--color-accent)]'
+            : stepProblem
+              ? 'border-danger-line'
+              : 'border-line hover:border-line-strong'
+            }`}
         >
           {stepCondition && (
             <span className="mb-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-fg">

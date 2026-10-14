@@ -29,7 +29,7 @@ const ComplianceDashboard = () => {
   const [stats, setStats] = useState(null);
   const [recentReports, setRecentReports] = useState([]);
   // Category names from the shared cached list; never holds up the dashboard.
-  const { typeName } = useReportTypeNames();
+  const { typeName, categoryFor } = useReportTypeNames();
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const tourRef = useRef(null);
@@ -275,7 +275,9 @@ const ComplianceDashboard = () => {
                   return (
                     <div key={i} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-ink-secondary truncate pr-2">{item.report_type_name}</span>
+                        <span className="font-medium text-ink-secondary truncate pr-2">
+                          {categoryFor(item.report_type_id, item.report_type_name) ?? <Skeleton.Text className="w-28" />}
+                        </span>
                         <span className="text-ink-muted shrink-0">{item.count} ({percentage}%)</span>
                       </div>
                       <div className="w-full bg-active rounded-full h-1.5">

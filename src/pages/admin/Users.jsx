@@ -164,7 +164,17 @@ const Users = () => {
     }, { replace: true });
   }, [setSearchParams]);
 
-  console.log(users)
+  // ?search=… (e.g. from a directory entry's "Has a login") opens the list on
+  // that person.
+  useEffect(() => {
+    const initial = searchParams.get('search');
+    if (initial) {
+      setSearchTerm(initial);
+      setDebouncedSearch(initial);
+    }
+    // Only on arrival; typing takes over from there.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Debounce the search term so we don't fire a request on every keystroke
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const debounceRef = useRef(null);

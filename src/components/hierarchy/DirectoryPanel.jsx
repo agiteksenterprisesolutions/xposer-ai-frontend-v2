@@ -9,7 +9,14 @@
 // meanings and are kept apart:
 //   source "manual"       — added by hand; untouched by every sync.
 //   has_manual_override   — synced from HR, then the manager corrected.
-import { useMemo, useState } from 'react';
+//
+// `has_account` / `account_ids` say whether the person can sign in. Without an
+// account, "Create login" opens Add person prefilled from the entry (it needs
+// user:create, a separate permission from managing the directory). With one,
+// a deactivated account is offered Reactivate — never a second login, which
+// would collide on the username.
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Pencil, Plus, Search, Trash2, Upload, Users } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Button from '../ui/Button';
@@ -23,6 +30,9 @@ import { useCan } from '../../hooks/useCan';
 import { PERM } from '../../utils/permissions';
 import BulkImportModal from './BulkImportModal';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
+import { usersAPI } from '../../api/users';
+import { useAuthStore } from '../../store/authStore';
+import { staffPath } from '../../utils/navigation';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { errorSummary } from '../../utils/errors';
 
@@ -49,9 +59,83 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
   // Adding someone goes through the same form as Users → Add person, with its
   // "Create a login" switch, when the viewer may create users (POST
   // /users/person needs user:create). Without it, the directory-only form.
-  const canCreateUsers = useCan()(PERM.userCreate);
+  const can = useCan();
+  const canCreateUsers = can(PERM.userCreate);
+  const canSeeUsers = can(PERM.userReadAll);
+  const canReactivate = can(PERM.userUpdate);
+  const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const { nameFor } = useOrgRoles();
   const [adding, setAdding] = useState(false);
+  const [creatingLoginFor, setCreatingLoginFor] = useState(null);
+  const [reactivating, setReactivating] = useState(null);
+  // Deactivated accounts: `has_account` stays true for them, so they're told
+  // apart here, from one list of inactive users.
+  const [inactiveAccounts, setInactiveAccounts] = useState(() => new Set());
+  const loadInactive = useCallback(() => {
+    if (!canSeeUsers) return;
+    usersAPI
+      .getAllUsers({ is_active: false, page: 1, page_size: 100 })
+      .then((data) => setInactiveAccounts(new Set((data?.items || data || []).map((u) => u.id))))
+      .catch(() => setInactiveAccounts(new Set()));
+  }, [canSeeUsers]);
+  useEffect(() => {
+    loadInactive();
+  }, [loadInactive, members]);
+
+  const reactivate = async (member) => {
+    setReactivating(member.external_id);
+    try {
+      await Promise.all(member.account_ids.filter((id) => inactiveAccounts.has(id)).map((id) => usersAPI.activateUser(id)));
+      loadInactive();
+      onChanged();
+    } catch (error) {
+      toast.error(errorSummary(error));
+    } finally {
+      setReactivating(null);
+    }
+  };
+
+  /** The Login cell: whether they can sign in, and the one action that fits. */
+  const loginCell = (member) => {
+    if (member.has_account === undefined) return <span className="text-sm text-ink-subtle">—</span>;
+    const ids = member.account_ids || [];
+    if (member.has_account) {
+      const allInactive = ids.length > 0 && ids.every((id) => inactiveAccounts.has(id));
+      const usersLink = canSeeUsers && member.email ? `${staffPath(orgSlug, 'users')}?search=${encodeURIComponent(member.email)}` : null;
+      if (allInactive) {
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <Badge variant="warning" size="small">Login deactivated</Badge>
+            {canReactivate && member.is_active !== false && (
+              <Button variant="outline" size="small" onClick={() => reactivate(member)} isLoading={reactivating === member.external_id}>
+                Reactivate
+              </Button>
+            )}
+          </div>
+        );
+      }
+      const badge = (
+        <Badge variant="success" size="small" title={ids.length > 1 ? `${ids.length} accounts are linked to this person` : undefined}>
+          {ids.length > 1 ? `${ids.length} logins` : 'Has a login'}
+        </Badge>
+      );
+      return usersLink ? (
+        <Link to={usersLink} title="Open in User Management" className="hover:opacity-80">
+          {badge}
+        </Link>
+      ) : (
+        badge
+      );
+    }
+    if (canCreateUsers && member.is_active !== false) {
+      return (
+        <Button variant="outline" size="small" onClick={() => setCreatingLoginFor(member)}>
+          Create login
+        </Button>
+      );
+    }
+    return <span className="text-sm text-ink-muted">No login</span>;
+  };
   const [removing, setRemoving] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -160,6 +244,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
               <Table.Head>Job title</Table.Head>
               <Table.Head>Role · level</Table.Head>
               <Table.Head>Manager</Table.Head>
+              <Table.Head>Login</Table.Head>
               <Table.Head>Source</Table.Head>
               {canManage && <Table.Head className="text-right">Actions</Table.Head>}
             </Table.Row>
@@ -209,6 +294,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
                     </p>
                     {provenance(member, 'manager_external_id', (id) => nameById.get(id) || id)}
                   </Table.Cell>
+                  <Table.Cell>{loginCell(member)}</Table.Cell>
                   <Table.Cell>
                     <div className="flex flex-wrap gap-1">
                       <SourceBadge member={member} />
@@ -269,6 +355,15 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
       <AddPersonModal
         isOpen={adding}
         onClose={() => setAdding(false)}
+        members={members}
+        onAdded={() => onChanged()}
+      />
+
+      {/* A login for someone already here: prefilled, keyed on their stored id. */}
+      <AddPersonModal
+        isOpen={Boolean(creatingLoginFor)}
+        member={creatingLoginFor}
+        onClose={() => setCreatingLoginFor(null)}
         members={members}
         onAdded={() => onChanged()}
       />

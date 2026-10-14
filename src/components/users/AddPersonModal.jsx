@@ -18,7 +18,15 @@
 //
 // The manager is optional: left blank, the server fills it in when exactly
 // one person sits one level above in the same department, and says so.
-import { useMemo, useState } from 'react';
+//
+// With `member`, the same form creates a login for someone already in the
+// directory: everything is prefilled from their entry and only the role and
+// the sign-in method are decisions. The entry's stored external_id is sent as
+// employee_id and can't be edited — the directory write is an upsert on it, so
+// a blank or different id would create a second entry for the same person,
+// and a report naming them could match either one.
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CheckCircle2, UserPlus } from 'lucide-react';
 import Modal from '../layout/Modal';
 import Button from '../ui/Button';
@@ -29,6 +37,7 @@ import { useOrgRoles, REPORTER_ROLE } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import { deriveUsername, usernameNeedsAttention } from '../../utils/usernames';
 import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
+import { staffPath } from '../../utils/navigation';
 import { describeError } from '../../utils/errors';
 
 const EMPTY = {
@@ -67,13 +76,28 @@ const Field = ({ id, label, hint, error, children }) => (
 
 const blankToNull = (v) => (typeof v === 'string' && !v.trim() ? null : typeof v === 'string' ? v.trim() : v);
 
+/** The form, prefilled from an existing directory entry. */
+const fromMember = (member) => ({
+  ...EMPTY,
+  full_name: member.name || '',
+  email: member.email || '',
+  employee_id: member.external_id || '',
+  designation: member.designation || '',
+  department: member.department || '',
+  manager_external_id: member.manager_external_id || '',
+  role: member.role_code || REPORTER_ROLE,
+  create_login: true,
+});
+
 /**
  * Props:
  *   isOpen, onClose
  *   members  – directory entries, for the manager picker
+ *   member   – an existing directory entry to create a login for (optional)
  *   onAdded  – after a person is added, to refresh the lists
  */
-const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
+const AddPersonModal = ({ isOpen, onClose, members = [], member = null, onAdded }) => {
+  const forMember = Boolean(member);
   const { allRoles: unsortedRoles, nameFor, byCode } = useOrgRoles();
   const allRoles = useMemo(() => sortRolesByLevel(unsortedRoles.filter((r) => r.is_active !== false)), [unsortedRoles]);
   const orgName = useAuthStore((s) => s.user?.organization_name);
@@ -82,7 +106,15 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState(null);
   const [result, setResult] = useState(null);
+  // 400 role_has_no_level names the role: a one-field fix on the Roles screen.
+  const [roleWithoutLevel, setRoleWithoutLevel] = useState(null);
+  const orgSlug = useAuthStore((s) => s.user?.organization_slug);
   const chosenRole = byCode.get(form.role);
+
+  // Opening for a directory entry starts from that entry, every time.
+  useEffect(() => {
+    if (isOpen && member) setForm(fromMember(member));
+  }, [isOpen, member]);
   const method = SIGN_IN_METHODS.find((m) => m.value === form.auth_provider) || SIGN_IN_METHODS[0];
 
   const managers = useMemo(
@@ -103,6 +135,7 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
     setErrors({});
     setServerError(null);
     setResult(null);
+    setRoleWithoutLevel(null);
     onClose();
   };
 
@@ -117,11 +150,13 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
 
     setSaving(true);
     setServerError(null);
+    setRoleWithoutLevel(null);
     try {
       const body = {
         full_name: form.full_name.trim(),
         email: form.email.trim(),
-        employee_id: blankToNull(form.employee_id),
+        // For an existing entry, always its stored id — never anything typed.
+        employee_id: forMember ? member.external_id : blankToNull(form.employee_id),
         designation: blankToNull(form.designation),
         department: blankToNull(form.department),
         manager_external_id: blankToNull(form.manager_external_id),
@@ -135,11 +170,47 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
       setResult({ ...res, sentManager: body.manager_external_id, sentProvider: body.auth_provider });
       onAdded?.(res);
     } catch (err) {
-      setServerError(describeError(err));
+      const described = describeError(err);
+      const detail = err?.response?.data?.detail;
+      if (detail?.code === 'role_has_no_level') setRoleWithoutLevel(detail.role_code || form.role);
+      // They already have a login: the list we opened this from was stale.
+      if (described.status === 400 && /already registered/i.test(described.summary)) {
+        setServerError({ summary: `${form.full_name.trim() || 'This person'} already has a login.`, problems: [] });
+        onAdded?.();
+      } else {
+        setServerError(described);
+      }
     } finally {
       setSaving(false);
     }
   };
+
+  const roleField = (
+    <Field id="ap-role" label="Role" error={errors.role}>
+      <select
+        id="ap-role"
+        value={form.role}
+        onChange={set('role')}
+        className={`${inputClass} ${errors.role ? 'border-danger-line' : 'border-line-strong'}`}
+      >
+        {allRoles.map((r) => (
+          <option key={r.code} value={r.code}>
+            {roleWithLevel(r)}
+          </option>
+        ))}
+        {!allRoles.some((r) => r.code === REPORTER_ROLE) && <option value={REPORTER_ROLE}>Reporter</option>}
+      </select>
+      <p className={`text-xs ${chosenRole && !chosenRole.level_code ? 'text-warning-fg' : 'text-ink-muted'}`}>
+        {chosenRole && !chosenRole.level_code
+          ? 'This role has no level yet, so they can’t be placed in the org chart until it gets one.'
+          : forMember
+            ? 'Prefilled from their entry. Changing it also moves them in the org chart, because their level is their role’s level.'
+            : form.create_login
+            ? 'What they can do once signed in, and where they sit in the org chart.'
+            : 'Places them in the org chart. Reporter fits most people who never sign in.'}
+      </p>
+    </Field>
+  );
 
   if (result) {
     const user = result.user;
@@ -154,19 +225,21 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
       <Modal
         isOpen={isOpen}
         onClose={close}
-        title="Person added"
+        title={forMember ? 'Login created' : 'Person added'}
         size="large"
         footer={
           <div className="flex justify-end gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setForm(EMPTY);
-                setResult(null);
-              }}
-            >
-              Add another
-            </Button>
+            {!forMember && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setForm(EMPTY);
+                  setResult(null);
+                }}
+              >
+                Add another
+              </Button>
+            )}
             <Button onClick={close}>Done</Button>
           </div>
         }
@@ -222,7 +295,7 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
     <Modal
       isOpen={isOpen}
       onClose={close}
-      title="Add person"
+      title={forMember ? `Create a login for ${member.name}` : 'Add person'}
       size="large"
       closeOnOverlayClick={false}
       footer={
@@ -231,15 +304,16 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
             Cancel
           </Button>
           <Button startIcon={UserPlus} onClick={submit} isLoading={saving}>
-            {form.create_login ? 'Add person and create login' : 'Add to directory'}
+            {forMember ? 'Create login' : form.create_login ? 'Add person and create login' : 'Add to directory'}
           </Button>
         </div>
       }
     >
       <div className="space-y-5">
         <p className="text-sm text-ink-muted">
-          Everyone goes in the directory, so escalation can route a report above the person it names. Only people who
-          need to sign in get a login.
+          {forMember
+            ? 'They stay the same person in the directory; the login is linked to their entry.'
+            : 'Everyone goes in the directory, so escalation can route a report above the person it names. Only people who need to sign in get a login.'}
         </p>
 
         {serverError && (
@@ -251,9 +325,56 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
                 ))}
               </ul>
             )}
+            {roleWithoutLevel && (
+              <Link
+                to={`${staffPath(orgSlug, 'roles')}?role=${encodeURIComponent(roleWithoutLevel)}`}
+                className="mt-2 inline-block font-semibold underline underline-offset-2"
+              >
+                Give that role a level
+              </Link>
+            )}
           </Alert>
         )}
 
+        {forMember && (
+          <>
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 rounded-xl border border-line bg-subtle p-4 text-sm">
+              <dt className="text-ink-muted">Employee ID</dt>
+              <dd className="font-mono text-ink">{member.external_id}</dd>
+              {member.email && (
+                <>
+                  <dt className="text-ink-muted">Email</dt>
+                  <dd className="text-ink">{member.email}</dd>
+                </>
+              )}
+              {(member.designation || member.department) && (
+                <>
+                  <dt className="text-ink-muted">Job</dt>
+                  <dd className="text-ink">{[member.designation, member.department].filter(Boolean).join(' · ')}</dd>
+                </>
+              )}
+              {member.manager_external_id && (
+                <>
+                  <dt className="text-ink-muted">Reports to</dt>
+                  <dd className="text-ink">
+                    {members.find((m) => m.external_id === member.manager_external_id)?.name || member.manager_external_id}
+                  </dd>
+                </>
+              )}
+            </dl>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {!member.email && (
+                <Field id="ap-email" label="Email" error={errors.email}>
+                  <input id="ap-email" type="email" value={form.email} onChange={set('email')} className={`${inputClass} ${errors.email ? 'border-danger-line' : 'border-line-strong'}`} />
+                  <p className="text-xs text-ink-muted">Their directory entry has no email, and a login needs one.</p>
+                </Field>
+              )}
+              {roleField}
+            </div>
+          </>
+        )}
+
+        {!forMember && (
         <div className="grid gap-4 sm:grid-cols-2">
           <Field id="ap-name" label="Full name" error={errors.full_name}>
             <input id="ap-name" value={form.full_name} onChange={set('full_name')} className={`${inputClass} ${errors.full_name ? 'border-danger-line' : 'border-line-strong'}`} />
@@ -267,28 +388,7 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
           <Field id="ap-dept" label="Department" hint="optional">
             <input id="ap-dept" value={form.department} onChange={set('department')} className={`${inputClass} border-line-strong`} />
           </Field>
-          <Field id="ap-role" label="Role" error={errors.role}>
-            <select
-              id="ap-role"
-              value={form.role}
-              onChange={set('role')}
-              className={`${inputClass} ${errors.role ? 'border-danger-line' : 'border-line-strong'}`}
-            >
-              {allRoles.map((r) => (
-                <option key={r.code} value={r.code}>
-                  {roleWithLevel(r)}
-                </option>
-              ))}
-              {!allRoles.some((r) => r.code === REPORTER_ROLE) && <option value={REPORTER_ROLE}>Reporter</option>}
-            </select>
-            <p className={`text-xs ${chosenRole && !chosenRole.level_code ? 'text-warning-fg' : 'text-ink-muted'}`}>
-              {chosenRole && !chosenRole.level_code
-                ? 'This role has no level yet, so they can’t be placed in the org chart until it gets one.'
-                : form.create_login
-                  ? 'What they can do once signed in, and where they sit in the org chart.'
-                  : 'Places them in the org chart. Reporter fits most people who never sign in.'}
-            </p>
-          </Field>
+          {roleField}
           <Field id="ap-manager" label="Manager" hint="optional">
             <select id="ap-manager" value={form.manager_external_id} onChange={set('manager_external_id')} className={`${inputClass} border-line-strong`}>
               <option value="">Work it out from the hierarchy</option>
@@ -307,8 +407,10 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
             <input id="ap-empid" value={form.employee_id} onChange={set('employee_id')} className={`${inputClass} border-line-strong font-mono`} />
           </Field>
         </div>
+        )}
 
         <div className="space-y-4 rounded-xl border border-line bg-subtle p-4">
+          {!forMember && (
           <label className="flex items-start justify-between gap-4">
             <span>
               <span className="block text-sm font-semibold text-ink">Create a login</span>
@@ -327,6 +429,7 @@ const AddPersonModal = ({ isOpen, onClose, members = [], onAdded }) => {
               <span className={`absolute top-1 h-4 w-4 rounded-full bg-surface shadow-sm transition-all ${form.create_login ? 'left-6' : 'left-1'}`} />
             </button>
           </label>
+          )}
 
           {form.create_login && (
             <div className="grid gap-4 sm:grid-cols-2">

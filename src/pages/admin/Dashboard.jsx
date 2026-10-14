@@ -27,6 +27,7 @@ import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
 import { tone } from '../../utils/tone';
 import useSEO from '../../hooks/useSEO';
+import { NO_TYPE_LABEL, useReportTypeNames } from '../../hooks/useReportTypeNames';
 
 const ADMIN_TOUR_KEY = 'xposer_admin_dashboard_tour_seen';
 
@@ -150,20 +151,22 @@ const AdminDashboard = () => {
   };
 
   const totalReports = Number(getSummaryValue('Total Reports')) || 0;
+  const { loaded: typesLoaded, categoryFor } = useReportTypeNames();
+  // Categories read the same as in every case list: the AI assistant's
+  // placeholder type (named "Flexible Reporting" by the stats) reads "AI
+  // Assistant", and buckets that end up with the same label are merged.
   const reportTypeData = useMemo(() => {
-    const list = stats?.report_types || [];
-    return list
-      .map((item) => ({
-        // The stats payload has carried the type id under either key; keep
-        // whichever is present so the drill-down can filter by id rather than
-        // falling back to matching on the name.
-        id: item.id || item.report_type_id || '',
-        name: item.name || 'Unknown',
-        total: Number(item.total) || 0
-      }))
-      .filter((item) => item.total > 0)
-      .sort((a, b) => b.total - a.total);
-  }, [stats]);
+    if (!typesLoaded) return [];
+    const merged = new Map();
+    (stats?.report_types || []).forEach((item) => {
+      const id = item.id || item.report_type_id || item.type_id || '';
+      const name = categoryFor(id, item.name) || item.name || NO_TYPE_LABEL;
+      const total = Number(item.total) || 0;
+      const prev = merged.get(name);
+      merged.set(name, prev ? { ...prev, total: prev.total + total, id: prev.id || id } : { id, name, total });
+    });
+    return [...merged.values()].filter((item) => item.total > 0).sort((a, b) => b.total - a.total);
+  }, [stats, typesLoaded, categoryFor]);
 
   // Filter by id when the payload gives one, otherwise send the name and let
   // All Reports resolve it against its own report-type list.
@@ -388,7 +391,7 @@ const AdminDashboard = () => {
             {/* Scrolls internally so the card height stays fixed no matter how
                 many categories come back. */}
             <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pr-3">
-              {loading ? (
+              {loading || !typesLoaded ? (
                 <Skeleton.Bars className="block space-y-1.5 p-1 -m-1" />
               ) : reportTypeData.length > 0 ? (
                 reportTypeData.map((type, i) => {
@@ -426,7 +429,7 @@ const AdminDashboard = () => {
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            {loading ? (
+            {loading || !typesLoaded ? (
               <div className="min-w-0" aria-hidden="true">
                 <Skeleton.Donut />
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
