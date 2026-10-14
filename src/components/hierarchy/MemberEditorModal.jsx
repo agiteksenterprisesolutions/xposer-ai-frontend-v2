@@ -26,6 +26,8 @@ import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import { staffPath } from '../../utils/navigation';
 import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
+import { useMemberNames } from '../../hooks/useMemberNames';
+import MemberPicker from './MemberPicker';
 
 const selectClass =
   'w-full rounded-lg border border-line bg-subtle px-3 py-2.5 text-sm text-ink hover:border-line-strong disabled:opacity-60';
@@ -36,10 +38,9 @@ const FIELDS = ['name', 'email', 'designation', 'department', 'role_code', 'mana
  * Props:
  *   member   – the entry to edit; omit to add one
  *   levels   – to name the level a role resolves to
- *   members  – the directory, for the manager picker
  *   readOnly, onClose, onSaved
  */
-const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly = false, onClose, onSaved }) => {
+const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClose, onSaved }) => {
   const isCreate = !member;
   const fromHr = member?.source === 'hr_sync';
 
@@ -61,14 +62,8 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
   const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
   // Where they will sit: the chosen role's level, else what the server resolved.
   const resolvedLevel = chosenRole ? chosenRole.level_title || (chosenRole.level_code && levelTitle(chosenRole.level_code)) : null;
-  const nameById = useMemo(() => new Map(members.map((m) => [m.external_id, m.name])), [members]);
-  const managerOptions = useMemo(
-    () =>
-      members
-        .filter((m) => m.external_id !== member?.external_id && m.is_active !== false)
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [members, member],
-  );
+  // Only the HR value needs a name of its own; the picker names its choice.
+  const { nameOf } = useMemberNames([member?.manager_external_id_from_hr]);
 
   const save = async () => {
     if (!form.name.trim() || saving) return;
@@ -242,25 +237,15 @@ const MemberEditorModal = ({ member = null, levels = [], members = [], readOnly 
             <label htmlFor="member-manager" className="text-xs font-medium text-ink-secondary">
               Direct manager
             </label>
-            <select
+            <MemberPicker
               id="member-manager"
               value={form.manager_external_id}
-              onChange={set('manager_external_id')}
+              onChange={(id) => setForm((prev) => ({ ...prev, manager_external_id: id }))}
+              excludeId={member?.external_id}
               disabled={readOnly}
               className={selectClass}
-            >
-              <option value="">No manager on file</option>
-              {managerOptions.map((m) => (
-                <option key={m.external_id} value={m.external_id}>
-                  {m.name}
-                  {m.designation ? ` — ${m.designation}` : ''}
-                </option>
-              ))}
-              {form.manager_external_id && !nameById.has(form.manager_external_id) && (
-                <option value={form.manager_external_id}>{form.manager_external_id} (not in directory)</option>
-              )}
-            </select>
-            {hrNote('manager_external_id', member?.manager_external_id_from_hr, (id) => nameById.get(id) || id)}
+            />
+            {hrNote('manager_external_id', member?.manager_external_id_from_hr, (id) => nameOf(id) || id)}
             <p className="text-xs text-ink-muted">
               Escalation goes to the direct manager first, before the level ladder. A manager has to sit above this person.
             </p>

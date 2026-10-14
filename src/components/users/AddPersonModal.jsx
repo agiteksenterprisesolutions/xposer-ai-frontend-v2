@@ -34,6 +34,8 @@ import Alert from '../ui/Alert';
 import UndeliveredCredentials from './UndeliveredCredentials';
 import { usersAPI } from '../../api/users';
 import { useOrgRoles, REPORTER_ROLE } from '../../hooks/useOrgRoles';
+import { useMemberNames } from '../../hooks/useMemberNames';
+import MemberPicker from '../hierarchy/MemberPicker';
 import { useAuthStore } from '../../store/authStore';
 import { deriveUsername, usernameNeedsAttention } from '../../utils/usernames';
 import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
@@ -92,11 +94,10 @@ const fromMember = (member) => ({
 /**
  * Props:
  *   isOpen, onClose
- *   members  – directory entries, for the manager picker
  *   member   – an existing directory entry to create a login for (optional)
  *   onAdded  – after a person is added, to refresh the lists
  */
-const AddPersonModal = ({ isOpen, onClose, members = [], member = null, onAdded }) => {
+const AddPersonModal = ({ isOpen, onClose, member = null, onAdded }) => {
   const forMember = Boolean(member);
   const { allRoles: unsortedRoles, nameFor, byCode } = useOrgRoles();
   const allRoles = useMemo(() => sortRolesByLevel(unsortedRoles.filter((r) => r.is_active !== false)), [unsortedRoles]);
@@ -117,10 +118,8 @@ const AddPersonModal = ({ isOpen, onClose, members = [], member = null, onAdded 
   }, [isOpen, member]);
   const method = SIGN_IN_METHODS.find((m) => m.value === form.auth_provider) || SIGN_IN_METHODS[0];
 
-  const managers = useMemo(
-    () => members.filter((m) => m.is_active !== false && m.external_id).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
-    [members],
-  );
+  // Names for the managers this form shows: the entry's own, and the one the server chose.
+  const { nameOf } = useMemberNames([member?.manager_external_id, result?.manager_external_id], { enabled: isOpen });
   const username = form.create_login ? deriveUsername(form, orgName) : '';
 
   const set = (field) => (e) => {
@@ -220,7 +219,7 @@ const AddPersonModal = ({ isOpen, onClose, members = [], member = null, onAdded 
         ? resultRole.level_title
         : result.level_code
       : null;
-    const managerName = (id) => members.find((m) => m.external_id === id)?.name || id;
+    const managerName = (id) => nameOf(id) || id;
     return (
       <Modal
         isOpen={isOpen}
@@ -357,7 +356,7 @@ const AddPersonModal = ({ isOpen, onClose, members = [], member = null, onAdded 
                 <>
                   <dt className="text-ink-muted">Reports to</dt>
                   <dd className="text-ink">
-                    {members.find((m) => m.external_id === member.manager_external_id)?.name || member.manager_external_id}
+                    {nameOf(member.manager_external_id) || member.manager_external_id}
                   </dd>
                 </>
               )}
@@ -390,15 +389,13 @@ const AddPersonModal = ({ isOpen, onClose, members = [], member = null, onAdded 
           </Field>
           {roleField}
           <Field id="ap-manager" label="Manager" hint="optional">
-            <select id="ap-manager" value={form.manager_external_id} onChange={set('manager_external_id')} className={`${inputClass} border-line-strong`}>
-              <option value="">Work it out from the hierarchy</option>
-              {managers.map((m) => (
-                <option key={m.external_id} value={m.external_id}>
-                  {m.name}
-                  {m.designation ? ` — ${m.designation}` : ''}
-                </option>
-              ))}
-            </select>
+            <MemberPicker
+              id="ap-manager"
+              value={form.manager_external_id}
+              onChange={(id) => setForm((prev) => ({ ...prev, manager_external_id: id }))}
+              emptyLabel="Work it out from the hierarchy"
+              className={`${inputClass} border-line-strong`}
+            />
             <p className="text-xs text-ink-muted">
               Leave blank and we'll work it out from the hierarchy where there's only one possible answer.
             </p>

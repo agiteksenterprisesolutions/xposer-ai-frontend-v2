@@ -10,35 +10,53 @@
 // The link is `hierarchy_member_id` (the member's external_id). New accounts
 // are auto-matched on email; this corrects or removes that. An unlinked
 // account holding report:read_subordinates sees only its own caseload.
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
+import MemberPicker from '../hierarchy/MemberPicker';
 import { usersAPI } from '../../api';
+import { orgHierarchyAPI } from '../../api/orgHierarchy';
+import { useMemberNames } from '../../hooks/useMemberNames';
 import { describeError } from '../../utils/errors';
 
 const fieldClass =
   'w-full rounded-lg border border-line-strong bg-subtle px-3 py-2 text-sm text-ink outline-none focus:border-line-accent disabled:opacity-60';
 
-const DirectoryLinkModal = ({ user, members = [], levels = [], onClose, onSaved }) => {
+const DirectoryLinkModal = ({ user, levels = [], onClose, onSaved }) => {
   const displayName = user.full_name || user.username;
   const [memberId, setMemberId] = useState(user.hierarchy_member_id || '');
-  const member = members.find((m) => m.external_id === memberId) || null;
+  // The entry chosen in the picker, or the one already linked, looked up by id.
+  const [picked, setPicked] = useState(null);
+  const { memberOf } = useMemberNames([user.hierarchy_member_id]);
+  const member = picked?.external_id === memberId ? picked : memberOf(memberId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
   // Suggest the entry whose email matches, as the server's auto-match would.
-  const emailMatch = useMemo(
-    () =>
-      user.email ? members.find((m) => m.email && m.email.toLowerCase() === user.email.toLowerCase()) : null,
-    [members, user.email],
-  );
+  const [emailMatch, setEmailMatch] = useState(null);
+  useEffect(() => {
+    if (!user.email || user.hierarchy_member_id) return undefined;
+    let live = true;
+    orgHierarchyAPI
+      .listMembers({ search: user.email, pageSize: 5, quiet: true })
+      .then(({ items }) => {
+        const match = items.find((m) => m.email && m.email.toLowerCase() === user.email.toLowerCase());
+        if (live) setEmailMatch(match || null);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [user.email, user.hierarchy_member_id]);
 
-  const sortedMembers = useMemo(() => [...members].sort((a, b) => (a.name || '').localeCompare(b.name || '')), [members]);
   const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
 
-  const pick = (externalId) => setMemberId(externalId);
+  const pick = (externalId, entry = null) => {
+    setMemberId(externalId);
+    setPicked(entry);
+  };
 
   const linkChanged = memberId !== (user.hierarchy_member_id || '');
 
@@ -83,24 +101,17 @@ const DirectoryLinkModal = ({ user, members = [], levels = [], onClose, onSaved 
           <label htmlFor="link-member" className="mb-1 block text-xs font-medium text-ink-secondary">
             Directory entry
           </label>
-          <select id="link-member" value={memberId} onChange={(event) => pick(event.target.value)} className={fieldClass}>
-            <option value="">Not linked</option>
-            {sortedMembers.map((m) => (
-              <option key={m.external_id} value={m.external_id}>
-                {m.name}
-                {m.designation ? ` — ${m.designation}` : ''}
-                {m.email ? ` (${m.email})` : ''}
-              </option>
-            ))}
-            {memberId && !member && <option value={memberId}>{memberId} (not in the directory)</option>}
-          </select>
+          <MemberPicker
+            id="link-member"
+            value={memberId}
+            onChange={pick}
+            emptyLabel="Not linked"
+            className={fieldClass}
+          />
           {!memberId && emailMatch && (
-            <button type="button" onClick={() => pick(emailMatch.external_id)} className="mt-1.5 text-xs font-medium text-link hover:underline">
+            <button type="button" onClick={() => pick(emailMatch.external_id, emailMatch)} className="mt-1.5 text-xs font-medium text-link hover:underline">
               Use {emailMatch.name} — same email
             </button>
-          )}
-          {members.length === 0 && (
-            <p className="mt-1.5 text-xs text-ink-muted">The directory is empty. Add people on the Reporting Hierarchy page.</p>
           )}
         </div>
 

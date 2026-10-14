@@ -6,8 +6,11 @@
 //
 // Coverage is the landing tab because it answers the question an admin
 // actually has ("is this working?"); the org chart shows the same directory
-// as a picture; levels and the directory are where the fixes happen. All three read the same data and reload together after any
-// change, so a fix made on one tab shows up on the others.
+// as a picture; levels and the directory are where the fixes happen. They
+// reload together after any change, so a fix made on one tab shows up on the
+// others. The directory itself is never loaded whole — it's the client's
+// entire headcount — so the Directory tab and the by-person chart page and
+// search it on the server.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
@@ -86,7 +89,7 @@ const Hierarchy = () => {
   const [reloadKey, setReloadKey] = useState(0);
 
   const [levels, setLevels] = useState([]);
-  const [members, setMembers] = useState([]);
+  const [memberTotal, setMemberTotal] = useState(null);
   const [coverage, setCoverage] = useState(null);
   const [pendingCount, setPendingCount] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -96,18 +99,18 @@ const Hierarchy = () => {
     setLoading(true);
     setReloadKey((k) => k + 1);
     try {
-      // Inactive levels and people too: the panels filter them, and the
-      // directory needs every name to label a manager reference.
+      // Inactive levels too: the Levels tab shows them. Of the directory, only
+      // its size, for the tab's count.
       const [levelData, memberData, coverageData, pendingData] = await Promise.all([
         orgHierarchyAPI.listLevels({ activeOnly: false }),
-        orgHierarchyAPI.listMembers({ activeOnly: false }),
+        orgHierarchyAPI.listMembers({ pageSize: 1 }),
         orgHierarchyAPI.coverage(),
         // For the Approvals badge; the queue is optional, never a reason to fail.
         orgHierarchyAPI.listPending({ status: 'pending' }).catch(() => null),
       ]);
       if (Array.isArray(pendingData)) setPendingCount(pendingData.length);
       setLevels(Array.isArray(levelData) ? levelData : []);
-      setMembers(Array.isArray(memberData) ? memberData : []);
+      setMemberTotal(memberData?.total ?? null);
       setCoverage(coverageData);
       setError(null);
     } catch (err) {
@@ -167,7 +170,7 @@ const Hierarchy = () => {
                   {/* Counts arrive with the data; hold their space meanwhile. */}
                   {initialLoad && (value === 'levels' || value === 'directory') && <span className="invisible"> (0)</span>}
                   {!initialLoad && value === 'levels' && ` (${activeLevels.length})`}
-                  {!initialLoad && value === 'directory' && ` (${members.filter((m) => m.is_active !== false).length})`}
+                  {!initialLoad && value === 'directory' && memberTotal != null && ` (${memberTotal})`}
                   {value === 'approvals' && pendingCount > 0 && (
                     <span className="ml-1.5 rounded-full bg-warning-soft px-1.5 text-[11px] font-semibold text-warning-fg">
                       {pendingCount}
@@ -186,7 +189,6 @@ const Hierarchy = () => {
               <CoveragePanel
                 coverage={coverage}
                 levels={activeLevels}
-                members={members}
                 canManage={canManage}
                 onChanged={load}
                 onGoTo={setTab}
@@ -196,8 +198,8 @@ const Hierarchy = () => {
               <ChartViewSwitch value={chartView} onChange={setChartView} />
               {chartView === 'people' ? (
                 <OrgChartPanel
-                  members={members}
                   levels={activeLevels}
+                  reloadKey={reloadKey}
                   canManage={canManage}
                   onChanged={load}
                   onGoTo={setTab}
@@ -210,7 +212,7 @@ const Hierarchy = () => {
               <LevelsPanel levels={levels} memberCounts={memberCounts} canManage={canManage} onChanged={load} />
             </Tabs.Content>
             <Tabs.Content value="directory">
-              <DirectoryPanel members={members} levels={activeLevels} canManage={canManage} onChanged={load} />
+              <DirectoryPanel levels={activeLevels} canManage={canManage} onChanged={load} reloadKey={reloadKey} />
             </Tabs.Content>
             <Tabs.Content value="approvals">
               <PendingPanel levels={activeLevels} canManage={canManage} onChanged={load} onCount={setPendingCount} />

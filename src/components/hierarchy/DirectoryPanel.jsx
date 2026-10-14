@@ -10,12 +10,19 @@
 //   source "manual"       — added by hand; untouched by every sync.
 //   has_manual_override   — synced from HR, then the manager corrected.
 //
-// `has_account` / `account_ids` say whether the person can sign in. Without an
-// account, "Create login" opens Add person prefilled from the entry (it needs
-// user:create, a separate permission from managing the directory). With one,
-// a deactivated account is offered Reactivate — never a second login, which
-// would collide on the username.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+// The directory is the client's whole headcount, so it is paged and searched
+// on the server (GET /org-hierarchy/members): a page of 50, a search over
+// name, email, job title, department and employee id, a level filter, and
+// whether to include inactive entries. Managers named on the page are looked
+// up by id rather than from a full list.
+//
+// The Login column reads two flags. No account → "Create login" (Add person
+// prefilled from the entry; needs user:create, separate from managing the
+// directory). Accounts, none active → "Login deactivated" + Reactivate, never
+// a second login, which would collide on the username. An active account →
+// "Has a login". `accounts` can hold more than one (a staff and a reporter
+// account), so the badge follows `has_active_account`, not accounts[0].
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, Plus, Search, Trash2, Upload, Users } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -23,6 +30,7 @@ import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 import Table from '../ui/Table';
+import Pagination from '../ui/Pagination';
 import { ConfirmationModal } from '../ui/Modal';
 import MemberEditorModal from './MemberEditorModal';
 import AddPersonModal from '../users/AddPersonModal';
@@ -35,6 +43,10 @@ import { useAuthStore } from '../../store/authStore';
 import { staffPath } from '../../utils/navigation';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { errorSummary } from '../../utils/errors';
+import { useDebounce } from '../../hooks/useDebounce';
+import { useMemberNames } from '../../hooks/useMemberNames';
+
+const PAGE_SIZE = 50;
 
 const SourceBadge = ({ member }) =>
   member.source === 'manual' ? (
@@ -50,8 +62,10 @@ const SourceBadge = ({ member }) =>
     </Badge>
   );
 
-const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
+const DirectoryPanel = ({ levels, canManage, onChanged, reloadKey }) => {
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search.trim(), 400);
+  const [page, setPage] = useState(1);
   const [levelFilter, setLevelFilter] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState(null); // { member } — null member means add
@@ -64,30 +78,64 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
   const canSeeUsers = can(PERM.userReadAll);
   const canReactivate = can(PERM.userUpdate);
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
-  const { nameFor } = useOrgRoles();
+  const { nameFor: nameForRole } = useOrgRoles();
   const [adding, setAdding] = useState(false);
   const [creatingLoginFor, setCreatingLoginFor] = useState(null);
   const [reactivating, setReactivating] = useState(null);
-  // Deactivated accounts: `has_account` stays true for them, so they're told
-  // apart here, from one list of inactive users.
-  const [inactiveAccounts, setInactiveAccounts] = useState(() => new Set());
-  const loadInactive = useCallback(() => {
-    if (!canSeeUsers) return;
-    usersAPI
-      .getAllUsers({ is_active: false, page: 1, page_size: 100 })
-      .then((data) => setInactiveAccounts(new Set((data?.items || data || []).map((u) => u.id))))
-      .catch(() => setInactiveAccounts(new Set()));
-  }, [canSeeUsers]);
+
+  // ─── The page ────────────────────────────────────────────────────────
+  const [data, setData] = useState(null); // the page envelope
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [localTick, setLocalTick] = useState(0);
+
+  // A new search or filter starts from page 1; on page 7 it would read as "no results".
   useEffect(() => {
-    loadInactive();
-  }, [loadInactive, members]);
+    setPage(1);
+  }, [debouncedSearch, levelFilter, showInactive]);
+
+  useEffect(() => {
+    let live = true;
+    setLoading(true);
+    orgHierarchyAPI
+      .listMembers({
+        page,
+        pageSize: PAGE_SIZE,
+        search: debouncedSearch,
+        levelCode: levelFilter,
+        activeOnly: !showInactive,
+        quiet: true,
+      })
+      .then((result) => {
+        if (!live) return;
+        setData(result);
+        setLoadError(null);
+      })
+      .catch((error) => live && setLoadError(errorSummary(error)))
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [page, debouncedSearch, levelFilter, showInactive, reloadKey, localTick]);
+
+  const members = useMemo(() => data?.items || [], [data]);
+  const total = data?.total ?? 0;
+  const filtering = Boolean(debouncedSearch || levelFilter);
+
+  // Managers on this page who aren't on it themselves, looked up by id.
+  const { nameOf: lookedUpName } = useMemberNames(members.flatMap((m) => [m.manager_external_id, m.manager_external_id_from_hr]));
+  const onPage = useMemo(() => new Map(members.map((m) => [m.external_id, m.name])), [members]);
+  const nameFor = (id) => onPage.get(id) || lookedUpName(id) || id;
+
+  // Hierarchy reloads everything after a change, and its reloadKey refetches this page.
+  const changed = () => onChanged();
 
   const reactivate = async (member) => {
     setReactivating(member.external_id);
     try {
-      await Promise.all(member.account_ids.filter((id) => inactiveAccounts.has(id)).map((id) => usersAPI.activateUser(id)));
-      loadInactive();
-      onChanged();
+      const inactive = (member.accounts || []).filter((a) => a.is_active === false);
+      await Promise.all(inactive.map((a) => usersAPI.activateUser(a.id)));
+      changed();
     } catch (error) {
       toast.error(errorSummary(error));
     } finally {
@@ -98,25 +146,29 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
   /** The Login cell: whether they can sign in, and the one action that fits. */
   const loginCell = (member) => {
     if (member.has_account === undefined) return <span className="text-sm text-ink-subtle">—</span>;
-    const ids = member.account_ids || [];
+    const accounts = member.accounts || [];
+    if (member.has_account && !member.has_active_account) {
+      return (
+        <div className="flex flex-col items-start gap-1">
+          <Badge variant="warning" size="small">Login deactivated</Badge>
+          {canReactivate && member.is_active !== false && accounts.some((a) => a.is_active === false) && (
+            <Button variant="outline" size="small" onClick={() => reactivate(member)} isLoading={reactivating === member.external_id}>
+              Reactivate
+            </Button>
+          )}
+        </div>
+      );
+    }
     if (member.has_account) {
-      const allInactive = ids.length > 0 && ids.every((id) => inactiveAccounts.has(id));
+      const count = accounts.length || member.account_ids?.length || 1;
       const usersLink = canSeeUsers && member.email ? `${staffPath(orgSlug, 'users')}?search=${encodeURIComponent(member.email)}` : null;
-      if (allInactive) {
-        return (
-          <div className="flex flex-col items-start gap-1">
-            <Badge variant="warning" size="small">Login deactivated</Badge>
-            {canReactivate && member.is_active !== false && (
-              <Button variant="outline" size="small" onClick={() => reactivate(member)} isLoading={reactivating === member.external_id}>
-                Reactivate
-              </Button>
-            )}
-          </div>
-        );
-      }
       const badge = (
-        <Badge variant="success" size="small" title={ids.length > 1 ? `${ids.length} accounts are linked to this person` : undefined}>
-          {ids.length > 1 ? `${ids.length} logins` : 'Has a login'}
+        <Badge
+          variant="success"
+          size="small"
+          title={count > 1 ? accounts.map((a) => `${a.username} (${nameForRole(a.role)}${a.is_active === false ? ', deactivated' : ''})`).join('\n') : undefined}
+        >
+          {count > 1 ? `${count} logins` : 'Has a login'}
         </Badge>
       );
       return usersLink ? (
@@ -140,26 +192,6 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
   const [busy, setBusy] = useState(false);
 
   const levelTitle = useMemo(() => new Map(levels.map((l) => [l.code, l.title])), [levels]);
-  const nameById = useMemo(() => new Map(members.map((m) => [m.external_id, m.name])), [members]);
-
-  const visible = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return members
-      .filter((m) => showInactive || m.is_active !== false)
-      .filter((m) => {
-        if (!levelFilter) return true;
-        if (levelFilter === '__none') return !m.level_code;
-        return m.level_code === levelFilter;
-      })
-      .filter(
-        (m) =>
-          !term ||
-          [m.name, m.email, m.designation, m.department, m.external_id].some((v) => (v || '').toLowerCase().includes(term)),
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [members, search, levelFilter, showInactive]);
-
-  const inactiveCount = members.filter((m) => m.is_active === false).length;
 
   const confirmRemove = async () => {
     setBusy(true);
@@ -169,7 +201,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
         removing.source === 'manual' ? `${removing.name} removed.` : `${removing.name} deactivated.`,
       );
       setRemoving(null);
-      onChanged();
+      changed();
     } catch (error) {
       toast.error(errorSummary(error));
     } finally {
@@ -205,24 +237,21 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
             className="rounded-lg border border-line bg-subtle px-3 py-2 text-sm text-ink sm:w-52"
           >
             <option value="">All levels</option>
-            <option value="__none">No level</option>
             {levels.map((level) => (
               <option key={level.code} value={level.code}>
                 {level.title}
               </option>
             ))}
           </select>
-          {inactiveCount > 0 && (
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-secondary">
-              <input
-                type="checkbox"
-                checked={showInactive}
-                onChange={(event) => setShowInactive(event.target.checked)}
-                className="h-4 w-4 rounded border-line-strong"
-              />
-              Inactive ({inactiveCount})
-            </label>
-          )}
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-secondary">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(event) => setShowInactive(event.target.checked)}
+              className="h-4 w-4 rounded border-line-strong"
+            />
+            Include inactive
+          </label>
         </div>
         {canManage && (
           <div className="flex gap-2">
@@ -249,22 +278,45 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
               {canManage && <Table.Head className="text-right">Actions</Table.Head>}
             </Table.Row>
           </Table.Header>
-          <Table.Body>
-            {visible.length === 0 ? (
+          <Table.Body className={loading && data ? 'opacity-60 transition-opacity' : ''}>
+            {loadError ? (
               <Table.Empty
-                message={members.length === 0 ? 'No one in the directory yet' : 'No one matches'}
+                message="Couldn't load the directory"
+                description={loadError}
+                icon={Users}
+                action={
+                  <Button variant="outline" size="small" onClick={() => setLocalTick((t) => t + 1)}>
+                    Try again
+                  </Button>
+                }
+              />
+            ) : !data ? (
+              <Table.Loading colSpan={canManage ? 7 : 6} rows={8} />
+            ) : members.length === 0 ? (
+              <Table.Empty
+                message={filtering ? 'No one matches' : 'No one in the directory yet'}
                 description={
-                  members.length === 0
-                    ? 'Add people by hand, paste a spreadsheet, or connect your HR system.'
-                    : 'Try a different search or level.'
+                  filtering
+                    ? 'Try a different search or level.'
+                    : 'Add people by hand, paste a spreadsheet, or connect your HR system.'
                 }
                 icon={Users}
               />
             ) : (
-              visible.map((member) => (
+              members.map((member) => (
                 <Table.Row key={member.id} className={member.is_active === false ? 'opacity-60' : ''}>
                   <Table.Cell>
-                    <p className="text-sm font-medium text-ink">{member.name}</p>
+                    {member.is_active !== false ? (
+                      <Link
+                        to={{ search: `?tab=chart&view=people&person=${encodeURIComponent(member.external_id)}` }}
+                        title="Show in the org chart"
+                        className="text-sm font-medium text-ink hover:text-link hover:underline"
+                      >
+                        {member.name}
+                      </Link>
+                    ) : (
+                      <p className="text-sm font-medium text-ink">{member.name}</p>
+                    )}
                     <p className="text-xs text-ink-muted">{member.email || member.external_id}</p>
                   </Table.Cell>
                   <Table.Cell>
@@ -273,7 +325,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
                   </Table.Cell>
                   <Table.Cell>
                     {member.role_code ? (
-                      <p className="text-sm text-ink">{nameFor(member.role_code)}</p>
+                      <p className="text-sm text-ink">{nameForRole(member.role_code)}</p>
                     ) : (
                       <Badge variant="warning" size="small" title="A person is placed by their role">
                         No role
@@ -290,9 +342,9 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
                   </Table.Cell>
                   <Table.Cell>
                     <p className="text-sm text-ink-secondary">
-                      {member.manager_external_id ? nameById.get(member.manager_external_id) || member.manager_external_id : '—'}
+                      {member.manager_external_id ? nameFor(member.manager_external_id) : '—'}
                     </p>
-                    {provenance(member, 'manager_external_id', (id) => nameById.get(id) || id)}
+                    {provenance(member, 'manager_external_id', nameFor)}
                   </Table.Cell>
                   <Table.Cell>{loginCell(member)}</Table.Cell>
                   <Table.Cell>
@@ -339,15 +391,29 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
         </Table>
       </Card>
 
+      {data && (
+        <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
+          <p className="text-xs text-ink-muted" aria-live="polite">
+            {loading ? 'Loading…' : `${total} ${total === 1 ? 'person' : 'people'}${filtering ? ' match' : ''}`}
+          </p>
+          <Pagination
+            currentPage={page}
+            totalPages={data.total_pages || 1}
+            totalItems={total}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
+
       {editing && (
         <MemberEditorModal
           member={editing.member}
           levels={levels.filter((l) => l.is_active !== false)}
-          members={members}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
-            onChanged();
+            changed();
           }}
         />
       )}
@@ -355,8 +421,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
       <AddPersonModal
         isOpen={adding}
         onClose={() => setAdding(false)}
-        members={members}
-        onAdded={() => onChanged()}
+        onAdded={changed}
       />
 
       {/* A login for someone already here: prefilled, keyed on their stored id. */}
@@ -364,8 +429,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
         isOpen={Boolean(creatingLoginFor)}
         member={creatingLoginFor}
         onClose={() => setCreatingLoginFor(null)}
-        members={members}
-        onAdded={() => onChanged()}
+        onAdded={changed}
       />
 
       {importing && (
@@ -373,7 +437,7 @@ const DirectoryPanel = ({ members, levels, canManage, onChanged }) => {
           onClose={() => setImporting(false)}
           onImported={() => {
             setImporting(false);
-            onChanged();
+            changed();
           }}
         />
       )}

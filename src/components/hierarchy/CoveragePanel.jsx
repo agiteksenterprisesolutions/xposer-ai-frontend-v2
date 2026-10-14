@@ -31,7 +31,7 @@ const Stat = ({ icon: Icon, label, value }) => (
   </div>
 );
 
-const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
+const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
   const [levelCode, setLevelCode] = useState('');
   const [roleCode, setRoleCode] = useState('');
   const [busy, setBusy] = useState(null); // 'alias' | 'assign'
@@ -41,10 +41,18 @@ const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
   const placingRoles = sortRolesByLevel(allRoles.filter((r) => r.level_code && r.is_active !== false));
   const role = placingRoles.find((r) => r.code === roleCode);
 
-  // The people carrying this title with no level yet, by id, from the directory.
-  const unplaced = members.filter(
-    (m) => m.is_active !== false && !m.level_code && (m.designation || '').trim() === entry.designation,
-  );
+  // The coverage entry names the people carrying this title; their ids come
+  // from the directory, searched by the title, when the role is applied.
+  const named = entry.people?.length || 0;
+  const unplacedWithTitle = async () => {
+    const found = [];
+    for (let page = 1; ; page += 1) {
+      const data = await orgHierarchyAPI.listMembers({ search: entry.designation, page, pageSize: 200 });
+      found.push(...data.items);
+      if (!data.has_next) break;
+    }
+    return found.filter((m) => m.is_active !== false && !m.level_code && (m.designation || '').trim() === entry.designation);
+  };
 
   const addAlias = async () => {
     setBusy('alias');
@@ -63,19 +71,29 @@ const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
 
   const assignPeople = async () => {
     setBusy('assign');
-    const results = await Promise.allSettled(
-      unplaced.map((m) => orgHierarchyAPI.updateMember(m.id, { role_code: role.code })),
-    );
-    const failed = results.filter((r) => r.status === 'rejected');
-    if (failed.length === 0) {
-      toast.success(
-        `${unplaced.length} ${unplaced.length === 1 ? 'person is' : 'people are'} now ${role.name} (${role.level_title}).`,
+    try {
+      const unplaced = await unplacedWithTitle();
+      if (unplaced.length === 0) {
+        toast.info(`Everyone titled "${entry.designation}" already has a level.`);
+        return;
+      }
+      const results = await Promise.allSettled(
+        unplaced.map((m) => orgHierarchyAPI.updateMember(m.id, { role_code: role.code })),
       );
-    } else {
-      toast.error(`${failed.length} of ${unplaced.length} couldn't be updated: ${errorSummary(failed[0].reason)}`);
+      const failed = results.filter((r) => r.status === 'rejected');
+      if (failed.length === 0) {
+        toast.success(
+          `${unplaced.length} ${unplaced.length === 1 ? 'person is' : 'people are'} now ${role.name} (${role.level_title}).`,
+        );
+      } else {
+        toast.error(`${failed.length} of ${unplaced.length} couldn't be updated: ${errorSummary(failed[0].reason)}`);
+      }
+      onChanged();
+    } catch (error) {
+      toast.error(errorSummary(error));
+    } finally {
+      setBusy(null);
     }
-    setBusy(null);
-    onChanged();
   };
 
   return (
@@ -113,7 +131,7 @@ const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
           </Button>
         </div>
       )}
-      {canManage && unplaced.length > 0 && placingRoles.length > 0 && (
+      {canManage && named > 0 && placingRoles.length > 0 && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <select
             value={roleCode}
@@ -136,7 +154,7 @@ const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
             onClick={assignPeople}
             title="Their role places them — and becomes the role on any account linked to them"
           >
-            Give {unplaced.length === 1 ? 'this person' : `these ${unplaced.length} people`} this role
+            Give {named === 1 ? 'this person' : `these ${named} people`} this role
           </Button>
         </div>
       )}
@@ -144,7 +162,7 @@ const UnmappedTitle = ({ entry, levels, members, canManage, onChanged }) => {
   );
 };
 
-const CoveragePanel = ({ coverage, levels, members, canManage, onChanged, onGoTo }) => {
+const CoveragePanel = ({ coverage, levels, canManage, onChanged, onGoTo }) => {
   if (!coverage) return null;
 
   const problems = coverage.problems || [];
@@ -206,7 +224,6 @@ const CoveragePanel = ({ coverage, levels, members, canManage, onChanged, onGoTo
                 key={entry.designation}
                 entry={entry}
                 levels={levels}
-                members={members}
                 canManage={canManage}
                 onChanged={onChanged}
               />

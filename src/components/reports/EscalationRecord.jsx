@@ -9,11 +9,10 @@
 //
 // `excluded_user_ids` is never read here. A locked-out person gets a 404 for
 // the case, and nothing on any screen may hint at who else is excluded.
-import { useEffect, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
-import { orgHierarchyAPI } from '../../api/orgHierarchy';
+import { useMemberNames } from '../../hooks/useMemberNames';
 
 /** True when the report carries anything worth showing. */
 export const hasEscalationRecord = (report) =>
@@ -25,21 +24,12 @@ export const hasEscalationRecord = (report) =>
   );
 
 const EscalationRecord = ({ report, canReadHierarchy = false }) => {
-  const [members, setMembers] = useState(null);
   const ids = [report.implicated_member_id, report.escalated_to_member_id].filter(Boolean);
 
-  // Names come from the directory, when the viewer may read it.
-  useEffect(() => {
-    if (!canReadHierarchy || ids.length === 0) return;
-    orgHierarchyAPI
-      .listMembers({ activeOnly: false })
-      .then((list) => setMembers(Array.isArray(list) ? list : []))
-      .catch(() => setMembers([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canReadHierarchy, ids.join(',')]);
-
+  // Names come from the directory, when the viewer may read it — just these two, by employee id.
+  const { memberOf } = useMemberNames(ids, { enabled: canReadHierarchy });
   const nameOf = (id) => {
-    const member = (members || []).find((m) => m.external_id === id || m.id === id);
+    const member = memberOf(id);
     return member ? [member.name, member.designation].filter(Boolean).join(' · ') : id;
   };
 

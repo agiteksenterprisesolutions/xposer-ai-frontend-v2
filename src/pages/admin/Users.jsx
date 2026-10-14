@@ -14,6 +14,7 @@ import DirectoryLinkModal from '../../components/users/DirectoryLinkModal';
 import ImportUsersModal from '../../components/users/ImportUsersModal';
 import AddPersonModal from '../../components/users/AddPersonModal';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
+import { useMemberNames } from '../../hooks/useMemberNames';
 import Card from '../../components/ui/Card';
 import Table, { TableLoading } from '../../components/ui/Table';
 import Skeleton from '../../components/ui/Skeleton';
@@ -97,28 +98,27 @@ const Users = () => {
   // The directory: who each account is linked to, and at what level. Level
   // decides which reports someone sees; role decides what they can do.
   const canReadHierarchy = can(PERM.hierarchyRead);
-  const [members, setMembers] = useState([]);
   const [levels, setLevels] = useState([]);
   const [linkUser, setLinkUser] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const loadDirectory = useCallback(() => {
     if (!canReadHierarchy) return;
-    Promise.all([orgHierarchyAPI.listMembers({ activeOnly: false }), orgHierarchyAPI.listLevels()])
-      .then(([memberList, levelList]) => {
-        setMembers(Array.isArray(memberList) ? memberList : []);
-        setLevels(Array.isArray(levelList) ? levelList : []);
-      })
-      .catch(() => {
-        setMembers([]);
-        setLevels([]);
-      });
+    orgHierarchyAPI
+      .listLevels()
+      .then((levelList) => setLevels(Array.isArray(levelList) ? levelList : []))
+      .catch(() => setLevels([]));
   }, [canReadHierarchy]);
   useEffect(() => {
     loadDirectory();
   }, [loadDirectory]);
-  const memberFor = (user) => members.find((m) => m.external_id === user.hierarchy_member_id) || null;
   const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
   const [users, setUsers] = useState([]);
+  // Only the entries this page of users links to, not the whole directory.
+  const { memberOf, refresh: refreshLinks, lookup: linkLookup } = useMemberNames(
+    users.map((u) => u.hierarchy_member_id),
+    { enabled: canReadHierarchy },
+  );
+  const memberFor = (user) => memberOf(user.hierarchy_member_id);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -561,6 +561,10 @@ const Users = () => {
                           const member = memberFor(user);
                           const seesTeam = byCode.get(user.role)?.permissions?.includes(PERM.reportReadSubordinates);
                           const open = canUpdateUsers ? () => setLinkUser(user) : undefined;
+                          // Linked, but the entry is still being looked up: no flag yet.
+                          if (!member && user.hierarchy_member_id && linkLookup.pending) {
+                            return <span className="block h-4 w-24 animate-pulse rounded bg-active" />;
+                          }
                           return member ? (
                             <button
                               type="button"
@@ -699,13 +703,12 @@ const Users = () => {
       {linkUser && (
         <DirectoryLinkModal
           user={linkUser}
-          members={members}
           levels={levels}
           onClose={() => setLinkUser(null)}
           onSaved={() => {
             setLinkUser(null);
             fetchUsers();
-            loadDirectory();
+            refreshLinks();
           }}
         />
       )}
@@ -715,7 +718,7 @@ const Users = () => {
           onClose={() => setImportOpen(false)}
           onImported={() => {
             fetchUsers();
-            loadDirectory();
+            refreshLinks();
           }}
         />
       )}
@@ -736,10 +739,9 @@ const Users = () => {
       <AddPersonModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        members={members}
         onAdded={() => {
           fetchUsers();
-          loadDirectory();
+          refreshLinks();
         }}
       />
 

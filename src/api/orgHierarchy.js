@@ -24,6 +24,13 @@ import api from './axios';
 
 const inline = { skipErrorToast: true };
 
+// Directory entries seen in any response, by employee id — so a manager
+// named on one page can be labelled without loading the whole directory.
+// Writes clear it.
+const memberCache = new Map();
+const rememberMember = (member) => member?.external_id && memberCache.set(member.external_id, member);
+export const forgetMembers = () => memberCache.clear();
+
 export const orgHierarchyAPI = {
   // ─── Levels ────────────────────────────────────────────────────────────
   /** Most senior first. */
@@ -49,15 +56,59 @@ export const orgHierarchyAPI = {
   },
 
   // ─── Directory ─────────────────────────────────────────────────────────
-  listMembers: async ({ levelCode, activeOnly = true } = {}) => {
+  /**
+   * One page of the directory: { items, page, page_size, total, total_pages,
+   * has_next, has_previous }. `search` matches name, email, job title,
+   * department and employee id (literal, case-insensitive); `levelCode` is a
+   * LEVEL code, not a role. Filters combine with AND and `total` counts the
+   * matches. page_size max 200.
+   */
+  listMembers: async ({ page = 1, pageSize = 50, search, levelCode, activeOnly = true, quiet = false } = {}) => {
     const response = await api.get('/org-hierarchy/members', {
-      params: { level_code: levelCode || undefined, active_only: activeOnly },
+      params: {
+        page,
+        page_size: pageSize,
+        search: search?.trim() || undefined,
+        level_code: levelCode || undefined,
+        active_only: activeOnly,
+      },
+      skipErrorToast: quiet,
     });
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) {
+      // An older backend answered with the whole directory.
+      return { items: data, page: 1, page_size: data.length, total: data.length, total_pages: 1, has_next: false, has_previous: false };
+    }
+    data.items.forEach(rememberMember);
+    return data;
+  },
+
+  /**
+   * The directory entries for these employee ids — for labelling a manager or
+   * a linked account without loading the whole directory. Answers a Map;
+   * an id that isn't on file is absent. Cached per id for the session.
+   */
+  membersByExternalId: async (ids) => {
+    const wanted = [...new Set(ids.filter(Boolean))];
+    await Promise.all(
+      wanted
+        .filter((id) => !memberCache.has(id))
+        .map(async (id) => {
+          try {
+            // `search` is a substring match, so keep only the exact id.
+            const { items } = await orgHierarchyAPI.listMembers({ search: id, pageSize: 20, activeOnly: false, quiet: true });
+            memberCache.set(id, items.find((m) => m.external_id === id) || null);
+          } catch {
+            // Unknown, not missing: ask again next time.
+          }
+        }),
+    );
+    return new Map(wanted.filter((id) => memberCache.get(id)).map((id) => [id, memberCache.get(id)]));
   },
 
   /** Add one person by hand. `external_id` is generated from the name if omitted. */
   createMember: async (member) => {
+    forgetMembers();
     const response = await api.post('/org-hierarchy/members', member, inline);
     return response.data;
   },
@@ -68,12 +119,14 @@ export const orgHierarchyAPI = {
    * it survives the next sync. 400 manager_not_above / role_has_no_level.
    */
   updateMember: async (memberId, changes) => {
+    forgetMembers();
     const response = await api.put(`/org-hierarchy/members/${memberId}`, changes, inline);
     return response.data;
   },
 
   /** A manual entry is removed; a synced one is only deactivated (a delete would be undone by the next sync). */
   deleteMember: async (memberId) => {
+    forgetMembers();
     const response = await api.delete(`/org-hierarchy/members/${memberId}`, inline);
     return response.data;
   },
@@ -85,6 +138,7 @@ export const orgHierarchyAPI = {
    * `{ would_create, external_ids }`.
    */
   bulkCreateMembers: async (members, { dryRun = false } = {}) => {
+    if (!dryRun) forgetMembers();
     const response = await api.post(
       '/org-hierarchy/members/bulk',
       { members },
@@ -140,6 +194,7 @@ export const orgHierarchyAPI = {
    * non-JSON HR API is a 502 and touches nothing already synced.
    */
   sync: async () => {
+    forgetMembers();
     const response = await api.post('/org-hierarchy/sync', null, inline);
     return response.data;
   },
@@ -153,6 +208,27 @@ export const orgHierarchyAPI = {
   chart: async () => {
     const response = await api.get('/org-hierarchy/chart');
     return response.data;
+  },
+
+  /**
+   * The org chart by person, one node at a time:
+   *   { root, ancestors, children, page, page_size, total, total_pages, has_next, has_previous }
+   * Without `root` you're above the top: `root` is null and `children` are
+   * everyone with no manager on file (several, and anyone whose manager was
+   * deleted). Every node carries `direct_report_count`, so an expand arrow
+   * needs no fetch. `ancestors` (nearest manager first, capped at 20) are
+   * breadcrumbs only — no account fields, no counts. 404: `root` isn't in
+   * this organization.
+   */
+  peopleChart: async ({ root, page = 1, pageSize = 50, quiet = false } = {}) => {
+    const response = await api.get('/org-hierarchy/chart/people', {
+      params: { root: root || undefined, page, page_size: pageSize },
+      skipErrorToast: quiet,
+    });
+    const data = response.data;
+    rememberMember(data.root);
+    data.children?.forEach(rememberMember);
+    return data;
   },
 
   // ─── Sync approval queue ───────────────────────────────────────────────
@@ -185,6 +261,7 @@ export const orgHierarchyAPI = {
    * AND `problems`. `defaults` fill only what a person has not set.
    */
   approvePending: async ({ ids, defaults }) => {
+    forgetMembers();
     const response = await api.post('/org-hierarchy/pending/approve', { ids, defaults: defaults || null }, inline);
     return response.data;
   },
