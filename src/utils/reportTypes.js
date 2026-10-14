@@ -41,24 +41,6 @@ export const SENSITIVE_DATA_CLASSES = [
   { value: 'government_id', label: 'Government ID' },
 ];
 
-/**
- * The ten mandatory fields on every taxonomy-based report type. An import
- * missing one is rejected, and the editor must not let one be renamed or
- * deleted. Questions carry `is_core_field`; this list is for messages.
- */
-export const CORE_FIELDS = [
-  'incident_date',
-  'entity',
-  'previously_reported',
-  'incident_title',
-  'incident_description',
-  'implicates_senior_person',
-  'retaliation_concern',
-  'anonymity_election',
-  'reporter_relationship',
-  'good_faith_declaration',
-];
-
 export const DEFAULT_CURRENCY = 'SAR';
 
 /** Currencies offered by the currency widget; any ISO code is accepted. */
@@ -193,14 +175,17 @@ export const GOVERNANCE_DEFAULTS = {
 export const toBuilderShape = (reportType) => {
   if (!reportType) return null;
 
+  // Array position is the order from here on (a save sends positions), so
+  // start from the stored order.
+  const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
   return {
     ...reportType,
-    sections: reportType.sections?.map((section, sectionIndex) => ({
+    sections: [...(reportType.sections || [])].sort(byOrder).map((section, sectionIndex) => ({
       ...section,
       id: section._id || section.id || `section_${sectionIndex}`,
       order: section.order || 0,
       conditional_logic: section.conditional_logic || null,
-      questions: section.questions?.map((question, questionIndex) => ({
+      questions: [...(section.questions || [])].sort(byOrder).map((question, questionIndex) => ({
         ...question,
         id: question._id || question.id || `question_${sectionIndex}_${questionIndex}`,
         validation: normalizeValidation(question.validation),
@@ -254,7 +239,8 @@ export const toReportTypePayload = (formData, { keepIds = false } = {}) => ({
     section_key: section.section_key || null,
     title: section.title,
     description: section.description || '',
-    order: section.order ?? sectionIndex,
+    // Order is where it sits: the server renumbers from array position.
+    order: sectionIndex,
     is_shared: Boolean(section.is_shared),
     conditional_logic: cleanRules(section.conditional_logic),
     questions: (section.questions || []).map((question, questionIndex) => {
@@ -270,7 +256,7 @@ export const toReportTypePayload = (formData, { keepIds = false } = {}) => ({
         help_text: question.help_text || '',
         default_value: question.default_value ?? '',
         validation: normalizeValidation(question.validation),
-        order: question.order ?? questionIndex,
+        order: questionIndex,
         conditional_logic: cleanRules(question.conditional_logic),
       };
       if (OPTION_TYPES.includes(question.type)) {

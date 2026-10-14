@@ -4,6 +4,13 @@
 // left, the selected step drawn as a reporter will see it in the middle, and
 // the selected item's settings on the right. Only one step is on the canvas at
 // a time, so a long form never becomes one long page.
+//
+// Steps, and the questions of the open step, can be dragged in the outline:
+// a question onto another step moves it to the end of that step. The order
+// saved is the order drawn — the server renumbers from array position.
+//
+// Removing a standard question shows what stops working first (its
+// `if_disabled`), whether it's removed here or under Standard questions.
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowDown,
@@ -13,6 +20,8 @@ import {
   ChevronRight,
   Copy,
   GitBranch,
+  GripVertical,
+  ListChecks,
   Lock,
   MoreHorizontal,
   Plus,
@@ -20,15 +29,74 @@ import {
 } from 'lucide-react';
 import FieldPreview from './FieldPreview';
 import Inspector from './Inspector';
+import StandardQuestions, { TurnOffConfirm } from './StandardQuestions';
 import { QUESTION_TYPES, QUICK_TYPES, describeLogic, isConditional, isCore, typeInfo } from './model';
+import { askedNames, canTurnOff, entryFor } from './catalog';
 
 // ── Outline ─────────────────────────────────────────────────────────────────
 
-const Outline = ({ draft, problemIds }) => {
-  const { form, selection, select, addSection, addQuestion, removeSection } = draft;
+/** Where a dragged item would land: 'before' or 'after' the row under the pointer. */
+const half = (event) => {
+  const rect = event.currentTarget.getBoundingClientRect();
+  return event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+};
+
+const DropLine = () => <div className="mx-2 h-0.5 rounded-full bg-accent" aria-hidden="true" />;
+
+const Outline = ({ draft, problemIds, onOpenStandard }) => {
+  const { form, selection, select, addSection, addQuestion, removeSection, catalog, moveSectionTo, moveQuestionTo } = draft;
   const activeId = selection?.sectionId;
   const total = form.sections.reduce((n, s) => n + s.questions.length, 0);
-  const hasCore = form.sections.some((s) => s.questions.some(isCore));
+  const asked = catalog ? askedNames(form.sections) : null;
+  const standardCount = catalog ? catalog.entries.filter((e) => asked.has(e.name)).length : 0;
+  const coreMissing = catalog ? catalog.entries.filter((e) => !canTurnOff(e) && !asked.has(e.name)) : [];
+  const locks = (section) => section.questions.some((q) => isCore(q) || !canTurnOff(entryFor(catalog, q)));
+
+  // ── Drag and drop ──
+  const [dragging, setDragging] = useState(null); // { kind: 'step' | 'question', sectionId, questionId? }
+  const [drop, setDrop] = useState(null); // { kind: 'step', index } | { kind: 'question', sectionId, index } | { kind: 'into', sectionId }
+  const endDrag = () => {
+    setDragging(null);
+    setDrop(null);
+  };
+  const startDrag = (event, item) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', item.questionId || item.sectionId);
+    setDragging(item);
+  };
+  const commit = (event) => {
+    event.preventDefault();
+    if (dragging && drop) {
+      if (dragging.kind === 'step' && drop.kind === 'step') moveSectionTo(dragging.sectionId, drop.index);
+      if (dragging.kind === 'question' && drop.kind === 'question')
+        moveQuestionTo(dragging.sectionId, dragging.questionId, drop.sectionId, drop.index);
+      if (dragging.kind === 'question' && drop.kind === 'into') {
+        const target = form.sections.find((s) => s.id === drop.sectionId);
+        moveQuestionTo(dragging.sectionId, dragging.questionId, drop.sectionId, target.questions.length);
+      }
+    }
+    endDrag();
+  };
+  const overStep = (event, section, index) => {
+    if (!dragging) return;
+    if (dragging.kind === 'step') {
+      event.preventDefault();
+      const at = half(event) === 'before' ? index : index + 1;
+      setDrop((prev) => (prev?.kind === 'step' && prev.index === at ? prev : { kind: 'step', index: at }));
+    } else if (section.id !== dragging.sectionId) {
+      event.preventDefault();
+      setDrop((prev) => (prev?.kind === 'into' && prev.sectionId === section.id ? prev : { kind: 'into', sectionId: section.id }));
+    }
+  };
+  const overQuestion = (event, section, index) => {
+    if (dragging?.kind !== 'question') return;
+    event.preventDefault();
+    event.stopPropagation();
+    const at = half(event) === 'before' ? index : index + 1;
+    setDrop((prev) =>
+      prev?.kind === 'question' && prev.sectionId === section.id && prev.index === at ? prev : { kind: 'question', sectionId: section.id, index: at },
+    );
+  };
 
   return (
     <nav aria-label="Form outline" className="flex h-full flex-col" data-tour="rtb-outline">
@@ -43,12 +111,20 @@ const Outline = ({ draft, problemIds }) => {
         {form.sections.map((section, index) => {
           const open = section.id === activeId;
           const stepSelected = open && !selection?.questionId;
+          const into = drop?.kind === 'into' && drop.sectionId === section.id;
           return (
-            <div key={section.id} className={`rounded-xl ${open ? 'bg-accent-soft/60 p-1' : ''}`}>
+            <div key={section.id} onDragOver={(e) => overStep(e, section, index)} onDrop={commit}>
+            {drop?.kind === 'step' && drop.index === index && <DropLine />}
+            <div className={`rounded-xl ${open ? 'bg-accent-soft/60 p-1' : ''} ${dragging?.sectionId === section.id && dragging.kind === 'step' ? 'opacity-50' : ''}`}>
               <div
-                className={`flex items-center rounded-lg transition-colors ${stepSelected ? 'bg-surface shadow-[0_0_0_1.5px_var(--color-accent)]' : open ? '' : 'hover:bg-hover'
+                draggable
+                onDragStart={(e) => startDrag(e, { kind: 'step', sectionId: section.id })}
+                onDragEnd={endDrag}
+                title="Drag to reorder"
+                className={`group flex items-center rounded-lg transition-colors ${into ? 'bg-accent-soft ring-2 ring-accent' : stepSelected ? 'bg-surface shadow-[0_0_0_1.5px_var(--color-accent)]' : open ? '' : 'hover:bg-hover'
                   }`}
               >
+              <GripVertical className="ml-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-ink-subtle opacity-0 group-hover:opacity-100" aria-hidden="true" />
               <button
                 type="button"
                 aria-expanded={open}
@@ -81,7 +157,7 @@ const Outline = ({ draft, problemIds }) => {
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
                   </button>
-                  {!section.questions.some(isCore) && (
+                  {!locks(section) && (
                     <button
                       type="button"
                       onClick={() => {
@@ -102,11 +178,27 @@ const Outline = ({ draft, problemIds }) => {
 
               {open && section.questions.length > 0 && (
                 <ul className="space-y-px py-1 pl-3">
-                  {section.questions.map((question) => {
+                  {section.questions.map((question, qIndex) => {
                     const Icon = typeInfo(question.type).icon;
                     const active = selection?.questionId === question.id;
+                    const lineHere = drop?.kind === 'question' && drop.sectionId === section.id;
                     return (
-                      <li key={question.id}>
+                      <li
+                        key={question.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          startDrag(e, { kind: 'question', sectionId: section.id, questionId: question.id });
+                        }}
+                        onDragEnd={endDrag}
+                        onDragOver={(e) => overQuestion(e, section, qIndex)}
+                        onDrop={(e) => {
+                          e.stopPropagation();
+                          commit(e);
+                        }}
+                        className={dragging?.questionId === question.id ? 'opacity-50' : ''}
+                      >
+                        {lineHere && drop.index === qIndex && <DropLine />}
                         <button
                           type="button"
                           aria-current={active ? 'true' : undefined}
@@ -124,13 +216,21 @@ const Outline = ({ draft, problemIds }) => {
                             <span className="h-2 w-2 shrink-0 rounded-full bg-danger-solid" aria-label="Needs attention" />
                           )}
                           {isConditional(question) && <GitBranch className="h-3 w-3 shrink-0 text-accent-fg" aria-label="Has a condition" />}
-                          {isCore(question) && <Lock className="h-3 w-3 shrink-0 text-ink-muted" aria-label="Required question" />}
+                          {(isCore(question) || entryFor(catalog, question)) && (
+                            <Lock
+                              className="h-3 w-3 shrink-0 text-ink-muted"
+                              aria-label={isCore(question) ? 'Core question' : 'Standard question'}
+                            />
+                          )}
                         </button>
+                        {lineHere && drop.index === qIndex + 1 && qIndex === section.questions.length - 1 && <DropLine />}
                       </li>
                     );
                   })}
                 </ul>
               )}
+            </div>
+            {drop?.kind === 'step' && drop.index === index + 1 && index === form.sections.length - 1 && <DropLine />}
             </div>
           );
         })}
@@ -145,11 +245,31 @@ const Outline = ({ draft, problemIds }) => {
         </button>
       </div>
 
-      {hasCore && (
-        <p className="m-3 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
-          <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
-          Locked questions are core fields. You can reword them, but not remove them or change their type.
-        </p>
+      {catalog ? (
+        <button
+          type="button"
+          onClick={onOpenStandard}
+          className={`m-3 flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+            coreMissing.length ? 'border-danger-line bg-danger-soft hover:brightness-95' : 'border-line bg-subtle hover:border-line-strong'
+          }`}
+        >
+          <ListChecks className={`mt-px h-4 w-4 shrink-0 ${coreMissing.length ? 'text-danger-fg' : 'text-ink-muted'}`} aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-ink">Standard questions</span>
+            <span className={`block text-xs ${coreMissing.length ? 'text-danger-fg' : 'text-ink-muted'}`}>
+              {coreMissing.length
+                ? `"${coreMissing[0].label}" isn't asked`
+                : `${standardCount} of ${catalog.entries.length} asked · choose which`}
+            </span>
+          </span>
+        </button>
+      ) : (
+        form.sections.some((s) => s.questions.some(isCore)) && (
+          <p className="m-3 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
+            <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+            Locked questions are core fields. They can't be removed or change type.
+          </p>
+        )
       )}
     </nav>
   );
@@ -278,8 +398,10 @@ const selectable = (onSelect) => ({
   },
 });
 
-const QuestionCard = ({ draft, section, question, index, count, problem }) => {
-  const { form, selection, select, moveQuestion, duplicateQuestion, removeQuestion } = draft;
+const QuestionCard = ({ draft, section, question, index, count, problem, onRemove }) => {
+  const { form, selection, select, moveQuestion, duplicateQuestion, catalog } = draft;
+  const entry = entryFor(catalog, question);
+  const removable = !isCore(question) && canTurnOff(entry);
   const active = selection?.questionId === question.id;
   const condition = describeLogic(question.conditional_logic, form.sections);
   const ref = useRef(null);
@@ -301,8 +423,8 @@ const QuestionCard = ({ draft, section, question, index, count, problem }) => {
           <ToolButton label="Duplicate" onClick={() => duplicateQuestion(section.id, question.id)}>
             <Copy className="h-3.5 w-3.5" />
           </ToolButton>
-          {!isCore(question) && (
-            <ToolButton label="Delete question" danger onClick={() => removeQuestion(section.id, question.id)}>
+          {removable && (
+            <ToolButton label={entry ? 'Turn off this question' : 'Delete question'} danger onClick={() => onRemove(section, question)}>
               <Trash2 className="h-3.5 w-3.5" />
             </ToolButton>
           )}
@@ -329,10 +451,13 @@ const QuestionCard = ({ draft, section, question, index, count, problem }) => {
             {question.label || <span className="font-normal italic text-ink-muted">Untitled question</span>}
             {question.required && <span className="ml-0.5 text-danger-fg">*</span>}
           </span>
-          {isCore(question) && (
-            <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-xs text-ink-muted">
+          {(isCore(question) || entry) && (
+            <span
+              className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-xs text-ink-muted"
+              title={entry?.drives ? `Feeds: ${entry.drives}` : undefined}
+            >
               <Lock className="h-3 w-3" aria-hidden="true" />
-              Required by policy
+              {isCore(question) ? 'Core · always on' : 'Standard question'}
             </span>
           )}
         </div>
@@ -344,7 +469,7 @@ const QuestionCard = ({ draft, section, question, index, count, problem }) => {
   );
 };
 
-const Canvas = ({ draft, issuesFor }) => {
+const Canvas = ({ draft, issuesFor, onRemove }) => {
   const { form, selection, select, addQuestion, addSection, moveSection } = draft;
   const sections = form.sections;
   const index = Math.max(
@@ -463,6 +588,7 @@ const Canvas = ({ draft, issuesFor }) => {
           index={i}
           count={section.questions.length}
           problem={issuesFor(question.id)[0]}
+          onRemove={onRemove}
         />
       ))}
 
@@ -491,7 +617,15 @@ const Canvas = ({ draft, issuesFor }) => {
   );
 };
 
-const QuestionsStep = ({ draft, issues }) => {
+const QuestionsStep = ({ draft, issues, standardOpen, onStandardOpen }) => {
+  // Removing a standard question confirms first, with what stops working.
+  const [turningOff, setTurningOff] = useState(null); // { section, question, entry }
+  const remove = (section, question) => {
+    const entry = entryFor(draft.catalog, question);
+    if (entry) setTurningOff({ section, question, entry });
+    else draft.removeQuestion(section.id, question.id);
+  };
+
   // Errors keyed by the question or step they're about, for inline flags.
   const byId = new Map();
   issues
@@ -511,18 +645,27 @@ const QuestionsStep = ({ draft, issues }) => {
   return (
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       <aside className="hidden w-68 shrink-0 border-r border-line bg-surface lg:block">
-        <Outline draft={draft} problemIds={problemIds} />
+        <Outline draft={draft} problemIds={problemIds} onOpenStandard={() => onStandardOpen(true)} />
       </aside>
       <main className="min-w-0 flex-1 bg-canvas lg:overflow-y-auto lg:scrollbar-thin">
-        <Canvas draft={draft} issuesFor={issuesFor} />
+        <Canvas draft={draft} issuesFor={issuesFor} onRemove={remove} />
       </main>
       <aside
         aria-label="Settings"
         className="shrink-0 border-t border-line bg-surface lg:w-88 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:scrollbar-thin"
         data-tour="rtb-inspector"
       >
-        <Inspector draft={draft} issuesFor={issuesFor} />
+        <Inspector draft={draft} issuesFor={issuesFor} onRemove={remove} onOpenStandard={() => onStandardOpen(true)} />
       </aside>
+      <StandardQuestions draft={draft} isOpen={standardOpen} onClose={() => onStandardOpen(false)} />
+      <TurnOffConfirm
+        entry={turningOff?.entry}
+        onClose={() => setTurningOff(null)}
+        onConfirm={() => {
+          draft.removeQuestion(turningOff.section.id, turningOff.question.id);
+          setTurningOff(null);
+        }}
+      />
     </div>
   );
 };

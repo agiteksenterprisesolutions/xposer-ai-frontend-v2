@@ -10,12 +10,14 @@ import { CONFIDENTIALITY_TIERS, REPORT_TYPE_STATUSES, reportTypeStatus } from '.
 import ReporterPreview from './ReporterPreview';
 import { GovernanceProblems } from './HandlingStep';
 import { countQuestions, estimateMinutes } from './model';
+import { missingCore } from './catalog';
 
 const PASSED = {
   steps: 'Every step has a title and at least one question',
   questions: 'Every question has wording and its own field name',
   answers: 'Every dropdown and checkbox question has answers',
   conditions: 'Conditions only look at earlier questions',
+  core: 'Asks the core question every live type needs',
 };
 
 const Summary = ({ title, onEdit, children }) => (
@@ -30,15 +32,18 @@ const Summary = ({ title, onEdit, children }) => (
   </section>
 );
 
-const ReviewStep = ({ draft, issues, isNew, onFix, problems = [] }) => {
-  const { form, setField } = draft;
+const ReviewStep = ({ draft, issues, isNew, onFix, problems = [], activationBlock = [], coreError = null }) => {
+  const { form, setField, catalog } = draft;
+  const labelOf = (name) => catalog?.byName.get(name)?.label || name;
   const { nameFor } = useOrgRoles();
   const [device, setDevice] = useState('phone');
 
   const errors = issues.filter((i) => i.level === 'error');
   const warnings = issues.filter((i) => i.level === 'warning');
   const failing = new Set(issues.map((i) => i.check));
-  const passed = Object.entries(PASSED).filter(([check]) => !failing.has(check));
+  // Core is only checked for a live type; claim it only when it's really asked.
+  const asksCore = Boolean(catalog) && missingCore(form, catalog).length === 0;
+  const passed = Object.entries(PASSED).filter(([check]) => !failing.has(check) && (check !== 'core' || asksCore));
   const questions = countQuestions(form.sections);
   const minutes = estimateMinutes(form.sections);
   const tier = CONFIDENTIALITY_TIERS.find((t) => t.value === (form.confidentiality_tier || 'standard'))?.label;
@@ -92,6 +97,38 @@ const ReviewStep = ({ draft, issues, isNew, onFix, problems = [] }) => {
 
         <GovernanceProblems problems={problems} />
 
+        {coreError && (
+          <section role="alert" className="space-y-2 rounded-2xl border border-danger-line bg-danger-soft p-4 text-sm text-danger-fg">
+            <p className="font-semibold">Not saved: this type can't go live yet</p>
+            <p>{coreError.message}</p>
+            <div className="flex flex-wrap gap-2">
+              {coreError.fields.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => onFix({ standard: name })}
+                  className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-danger-fg shadow-sm hover:brightness-95"
+                >
+                  Add “{labelOf(name)}”
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {isNew && !coreError && activationBlock.length > 0 && (
+          <section className="space-y-2 rounded-2xl border border-warning-line bg-warning-soft p-4 text-sm text-warning-fg">
+            {activationBlock.map((issue) => (
+              <p key={issue.target.standard} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="min-w-0 flex-1">{issue.message}. You can still save it as a draft.</span>
+                <button type="button" onClick={() => onFix(issue.target)} className="shrink-0 font-semibold underline underline-offset-2">
+                  Add it
+                </button>
+              </p>
+            ))}
+          </section>
+        )}
+
         <section className="rounded-2xl border border-line bg-surface py-2" data-tour="rtb-checklist" aria-label="Checks">
           <ul>
             {errors.map((issue, i) => (
@@ -130,14 +167,18 @@ const ReviewStep = ({ draft, issues, isNew, onFix, problems = [] }) => {
             <div role="radiogroup" aria-labelledby="rt-status-label" className="grid gap-2 sm:grid-cols-3">
               {REPORT_TYPE_STATUSES.map((status) => {
                 const on = reportTypeStatus(form) === status.value;
+                // Going live needs the core question; a type already live keeps the choice so it can be fixed.
+                const blocked = status.value === 'active' && !on && activationBlock.length > 0;
                 return (
                   <button
                     key={status.value}
                     type="button"
                     role="radio"
                     aria-checked={on}
+                    disabled={blocked}
+                    title={blocked ? activationBlock[0].message : undefined}
                     onClick={() => setField('status', status.value)}
-                    className={`rounded-xl border px-3.5 py-3 text-left transition-colors ${
+                    className={`rounded-xl border px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                       on ? 'border-accent bg-accent-soft/60 shadow-[0_0_0_1px_var(--color-accent)]' : 'border-line hover:border-line-strong'
                     }`}
                   >
@@ -147,6 +188,14 @@ const ReviewStep = ({ draft, issues, isNew, onFix, problems = [] }) => {
                 );
               })}
             </div>
+            {activationBlock.length > 0 && reportTypeStatus(form) !== 'active' && (
+              <p className="text-xs text-warning-fg">
+                {activationBlock[0].message}.{' '}
+                <button type="button" onClick={() => onFix(activationBlock[0].target)} className="font-semibold underline underline-offset-2">
+                  Add it
+                </button>
+              </p>
+            )}
           </section>
         )}
 

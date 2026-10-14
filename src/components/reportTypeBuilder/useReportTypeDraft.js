@@ -3,6 +3,11 @@
 // The report type being built, and every edit to it. State is replaced, never
 // mutated, so React sees each change. Sections and questions are addressed by
 // id rather than index: a selection stays put when things above it move.
+//
+// With the field catalogue loaded (setCatalog), standard questions are
+// guarded here as well as in the UI: their field name never changes, the
+// attributes in their `locked` list can't be edited, and one that can't be
+// turned off can't be removed.
 import { useCallback, useMemo, useState } from 'react';
 import { GOVERNANCE_DEFAULTS, normalizeOption } from '../../utils/reportTypes';
 import {
@@ -13,6 +18,7 @@ import {
   newSection,
   uniqueFieldName,
 } from './model';
+import { canTurnOff, entryFor, insertStandard, withCatalogFlags } from './catalog';
 
 const initialForm = (data) => ({
   ...GOVERNANCE_DEFAULTS,
@@ -54,6 +60,14 @@ const useReportTypeDraft = (initialData) => {
     return first ? { sectionId: first.id, questionId: first.questions?.[0]?.id ?? null } : null;
   });
   const [dirty, setDirty] = useState(false);
+  const [catalog, setCatalogState] = useState(null);
+
+  /** The field catalogue arrived: mark core questions from it. Not an edit. */
+  const setCatalog = useCallback((next) => {
+    setCatalogState(next);
+    if (next) setForm((prev) => ({ ...prev, sections: withCatalogFlags(prev.sections, next) }));
+  }, []);
+  const reserved = useMemo(() => (catalog ? [...catalog.byName.keys()] : []), [catalog]);
 
   const update = useCallback((fn) => {
     setForm(fn);
@@ -97,14 +111,14 @@ const useReportTypeDraft = (initialData) => {
   const removeSection = useCallback(
     (sectionId) => {
       const section = form.sections.find((s) => s.id === sectionId);
-      if (!section || section.questions.some(isCore)) return false;
+      if (!section || section.questions.some((q) => isCore(q) || !canTurnOff(entryFor(catalog, q)))) return false;
       const index = form.sections.indexOf(section);
       mapSections((sections) => sections.filter((s) => s.id !== sectionId));
       const neighbour = form.sections[index + 1] || form.sections[index - 1];
       setSelection(neighbour ? { sectionId: neighbour.id, questionId: null } : null);
       return true;
     },
-    [form.sections, mapSections],
+    [form.sections, mapSections, catalog],
   );
 
   const moveSection = useCallback(
@@ -113,11 +127,25 @@ const useReportTypeDraft = (initialData) => {
     [mapSections],
   );
 
+  /** Drag and drop: puts a step at `index` of the list. */
+  const moveSectionTo = useCallback(
+    (sectionId, index) =>
+      mapSections((sections) => {
+        const from = sections.findIndex((s) => s.id === sectionId);
+        if (from === -1) return sections;
+        const next = sections.filter((s) => s.id !== sectionId);
+        next.splice(Math.max(0, Math.min(index > from ? index - 1 : index, next.length)), 0, sections[from]);
+        return next;
+      }),
+    [mapSections],
+  );
+
   // ── Questions ─────────────────────────────────────────────────────────────
 
   const addQuestion = useCallback(
     (sectionId, type = 'text', afterQuestionId = null) => {
-      const question = newQuestion(type);
+      // The organization's own question, whatever it ends up being called.
+      const question = newQuestion(type, { _custom: true });
       mapSection(sectionId, (section) => {
         const index = section.questions.findIndex((q) => q.id === afterQuestionId);
         const questions =
@@ -146,13 +174,22 @@ const useReportTypeDraft = (initialData) => {
           next.type = question.type;
           next.is_core_field = true;
         }
+        // A standard question keeps its name, and whatever its entry locks.
+        const entry = entryFor(catalog, question);
+        if (entry) {
+          next.name = question.name;
+          (entry.locked || []).forEach((attribute) => {
+            next[attribute] = question[attribute];
+          });
+        }
+        const fixedType = isCore(question) || entry?.locked?.includes('type');
 
-        if ('name' in patch && !isCore(question)) next._autoName = false;
-        if ('label' in patch && question._autoName) {
-          next.name = uniqueFieldName(fieldNameFrom(patch.label), prev.sections, questionId);
+        if ('name' in patch && !isCore(question) && !entry) next._autoName = false;
+        if ('label' in patch && question._autoName && !entry) {
+          next.name = uniqueFieldName(fieldNameFrom(patch.label), prev.sections, questionId, reserved);
         }
 
-        if ('type' in patch && patch.type !== question.type && !isCore(question)) {
+        if ('type' in patch && patch.type !== question.type && !fixedType) {
           next.validation = {};
           if (!hasOptions(next)) next.options = [];
           else if (!question.options?.length) next.options = newQuestion(patch.type).options;
@@ -166,7 +203,7 @@ const useReportTypeDraft = (initialData) => {
         if (next.name !== question.name) sections = renameReferences(sections, question.name, next.name);
         return { ...prev, sections };
       }),
-    [update],
+    [update, catalog, reserved],
   );
 
   /** False for a core question, which can't be removed. */
@@ -174,13 +211,46 @@ const useReportTypeDraft = (initialData) => {
     (sectionId, questionId) => {
       const section = form.sections.find((s) => s.id === sectionId);
       const index = section?.questions.findIndex((q) => q.id === questionId) ?? -1;
-      if (index === -1 || isCore(section.questions[index])) return false;
+      if (index === -1 || isCore(section.questions[index]) || !canTurnOff(entryFor(catalog, section.questions[index]))) return false;
       mapSection(sectionId, (s) => ({ ...s, questions: s.questions.filter((q) => q.id !== questionId) }));
       const neighbour = section.questions[index + 1] || section.questions[index - 1];
       setSelection({ sectionId, questionId: neighbour?.id ?? null });
       return true;
     },
-    [form.sections, mapSection],
+    [form.sections, mapSection, catalog],
+  );
+
+  // ── Standard questions ────────────────────────────────────────────────────
+
+  /** Asks a standard question: its catalogue entry, inserted as given, in its place. */
+  const turnOnStandard = useCallback(
+    (name) => {
+      const entry = catalog?.byName.get(name);
+      if (!entry) return;
+      const existing = form.sections
+        .flatMap((s) => s.questions.map((q) => ({ s, q })))
+        .find(({ q }) => entryFor(catalog, q)?.name === name);
+      if (existing) {
+        setSelection({ sectionId: existing.s.id, questionId: existing.q.id });
+        return;
+      }
+      const placed = insertStandard(form.sections, entry, catalog);
+      update((prev) => ({ ...prev, sections: placed.sections }));
+      setSelection({ sectionId: placed.sectionId, questionId: placed.questionId });
+    },
+    [catalog, form.sections, update],
+  );
+
+  /** Stops asking a standard question. False for one that can't be turned off. */
+  const turnOffStandard = useCallback(
+    (name) => {
+      const found = form.sections
+        .flatMap((s) => s.questions.map((q) => ({ s, q })))
+        .find(({ q }) => entryFor(catalog, q)?.name === name);
+      if (!found) return true;
+      return removeQuestion(found.s.id, found.q.id);
+    },
+    [catalog, form.sections, removeQuestion],
   );
 
   const moveQuestion = useCallback(
@@ -213,6 +283,33 @@ const useReportTypeDraft = (initialData) => {
     [update],
   );
 
+  /** Drag and drop: puts a question at `index` of a step (the same one or another). */
+  const moveQuestionTo = useCallback(
+    (fromSectionId, questionId, toSectionId, index) => {
+      update((prev) => {
+        const from = prev.sections.find((s) => s.id === fromSectionId);
+        const question = from?.questions.find((q) => q.id === questionId);
+        if (!question) return prev;
+        const fromIndex = from.questions.indexOf(question);
+        const sections = prev.sections.map((s) =>
+          s.id === fromSectionId ? { ...s, questions: s.questions.filter((q) => q.id !== questionId) } : s,
+        );
+        return {
+          ...prev,
+          sections: sections.map((s) => {
+            if (s.id !== toSectionId) return s;
+            const at = fromSectionId === toSectionId && index > fromIndex ? index - 1 : index;
+            const questions = [...s.questions];
+            questions.splice(Math.max(0, Math.min(at, questions.length)), 0, question);
+            return { ...s, questions };
+          }),
+        };
+      });
+      setSelection({ sectionId: toSectionId, questionId });
+    },
+    [update],
+  );
+
   const duplicateQuestion = useCallback(
     (sectionId, questionId) => {
       const section = form.sections.find((s) => s.id === sectionId);
@@ -224,8 +321,9 @@ const useReportTypeDraft = (initialData) => {
         label: `${source.label} (copy)`,
         // A copy is an ordinary question, even when copied from a core field.
         is_core_field: false,
+        _custom: true,
         _autoName: false,
-        name: uniqueFieldName(`${source.name || fieldNameFrom(source.label)}_copy`, form.sections, null),
+        name: uniqueFieldName(`${source.name || fieldNameFrom(source.label)}_copy`, form.sections, null, reserved),
       });
       copy.id = newQuestion().id;
       mapSection(sectionId, (s) => {
@@ -234,7 +332,7 @@ const useReportTypeDraft = (initialData) => {
       });
       setSelection({ sectionId, questionId: copy.id });
     },
-    [form.sections, mapSection],
+    [form.sections, mapSection, reserved],
   );
 
   // ── Options ───────────────────────────────────────────────────────────────
@@ -270,6 +368,12 @@ const useReportTypeDraft = (initialData) => {
   return {
     form,
     dirty,
+    catalog,
+    setCatalog,
+    turnOnStandard,
+    turnOffStandard,
+    moveSectionTo,
+    moveQuestionTo,
     setDirty,
     selection,
     selected,

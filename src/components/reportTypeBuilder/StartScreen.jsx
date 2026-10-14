@@ -133,7 +133,7 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
           <fieldset className="space-y-2.5">
             <legend className="mb-2.5 text-sm font-medium text-ink-secondary">Start from</legend>
             <div className="grid gap-2.5 sm:grid-cols-2">
-              {choice('scratch', FilePlus2, 'Start from scratch', 'A blank form. Add your own steps and questions.')}
+              {choice('scratch', FilePlus2, 'Start from the standard questions', 'The questions every type asks, ready for your own.')}
               {choice('copy', Copy, 'A copy of an existing type', 'Its questions and handling rules, under the new name.')}
             </div>
           </fieldset>

@@ -34,6 +34,8 @@ let searchSupport = null;
 // Memoised promise for typeIndex(); cleared by every write below.
 let typeIndexPromise = null;
 
+let fieldCatalogPromise = null;
+
 export const reportTypesAPI = {
   // Get one page of report types. Returns the raw envelope
   // ({ items, page, page_size, total, total_pages, has_next, has_previous }).
@@ -157,6 +159,26 @@ export const reportTypesAPI = {
       // The interceptor has already shown the server's reason.
       throw error;
     }
+  },
+
+  /**
+   * The standard questions: { core, recommended, optional, baseline_order }.
+   * Each entry is a ready-to-insert question (name, type, label, options,
+   * section…) plus what it's for (`tier`, `can_disable`, `default_on`,
+   * `locked`, `drives`, `why`, `if_disabled`). Fetched once per session;
+   * needs report_type:manage. Quiet: the builder still works without it.
+   */
+  fieldCatalog: () => {
+    if (!fieldCatalogPromise) {
+      fieldCatalogPromise = api
+        .get('/report-types/field-catalog', { skipErrorToast: true })
+        .then((response) => response.data)
+        .catch((error) => {
+          fieldCatalogPromise = null;
+          throw error;
+        });
+    }
+    return fieldCatalogPromise;
   },
 
   /** Draft, active or inactive — `status` is a type's whole availability. */

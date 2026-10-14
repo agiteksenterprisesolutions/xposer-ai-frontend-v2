@@ -4,6 +4,12 @@
 // Review. Each step fits one screen, so the work never reads as one long form.
 // Nothing reaches the server until the user saves; leaving with unsaved
 // changes asks first.
+//
+// The field catalogue (the standard questions) is fetched when the builder
+// opens. A live type must ask the core question: with a compliance code set,
+// Publish and Active stay off until it's there, and the server's 400
+// missing_core_field is a backstop, shown verbatim on Review with a way to
+// add what it names.
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Eye, Send } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -16,6 +22,8 @@ import HandlingStep from './HandlingStep';
 import ReviewStep from './ReviewStep';
 import ReporterPreview from './ReporterPreview';
 import { findIssues, saveErrorFields } from './model';
+import { buildCatalog } from './catalog';
+import { reportTypesAPI } from '../../api';
 import { reportTypeStatus } from '../../utils/reportTypes';
 import { describeError } from '../../utils/errors';
 
@@ -60,7 +68,29 @@ const ReportTypeEditor = ({
   const [triedSave, setTriedSave] = useState(false);
   const [serverErrors, setServerErrors] = useState({});
 
-  const issues = useMemo(() => findIssues(form), [form]);
+  const { catalog, setCatalog } = draft;
+  const [standardOpen, setStandardOpen] = useState(false);
+  // A refused activation: { message, fields } from 400 missing_core_field.
+  const [coreError, setCoreError] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    reportTypesAPI
+      .fieldCatalog()
+      .then((raw) => live && setCatalog(buildCatalog(raw)))
+      // Without it the builder still works, as it did before the catalogue.
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [setCatalog]);
+
+  const issues = useMemo(() => findIssues(form, catalog), [form, catalog]);
+  // What going live would need: the core questions it doesn't ask yet.
+  const activationBlock = useMemo(
+    () => findIssues({ ...form, status: 'active' }, catalog).filter((i) => i.check === 'core' && i.level === 'error'),
+    [form, catalog],
+  );
   const errors = issues.filter((issue) => issue.level === 'error');
   // Until a save is tried, only flag what's actually been touched, not the
   // empty step a brand-new type starts with.
@@ -91,7 +121,11 @@ const ReportTypeEditor = ({
 
   /** Jump to where an issue can be fixed. */
   const fix = (target) => {
-    if (target?.questionId || target?.sectionId) {
+    if (target?.standard) {
+      draft.turnOnStandard(target.standard);
+      setCoreError(null);
+      goTo('questions');
+    } else if (target?.questionId || target?.sectionId) {
       select({ sectionId: target.sectionId, questionId: target.questionId ?? null });
       goTo('questions');
     } else if (target?.step === 'questions') goTo('questions');
@@ -100,16 +134,25 @@ const ReportTypeEditor = ({
 
   const save = async (status) => {
     setTriedSave(true);
-    if (errors.length) {
+    const blocking = status ? findIssues({ ...form, status }, catalog).filter((i) => i.level === 'error') : errors;
+    if (blocking.length) {
       goTo('review');
-      toast.error(`Fix ${errors.length === 1 ? 'one thing' : `${errors.length} things`} before saving.`);
+      toast.error(`Fix ${blocking.length === 1 ? 'one thing' : `${blocking.length} things`} before saving.`);
       return;
     }
     try {
       await onSave({ ...form, ...(status ? { status } : {}) });
       draft.setDirty(false);
       setServerErrors({});
+      setCoreError(null);
     } catch (err) {
+      const detail = (err?.response ? err.response.data : err)?.detail;
+      if (detail?.code === 'missing_core_field') {
+        setCoreError({ message: detail.message, fields: Array.isArray(detail.fields) ? detail.fields : [] });
+        goTo('review');
+        toast.error('Not saved. The reason is shown on the Review step.');
+        return;
+      }
       const described = describeError(err);
       const fields = saveErrorFields(described, form);
       if (Object.keys(fields).length) {
@@ -222,7 +265,14 @@ const ReportTypeEditor = ({
               <Button variant="secondary" onClick={() => save('draft')} disabled={saving}>
                 Save as draft
               </Button>
-              <Button onClick={() => save('active')} isLoading={saving} startIcon={Send} data-tour="rtb-submit">
+              <Button
+                onClick={() => save('active')}
+                isLoading={saving}
+                disabled={activationBlock.length > 0}
+                title={activationBlock[0]?.message}
+                startIcon={Send}
+                data-tour="rtb-submit"
+              >
                 Publish
               </Button>
             </>
@@ -241,7 +291,9 @@ const ReportTypeEditor = ({
       </header>
 
       <div id="rtb-scroll" className={`flex min-h-0 flex-1 flex-col ${step === 'questions' ? '' : 'lg:overflow-y-auto lg:scrollbar-thin'}`}>
-        {step === 'questions' && <QuestionsStep draft={draft} issues={visibleIssues} />}
+        {step === 'questions' && (
+          <QuestionsStep draft={draft} issues={visibleIssues} standardOpen={standardOpen} onStandardOpen={setStandardOpen} />
+        )}
         {step === 'handling' && (
           <HandlingStep
             draft={draft}
@@ -252,7 +304,17 @@ const ReportTypeEditor = ({
             onClearError={(field) => setServerErrors(({ [field]: _cleared, ...rest }) => rest)}
           />
         )}
-        {step === 'review' && <ReviewStep draft={draft} issues={issues} isNew={isNew} onFix={fix} problems={problems} />}
+        {step === 'review' && (
+          <ReviewStep
+            draft={draft}
+            issues={issues}
+            isNew={isNew}
+            onFix={fix}
+            problems={problems}
+            activationBlock={activationBlock}
+            coreError={coreError}
+          />
+        )}
       </div>
 
       <Modal

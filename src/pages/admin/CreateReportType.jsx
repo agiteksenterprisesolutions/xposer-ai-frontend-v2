@@ -14,6 +14,7 @@ import useSEO from '../../hooks/useSEO';
 import StartScreen from '../../components/reportTypeBuilder/StartScreen';
 import ReportTypeEditor from '../../components/reportTypeBuilder/ReportTypeEditor';
 import { asCopy, blankSections } from '../../components/reportTypeBuilder/model';
+import { buildCatalog, seedSections } from '../../components/reportTypeBuilder/catalog';
 
 const CREATE_REPORT_TYPE_TOUR_KEY = 'xposer_create_report_type_tour_v2_seen';
 
@@ -69,7 +70,16 @@ const CreateReportType = () => {
 
   const begin = async ({ name, category, mode, copyId }) => {
     if (mode === 'scratch') {
-      setStart({ name, category, sections: blankSections() });
+      // A new type starts with the standard questions that are on by default,
+      // each in its step; without the catalogue, with one empty step.
+      setStarting(true);
+      const catalog = await reportTypesAPI
+        .fieldCatalog()
+        .then(buildCatalog)
+        .catch(() => null);
+      setStarting(false);
+      const seeded = catalog ? seedSections(catalog) : [];
+      setStart({ name, category, sections: seeded.length ? seeded : blankSections() });
       return;
     }
     setStarting(true);

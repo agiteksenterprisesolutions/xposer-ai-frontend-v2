@@ -19,7 +19,7 @@ import {
   Type,
   Upload,
 } from 'lucide-react';
-import { normalizeOptions, normalizeValidation } from '../../utils/reportTypes';
+import { normalizeOptions, normalizeValidation, reportTypeStatus } from '../../utils/reportTypes';
 
 /** Every question type, in the order the type picker lists them. */
 export const QUESTION_TYPES = [
@@ -136,12 +136,16 @@ export const fieldNameFrom = (label) => {
   return /^[a-z_]/.test(base) ? base : `field_${base}`;
 };
 
-/** `base`, or `base_2`, `base_3`… — whichever no other question uses. */
-export const uniqueFieldName = (base, sections, exceptId) => {
+/**
+ * `base`, or `base_2`, `base_3`… — whichever no other question uses and isn't
+ * `reserved` (the standard questions' names, which belong to them).
+ */
+export const uniqueFieldName = (base, sections, exceptId, reserved = []) => {
   if (!base) return '';
-  const taken = new Set(
-    sections.flatMap((s) => s.questions).filter((q) => q.id !== exceptId).map((q) => q.name),
-  );
+  const taken = new Set([
+    ...sections.flatMap((s) => s.questions).filter((q) => q.id !== exceptId).map((q) => q.name),
+    ...reserved,
+  ]);
   if (!taken.has(base)) return base;
   let n = 2;
   while (taken.has(`${base}_${n}`)) n += 1;
@@ -213,7 +217,7 @@ export const retentionProblem = (value) => {
  * Everything worth flagging before save. `error`s block saving; `warning`s are
  * suggestions. Each carries where to fix it: a question, a section, or a step.
  */
-export const findIssues = (form) => {
+export const findIssues = (form, catalog = null) => {
   const issues = [];
   const sections = form.sections || [];
   // `blank` marks what is simply not filled in yet — not worth flagging on a
@@ -243,6 +247,13 @@ export const findIssues = (form) => {
       else if (!FIELD_NAME_PATTERN.test(question.name))
         push('error', 'questions', `"${label}" has a field name with spaces or symbols`, at);
       else if (seen.has(question.name)) push('error', 'questions', `"${label}" uses the same field name as "${seen.get(question.name)}"`, at);
+      else if (question._custom && catalog?.byName.has(question.name))
+        push(
+          'error',
+          'questions',
+          `"${label}" has the field name of the standard question "${catalog.byName.get(question.name).label}". Give it another, or turn that one on under Standard questions.`,
+          at,
+        );
       else seen.set(question.name, label);
 
       if (hasOptions(question)) {
@@ -255,6 +266,21 @@ export const findIssues = (form) => {
       if (problem) push('error', 'conditions', `In "${label}", ${problem}`, at);
     });
   });
+
+  // A live type must ask the core questions. Types with no compliance code
+  // predate the taxonomy and are exempt, so for them it's a warning.
+  if (reportTypeStatus(form) === 'active') {
+    const present = new Set(sections.flatMap((s) => s.questions).filter((q) => !q._custom).map((q) => q.name));
+    (catalog?.entries || [])
+      .filter((entry) => entry.can_disable === false && !present.has(entry.name))
+      .forEach((entry) => {
+        if (form.code?.trim()) {
+          push('error', 'core', `Add "${entry.label}" before this type can go live`, { standard: entry.name });
+        } else {
+          push('warning', 'core', `"${entry.label}" isn't asked. ${entry.if_disabled}`, { standard: entry.name });
+        }
+      });
+  }
 
   if (retentionProblem(form.retention_years)) push('error', 'retention', retentionProblem(form.retention_years), { step: 'handling' });
   if (!form.default_owner_role)

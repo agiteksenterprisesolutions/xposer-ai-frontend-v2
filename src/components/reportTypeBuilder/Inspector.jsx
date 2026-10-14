@@ -3,12 +3,20 @@
 // The right-hand panel: settings for whatever is selected on the canvas — a
 // question, or a step when no question is. Common settings are open; the
 // rarely needed ones (answer limits, field name, placeholder) are folded away.
+//
+// A standard question (one in the field catalogue) shows what its answer
+// feeds and why it exists, and renders the attributes its entry locks —
+// wording and type, and for the core question its answers too — read-only,
+// so nobody types an edit the server would undo on save. Its field name is
+// its identity and never changes.
 import { useState } from 'react';
 import { ChevronDown, Lock, Plus, Trash2, X, GripVertical, Layers } from 'lucide-react';
 import QuestionValidationEditor, { validationFieldsFor } from '../forms/QuestionValidationEditor';
 import { CURRENCIES, DEFAULT_CURRENCY, SENSITIVE_DATA_CLASSES, normalizeOptions } from '../../utils/reportTypes';
 import LogicEditor from './LogicEditor';
 import { QUESTION_TYPES, fieldNameFrom, hasOptions, isCore, questionsBefore, typeInfo } from './model';
+import { canTurnOff, entryFor } from './catalog';
+import { StandardDetails } from './StandardQuestions';
 
 const inputClass =
   'w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-line-accent disabled:cursor-not-allowed disabled:bg-subtle disabled:text-ink-muted';
@@ -148,11 +156,42 @@ const OptionsEditor = ({ question, onChange, error }) => {
   );
 };
 
+/** Answers that can't be changed: the escalation rules are keyed to their values. */
+const LockedOptions = ({ question }) => (
+  <div className="space-y-2">
+    <ul className="space-y-1">
+      {normalizeOptions(question.options).map((option) => (
+        <li key={option.value} className="flex items-center gap-2 rounded-lg bg-subtle px-3 py-1.5 text-sm text-ink-secondary">
+          <span className="min-w-0 flex-1 truncate">{option.label}</span>
+          <span className="shrink-0 font-mono text-[11px] text-ink-subtle">{option.value}</span>
+        </li>
+      ))}
+    </ul>
+    <p className="flex gap-1.5 text-xs text-ink-muted">
+      <Lock className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
+      Fixed. Escalation rules match these stored values, so renaming one would make every rule written against it match
+      nothing.
+    </p>
+  </div>
+);
+
 // ── Question ──────────────────────────────────────────────────────────────────
 
-const QuestionInspector = ({ draft, section, question, issuesFor }) => {
-  const { form, updateQuestion, setOptions, setLogic, removeQuestion, moveQuestionToSection } = draft;
+const QuestionInspector = ({ draft, section, question, issuesFor, onRemove, onOpenStandard }) => {
+  const { form, updateQuestion, setOptions, setLogic, moveQuestionToSection, catalog } = draft;
   const core = isCore(question);
+  const entry = entryFor(catalog, question);
+  const locked = new Set(entry?.locked || []);
+  const labelLocked = locked.has('label');
+  const typeLocked = core || locked.has('type');
+  const optionsLocked = locked.has('options');
+  // A type saved before the catalogue may differ; the server corrects it on save.
+  const drift = entry
+    ? [
+        labelLocked && question.label !== entry.label && `the wording becomes “${entry.label}”`,
+        typeLocked && question.type !== entry.type && `the type becomes ${typeInfo(entry.type).label}`,
+      ].filter(Boolean)
+    : [];
   const info = typeInfo(question.type);
   const Icon = info.icon;
   const set = (patch) => updateQuestion(section.id, question.id, patch);
@@ -178,7 +217,7 @@ const QuestionInspector = ({ draft, section, question, issuesFor }) => {
           <select
             id={typeSelectId}
             value={question.type}
-            disabled={core}
+            disabled={typeLocked}
             onChange={(e) => set({ type: e.target.value })}
             className="-ml-1 mt-0.5 max-w-full rounded border-0 bg-transparent px-1 py-0 text-xs text-ink-muted outline-none hover:bg-hover focus-visible:outline-2 focus-visible:outline-focus disabled:hover:bg-transparent"
           >
@@ -189,11 +228,12 @@ const QuestionInspector = ({ draft, section, question, issuesFor }) => {
             ))}
           </select>
         </div>
-        {!core && (
+        {!core && canTurnOff(entry) && (
           <button
             type="button"
-            onClick={() => removeQuestion(section.id, question.id)}
-            aria-label="Delete question"
+            onClick={() => onRemove(section, question)}
+            aria-label={entry ? 'Turn off this question' : 'Delete question'}
+            title={entry ? 'Turn off' : 'Delete'}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-danger-soft hover:text-danger-fg"
           >
             <Trash2 className="h-4 w-4" />
@@ -201,23 +241,57 @@ const QuestionInspector = ({ draft, section, question, issuesFor }) => {
         )}
       </div>
 
-      {core && (
-        <p className="mx-5 mb-4 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
-          <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
-          One of the 10 questions every report needs. You can reword it, but not remove it or change its type.
-        </p>
+      {entry ? (
+        <div className="mx-5 mb-4 space-y-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
+          <p className="flex gap-2">
+            <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+            <span>
+              <span className="font-semibold text-ink">{core || !canTurnOff(entry) ? 'Core question · always on.' : 'Standard question.'}</span>{' '}
+              The platform reads this answer by name, so its wording and type are fixed. You can move it to any step and
+              order{canTurnOff(entry) ? ', or turn it off' : ''}.
+            </span>
+          </p>
+          {entry.drives && (
+            <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-muted">{entry.drives}</p>
+          )}
+          <StandardDetails entry={entry} />
+          {drift.length > 0 && (
+            <p className="text-warning-fg">Saved with the standard version: {drift.join(' and ')}.</p>
+          )}
+          {onOpenStandard && (
+            <button type="button" onClick={onOpenStandard} className="font-medium text-link hover:underline">
+              All standard questions
+            </button>
+          )}
+        </div>
+      ) : (
+        core && (
+          <p className="mx-5 mb-4 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
+            <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+            A core question. It can't be removed or change its type.
+          </p>
+        )
       )}
 
       <div className="space-y-4 px-5 pb-5">
-        <Field label="Question" htmlFor={`${question.id}-label`} error={errorAbout('wording')}>
-          <textarea
-            id={`${question.id}-label`}
-            rows={2}
-            value={question.label}
-            onChange={(e) => set({ label: e.target.value })}
-            placeholder="What do you want to ask?"
-            className={`${inputClass} resize-none`}
-          />
+        <Field
+          label="Question"
+          hint={labelLocked ? '· standard wording' : undefined}
+          htmlFor={`${question.id}-label`}
+          error={errorAbout('wording')}
+        >
+          <div className="relative">
+            <textarea
+              id={`${question.id}-label`}
+              rows={2}
+              value={question.label}
+              readOnly={labelLocked}
+              onChange={(e) => set({ label: e.target.value })}
+              placeholder="What do you want to ask?"
+              className={`${inputClass} resize-none ${labelLocked ? 'bg-subtle pr-8 text-ink-secondary' : ''}`}
+            />
+            {labelLocked && <Lock className="absolute right-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
+          </div>
         </Field>
         <Field label="Hint for reporters" hint="optional" htmlFor={`${question.id}-help`}>
           <textarea
@@ -256,11 +330,15 @@ const QuestionInspector = ({ draft, section, question, issuesFor }) => {
 
       {hasOptions(question) && (
         <Group title="Answers" aside={<span className="text-xs text-ink-muted">{normalizeOptions(question.options).length}</span>}>
-          <OptionsEditor
-            question={question}
-            onChange={(options) => setOptions(section.id, question.id, options)}
-            error={errorAbout('answers to choose')}
-          />
+          {optionsLocked ? (
+            <LockedOptions question={question} />
+          ) : (
+            <OptionsEditor
+              question={question}
+              onChange={(options) => setOptions(section.id, question.id, options)}
+              error={errorAbout('answers to choose')}
+            />
+          )}
         </Group>
       )}
 
@@ -315,7 +393,7 @@ const QuestionInspector = ({ draft, section, question, issuesFor }) => {
       <Disclosure title="Advanced" summary={question.name || 'field name'} defaultOpen={Boolean(question.name && errorAbout('field name'))}>
         <Field
           label="Field name"
-          hint={core ? 'fixed' : question._autoName ? 'follows the question' : undefined}
+          hint={core || entry ? 'fixed' : question._autoName ? 'follows the question' : undefined}
           htmlFor={`${question.id}-name`}
           error={errorAbout('field name')}
         >
@@ -323,12 +401,12 @@ const QuestionInspector = ({ draft, section, question, issuesFor }) => {
             <input
               id={`${question.id}-name`}
               value={question.name}
-              readOnly={core}
+              readOnly={core || Boolean(entry)}
               onChange={(e) => set({ name: e.target.value })}
               placeholder="e.g. incident_location"
-              className={`${inputClass} font-mono ${core ? 'pr-8' : ''}`}
+              className={`${inputClass} font-mono ${core || entry ? 'pr-8' : ''}`}
             />
-            {core && <Lock className="absolute right-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
+            {(core || entry) && <Lock className="absolute right-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
           </div>
           <p className="text-xs text-ink-muted">How the answer is stored and exported. Conditions refer to it.</p>
         </Field>
@@ -369,7 +447,7 @@ const QuestionInspector = ({ draft, section, question, issuesFor }) => {
 
 const SectionInspector = ({ draft, section, sectionIndex, issuesFor }) => {
   const { form, updateSection, removeSection, setLogic } = draft;
-  const holdsCore = section.questions.some(isCore);
+  const holdsCore = section.questions.some((q) => isCore(q) || !canTurnOff(entryFor(draft.catalog, q)));
   const errors = issuesFor(section.id);
   const earlier = questionsBefore(form.sections, section.id);
 
@@ -443,7 +521,7 @@ const SectionInspector = ({ draft, section, sectionIndex, issuesFor }) => {
   );
 };
 
-const Inspector = ({ draft, issuesFor }) => {
+const Inspector = ({ draft, issuesFor, onRemove, onOpenStandard }) => {
   const { selected } = draft;
   if (!selected) {
     return (
@@ -454,7 +532,15 @@ const Inspector = ({ draft, issuesFor }) => {
     );
   }
   return selected.question ? (
-    <QuestionInspector key={selected.question.id} draft={draft} section={selected.section} question={selected.question} issuesFor={issuesFor} />
+    <QuestionInspector
+      key={selected.question.id}
+      draft={draft}
+      section={selected.section}
+      question={selected.question}
+      issuesFor={issuesFor}
+      onRemove={onRemove}
+      onOpenStandard={draft.catalog ? onOpenStandard : null}
+    />
   ) : (
     <SectionInspector
       key={selected.section.id}
