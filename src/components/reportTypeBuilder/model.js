@@ -251,7 +251,7 @@ export const findIssues = (form, catalog = null) => {
         push(
           'error',
           'questions',
-          `"${label}" has the field name of the standard question "${catalog.byName.get(question.name).label}". Give it another, or turn that one on under Standard questions.`,
+          `"${label}" has the field name of the standard question "${catalog.byName.get(question.name).label}". Give it another field name.`,
           at,
         );
       else seen.set(question.name, label);

@@ -176,7 +176,7 @@ const LockedOptions = ({ question }) => (
 
 // ── Question ──────────────────────────────────────────────────────────────────
 
-const QuestionInspector = ({ draft, section, question, issuesFor, onRemove, onOpenStandard }) => {
+const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) => {
   const { form, updateQuestion, setOptions, setLogic, moveQuestionToSection, catalog } = draft;
   const core = isCore(question);
   const entry = entryFor(catalog, question);
@@ -256,11 +256,6 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove, onOp
           <StandardDetails entry={entry} />
           {drift.length > 0 && (
             <p className="text-warning-fg">Saved with the standard version: {drift.join(' and ')}.</p>
-          )}
-          {onOpenStandard && (
-            <button type="button" onClick={onOpenStandard} className="font-medium text-link hover:underline">
-              All standard questions
-            </button>
           )}
         </div>
       ) : (
@@ -520,7 +515,7 @@ const SectionInspector = ({ draft, section, sectionIndex, issuesFor }) => {
   );
 };
 
-const Inspector = ({ draft, issuesFor, onRemove, onOpenStandard }) => {
+const Inspector = ({ draft, issuesFor, onRemove }) => {
   const { selected } = draft;
   if (!selected) {
     return (
@@ -538,7 +533,6 @@ const Inspector = ({ draft, issuesFor, onRemove, onOpenStandard }) => {
       question={selected.question}
       issuesFor={issuesFor}
       onRemove={onRemove}
-      onOpenStandard={draft.catalog ? onOpenStandard : null}
     />
   ) : (
     <SectionInspector

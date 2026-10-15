@@ -10,7 +10,7 @@
 // saved is the order drawn — the server renumbers from array position.
 //
 // Removing a standard question shows what stops working first (its
-// `if_disabled`), whether it's removed here or under Standard questions.
+// `if_disabled`), from the canvas or the settings panel.
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowDown,
@@ -21,7 +21,6 @@ import {
   Copy,
   GitBranch,
   GripVertical,
-  ListChecks,
   Lock,
   MoreHorizontal,
   Plus,
@@ -29,9 +28,9 @@ import {
 } from 'lucide-react';
 import FieldPreview from './FieldPreview';
 import Inspector from './Inspector';
-import StandardQuestions, { TurnOffConfirm } from './StandardQuestions';
+import { TurnOffConfirm } from './StandardQuestions';
 import { QUESTION_TYPES, QUICK_TYPES, describeLogic, isConditional, isCore, typeInfo } from './model';
-import { askedNames, canTurnOff, entryFor } from './catalog';
+import { canTurnOff, entryFor } from './catalog';
 
 // ── Outline ─────────────────────────────────────────────────────────────────
 
@@ -43,13 +42,10 @@ const half = (event) => {
 
 const DropLine = () => <div className="mx-2 h-0.5 rounded-full bg-accent" aria-hidden="true" />;
 
-const Outline = ({ draft, problemIds, onOpenStandard }) => {
+const Outline = ({ draft, problemIds }) => {
   const { form, selection, select, addSection, addQuestion, removeSection, catalog, moveSectionTo, moveQuestionTo } = draft;
   const activeId = selection?.sectionId;
   const total = form.sections.reduce((n, s) => n + s.questions.length, 0);
-  const asked = catalog ? askedNames(form.sections) : null;
-  const standardCount = catalog ? catalog.entries.filter((e) => asked.has(e.name)).length : 0;
-  const coreMissing = catalog ? catalog.entries.filter((e) => !canTurnOff(e) && !asked.has(e.name)) : [];
   const locks = (section) => section.questions.some((q) => isCore(q) || !canTurnOff(entryFor(catalog, q)));
 
   // ── Drag and drop ──
@@ -245,31 +241,11 @@ const Outline = ({ draft, problemIds, onOpenStandard }) => {
         </button>
       </div>
 
-      {catalog ? (
-        <button
-          type="button"
-          onClick={onOpenStandard}
-          className={`m-3 flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
-            coreMissing.length ? 'border-danger-line bg-danger-soft hover:brightness-95' : 'border-line bg-subtle hover:border-line-strong'
-          }`}
-        >
-          <ListChecks className={`mt-px h-4 w-4 shrink-0 ${coreMissing.length ? 'text-danger-fg' : 'text-ink-muted'}`} aria-hidden="true" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-medium text-ink">Standard questions</span>
-            <span className={`block text-xs ${coreMissing.length ? 'text-danger-fg' : 'text-ink-muted'}`}>
-              {coreMissing.length
-                ? `"${coreMissing[0].label}" isn't asked`
-                : `${standardCount} of ${catalog.entries.length} asked · choose which`}
-            </span>
-          </span>
-        </button>
-      ) : (
-        form.sections.some((s) => s.questions.some(isCore)) && (
-          <p className="m-3 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
-            <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
-            Locked questions are core fields. They can't be removed or change type.
-          </p>
-        )
+      {!catalog && form.sections.some((s) => s.questions.some(isCore)) && (
+        <p className="m-3 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
+          <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+          Locked questions are core fields. They can't be removed or change type.
+        </p>
       )}
     </nav>
   );
@@ -617,7 +593,7 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
   );
 };
 
-const QuestionsStep = ({ draft, issues, standardOpen, onStandardOpen }) => {
+const QuestionsStep = ({ draft, issues }) => {
   // Removing a standard question confirms first, with what stops working.
   const [turningOff, setTurningOff] = useState(null); // { section, question, entry }
   const remove = (section, question) => {
@@ -645,7 +621,7 @@ const QuestionsStep = ({ draft, issues, standardOpen, onStandardOpen }) => {
   return (
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       <aside className="hidden w-68 shrink-0 border-r border-line bg-surface lg:block">
-        <Outline draft={draft} problemIds={problemIds} onOpenStandard={() => onStandardOpen(true)} />
+        <Outline draft={draft} problemIds={problemIds} />
       </aside>
       <main className="min-w-0 flex-1 bg-canvas lg:overflow-y-auto lg:scrollbar-thin">
         <Canvas draft={draft} issuesFor={issuesFor} onRemove={remove} />
@@ -655,9 +631,8 @@ const QuestionsStep = ({ draft, issues, standardOpen, onStandardOpen }) => {
         className="shrink-0 border-t border-line bg-surface lg:w-88 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:scrollbar-thin"
         data-tour="rtb-inspector"
       >
-        <Inspector draft={draft} issuesFor={issuesFor} onRemove={remove} onOpenStandard={() => onStandardOpen(true)} />
+        <Inspector draft={draft} issuesFor={issuesFor} onRemove={remove} />
       </aside>
-      <StandardQuestions draft={draft} isOpen={standardOpen} onClose={() => onStandardOpen(false)} />
       <TurnOffConfirm
         entry={turningOff?.entry}
         onClose={() => setTurningOff(null)}

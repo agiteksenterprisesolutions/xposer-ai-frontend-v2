@@ -25,12 +25,6 @@ const SECTION_TITLES = {
   sec_governance: 'About you and this report',
 };
 
-export const TIERS = [
-  { value: 'core', label: 'Core', hint: 'The platform reads this answer by name, so a live report type must ask it.' },
-  { value: 'recommended', label: 'Recommended', hint: 'On by default. Each one feeds something; turning it off loses that.' },
-  { value: 'optional', label: 'Optional', hint: 'Off by default.' },
-];
-
 /**
  * The catalogue as the builder uses it: entries in `baseline_order` (the
  * order a reporter meets them), then any others; by name; and each one's

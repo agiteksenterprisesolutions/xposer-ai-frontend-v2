@@ -69,7 +69,6 @@ const ReportTypeEditor = ({
   const [serverErrors, setServerErrors] = useState({});
 
   const { catalog, setCatalog } = draft;
-  const [standardOpen, setStandardOpen] = useState(false);
   // A refused activation: { message, fields } from 400 missing_core_field.
   const [coreError, setCoreError] = useState(null);
 
@@ -292,7 +291,7 @@ const ReportTypeEditor = ({
 
       <div id="rtb-scroll" className={`flex min-h-0 flex-1 flex-col ${step === 'questions' ? '' : 'lg:overflow-y-auto lg:scrollbar-thin'}`}>
         {step === 'questions' && (
-          <QuestionsStep draft={draft} issues={visibleIssues} standardOpen={standardOpen} onStandardOpen={setStandardOpen} />
+          <QuestionsStep draft={draft} issues={visibleIssues} />
         )}
         {step === 'handling' && (
           <HandlingStep
