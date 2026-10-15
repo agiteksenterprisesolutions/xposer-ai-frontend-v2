@@ -156,7 +156,7 @@ const OptionsEditor = ({ question, onChange, error }) => {
   );
 };
 
-/** Answers that can't be changed: the escalation rules are keyed to their values. */
+/** Answers that can't be changed: routing reads their stored values. */
 const LockedOptions = ({ question }) => (
   <div className="space-y-2">
     <ul className="space-y-1">
@@ -169,8 +169,7 @@ const LockedOptions = ({ question }) => (
     </ul>
     <p className="flex gap-1.5 text-xs text-ink-muted">
       <Lock className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
-      Fixed. Escalation rules match these stored values, so renaming one would make every rule written against it match
-      nothing.
+      Fixed. Escalation reads these stored values, so renaming one would silently stop it recognising that answer.
     </p>
   </div>
 );

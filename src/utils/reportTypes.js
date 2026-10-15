@@ -232,6 +232,10 @@ export const toReportTypePayload = (formData, { keepIds = false } = {}) => ({
   ack_sla_days: toIntOrNull(formData.ack_sla_days),
   triage_sla_days: toIntOrNull(formData.triage_sla_days),
   allows_anonymous: formData.allows_anonymous ?? true,
+  // Missing on older types, where it means on; sent only once it's been set.
+  ...(formData.escalate_on_subject !== undefined && formData.escalate_on_subject !== null
+    ? { escalate_on_subject: Boolean(formData.escalate_on_subject) }
+    : {}),
   retention_years: toIntOrNull(formData.retention_years),
   regulatory_trigger: blankToNull(formData.regulatory_trigger?.trim()),
   sections: (formData.sections || []).map((section, sectionIndex) => ({

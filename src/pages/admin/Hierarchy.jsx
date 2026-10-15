@@ -11,12 +11,13 @@
 // others. The directory itself is never loaded whole — it's the client's
 // entire headcount — so the Directory tab and the by-person chart page and
 // search it on the server.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
 import Tabs from '../../components/ui/Tabs';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
+import { ConfirmationModal } from '../../components/layout/Modal';
 import CoveragePanel from '../../components/hierarchy/CoveragePanel';
 import LevelsPanel from '../../components/hierarchy/LevelsPanel';
 import DirectoryPanel from '../../components/hierarchy/DirectoryPanel';
@@ -39,7 +40,7 @@ const TABS = [
   { value: 'chart', label: 'Org chart' },
   { value: 'levels', label: 'Levels' },
   { value: 'directory', label: 'Directory' },
-  { value: 'escalation', label: 'Escalation rules' },
+  { value: 'escalation', label: 'Escalation policy' },
   // People an HR sync found, waiting for a level, a role and a login decision.
   { value: 'approvals', label: 'Approvals' },
   // Every sync endpoint needs org_hierarchy:manage, including reading the config.
@@ -57,7 +58,7 @@ const Hierarchy = () => {
   const tabs = TABS.filter((t) => !t.manageOnly || canManage);
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = tabs.some((t) => t.value === searchParams.get('tab')) ? searchParams.get('tab') : 'coverage';
-  const setTab = useCallback(
+  const switchTab = useCallback(
     (value) =>
       setSearchParams(
         (prev) => {
@@ -69,6 +70,19 @@ const Hierarchy = () => {
         { replace: true },
       ),
     [setSearchParams],
+  );
+  // Leaving the escalation policy with unsaved changes asks first.
+  const escalationDirty = useRef(false);
+  const setEscalationDirty = useCallback((dirty) => {
+    escalationDirty.current = dirty;
+  }, []);
+  const [leavingTo, setLeavingTo] = useState(null);
+  const setTab = useCallback(
+    (value) => {
+      if (escalationDirty.current && value !== 'escalation') setLeavingTo(value);
+      else switchTab(value);
+    },
+    [switchTab],
   );
 
   // Org chart: by level (the default — one cheap call) or by person.
@@ -218,7 +232,7 @@ const Hierarchy = () => {
               <PendingPanel levels={activeLevels} canManage={canManage} onChanged={load} onCount={setPendingCount} />
             </Tabs.Content>
             <Tabs.Content value="escalation">
-              <EscalationPanel levels={activeLevels} canManage={canManage} onGoTo={setTab} />
+              <EscalationPanel canManage={canManage} onGoTo={setTab} onDirtyChange={setEscalationDirty} />
             </Tabs.Content>
             {canManage && (
               <Tabs.Content value="hr">
@@ -229,6 +243,19 @@ const Hierarchy = () => {
             )}
           </Tabs>
       )}
+      <ConfirmationModal
+        isOpen={Boolean(leavingTo)}
+        onClose={() => setLeavingTo(null)}
+        onConfirm={() => {
+          escalationDirty.current = false;
+          switchTab(leavingTo);
+          setLeavingTo(null);
+        }}
+        title="Leave without saving?"
+        message="Your changes to the escalation policy haven't been saved. They will be lost."
+        confirmText="Leave"
+        cancelText="Keep editing"
+      />
     </div>
   );
 };

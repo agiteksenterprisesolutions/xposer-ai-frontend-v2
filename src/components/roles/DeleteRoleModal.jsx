@@ -5,7 +5,7 @@
 // they can be reassigned); it is the last role that can manage roles (deleting
 // it would lock the organization out of this screen); report types send their
 // cases to it as Owner or Backup owner (offer the report types page); or an
-// escalation rule routes to it (offer the hierarchy page).
+// escalation policy routes senior cases to it (offer the hierarchy page).
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -92,8 +92,8 @@ const DeleteRoleModal = ({ role, onClose, onDeleted }) => {
             </Link>
           )}
           {escalationBlock && can(ACCESS.hierarchy) && (
-            <Link to={staffPath(orgSlug, 'hierarchy')} className="mt-2 block font-medium text-link hover:underline">
-              Change the escalation rules →
+            <Link to={`${staffPath(orgSlug, 'hierarchy')}?tab=escalation`} className="mt-2 block font-medium text-link hover:underline">
+              Change the escalation policy →
             </Link>
           )}
         </Alert>

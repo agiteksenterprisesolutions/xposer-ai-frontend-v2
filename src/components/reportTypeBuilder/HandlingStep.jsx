@@ -243,6 +243,21 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
             label="Allow anonymous reports"
           />
         </div>
+        <Divider />
+        <div className="flex items-center justify-between gap-3">
+          <span>
+            <span className="block text-sm font-medium text-ink">Escalate when a report is about someone</span>
+            <span className="block text-xs text-ink-muted">
+              Sends the case up the reporting line of the person it's about, or to the senior route set in the escalation
+              policy. When off, that person is still kept off the case, but it goes to the usual owner.
+            </span>
+          </span>
+          <Switch
+            checked={form.escalate_on_subject ?? true}
+            onChange={(on) => setField('escalate_on_subject', on)}
+            label="Escalate when a report is about someone"
+          />
+        </div>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">

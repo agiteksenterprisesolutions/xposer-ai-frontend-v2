@@ -52,6 +52,12 @@ const ReviewStep = ({ draft, issues, isNew, onFix, problems = [], activationBloc
     ['Category', form.category?.trim() || 'None'],
     ['Anonymous reports', form.allows_anonymous === false ? 'Not allowed — reporters must sign in' : 'Allowed'],
     [
+      'Escalation',
+      form.escalate_on_subject === false
+        ? 'Off — cases about someone go to the usual owner (they are still kept off)'
+        : 'Up the reporting line, or the senior route',
+    ],
+    [
       'Owner',
       form.default_owner_role
         ? `${nameFor(form.default_owner_role)}${form.alternate_owner_role ? ` · backup ${nameFor(form.alternate_owner_role)}` : ''}`
