@@ -174,6 +174,7 @@ const getPageTitle = (pathname, role) => {
     'team': 'Team',
     'settings': 'Settings',
     'profile': 'My Profile',
+    'account': 'My Account',
     'admin': 'Admin',
   };
 

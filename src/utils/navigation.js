@@ -20,6 +20,7 @@ import {
   ScrollText,
   GitBranch,
   Network,
+  UserRound,
 } from 'lucide-react';
 import { ACCESS, userCan } from './permissions';
 import { SET_PASSWORD_PATH, mustChangePassword } from './passwordPolicy';
@@ -64,6 +65,8 @@ export const STAFF_NAV = [
   { section: 'Organization', name: 'User Management', icon: Users, path: 'users', access: ACCESS.users },
   { section: 'Organization', name: 'Roles & Permissions', icon: ShieldCheck, path: 'roles', access: ACCESS.roles },
   { section: 'Organization', name: 'Reporting Hierarchy', icon: Network, path: 'hierarchy', access: ACCESS.hierarchy },
+  // Your own name, email and password.
+  { section: 'Account', name: 'My Account', icon: UserRound, path: 'account', access: ACCESS.account },
 ];
 
 /** The staff nav items this user may open. */

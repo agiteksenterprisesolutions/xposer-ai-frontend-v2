@@ -9,6 +9,7 @@ import {
   X,
   Upload,
   AlertTriangle,
+  KeyRound,
 } from 'lucide-react';
 import DirectoryLinkModal from '../../components/users/DirectoryLinkModal';
 import ImportUsersModal from '../../components/users/ImportUsersModal';
@@ -82,13 +83,20 @@ const Users = () => {
     description: 'Create, edit, and deactivate accounts across your organization.',
     noIndex: true,
   });
-  // user:read_all opens this page; each change below has its own permission.
+  // Every staff user can open this page; the list is filtered server-side to
+  // their own account plus the roles their role may see (viewable_roles).
+  // Changing anyone is admin-only — each row's `access` block says which
+  // actions apply, so nothing here is re-derived from role names.
   const can = useCan();
   const canCreateUsers = can(PERM.userCreate);
   const canUpdateUsers = can(PERM.userUpdate);
   // Changing someone's role is a separate grant on top of editing them.
   const canChangeRoles = can(PERM.userUpdate, PERM.userManageRoles);
   const currentUserId = useAuthStore((state) => state.user?.id);
+  /** Admin actions on someone else's row; never on your own (use My account). */
+  const rowCanManage = (user) =>
+    user.access ? Boolean(user.access.can_manage) : canUpdateUsers && user.id !== currentUserId;
+  const isSelf = (user) => user.id === currentUserId;
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const { nameFor, byCode } = useOrgRoles();
   const [roleChangeUser, setRoleChangeUser] = useState(null);
@@ -410,6 +418,13 @@ const Users = () => {
         </Alert>
       )}
 
+      {!canUpdateUsers && (
+        <Alert variant="info">
+          You see your own account and the people whose roles your role is allowed to see. Only an admin can add, change or
+          deactivate accounts.
+        </Alert>
+      )}
+
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="relative w-full sm:w-96" data-tour="users-search">
@@ -560,7 +575,8 @@ const Users = () => {
                         ) : (() => {
                           const member = memberFor(user);
                           const seesTeam = byCode.get(user.role)?.permissions?.includes(PERM.reportReadSubordinates);
-                          const open = canUpdateUsers ? () => setLinkUser(user) : undefined;
+                          // An admin may also link their own account.
+                          const open = canUpdateUsers && (rowCanManage(user) || isSelf(user)) ? () => setLinkUser(user) : undefined;
                           // Linked, but the entry is still being looked up: no flag yet.
                           if (!member && user.hierarchy_member_id && linkLookup.pending) {
                             return <span className="block h-4 w-24 animate-pulse rounded bg-active" />;
@@ -627,7 +643,17 @@ const Users = () => {
                   </Table.Cell>
 
                   <Table.Cell className="text-right">
-                    {canUpdateUsers && (
+                    {isSelf(user) && (
+                      <Link
+                        to={staffPath(orgSlug, 'account')}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-link hover:bg-accent-soft"
+                        title={user.access?.can_change_own_password !== false && isPasswordAccount(user) ? 'Edit your name and email, or change your password' : 'Edit your name and email'}
+                      >
+                        <KeyRound className="h-4 w-4" />
+                        My account
+                      </Link>
+                    )}
+                    {rowCanManage(user) && (
                       <div className="flex justify-end space-x-2">
                         {canChangeRoles && (
                           <Button

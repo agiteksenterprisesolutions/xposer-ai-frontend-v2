@@ -24,6 +24,8 @@ import Skeleton from '../ui/Skeleton';
 import { ConfirmationModal } from '../layout/Modal';
 import { Checkbox } from '../roles/PermissionPicker';
 import UndeliveredCredentials from '../users/UndeliveredCredentials';
+import { useCan } from '../../hooks/useCan';
+import { PERM } from '../../utils/permissions';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
@@ -81,7 +83,7 @@ const LoginChoice = ({ value, onChange, disabled, name }) => (
   </div>
 );
 
-const PendingRow = ({ person, levels, roles, nameFor, canManage, dismissed, selected, onSelect, onSave, onApprove, onDismiss, onRestage, busy, orgName }) => {
+const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dismissed, selected, onSelect, onSave, onApprove, onDismiss, onRestage, busy, orgName }) => {
   const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
   const editable = canManage && !dismissed;
   const suggested = person.suggested_role_code ? [person.suggested_role_code] : person.candidate_role_codes || [];
@@ -224,9 +226,11 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, dismissed, sele
             </Button>
           ) : (
             <>
-              <Button size="small" startIcon={UserCheck} onClick={() => onApprove([person.id])} disabled={busy || !person.ready_to_approve}>
-                Approve
-              </Button>
+              {canApprove && (
+                <Button size="small" startIcon={UserCheck} onClick={() => onApprove([person.id])} disabled={busy || !person.ready_to_approve}>
+                  Approve
+                </Button>
+              )}
               <Button variant="ghost" size="small" onClick={() => onDismiss(person)} disabled={busy} aria-label={`Dismiss ${person.full_name}`} title="Dismiss">
                 <UserX className="h-4 w-4" />
               </Button>
@@ -330,11 +334,14 @@ export const PendingSkeleton = () => (
 /**
  * Props:
  *   levels     – active levels, most senior first
- *   canManage  – org_hierarchy:manage; reading needs only org_hierarchy:read
+ *   canManage  – org_hierarchy:manage; reading needs only org_hierarchy:read.
+ *                Approving admits people (it can create logins), so it also
+ *                needs user:create — admins only.
  *   onChanged  – reload the rest of the hierarchy after people are admitted
  *   onCount    – (pendingTotal) for the tab badge
  */
 const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
+  const canApprove = useCan()(PERM.userCreate);
   const { allRoles: unsortedRoles, nameFor } = useOrgRoles();
   const roles = useMemo(() => sortRolesByLevel(unsortedRoles.filter((r) => r.is_active !== false)), [unsortedRoles]);
   const orgName = useAuthStore((s) => s.user?.organization_name);
@@ -577,9 +584,11 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                         </option>
                       ))}
                     </select>
-                    <Button size="small" startIcon={UserCheck} disabled={busy || selectedReady.length === 0} onClick={() => approve(selectedReady.map((r) => r.id))}>
-                      Approve {selectedReady.length || ''}
-                    </Button>
+                    {canApprove && (
+                      <Button size="small" startIcon={UserCheck} disabled={busy || selectedReady.length === 0} onClick={() => approve(selectedReady.map((r) => r.id))}>
+                        Approve {selectedReady.length || ''}
+                      </Button>
+                    )}
                   </>
                 ) : (
                   <>
@@ -608,7 +617,7 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                         </option>
                       ))}
                     </select>
-                    {view === 'ready' && ready.length > 0 && (
+                    {canApprove && view === 'ready' && ready.length > 0 && (
                       <Button size="small" startIcon={UserCheck} disabled={busy} onClick={() => approve(ready.map((r) => r.id))}>
                         Approve all {ready.length}
                       </Button>
@@ -657,6 +666,7 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                 roles={roles}
                 nameFor={nameFor}
                 canManage={canManage}
+                canApprove={canApprove}
                 dismissed={view === 'dismissed'}
                 selected={selected.has(person.id)}
                 onSelect={() => toggle(person.id)}

@@ -5,7 +5,8 @@
 // makes one request. Call invalidateOrgRoles() after any role write.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { orgRolesAPI } from '../api/orgRoles';
-import { PERM } from '../utils/permissions';
+import { ACCESS, PERM, getPermissions, satisfies } from '../utils/permissions';
+import { useAuthStore } from '../store/authStore';
 
 const cache = new Map(); // activeOnly → Promise<role[]>
 const listeners = new Set();
@@ -44,7 +45,11 @@ export const humanizeRoleCode = (code) =>
 export const roleCanWorkReports = (role) =>
   [PERM.reportReadAll, PERM.reportReadSubordinates, PERM.reportReadAssigned].some((p) => role?.permissions?.includes(p));
 
-export function useOrgRoles({ activeOnly = true, enabled = true } = {}) {
+export function useOrgRoles({ activeOnly = true, enabled: wanted = true } = {}) {
+  // Roles are staff-only: a reporter (or a page with nobody signed in) gets a
+  // 403 staff_only, so never ask from there.
+  const isStaff = useAuthStore((state) => Boolean(state.user) && !state.user.is_anonymous && satisfies(getPermissions(state.user), ACCESS.roles));
+  const enabled = wanted && isStaff;
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);

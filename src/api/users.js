@@ -46,6 +46,16 @@ export const usersAPI = {
     }
   },
 
+  /**
+   * Your own profile: only `full_name` and `email` may be sent for yourself
+   * (403 cannot_change_own names any other field; a password is a 400 — use
+   * POST /users/change-password). Quiet: the account page shows refusals.
+   */
+  updateMe: async (id, { full_name: fullName, email }) => {
+    const response = await api.put(`/users/${id}`, { full_name: fullName, email }, { skipErrorToast: true });
+    return response.data;
+  },
+
   // Change a user's sign-in method (PATCH, unlike the full-record PUT above).
   // Switching to 'password' requires a new password in the same call; switching
   // to an SSO provider removes the stored password.

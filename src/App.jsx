@@ -43,6 +43,7 @@ import KnowledgeBase from './pages/admin/KnowledgeBase'
 import AgentActivity from './pages/admin/AgentActivity'
 import QuestionSets from './pages/admin/QuestionSets'
 import VoiceProfile from './pages/admin/VoiceProfile'
+import Account from './pages/admin/Account'
 import ChangePassword from './pages/reporter/ChangePassword'
 import SetPassword from './pages/auth/SetPassword'
 
@@ -219,6 +220,7 @@ function App() {
           <Route path="agent-runs" element={gate(ACCESS.agents, <AgentActivity />)} />
           <Route path="question-sets" element={gate(ACCESS.questionSets, <QuestionSets />)} />
           <Route path="voice-profile" element={gate(ACCESS.voiceProfile, <VoiceProfile />)} />
+          <Route path="account" element={gate(ACCESS.account, <Account />)} />
         </Route>
 
         {/* v1 role areas, kept only as redirects into the staff area */}

@@ -29,7 +29,7 @@ import { orgRolesAPI } from '../../api/orgRoles';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { usersAPI } from '../../api/users';
 import { sortLevels } from '../../utils/roleLevels';
-import { invalidateOrgRoles } from '../../hooks/useOrgRoles';
+import { invalidateOrgRoles, useOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import { PERM, permissionLabels, togglePermissionIn } from '../../utils/permissions';
 import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
@@ -88,6 +88,79 @@ const LevelField = ({ levels, value, onChange, disabled, missing, currentTitle }
 };
 
 /**
+ * "Can see users with these roles": the only setting that decides whose
+ * accounts this role's holders see on the users screen. Everyone always sees
+ * their own account. `admin` is never offered — admin accounts are visible to
+ * admins only — and a role created later isn't added by itself.
+ */
+const ViewableRolesField = ({ roles, selfCode, value, onChange, fixedText, readOnly }) => (
+  <div className="space-y-2">
+    <div>
+      <h4 className="text-sm font-semibold text-ink">Can see users with these roles</h4>
+      <p className="text-xs text-ink-muted">
+        Whose accounts people with this role see under User Management. Everyone always sees their own account. Admin
+        accounts are visible to admins only, and a role added later has to be ticked here before it shows up.
+      </p>
+    </div>
+    {fixedText ? (
+      <p className="flex items-center gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs text-ink-secondary">
+        <Lock className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
+        {fixedText}
+      </p>
+    ) : (
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Can see users with these roles">
+        {selfCode && (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-subtle px-3 py-1.5 text-sm text-ink-muted"
+            title="Holders of a role can see each other only if it's ticked; their own account is always visible."
+          >
+            <input
+              type="checkbox"
+              checked={value.has(selfCode)}
+              disabled={readOnly}
+              onChange={() => {
+                const next = new Set(value);
+                if (next.has(selfCode)) next.delete(selfCode);
+                else next.add(selfCode);
+                onChange(next);
+              }}
+              className="h-4 w-4 rounded border-line-strong"
+            />
+            Same role
+          </span>
+        )}
+        {roles.map((r) => {
+          const on = value.has(r.code);
+          return (
+            <label
+              key={r.code}
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                on ? 'border-line-accent bg-accent-soft text-ink' : 'border-line text-ink-secondary hover:border-line-strong'
+              } ${readOnly ? 'cursor-not-allowed opacity-70' : ''} ${r.is_active === false ? 'opacity-60' : ''}`}
+            >
+              <input
+                type="checkbox"
+                checked={on}
+                disabled={readOnly}
+                onChange={() => {
+                  const next = new Set(value);
+                  if (on) next.delete(r.code);
+                  else next.add(r.code);
+                  onChange(next);
+                }}
+                className="h-4 w-4 rounded border-line-strong"
+              />
+              {r.code === 'reporter' ? 'Reporter' : r.name}
+            </label>
+          );
+        })}
+        {!readOnly && roles.length === 0 && <p className="text-xs text-ink-muted">No other roles yet.</p>}
+      </div>
+    )}
+  </div>
+);
+
+/**
  * Props:
  *   role     – the role to edit or view; omit to create one
  *   catalog  – GET /org-roles/permissions
@@ -111,6 +184,9 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
   const [saveError, setSaveError] = useState(null);
   const [confirmingEscalation, setConfirmingEscalation] = useState(false);
   const [levelCode, setLevelCode] = useState(role?.level_code || '');
+  // The role codes whose holders this role can see on the users screen.
+  const [viewable, setViewable] = useState(() => new Set(role?.viewable_roles || []));
+  const { allRoles } = useOrgRoles({ activeOnly: false });
   const [levels, setLevels] = useState(null); // null while loading
   // A level move, waiting for the admin to confirm: { from, to, holders }.
   const [confirmingMove, setConfirmingMove] = useState(null);
@@ -195,11 +271,15 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
     return null;
   })();
 
+  const viewableChanged = !isCreate && setKey(viewable) !== setKey(role.viewable_roles || []);
   const isDirty =
     isCreate ||
     levelChanged ||
     (!isFixed &&
-      (name.trim() !== role.name || isActive !== (role.is_active ?? true) || currentKey !== setKey(role.permissions || [])));
+      (name.trim() !== role.name ||
+        isActive !== (role.is_active ?? true) ||
+        currentKey !== setKey(role.permissions || []) ||
+        viewableChanged));
 
   const blocked = isFixed
     ? levelMissing
@@ -239,7 +319,13 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
     const permissions = [...selected];
     try {
       const saved = isCreate
-        ? await orgRolesAPI.create({ code, name: name.trim(), permissions, level_code: levelCode || null })
+        ? await orgRolesAPI.create({
+            code,
+            name: name.trim(),
+            permissions,
+            level_code: levelCode || null,
+            ...(allRoles.some((r) => Array.isArray(r.viewable_roles)) ? { viewable_roles: [...viewable] } : {}),
+          })
         : isFixed
           ? // Only the level of admin and reporter may change; sending anything else is a 409.
             await orgRolesAPI.update(role.id, { level_code: levelCode || null })
@@ -247,6 +333,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
               name: name.trim(),
               permissions,
               is_active: isActive,
+              ...(viewableChanged ? { viewable_roles: [...viewable] } : {}),
               ...(levelChanged ? { level_code: levelCode || null } : {}),
             });
 
@@ -265,7 +352,12 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
         setLevels(sortLevels(detail.available_levels));
       }
       if (detail?.code === 'level_move_inverts_chain') setConflicts(Array.isArray(detail.conflicts) ? detail.conflicts : []);
-      setSaveError(describeError(error));
+      const described = describeError(error);
+      if (detail?.code === 'admin_not_viewable') described.summary = 'Admin accounts can only be seen by admins.';
+      if (detail?.code === 'invalid_viewable_roles' && Array.isArray(detail.available)) {
+        described.problems = [...described.problems, { message: `Roles that exist: ${detail.available.join(', ')}.` }];
+      }
+      setSaveError(described);
       setConfirmingEscalation(false);
       setConfirmingMove(null);
     } finally {
@@ -435,6 +527,25 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
             </span>
           </label>
         )}
+
+        {/* Only once the server knows the setting (roles carry viewable_roles). */}
+        {allRoles.some((r) => Array.isArray(r.viewable_roles)) && <ViewableRolesField
+          roles={allRoles.filter((r) => r.code !== 'admin' && r.code !== role?.code)}
+          selfCode={role?.code || code}
+          value={viewable}
+          onChange={(next) => {
+            setViewable(next);
+            setSaveError(null);
+          }}
+          fixedText={
+            role?.code === 'admin'
+              ? 'Admins see every account. This can’t be changed.'
+              : role?.code === 'reporter'
+                ? 'Reporters see only their own account. This can’t be changed.'
+                : null
+          }
+          readOnly={readOnly}
+        />}
 
         {unplacedErrors.length > 0 && (
           <Alert variant="error" title="This set of permissions can't be saved">

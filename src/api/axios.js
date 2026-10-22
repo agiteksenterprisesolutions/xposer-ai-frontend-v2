@@ -87,11 +87,18 @@ api.interceptors.response.use(
             if (!window.location.pathname.startsWith(SET_PASSWORD_PATH)) window.location.assign(SET_PASSWORD_PATH);
             break;
           }
-          if (!quiet) {
+          // Roles and permissions are staff-only: a reporter page that asked
+          // is a page that shouldn't have — say nothing, the entry point hides.
+          if (!quiet && data?.detail?.code !== 'staff_only') {
             // Prefer the backend's wording — 403 also covers "This account has
             // been disabled" and expired organisation subscriptions, which the
             // generic permission message would hide.
+            const code = data?.detail?.code;
             if (typeof data?.detail === 'string') apiErrorToast(data.detail);
+            else if (code === 'admin_only') apiErrorToast('Only an admin can edit other users.');
+            else if (code === 'cannot_view_user') apiErrorToast("You don't have access to this user.");
+            // cannot_change_own, reporters_only and the rest carry a sentence for the reader.
+            else if (typeof data?.detail?.message === 'string') apiErrorToast(data.detail.message);
             else apiErrorToast('You do not have permission to perform this action.', { generic: true });
           }
           // Permissions resolve per request on the server, so a 403 usually

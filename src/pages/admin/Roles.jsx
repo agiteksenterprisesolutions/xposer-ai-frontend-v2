@@ -18,8 +18,13 @@
 //
 // The rules the editor modal follows apply here too: a permission the
 // signed-in user doesn't hold can't be granted (`granted: false`), each
-// permission's `requires_any_of` is checked instantly, the server's
-// /validate has the final word, and granting role:manage asks first.
+// permission's `requires_any_of` is checked instantly, and the server's
+// /validate has the final word.
+//
+// Every staff user can read this page; only admins (role:manage) change it.
+// Below the grid, "Who can see whom" (GET /org-roles/access-matrix) shows each
+// role's `viewable_roles` — whose accounts its holders see under User
+// Management. Admin accounts are visible to admins only.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -48,7 +53,7 @@ import { usersAPI } from '../../api/users';
 import { invalidateOrgRoles, useOrgRoles } from '../../hooks/useOrgRoles';
 import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
-import { PERM, PERMISSION_HINTS, permissionLabel, permissionLabels, togglePermissionIn } from '../../utils/permissions';
+import { ACCESS, PERM, PERMISSION_HINTS, permissionLabel, permissionLabels, togglePermissionIn } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
 import { sortRolesByLevel } from '../../utils/roleLevels';
 import { describeError, errorSummary } from '../../utils/errors';
@@ -202,6 +207,7 @@ const Stat = ({ label, children, to }) => {
 
 const RoleSummary = ({
   role,
+  viewableNames = [],
   saved,
   draft,
   total,
@@ -298,6 +304,15 @@ const RoleSummary = ({
         </div>
       </div>
 
+      {Array.isArray(role.viewable_roles) && <p className="mt-3 text-xs text-ink-muted">
+        <span className="font-medium text-ink-secondary">Can see accounts of: </span>
+        {role.code === 'admin'
+          ? 'everyone'
+          : viewableNames.length
+            ? `${viewableNames.join(', ')} — and their own`
+            : 'only their own account'}
+      </p>}
+
       {role.is_fixed && (
         <p className="mt-3 text-xs text-ink-muted">
           {role.is_staff_role === false
@@ -374,6 +389,121 @@ const Cell = ({ role, permission, label, held, was, locked, fixed, error, select
 
 // ─── The page ─────────────────────────────────────────────────────────────
 
+// ─── Who can see whom ─────────────────────────────────────────────────────
+
+/**
+ * Rows are the viewer's role, columns the role of the account being looked
+ * at. A tick means holders of the row's role see those accounts under User
+ * Management. Only admins can manage accounts; everyone sees their own.
+ */
+const AccessMatrix = ({ version, canManage, onEdit }) => {
+  const [data, setData] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    orgRolesAPI
+      .accessMatrix()
+      .then((result) => live && (setData(result), setFailed(false)))
+      .catch(() => live && setFailed(true));
+    return () => {
+      live = false;
+    };
+  }, [version]);
+
+  if (failed) return null;
+  const rows = data?.roles || [];
+  if (!rows.length) return null;
+  const columns = rows[0].targets || [];
+
+  return (
+    <section className="rounded-2xl border border-line bg-surface">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start justify-between gap-3 px-4 py-3.5 text-left sm:px-5"
+      >
+        <span>
+          <span className="block text-[15px] font-semibold text-ink">Who can see whom</span>
+          <span className="block text-xs text-ink-muted">
+            Whose accounts each role sees under User Management. Everyone sees their own account; admin accounts are
+            visible to admins only, and only admins can change accounts.
+          </span>
+        </span>
+        <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-ink-muted transition-transform ${open ? '' : '-rotate-90'}`} />
+      </button>
+      {open && (
+        <div className="overflow-x-auto border-t border-line-subtle scrollbar-thin">
+          <table className="w-full min-w-140 border-separate border-spacing-0 text-left text-sm [&_td]:border-b [&_td]:border-line-subtle [&_th]:border-b [&_th]:border-line-subtle">
+            <thead>
+              <tr className="bg-subtle">
+                <th scope="col" className="sticky left-0 z-10 bg-subtle px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
+                  People with… <span className="normal-case tracking-normal">can see…</span>
+                </th>
+                {columns.map((target) => (
+                  <th key={target.role} scope="col" className="border-l border-line-subtle px-3 py-2.5 text-center text-xs font-semibold text-ink">
+                    {target.name}
+                  </th>
+                ))}
+                {canManage && <th scope="col" className="border-l border-line-subtle px-3 py-2.5" aria-label="Edit" />}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.role} className="hover:bg-hover/50">
+                  <th scope="row" className="sticky left-0 z-10 bg-surface px-4 py-2.5 font-medium text-ink">
+                    <span className="flex items-center gap-1.5">
+                      {row.is_fixed && <Lock className="h-3 w-3 text-ink-subtle" aria-label="Fixed role" />}
+                      {row.name}
+                      {row.can_manage_users && (
+                        <Badge variant="dark" size="small">
+                          Manages accounts
+                        </Badge>
+                      )}
+                    </span>
+                  </th>
+                  {(row.targets || []).map((target) => (
+                    <td key={target.role} className="border-l border-line-subtle px-3 py-2.5 text-center">
+                      {target.can_view ? (
+                        <span
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-on-accent"
+                          title={`${row.name} can see ${target.name} accounts${target.can_manage ? ' and change them' : ''}`}
+                        >
+                          <Check className="h-3 w-3" strokeWidth={3.5} />
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-block h-5 w-5 rounded-full border-[1.5px] border-line-strong"
+                          title={
+                            target.role === 'admin' && row.role !== 'admin'
+                              ? 'Admin accounts are visible to admins only'
+                              : `${row.name} can't see ${target.name} accounts`
+                          }
+                        />
+                      )}
+                    </td>
+                  ))}
+                  {canManage && (
+                    <td className="border-l border-line-subtle px-3 py-2.5 text-right">
+                      {!row.is_fixed && (
+                        <button type="button" onClick={() => onEdit(row.role)} className="text-xs font-medium text-link hover:underline">
+                          Change
+                        </button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+};
+
 const Roles = () => {
   useSEO({
     title: 'Roles',
@@ -403,8 +533,15 @@ const Roles = () => {
   // Saved, but with consequences to act on (cases their holders can no longer open).
   const [savedWarnings, setSavedWarnings] = useState([]);
   const [confirmEscalation, setConfirmEscalation] = useState(false);
+  const [matrixVersion, setMatrixVersion] = useState(0);
 
-  const canSeePeople = can(PERM.userReadAll);
+  // Holder counts come from the users list, which shows only the roles the
+  // viewer's own role may see — so count only those, rather than show a 0.
+  const me = useAuthStore((state) => state.user);
+  const canSeePeople = can(ACCESS.users);
+  const myRole = allRoles.find((r) => r.code === me?.role);
+  const canSeeHolders = (code) =>
+    canSeePeople && (me?.role === 'admin' || (myRole?.viewable_roles || []).includes(code) || code === me?.role);
   const canSeeAgents = can(PERM.agentRead);
   const paths = {
     users: canSeePeople ? staffPath(orgSlug, 'users') : null,
@@ -589,6 +726,7 @@ const Roles = () => {
     setEditing(null);
     setDeleting(null);
     loadCatalog();
+    setMatrixVersion((v) => v + 1);
   };
 
   // ─── Rows ────────────────────────────────────────────────────────────
@@ -688,7 +826,8 @@ const Roles = () => {
           saved={savedSets[selected.code] || new Set()}
           draft={heldBy(selected.code)}
           total={total}
-          people={canSeePeople ? (selected.code in people ? people[selected.code] : null) : undefined}
+          people={canSeeHolders(selected.code) ? (selected.code in people ? people[selected.code] : null) : undefined}
+          viewableNames={(selected.viewable_roles || []).map((code) => roles.find((r) => r.code === code)?.name || code)}
           agents={
             canSeeAgents
               ? agents.filter((a) => a.role_source === 'org_role' && a.role_code === selected.code)
@@ -876,6 +1015,11 @@ const Roles = () => {
           </p>
         </>
       )}
+
+      <AccessMatrix version={matrixVersion} canManage={canManage} onEdit={(code) => {
+        const role = roles.find((r) => r.code === code);
+        if (role) setEditing({ role });
+      }} />
 
       {/* Save bar */}
       {changedCodes.length > 0 && (

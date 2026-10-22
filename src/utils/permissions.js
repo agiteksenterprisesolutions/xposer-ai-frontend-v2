@@ -44,6 +44,7 @@ export const PERM = {
   userUpdate: 'user:update',
   userDelete: 'user:delete',
   userManageRoles: 'user:manage_roles',
+  userResetPassword: 'user:reset_password',
 
   // Report types
   reportTypeRead: 'report_type:read',
@@ -95,11 +96,12 @@ export const PERMISSION_INFO = {
   'message:read_own': 'Read messages on their own reports',
   'message:read_internal': 'Read and write internal notes',
   'user:read_me': 'Read their own profile',
-  'user:read_all': 'See everyone in the organization',
+  'user:read_all': 'See every account in the organization',
   'user:create': 'Add users',
   'user:update': "Edit users and their sign-in method",
   'user:delete': 'Deactivate users',
   'user:manage_roles': 'Change which role a user has',
+  'user:reset_password': "Reset other people's passwords",
   'report_type:read': 'View report types',
   'report_type:manage': 'Create and edit report types and voice questions',
   'organization:read': 'View organization settings',
@@ -159,6 +161,18 @@ export const permissionLabels = (permissions = [], joiner = ' or ') =>
  * `any`. Routes and the sidebar share these so a nav item can never point at a
  * page its holder would be turned away from.
  */
+// Everything the reporter identity holds. A staff session holds something
+// beyond these — note admin holds every permission, report:create included,
+// so "has a reporter permission" would not tell staff apart.
+const REPORTER_IDENTITY = new Set([
+  PERM.reportCreate,
+  PERM.reportReadOwn,
+  PERM.reportTypeRead,
+  PERM.messageCreate,
+  PERM.messageReadOwn,
+  PERM.userReadMe,
+]);
+
 export const ACCESS = {
   // Reports someone works on rather than filed themselves.
   caseReports: { any: [PERM.reportReadAll, PERM.reportReadSubordinates, PERM.reportReadAssigned] },
@@ -166,8 +180,11 @@ export const ACCESS = {
   messagesInternal: { all: [PERM.messageReadInternal] },
   analytics: { all: [PERM.systemStats] },
   auditLogs: { all: [PERM.systemStats] },
-  users: { all: [PERM.userReadAll] },
-  team: { all: [PERM.userReadAll] },
+  // Any staff account. The list is filtered server-side to the caller plus the
+  // roles in their role's `viewable_roles` (admins see everyone); creating,
+  // editing and resetting are admin-only and gated on the screen itself.
+  users: { staff: true },
+  team: { staff: true },
   // Reporters hold report_type:read too (to pick a type when filing), so
   // reading alone doesn't open the staff page: it also takes managing types
   // or working on other people's reports.
@@ -179,7 +196,11 @@ export const ACCESS = {
   // The backend serves question sets to "Manager, Admin" — the pair that holds
   // report_type:manage by default.
   questionSets: { all: [PERM.reportTypeManage] },
-  roles: { all: [PERM.roleManage] },
+  // Every staff user may read roles and permissions (reporters get 403
+  // staff_only); creating, editing and deleting needs role:manage — admins.
+  roles: { staff: true },
+  // Your own name, email and password: every staff account.
+  account: { staff: true },
   settings: { all: [PERM.organizationRead] },
   agents: { all: [PERM.agentRead] },
   agentsManage: { all: [PERM.agentRead, PERM.agentManage] },
@@ -195,12 +216,17 @@ export const ACCESS = {
 export const getPermissions = (user) =>
   Array.isArray(user?.permissions) ? user.permissions : [];
 
-/** True when `permissions` satisfies `rule`. A missing rule means no requirement. */
+/**
+ * True when `permissions` satisfies `rule`. A missing rule means no
+ * requirement. `staff: true` asks for a staff session: some permission the
+ * reporter identity doesn't have.
+ */
 export const satisfies = (permissions, rule) => {
   if (!rule) return true;
   const held = permissions instanceof Set ? permissions : new Set(permissions ?? []);
   const all = rule.all ?? [];
   const any = rule.any ?? [];
+  if (rule.staff && ![...held].some((p) => !REPORTER_IDENTITY.has(p))) return false;
   return all.every((p) => held.has(p)) && (any.length === 0 || any.some((p) => held.has(p)));
 };
 

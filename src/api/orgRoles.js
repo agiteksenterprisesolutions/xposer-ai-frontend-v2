@@ -5,6 +5,11 @@
 // public self-service identity rather than a staff role. Every role dropdown
 // is populated from list(), never from a hardcoded set.
 //
+// Reading is staff-only (reporters get 403 staff_only); writing is admin-only.
+// Each role carries `viewable_roles`: the role codes whose holders it can see
+// on the users screen. `admin` can never be in it — admin accounts are seen
+// by admins alone.
+//
 // The writes skip the global error toast: the roles editor renders the
 // structured problems ({message, problems[]}) and the 403/409 guards inline,
 // next to the thing that caused them. Read them off `error.normalised`.
@@ -53,8 +58,22 @@ export const orgRolesAPI = {
    * required once the organization has any level (400 level_required, which
    * carries `available_levels`). The response carries `warnings` worth surfacing.
    */
-  create: async ({ code, name, permissions, level_code: levelCode }) => {
-    const response = await api.post('/org-roles/', { code, name, permissions, level_code: levelCode ?? null }, inline);
+  create: async ({ code, name, permissions, level_code: levelCode, viewable_roles: viewableRoles }) => {
+    const response = await api.post(
+      '/org-roles/',
+      { code, name, permissions, level_code: levelCode ?? null, ...(viewableRoles ? { viewable_roles: viewableRoles } : {}) },
+      inline,
+    );
+    return response.data;
+  },
+
+  /**
+   * Who can see whom: `{ roles: [{ role, name, is_fixed, viewable_roles,
+   * can_manage_users, can_manage_roles, targets: [{ role, name, can_view,
+   * can_manage }] }] }`. Staff only.
+   */
+  accessMatrix: async () => {
+    const response = await api.get('/org-roles/access-matrix', inline);
     return response.data;
   },
 

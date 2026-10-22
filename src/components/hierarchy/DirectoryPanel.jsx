@@ -35,7 +35,7 @@ import { ConfirmationModal } from '../ui/Modal';
 import MemberEditorModal from './MemberEditorModal';
 import AddPersonModal from '../users/AddPersonModal';
 import { useCan } from '../../hooks/useCan';
-import { PERM } from '../../utils/permissions';
+import { ACCESS, PERM } from '../../utils/permissions';
 import BulkImportModal from './BulkImportModal';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { usersAPI } from '../../api/users';
@@ -75,7 +75,7 @@ const DirectoryPanel = ({ levels, canManage, onChanged, reloadKey }) => {
   // /users/person needs user:create). Without it, the directory-only form.
   const can = useCan();
   const canCreateUsers = can(PERM.userCreate);
-  const canSeeUsers = can(PERM.userReadAll);
+  const canSeeUsers = can(ACCESS.users);
   const canReactivate = can(PERM.userUpdate);
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const { nameFor: nameForRole } = useOrgRoles();
@@ -253,12 +253,13 @@ const DirectoryPanel = ({ levels, canManage, onChanged, reloadKey }) => {
             Include inactive
           </label>
         </div>
-        {canManage && (
+        {/* Adding people — by hand or from a spreadsheet — is admin only (user:create). */}
+        {canManage && canCreateUsers && (
           <div className="flex gap-2">
             <Button variant="outline" startIcon={Upload} onClick={() => setImporting(true)}>
               Paste from spreadsheet
             </Button>
-            <Button startIcon={Plus} onClick={() => (canCreateUsers ? setAdding(true) : setEditing({ member: null }))}>
+            <Button startIcon={Plus} onClick={() => setAdding(true)}>
               Add person
             </Button>
           </div>
