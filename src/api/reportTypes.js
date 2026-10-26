@@ -181,6 +181,17 @@ export const reportTypesAPI = {
     return fieldCatalogPromise;
   },
 
+  /**
+   * Roles a report type's cases can be owned by — every staff role, reporter
+   * excluded, without permissions: `[{ code, name, level_code, level_title,
+   * level_rank }]`. For the Default Owner / Backup Owner pickers. Needs
+   * report_type:manage.
+   */
+  ownerRoles: async () => {
+    const response = await api.get('/report-types/owner-roles', { skipErrorToast: true });
+    return response.data;
+  },
+
   /** Draft, active or inactive — `status` is a type's whole availability. */
   setReportTypeStatus: async (id, status) => {
     const response = await api.patch(`/report-types/${id}`, { status });

@@ -2,12 +2,12 @@
 //
 // My account, for staff: your own name and email, and your password.
 //
-// Everyone may change their own name and email (PUT /users/{me} with just
-// those two — anything else for yourself is refused with cannot_change_own),
-// and their own password, only through POST /users/change-password — admins
-// included; the reset-password endpoint never works on yourself. Role,
-// active state, sign-in method and directory link are an admin's to change
-// on User Management, so they're shown here, not edited.
+// Everyone may change their own password, and only through POST
+// /users/change-password — admins included; the reset-password endpoint never
+// works on yourself. Only an admin may change their own name or email (PUT
+// /users/{me} with just those two); for anyone else they're read-only here,
+// since the server refuses any self-edit with cannot_change_own. Role,
+// sign-in method and directory link are shown, not edited.
 import { useState } from 'react';
 import { Check, Eye, EyeOff, KeyRound, Lock, UserRound } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -22,6 +22,8 @@ import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { authProviderLabel, isPasswordAccount } from '../../utils/authProviders';
 import { PASSWORD_RULES, changePasswordSchema } from '../../utils/passwordPolicy';
 import { describeError } from '../../utils/errors';
+import { useCan } from '../../hooks/useCan';
+import { PERM } from '../../utils/permissions';
 import useSEO from '../../hooks/useSEO';
 
 const inputClass =
@@ -35,6 +37,25 @@ const Field = ({ id, label, error, children }) => (
     {children}
     {error && <p className="text-xs text-danger-fg">{error}</p>}
   </div>
+);
+
+const ReadOnlyProfile = ({ user }) => (
+  <Card>
+    <Card.Header>
+      <Card.Title className="flex items-center gap-2">
+        <UserRound className="h-4 w-4 text-ink-muted" /> Your details
+      </Card.Title>
+    </Card.Header>
+    <Card.Content className="space-y-3">
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-sm">
+        <dt className="text-ink-muted">Full name</dt>
+        <dd className="text-ink">{user.full_name || '—'}</dd>
+        <dt className="text-ink-muted">Email</dt>
+        <dd className="break-all text-ink">{user.email || '—'}</dd>
+      </dl>
+      <p className="text-xs text-ink-muted">To change your name or email, ask an admin.</p>
+    </Card.Content>
+  </Card>
 );
 
 const Profile = ({ user }) => {
@@ -225,16 +246,24 @@ const Account = () => {
   useSEO({ title: 'My account', description: 'Your name, email and password.', noIndex: true });
   const user = useAuthStore((state) => state.user);
   const { nameFor } = useOrgRoles();
+  // Only admins (user:update) may edit their own name and email.
+  const canEditProfile = useCan()(PERM.userUpdate);
   if (!user) return null;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5 pb-12">
       <div>
         <h1 className="text-xl font-bold text-ink">My account</h1>
-        <p className="mt-1 text-sm text-ink-muted">Your name, email and password.</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          {canEditProfile ? 'Your name, email and password.' : 'Your details, and your password.'}
+        </p>
       </div>
 
-      <Profile key={`${user.id}-${user.full_name}-${user.email}`} user={user} />
+      {canEditProfile ? (
+        <Profile key={`${user.id}-${user.full_name}-${user.email}`} user={user} />
+      ) : (
+        <ReadOnlyProfile user={user} />
+      )}
       <Password user={user} />
 
       <Card>
@@ -253,7 +282,9 @@ const Account = () => {
             <dd className="text-ink">{authProviderLabel(user.auth_provider)}</dd>
           </dl>
           <p className="text-xs text-ink-muted">
-            Your role, sign-in method and place in the directory can only be changed by an admin.
+            {canEditProfile
+              ? 'Your directory link and sign-in method are on User Management. Your own role and active state can only be changed by another admin.'
+              : 'Your role, sign-in method and place in the directory can only be changed by an admin.'}
           </p>
         </Card.Content>
       </Card>

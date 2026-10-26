@@ -98,7 +98,11 @@ const Users = () => {
     user.access ? Boolean(user.access.can_manage) : canUpdateUsers && user.id !== currentUserId;
   const isSelf = (user) => user.id === currentUserId;
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
-  const { nameFor, byCode } = useOrgRoles();
+  // Role names: an admin's full list, otherwise only the roles whose users
+  // this person can see (GET /users/visible-roles). Each user also carries
+  // `role_name`, which is preferred for their own label.
+  const { allRoles: visibleRoles, nameFor, byCode } = useOrgRoles();
+  const roleLabel = (user) => user.role_name || nameFor(user.role);
   const [roleChangeUser, setRoleChangeUser] = useState(null);
   // After a role change or deactivation: open cases the person can no longer work.
   const [stranded, setStranded] = useState(null);
@@ -163,6 +167,14 @@ const Users = () => {
     }, { replace: true });
   }, [setSearchParams]);
   const clearRoleFilter = useCallback(() => clearFilter('role'), [clearFilter]);
+  const setRoleFilter = useCallback((value) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set('role', value);
+      else next.delete('role');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const setStatusFilter = useCallback((value) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -243,7 +255,7 @@ const Users = () => {
   // sorts the rows on screen rather than the whole result set.
   const sortColumns = useMemo(() => ({
     ...SORT_COLUMNS,
-    role: { ...SORT_COLUMNS.role, value: (user) => nameFor(user.role).toLowerCase() },
+    role: { ...SORT_COLUMNS.role, value: (user) => roleLabel(user).toLowerCase() },
   }), [nameFor]);
   const sort = useTableSort(visibleUsers, sortColumns, { defaultSortBy: 'created_at' });
   const { sortedRows: filteredUsers, getHeaderProps } = sort;
@@ -259,7 +271,7 @@ const Users = () => {
   const handleStatusToggle = async (user) => {
     if (!user.is_active && roleMissing(user)) {
       setConfirmModal({ open: false, type: '', user: null });
-      toast.error(`The ${nameFor(user.role)} role no longer exists. Give ${user.full_name || user.username} a role first.`);
+      toast.error(`The ${roleLabel(user)} role no longer exists. Give ${user.full_name || user.username} a role first.`);
       if (canChangeRoles) setRoleChangeUser(user);
       return;
     }
@@ -454,6 +466,25 @@ const Users = () => {
               </button>
             ))}
           </div>
+          {/* Only the roles whose users this person can see. */}
+          {visibleRoles.length > 1 && (
+            <select
+              value={roleFilter}
+              onChange={(event) => setRoleFilter(event.target.value)}
+              aria-label="Filter by role"
+              className="h-9 rounded-lg border border-line bg-surface px-2.5 text-sm text-ink"
+            >
+              <option value="">All roles</option>
+              {visibleRoles.map((role) => (
+                <option key={role.code} value={role.code}>
+                  {role.code === REPORTER_ROLE ? 'Reporter' : role.name}
+                </option>
+              ))}
+              {roleFilter && !visibleRoles.some((r) => r.code === roleFilter) && (
+                <option value={roleFilter}>{nameFor(roleFilter)}</option>
+              )}
+            </select>
+          )}
           <TableSortControl {...sort} id="users" className="shrink-0" />
           {canCreateUsers && (
             <Button variant="outline" startIcon={Upload} onClick={() => setImportOpen(true)}>
@@ -565,7 +596,7 @@ const Users = () => {
                     <span className="text-sm font-medium text-ink-muted font-mono">{user.username}</span>
                   </Table.Cell>
                   <Table.Cell>
-                    <RoleBadge role={user.role} label={nameFor(user.role)} />
+                    <RoleBadge role={user.role} label={roleLabel(user)} />
                     {/* Where they sit in the hierarchy, under what they can do.
                         Their level comes from their role, via their directory entry. */}
                     {canReadHierarchy && (
@@ -647,10 +678,10 @@ const Users = () => {
                       <Link
                         to={staffPath(orgSlug, 'account')}
                         className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-link hover:bg-accent-soft"
-                        title={user.access?.can_change_own_password !== false && isPasswordAccount(user) ? 'Edit your name and email, or change your password' : 'Edit your name and email'}
+                        title={canUpdateUsers ? 'Edit your name and email, or change your password' : 'Change your password'}
                       >
                         <KeyRound className="h-4 w-4" />
-                        My account
+                        {canUpdateUsers ? 'My account' : 'Change my password'}
                       </Link>
                     )}
                     {rowCanManage(user) && (
@@ -719,7 +750,7 @@ const Users = () => {
         title={confirmModal.type === 'deactivate' ? 'Deactivate User' : 'Activate User'}
         message={
           confirmModal.type === 'activate' && confirmModal.user && roleMissing(confirmModal.user)
-            ? `${confirmModal.user.full_name || confirmModal.user.username}'s role, ${nameFor(confirmModal.user.role)}, no longer exists, so they would return with no permissions. You'll be asked to choose a new role.`
+            ? `${confirmModal.user.full_name || confirmModal.user.username}'s role, ${roleLabel(confirmModal.user)}, no longer exists, so they would return with no permissions. You'll be asked to choose a new role.`
             : `Are you sure you want to ${confirmModal.type} user ${confirmModal.user?.full_name || confirmModal.user?.username}?`
         }
         variant={confirmModal.type === 'deactivate' ? 'danger' : 'success'}

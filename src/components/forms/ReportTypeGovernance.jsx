@@ -61,7 +61,7 @@ const RoleField = ({ id, label, hint, value, onChange, roles, nameFor, disabled 
  *   readOnly
  */
 const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = false }) => {
-  const { roles, nameFor } = useOrgRoles();
+  const { roles, nameFor } = useOrgRoles({ source: 'owners' });
   const approvedAt = parseServerDate(value.approved_at);
 
   return (

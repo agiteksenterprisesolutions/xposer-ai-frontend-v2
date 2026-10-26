@@ -35,7 +35,7 @@ const Summary = ({ title, onEdit, children }) => (
 const ReviewStep = ({ draft, issues, isNew, onFix, problems = [], activationBlock = [], coreError = null }) => {
   const { form, setField, catalog } = draft;
   const labelOf = (name) => catalog?.byName.get(name)?.label || name;
-  const { nameFor } = useOrgRoles();
+  const { nameFor } = useOrgRoles({ source: 'owners' });
   const [device, setDevice] = useState('phone');
 
   const errors = issues.filter((i) => i.level === 'error');

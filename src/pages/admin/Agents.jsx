@@ -701,7 +701,8 @@ const Agents = () => {
   const canManage = can(PERM.agentManage);
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const roleLink = can(ACCESS.roles) ? staffPath(orgSlug, 'roles') : null;
-  const { nameFor, byCode } = useOrgRoles();
+  const canReadCatalog = can(PERM.roleManage);
+  const { nameFor, byCode } = useOrgRoles({ source: 'owners' });
   const paths = {
     workflows: staffPath(orgSlug, 'workflows'),
     summarizer: staffPath(orgSlug, 'summarizer'),
@@ -736,8 +737,11 @@ const Agents = () => {
       fetchAgents(),
       orgAgentsAPI.capabilities().then(setCapabilityCatalog).catch((err) => setError(errorSummary(err))),
       // For agents given a custom permission set; also says what the signed-in
-      // user may grant. Not fatal — "use a role" still works without it.
-      orgRolesAPI.catalog().then(setPermissionCatalog).catch(() => setPermissionCatalog(null)),
+      // user may grant. Admin only (role:manage) — not fatal, "use a role"
+      // still works without it.
+      canReadCatalog
+        ? orgRolesAPI.catalog().then(setPermissionCatalog).catch(() => setPermissionCatalog(null))
+        : Promise.resolve(setPermissionCatalog(null)),
       // Only to show where each agent is used; the page works without it.
       orgWorkflowsAPI
         .list()
@@ -745,7 +749,7 @@ const Agents = () => {
         .catch(() => setWorkflows([])),
     ]);
     setLoading(false);
-  }, [fetchAgents]);
+  }, [fetchAgents, canReadCatalog]);
 
   useEffect(() => {
     loadAll();

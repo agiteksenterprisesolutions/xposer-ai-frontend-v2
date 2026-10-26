@@ -21,7 +21,8 @@
 // permission's `requires_any_of` is checked instantly, and the server's
 // /validate has the final word.
 //
-// Every staff user can read this page; only admins (role:manage) change it.
+// Admin only (role:manage): every role with its permissions, the catalog and
+// the access matrix are admin-only reads. Other staff see role names only.
 // Below the grid, "Who can see whom" (GET /org-roles/access-matrix) shows each
 // role's `viewable_roles` — whose accounts its holders see under User
 // Management. Admin accounts are visible to admins only.
@@ -184,6 +185,22 @@ const RolesSkeleton = () => (
         </tbody>
       </table>
     </div>
+
+    {/* Who can see whom */}
+    <section className="rounded-2xl border border-line bg-surface px-4 py-3.5 sm:px-5">
+      <Skeleton.Text size="base" className="w-36" />
+      <Skeleton.Text size="xs" className="mt-1 w-96 max-w-full" />
+      <div className="mt-4 space-y-3">
+        {[0, 1, 2, 3].map((row) => (
+          <div key={row} className="flex items-center gap-4">
+            <Skeleton.Text className="w-28 shrink-0" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton.Circle key={i} size="h-5 w-5" className="mx-auto" />
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
   </div>
 );
 
@@ -396,23 +413,8 @@ const Cell = ({ role, permission, label, held, was, locked, fixed, error, select
  * at. A tick means holders of the row's role see those accounts under User
  * Management. Only admins can manage accounts; everyone sees their own.
  */
-const AccessMatrix = ({ version, canManage, onEdit }) => {
-  const [data, setData] = useState(null);
-  const [failed, setFailed] = useState(false);
+const AccessMatrix = ({ data, canManage, onEdit }) => {
   const [open, setOpen] = useState(true);
-
-  useEffect(() => {
-    let live = true;
-    orgRolesAPI
-      .accessMatrix()
-      .then((result) => live && (setData(result), setFailed(false)))
-      .catch(() => live && setFailed(true));
-    return () => {
-      live = false;
-    };
-  }, [version]);
-
-  if (failed) return null;
   const rows = data?.roles || [];
   if (!rows.length) return null;
   const columns = rows[0].targets || [];
@@ -534,6 +536,11 @@ const Roles = () => {
   const [savedWarnings, setSavedWarnings] = useState([]);
   const [confirmEscalation, setConfirmEscalation] = useState(false);
   const [matrixVersion, setMatrixVersion] = useState(0);
+  // Who can see whom: { data, done }. Fetched with the rest so the page
+  // appears whole rather than piece by piece.
+  const [matrix, setMatrix] = useState({ data: null, done: false });
+  const [peopleReady, setPeopleReady] = useState(false);
+  const [agentsReady, setAgentsReady] = useState(false);
 
   // Holder counts come from the users list, which shows only the roles the
   // viewer's own role may see — so count only those, rather than show a 0.
@@ -577,7 +584,22 @@ const Roles = () => {
   // Who holds each role, and which agents act as it — context for the summary.
   const rolesKey = roles.map((r) => r.code).join(',');
   useEffect(() => {
-    if (!canSeePeople || !rolesKey) return undefined;
+    let live = true;
+    orgRolesAPI
+      .accessMatrix()
+      .then((data) => live && setMatrix({ data, done: true }))
+      .catch(() => live && setMatrix({ data: null, done: true }));
+    return () => {
+      live = false;
+    };
+  }, [matrixVersion]);
+
+  useEffect(() => {
+    if (!canSeePeople) {
+      setPeopleReady(true);
+      return undefined;
+    }
+    if (!rolesKey) return undefined;
     let cancelled = false;
     Promise.all(
       rolesKey.split(',').map((code) =>
@@ -586,19 +608,36 @@ const Roles = () => {
           .then((data) => [code, typeof data?.total === 'number' ? data.total : null])
           .catch(() => [code, null]),
       ),
-    ).then((pairs) => !cancelled && setPeople(Object.fromEntries(pairs)));
+    ).then((pairs) => {
+      if (cancelled) return;
+      setPeople(Object.fromEntries(pairs));
+      setPeopleReady(true);
+    });
     return () => {
       cancelled = true;
     };
   }, [rolesKey, canSeePeople]);
 
   useEffect(() => {
-    if (!canSeeAgents) return;
+    if (!canSeeAgents) {
+      setAgentsReady(true);
+      return;
+    }
     orgAgentsAPI
       .list()
       .then((data) => setAgents(Array.isArray(data) ? data : []))
-      .catch(() => setAgents([]));
+      .catch(() => setAgents([]))
+      .finally(() => setAgentsReady(true));
   }, [canSeeAgents]);
+
+  // The first load shows one skeleton until everything the page draws has
+  // arrived; after that, refreshes update in place.
+  const everythingLoaded =
+    !loading && Boolean(catalog) && (peopleReady || roles.length === 0) && agentsReady && matrix.done;
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (everythingLoaded) setShown(true);
+  }, [everythingLoaded]);
 
   const savedSets = useMemo(() => Object.fromEntries(roles.map((r) => [r.code, new Set(r.permissions || [])])), [roles]);
   const heldBy = (code) => drafts[code] || savedSets[code] || new Set();
@@ -811,16 +850,16 @@ const Roles = () => {
 
       <SavedWarnings warnings={savedWarnings} orgSlug={orgSlug} onDismiss={() => setSavedWarnings([])} />
 
-      {unplacedRoles.length > 0 && (
+      {shown && unplacedRoles.length > 0 && (
         <Alert variant="warning" title={`${unplacedRoles.length === 1 ? '1 role has' : `${unplacedRoles.length} roles have`} no level`}>
           Nobody holding {unplacedRoles.map((r) => r.name).join(', ')} can be placed in the org chart, so escalation can’t
           route a report around them. Select the role and give it a level.
         </Alert>
       )}
 
-      {(loading || !catalog) && roles.length === 0 && !error && !catalogError && <RolesSkeleton />}
+      {!shown && !error && !catalogError && <RolesSkeleton />}
 
-      {selected && catalog && (
+      {shown && selected && catalog && (
         <RoleSummary
           role={selected}
           saved={savedSets[selected.code] || new Set()}
@@ -841,7 +880,7 @@ const Roles = () => {
         />
       )}
 
-      {roles.length > 0 && catalog && (
+      {shown && roles.length > 0 && catalog && (
         <>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-muted">
             <span className="flex items-center gap-1.5">
@@ -1016,10 +1055,16 @@ const Roles = () => {
         </>
       )}
 
-      <AccessMatrix version={matrixVersion} canManage={canManage} onEdit={(code) => {
-        const role = roles.find((r) => r.code === code);
-        if (role) setEditing({ role });
-      }} />
+      {shown && (
+        <AccessMatrix
+          data={matrix.data}
+          canManage={canManage}
+          onEdit={(code) => {
+            const role = roles.find((r) => r.code === code);
+            if (role) setEditing({ role });
+          }}
+        />
+      )}
 
       {/* Save bar */}
       {changedCodes.length > 0 && (

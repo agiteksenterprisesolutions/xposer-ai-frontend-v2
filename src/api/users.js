@@ -56,6 +56,17 @@ export const usersAPI = {
     return response.data;
   },
 
+  /**
+   * The roles whose users the caller can see — their own role plus their
+   * role's `viewable_roles` (admins: every role), never `admin` for anyone
+   * else: `[{ code, name, level_code, level_title, level_rank, is_staff_role }]`.
+   * Any signed-in user. For the users screen's role filter and labels.
+   */
+  visibleRoles: async () => {
+    const response = await api.get('/users/visible-roles', { skipErrorToast: true });
+    return response.data;
+  },
+
   // Change a user's sign-in method (PATCH, unlike the full-record PUT above).
   // Switching to 'password' requires a new password in the same call; switching
   // to an SSO provider removes the stored password.

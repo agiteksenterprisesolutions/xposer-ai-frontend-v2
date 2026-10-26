@@ -211,8 +211,9 @@ const CaseDetail = () => {
   const assignBlockFor = useCallback(
     (person) => {
       const needs = TIER_CLEARANCE[report?.confidentiality_tier];
-      const rolePermissions = orgRoles.find((role) => role.code === person.role)?.permissions || [];
-      if (needs && !rolePermissions.includes(needs)) {
+      // Unknown for a non-admin (trimmed role list): the server decides.
+      const rolePermissions = orgRoles.find((role) => role.code === person.role)?.permissions;
+      if (needs && Array.isArray(rolePermissions) && !rolePermissions.includes(needs)) {
         return `Their role isn't cleared for ${report.confidentiality_tier} cases.`;
       }
       const reporterId = report?.reporter_id || report?.user_id || report?.submitted_by?.id;
@@ -449,7 +450,7 @@ const CaseDetail = () => {
     return (
       <CaseDetailSkeleton
         showDigest={can(PERM.agentSummaryRead)}
-        showEscalation={can(PERM.hierarchyRead)}
+        showEscalation={can(PERM.hierarchyManage)}
         showActions={canAssignReports}
         onBack={() => navigate(-1)}
       />
@@ -871,8 +872,9 @@ const CaseDetail = () => {
             <EscalationRecord report={report} canReadHierarchy={can(PERM.hierarchyRead)} />
           )}
 
-          {/* Who the people named in this report escalate to */}
-          {can(PERM.hierarchyRead) && (
+          {/* Who the people named in this report escalate to — POST
+              /org-hierarchy/resolve is admin only. */}
+          {can(PERM.hierarchyManage) && (
             <EscalationPreview
               report={report}
               hierarchyPath={staffPath(report?.organization_slug || orgSlug, 'hierarchy')}

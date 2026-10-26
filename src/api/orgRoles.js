@@ -28,8 +28,8 @@ export const orgRolesAPI = {
    * entry is the synthesised fixed admin role, whose id is the literal string
    * "admin" — ids here are not all ObjectIds.
    */
-  list: async ({ activeOnly = true } = {}) => {
-    const response = await api.get('/org-roles/', { params: { active_only: activeOnly } });
+  list: async ({ activeOnly = true, quiet = false } = {}) => {
+    const response = await api.get('/org-roles/', { params: { active_only: activeOnly }, skipErrorToast: quiet });
     return response.data;
   },
 

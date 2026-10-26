@@ -196,15 +196,22 @@ export const ACCESS = {
   // The backend serves question sets to "Manager, Admin" — the pair that holds
   // report_type:manage by default.
   questionSets: { all: [PERM.reportTypeManage] },
-  // Every staff user may read roles and permissions (reporters get 403
-  // staff_only); creating, editing and deleting needs role:manage — admins.
-  roles: { staff: true },
-  // Your own name, email and password: every staff account.
+  // Roles & Permissions — every role with its permissions, the catalog, the
+  // access matrix — is admin only. Other staff get a trimmed role list
+  // (names for labels and filters) from GET /org-roles/, nothing more.
+  roles: { all: [PERM.roleManage] },
+  // Role names for labels, pickers and filters: any staff account.
+  roleNames: { staff: true },
+  // Your account: everyone can change their password; only an admin can
+  // change their own name or email.
   account: { staff: true },
   settings: { all: [PERM.organizationRead] },
   agents: { all: [PERM.agentRead] },
   agentsManage: { all: [PERM.agentRead, PERM.agentManage] },
+  // Non-admins with org_hierarchy:read get the org chart (levels and people),
+  // read-only, and nothing else; the rest of the section is admin only.
   hierarchy: { all: [PERM.hierarchyRead] },
+  hierarchyAdmin: { all: [PERM.hierarchyManage] },
   voiceProfile: { all: [PERM.voiceProfileRead] },
 
   // The self-service reporter portal: only reporter accounts read their own

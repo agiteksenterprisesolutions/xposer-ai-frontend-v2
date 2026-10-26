@@ -178,7 +178,7 @@ const AgentEditorModal = ({
   const isCreate = !agent;
   const can = useCan();
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
-  const { roles, byCode, nameFor } = useOrgRoles();
+  const { roles, byCode, nameFor } = useOrgRoles({ source: 'owners' });
 
   const [name, setName] = useState(agent?.name || '');
   const [code, setCode] = useState(agent?.code || '');
@@ -460,7 +460,8 @@ const AgentEditorModal = ({
               </select>
               {selectedRole && (
                 <p className="text-xs text-ink-muted">
-                  {selectedRole.permissions?.length || 0} permissions.
+                  {/* Only an admin's role list carries permissions. */}
+                  {Array.isArray(selectedRole.permissions) && `${selectedRole.permissions.length} permissions.`}
                   {roleLink && (
                     <>
                       {' '}

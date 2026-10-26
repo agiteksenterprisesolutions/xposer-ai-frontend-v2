@@ -151,7 +151,7 @@ export const GovernanceProblems = ({ problems }) => {
  */
 const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverErrors = {}, onClearError }) => {
   const { form, setField: setDraftField } = draft;
-  const { roles, nameFor } = useOrgRoles();
+  const { roles, nameFor } = useOrgRoles({ source: 'owners' });
   const approvedAt = parseServerDate(form.approved_at);
   const tier = form.confidentiality_tier || 'standard';
   const retentionError = serverErrors.retention_years || retentionProblem(form.retention_years);

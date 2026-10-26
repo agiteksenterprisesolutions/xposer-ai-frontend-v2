@@ -35,16 +35,18 @@ import { sortLevels } from '../../utils/hierarchy';
 import { errorSummary } from '../../utils/errors';
 import useSEO from '../../hooks/useSEO';
 
+// Non-admins with org_hierarchy:read get the org chart — levels and people,
+// read-only — and nothing else; every other tab is admin only, viewing
+// included (coverage, the queue, sync and escalation are admin-only reads).
 const TABS = [
-  { value: 'coverage', label: 'Coverage' },
+  { value: 'coverage', label: 'Coverage', adminOnly: true },
   { value: 'chart', label: 'Org chart' },
-  { value: 'levels', label: 'Levels' },
-  { value: 'directory', label: 'Directory' },
-  { value: 'escalation', label: 'Escalation policy' },
+  { value: 'levels', label: 'Levels', adminOnly: true },
+  { value: 'directory', label: 'Directory', adminOnly: true },
+  { value: 'escalation', label: 'Escalation policy', adminOnly: true },
   // People an HR sync found, waiting for a level, a role and a login decision.
-  { value: 'approvals', label: 'Approvals' },
-  // Every sync endpoint needs org_hierarchy:manage, including reading the config.
-  { value: 'hr', label: 'HR connection', manageOnly: true },
+  { value: 'approvals', label: 'Approvals', adminOnly: true },
+  { value: 'hr', label: 'HR connection', adminOnly: true },
 ];
 
 const Hierarchy = () => {
@@ -55,21 +57,22 @@ const Hierarchy = () => {
   });
   const canManage = useCan()(PERM.hierarchyManage);
 
-  const tabs = TABS.filter((t) => !t.manageOnly || canManage);
+  const tabs = TABS.filter((t) => !t.adminOnly || canManage);
+  const homeTab = canManage ? 'coverage' : 'chart';
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = tabs.some((t) => t.value === searchParams.get('tab')) ? searchParams.get('tab') : 'coverage';
+  const tab = tabs.some((t) => t.value === searchParams.get('tab')) ? searchParams.get('tab') : homeTab;
   const switchTab = useCallback(
     (value) =>
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          if (value === 'coverage') next.delete('tab');
+          if (value === homeTab) next.delete('tab');
           else next.set('tab', value);
           return next;
         },
         { replace: true },
       ),
-    [setSearchParams],
+    [setSearchParams, homeTab],
   );
   // Leaving the escalation policy with unsaved changes asks first.
   const escalationDirty = useRef(false);
@@ -107,11 +110,26 @@ const Hierarchy = () => {
   const [coverage, setCoverage] = useState(null);
   const [pendingCount, setPendingCount] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setReloadKey((k) => k + 1);
+    // The org chart needs only the active levels; the rest is admin only.
+    if (!canManage) {
+      try {
+        const levelData = await orgHierarchyAPI.listLevels({ activeOnly: true });
+        setLevels(Array.isArray(levelData) ? levelData : []);
+        setError(null);
+        setLoaded(true);
+      } catch (err) {
+        setError(errorSummary(err));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     try {
       // Inactive levels too: the Levels tab shows them. Of the directory, only
       // its size, for the tab's count.
@@ -127,12 +145,13 @@ const Hierarchy = () => {
       setMemberTotal(memberData?.total ?? null);
       setCoverage(coverageData);
       setError(null);
+      setLoaded(true);
     } catch (err) {
       setError(errorSummary(err));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canManage]);
 
   useEffect(() => {
     load();
@@ -144,7 +163,7 @@ const Hierarchy = () => {
     [coverage],
   );
 
-  const initialLoad = loading && !coverage;
+  const initialLoad = loading && !loaded;
 
   return (
     <div className="space-y-6 pb-12">
@@ -162,7 +181,8 @@ const Hierarchy = () => {
 
       {!canManage && (
         <Alert variant="info" title="View only">
-          Your role can see the hierarchy but not change it. Changing it needs permission to edit the hierarchy.
+          Your role can see the org chart — its levels and the people in it. Everything else here, and any change, is
+          for admins.
         </Alert>
       )}
 

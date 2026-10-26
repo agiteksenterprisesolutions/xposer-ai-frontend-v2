@@ -203,7 +203,7 @@ const Builder = () => {
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const theme = useThemeStore((state) => state.theme);
   const listPath = staffPath(orgSlug, 'workflows');
-  const { roles, byCode: rolesByCode, loading: rolesLoading } = useOrgRoles();
+  const { roles, byCode: rolesByCode, loading: rolesLoading } = useOrgRoles({ source: 'owners' });
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
