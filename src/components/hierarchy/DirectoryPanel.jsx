@@ -23,7 +23,7 @@
 // "Has a login". `accounts` can hold more than one (a staff and a reporter
 // account), so the badge follows `has_active_account`, not accounts[0].
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Pencil, Plus, Search, Trash2, Upload, Users } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Button from '../ui/Button';
@@ -66,7 +66,20 @@ const DirectoryPanel = ({ levels, canManage, onChanged, reloadKey }) => {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim(), 400);
   const [page, setPage] = useState(1);
-  const [levelFilter, setLevelFilter] = useState('');
+  // ?level=code — how an org chart role opens the people at its level. Read
+  // once on arrival, then dropped so it doesn't come back on a later visit.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [levelFilter, setLevelFilter] = useState(() => searchParams.get('level') || '');
+  useEffect(() => {
+    if (!searchParams.has('level')) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('level');
+      return next;
+    }, { replace: true });
+    // Only on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState(null); // { member } — null member means add
   const [importing, setImporting] = useState(false);

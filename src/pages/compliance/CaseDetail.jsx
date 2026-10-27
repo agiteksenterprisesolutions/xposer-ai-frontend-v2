@@ -184,6 +184,7 @@ const CaseDetail = () => {
   const { typeName: typeNameOf } = useReportTypeNames();
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [downloadingKey, setDownloadingKey] = useState(null);
   const [messageText, setMessageText] = useState("");
   const [isInternal, setIsInternal] = useState(false);
@@ -200,7 +201,10 @@ const CaseDetail = () => {
   // Roles are organization-defined, so who can take a case comes from the
   // organization's own role list rather than a fixed table: anyone whose role
   // can open the report once it is theirs.
-  const { roles: orgRoles, nameFor } = useOrgRoles({ enabled: canAssignReports });
+  const { roles: orgRoles, nameFor, loading: rolesLoading } = useOrgRoles({ enabled: canAssignReports });
+  // Both lists feed the assign modal; until they're in, it shows placeholders
+  // rather than "No eligible assignees".
+  const assigneesLoading = usersLoading || rolesLoading;
   const assignableUsers = useMemo(() => {
     const assigneeRoles = new Set(orgRoles.filter(roleCanWorkReports).map((role) => role.code));
     return users.filter((user) => assigneeRoles.has(user.role));
@@ -244,7 +248,8 @@ const CaseDetail = () => {
       usersAPI
         .getAllUsers()
         .then((usersData) => setUsers(normalizeListResponse(usersData).items))
-        .catch(() => setUsers([]));
+        .catch(() => setUsers([]))
+        .finally(() => setUsersLoading(false));
     } catch (error) {
       if (error?.response?.status === 404) {
         setReport(null);
@@ -896,12 +901,25 @@ const CaseDetail = () => {
             </Card.Header>
             <Card.Content className="space-y-4">
               <div className="max-h-60 overflow-y-auto divide-y divide-line-subtle">
-                {assignableUsers.length === 0 && (
+                {assigneesLoading && (
+                  <div aria-busy="true" aria-label="Loading assignees">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="flex items-center space-x-3 p-3">
+                        <Skeleton.Circle size="h-10 w-10" />
+                        <div className="space-y-1.5">
+                          <Skeleton.Text size="sm" className="w-36" />
+                          <Skeleton.Text size="xs" className="w-20" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!assigneesLoading && assignableUsers.length === 0 && (
                   <div className="p-3 text-sm text-ink-muted">
                     No eligible assignees available.
                   </div>
                 )}
-                {assignableUsers.map((user) => {
+                {!assigneesLoading && assignableUsers.map((user) => {
                   const blocked = assignBlockFor(user);
                   return (
                   <button

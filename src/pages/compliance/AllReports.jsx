@@ -40,6 +40,27 @@ import {
 
 const ALL_REPORTS_TOUR_KEY = 'xposer_all_reports_tour_seen';
 
+// List rows don't always carry `is_anonymous`; an anonymous submission is the
+// one with no reporter account behind it.
+const isAnonymousReport = (report) => report.is_anonymous ?? !report.reporter_id;
+
+// Set once the list endpoint is seen returning named reports for
+// is_anonymous=true, so later pages go straight to the fallback below.
+let anonymousFilterIgnored = false;
+
+// Every row matching `params`, for filtering here when the API won't.
+const fetchAllReports = async (params) => {
+  const rows = [];
+  for (let page = 1; page <= 50; page += 1) {
+    const { items, hasNext } = normalizeListResponse(
+      await reportsAPI.getAllReports({ ...params, page, page_size: 100 })
+    );
+    rows.push(...items);
+    if (!hasNext || !items.length) break;
+  }
+  return rows;
+};
+
 // Column order here is the column order in the table.
 const buildSortColumns = (typeNameFor, nameFor) => ({
   report_number: { label: 'Report ID', defaultOrder: 'desc', value: byText('report_number') },
@@ -154,25 +175,18 @@ const AllReports = () => {
     reportTypes.find((t) => t.id === resolvedTypeId)?.name || typeNameParam
   ), [reportTypes, resolvedTypeId, typeNameParam]);
 
-  // The API filters and paginates; re-filtering here would hide rows that
-  // matched on fields this page doesn't render. The one exception is the
-  // anonymous flag: it is sent to the API, but older backends ignore the
-  // parameter, so the rows are checked here too rather than showing named
-  // reports under an "Anonymous only" chip.
-  const visibleReports = useMemo(() => (
-    anonymousOnly ? reports.filter((report) => report.is_anonymous) : reports
-  ), [reports, anonymousOnly]);
-
   // The Category column sorts on the resolved type name, so the columns are
   // rebuilt whenever that resolver changes.
   const sortColumns = useMemo(() => buildSortColumns(typeNameFor, nameFor), [typeNameFor, nameFor]);
 
-  // Sorting gets the same treatment as the anonymous filter: `sort_by`/`order`
+  // The API filters and paginates; re-filtering here would hide rows that
+  // matched on fields this page doesn't render (the anonymous flag has its own
+  // fallback in fetchReports). Sorting is different: `sort_by`/`order`
   // go to the API, and the rows on screen are ordered here too so the column
   // still responds on a backend that ignores those parameters. Note this orders
   // the current page — with more than one page, the server decides which rows
   // land on it.
-  const sort = useTableSort(visibleReports, sortColumns, { defaultSortBy: 'created_at' });
+  const sort = useTableSort(reports, sortColumns, { defaultSortBy: 'created_at' });
   const { sortBy, sortOrder, sortedRows: filteredReports, getHeaderProps } = sort;
 
   const fetchReports = useCallback(async () => {
@@ -192,9 +206,19 @@ const AllReports = () => {
         sort_by: sortBy === 'sla' ? undefined : sortBy,
         order: sortOrder,
       };
-      const response = await reportsAPI.getAllReports(params);
+      const response = anonymousOnly && anonymousFilterIgnored ? null : await reportsAPI.getAllReports(params);
+      let { items, total, totalPages: pages } = normalizeListResponse(response);
 
-      const { items, total, totalPages: pages } = normalizeListResponse(response);
+      // A backend that ignores is_anonymous returns every report, with the
+      // unfiltered total. Filter the whole set here and page it locally so the
+      // rows, the footer count and the dashboard card all agree.
+      if (anonymousOnly && (anonymousFilterIgnored || !items.every(isAnonymousReport))) {
+        anonymousFilterIgnored = true;
+        const matching = (await fetchAllReports(params)).filter(isAnonymousReport);
+        total = matching.length;
+        pages = Math.max(1, Math.ceil(total / DEFAULT_PAGE_SIZE));
+        items = matching.slice((currentPage - 1) * DEFAULT_PAGE_SIZE, currentPage * DEFAULT_PAGE_SIZE);
+      }
       setReports(items);
       setTotalPages(pages);
       setTotalReports(total);

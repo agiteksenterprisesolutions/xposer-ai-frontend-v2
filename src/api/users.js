@@ -5,9 +5,9 @@ import { blobDownload } from '../utils/download';
 
 export const usersAPI = {
   // Get all users
-  getAllUsers: async (params = {}) => {
+  getAllUsers: async (params = {}, { quiet = false } = {}) => {
     try {
-      const response = await api.get('/users/', { params });
+      const response = await api.get('/users/', { params, skipErrorToast: quiet });
       return response.data;
     } catch (error) {
       throw error;

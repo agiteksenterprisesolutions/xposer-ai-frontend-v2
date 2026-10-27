@@ -2,8 +2,11 @@
 //
 // The organization drawn by level, from GET /org-hierarchy/chart: one cheap
 // call however large the organization is, levels most senior first, each with
-// the roles present at it. People are a drill-down — a role chip opens the
-// user list filtered to that level and role, which is where paging belongs.
+// the roles present at it. People are a drill-down, and each count opens the
+// list it counts: a role chip (directory people) opens the Directory at that
+// level, "N with a login" (accounts) opens Users at that level. Only admins
+// get them — a non-admin's Users list is narrowed to the roles they may see,
+// so it wouldn't match the org-wide numbers here.
 //
 // Escalation is shown as the backend resolves it (`receives_escalations`):
 // the lowest level and levels marked "not an escalation target" never receive
@@ -18,13 +21,15 @@ import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
-import { ACCESS } from '../../utils/permissions';
+import { ACCESS, PERM } from '../../utils/permissions';
+import { usersAPI } from '../../api/users';
+import { normalizeListResponse } from '../../utils/pagination';
 import { staffPath } from '../../utils/navigation';
 import { errorSummary } from '../../utils/errors';
 
 const usersLink = (orgSlug, params) => `${staffPath(orgSlug, 'users')}?${new URLSearchParams(params).toString()}`;
 
-const LevelRow = ({ level, isLowest, usersHref, nameFor }) => {
+const LevelRow = ({ level, isLowest, usersHref, directoryHref, nameFor }) => {
   const roles = level.roles || [];
   const blockedReason = level.receives_escalations === false
     ? isLowest || level.is_lowest_level
@@ -55,7 +60,20 @@ const LevelRow = ({ level, isLowest, usersHref, nameFor }) => {
             <span className="font-semibold text-ink">{level.member_count ?? 0}</span> people
           </span>
           <span title="Directory entries with a login, and without one">
-            <span className="font-semibold text-ink">{level.with_account ?? 0}</span> with a login ·{' '}
+            {usersHref && level.with_account > 0 ? (
+              <Link
+                to={usersHref({ level: level.code })}
+                className="hover:text-accent-fg hover:underline"
+                title={`See the accounts at ${level.title}`}
+              >
+                <span className="font-semibold text-ink">{level.with_account}</span> with a login
+              </Link>
+            ) : (
+              <>
+                <span className="font-semibold text-ink">{level.with_account ?? 0}</span> with a login
+              </>
+            )}{' '}
+            ·{' '}
             <span className="font-semibold text-ink">{level.without_account ?? 0}</span> without
           </span>
         </div>
@@ -70,12 +88,12 @@ const LevelRow = ({ level, isLowest, usersHref, nameFor }) => {
               <span className="rounded-full bg-active px-1.5 text-[11px] font-semibold text-ink-secondary">{count}</span>
             </>
           );
-          return usersHref ? (
+          return directoryHref ? (
             <Link
               key={role}
-              to={usersHref({ level: level.code, role })}
+              to={directoryHref(level.code)}
               className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink-secondary transition-colors hover:border-line-accent hover:text-accent-fg"
-              title={`See the ${nameFor(role)} accounts at ${level.title}`}
+              title={`See the people at ${level.title} in the directory`}
             >
               {chip}
               <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
@@ -117,22 +135,38 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
   const orgSlug = useAuthStore((s) => s.user?.organization_slug);
   const [chart, setChart] = useState(null);
   const [error, setError] = useState(null);
+  const canSeeUsers = can(ACCESS.users);
+  const canManage = can(PERM.hierarchyManage);
+  // The chart counts unlinked accounts org-wide; "See them" opens a list
+  // narrowed to the roles this viewer may see. The banner uses that list's
+  // own total so the two always agree.
+  const [unlinked, setUnlinked] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      setChart(await orgHierarchyAPI.chart());
+      const [data, visible] = await Promise.all([
+        orgHierarchyAPI.chart(),
+        canSeeUsers
+          ? usersAPI.getAllUsers({ unlinked: true, page_size: 1 }, { quiet: true })
+            .then((response) => normalizeListResponse(response).total)
+            .catch(() => null)
+          : null,
+      ]);
+      setChart(data);
+      setUnlinked(visible ?? data?.unlinked_accounts ?? 0);
       setError(null);
     } catch (err) {
       setError(errorSummary(err));
     }
-  }, []);
+  }, [canSeeUsers]);
 
   useEffect(() => {
     load();
   }, [load, reloadKey]);
 
-  const canSeeUsers = can(ACCESS.users);
   const usersHref = canSeeUsers ? (params) => usersLink(orgSlug, params) : null;
+  const levelUsersHref = canManage ? usersHref : null;
+  const directoryHref = canManage ? (code) => ({ search: `?tab=directory&level=${encodeURIComponent(code)}` }) : null;
 
   if (error) {
     return (
@@ -166,12 +200,12 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
           </button>
         </div>
       )}
-      {chart.unlinked_accounts > 0 && (
+      {unlinked > 0 && (
         <div className="flex flex-wrap items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink-secondary">
           <Link2Off className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
           <p className="min-w-0 flex-1">
             <span className="font-semibold text-ink">
-              {chart.unlinked_accounts} {chart.unlinked_accounts === 1 ? 'account isn’t' : 'accounts aren’t'} linked to
+              {unlinked} {unlinked === 1 ? 'account isn’t' : 'accounts aren’t'} linked to
               the directory.
             </span>{' '}
             They see only their own cases, whatever their role allows.
@@ -200,11 +234,18 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
           <p className="flex items-center gap-1.5 text-xs text-ink-muted">
             <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
             {chart.level_count ?? levels.length} levels · {chart.member_count ?? 0} people · most senior first.
-            {usersHref && ' Click a role to see who holds it.'}
+            {directoryHref && ' Click a role to see who holds it.'}
           </p>
           <ol className="space-y-3">
             {levels.map((level) => (
-              <LevelRow key={level.code} level={level} isLowest={level.code === lowest} usersHref={usersHref} nameFor={nameFor} />
+              <LevelRow
+                key={level.code}
+                level={level}
+                isLowest={level.code === lowest}
+                usersHref={levelUsersHref}
+                directoryHref={directoryHref}
+                nameFor={nameFor}
+              />
             ))}
           </ol>
         </>
