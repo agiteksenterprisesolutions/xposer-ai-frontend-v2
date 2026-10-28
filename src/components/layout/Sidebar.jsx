@@ -201,13 +201,14 @@ const Sidebar = ({ onClose }) => {
       {/* Mobile drawer sidebar */}
       {mobileSidebarOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop. Both start under the 4rem top bar, which sits above
+              everything (z-100) and would otherwise hide the drawer's top. */}
           <div
-            className="fixed inset-0 bg-overlay backdrop-blur-sm z-40 lg:hidden animate-fade-in"
+            className="fixed inset-x-0 top-16 bottom-0 bg-overlay backdrop-blur-sm z-40 lg:hidden animate-fade-in"
             onClick={toggleMobileSidebar}
           />
           {/* Drawer container */}
-          <aside className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-surface h-full flex flex-col border-r border-line shadow-xl lg:hidden animate-slide-down">
+          <aside className="fixed top-16 bottom-0 left-0 z-50 w-72 max-w-[85vw] bg-surface flex flex-col border-r border-line shadow-xl lg:hidden animate-slide-down">
             {renderContent(false, true)}
           </aside>
         </>
