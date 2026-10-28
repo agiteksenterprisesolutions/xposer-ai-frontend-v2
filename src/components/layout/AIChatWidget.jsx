@@ -1919,7 +1919,7 @@ Generated: ${new Date().toLocaleString()}
       className="flex flex-col h-full"
     >
       {/* Chat Header */}
-      <div className="flex items-center justify-between gap-2 pb-3 border-b border-line mb-4">
+      <div className="flex items-center justify-between gap-2 pb-4 md:pb-3 border-b border-line mb-4">
         <div className="flex items-center gap-2 min-w-0">
           <div className="relative shrink-0">
             <div className="w-2 h-2 bg-success-solid rounded-full absolute -top-0.5 -right-0.5 border border-line" />
@@ -2668,7 +2668,10 @@ Generated: ${new Date().toLocaleString()}
               className="fixed inset-0 z-60 bg-canvas flex flex-col md:inset-auto md:bottom-20 md:right-6 md:w-lg md:max-w-[calc(100vw-2rem)] md:h-150 md:max-h-[80vh] md:rounded-lg md:border md:border-line md:shadow-2xl md:mb-2 overflow-hidden pointer-events-auto"
             >
               {/* Content Container - Fixed padding */}
-              <div className="px-4 pb-4 pt-16 sm:px-6 sm:pb-6 sm:pt-20 md:p-6 bg-linear-to-b from-canvas to-transparent h-full flex flex-col relative overflow-hidden">
+              {/* Full screen below md, under the 62px site bar. The chat's own
+                  header sits 16px below that bar, matching the 16px under it;
+                  the other steps get more room. */}
+              <div className={`px-4 pb-4 sm:px-6 sm:pb-6 md:p-6 bg-linear-to-b from-canvas to-transparent h-full flex flex-col relative overflow-hidden ${step === "chat" ? "pt-20" : "pt-24 sm:pt-28"}`}>
                 {/* Anchored here rather than to the viewport so it lands over
                     the conversation instead of behind the panel. */}
                 <AnimatePresence>
