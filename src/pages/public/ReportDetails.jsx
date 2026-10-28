@@ -27,13 +27,14 @@ import { messagesAPI } from '../../api/messages';
 import ChatInterface from '../../components/reports/ChatInterface';
 import { useAuthStore } from '../../store/authStore';
 import { toast } from 'react-toastify';
-import { formatDateTime, formatFileSize, formatRelativeTime, parseServerDate } from '../../utils/formatters';
+import { formatFileSize, formatRelativeTime, parseServerDate } from '../../utils/formatters';
 import DashboardTour from '../../components/tour/DashboardTour';
 import useSEO from '../../hooks/useSEO';
 import { isDraftReport, getReportDescription, getReportTitle } from '../../utils/reports';
 import { copyToClipboard } from '../../utils/clipboard';
 import VoiceAnswers from '../../components/reports/VoiceAnswers';
-import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
+import { formatAnswer, orderedAnswers } from '../../utils/reportAnswers';
+import { useReportForm } from '../../hooks/useReportForm';
 
 const REPORT_DETAILS_TOUR_KEY = 'xposer_report_details_tour_seen';
 
@@ -43,6 +44,8 @@ const ReportDetails = () => {
   const navigate = useNavigate();
   const { user: authUser } = useAuthStore();
   const [report, setReport] = useState(null);
+  // The form this report was filed against, for its answers' labels and order.
+  const reportForm = useReportForm(report);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -155,29 +158,6 @@ const ReportDetails = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const formatFormValue = (value) => {
-    if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || "N/A";
-    if (value == null) return "N/A";
-
-    const str = String(value);
-
-    // Match ISO 8601 date/time patterns:
-    //   2026-06-27T14:15:29+05:00
-    //   2026-06-27T09:15:29Z
-    //   2026-06-27T09:15:29.000Z
-    //   2026-06-27 (date-only)
-    const iso8601Regex =
-      /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/;
-
-    if (iso8601Regex.test(str.trim())) {
-      // Use date-only format when there's no time component
-      const hasTime = str.includes("T");
-      return hasTime ? formatDateTime(str) : formatDate(str);
-    }
-
-    return str;
   };
 
   const handleCopy = async (text) => {
@@ -441,12 +421,12 @@ const ReportDetails = () => {
                   <div className="min-w-0">
                     <h3 className="text-sm font-medium text-ink-subtle mb-2">Submitted Form Data</h3>
                     <div className="bg-subtle rounded-lg p-4 min-w-0 overflow-hidden space-y-3">
-                      {Object.entries(report.form_data).map(([key, value]) => (
+                      {orderedAnswers(report.form_data, reportForm).map(({ key, value, label, question }) => (
                         <div key={key} className="min-w-0 overflow-hidden">
                           <span className="block font-medium text-ink-muted capitalize mb-0.5">
-                            {key.replace(/_/g, ' ')}:
+                            {label}:
                           </span>
-                          <span className="text-ink wrap-break-word">{formatFormValue(value)}</span>
+                          <span className="text-ink wrap-break-word">{formatAnswer(value, question)}</span>
                         </div>
                       ))}
                     </div>

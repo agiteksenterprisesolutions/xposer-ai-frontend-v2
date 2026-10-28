@@ -277,6 +277,9 @@ const EditAnonymousDraft = () => {
         initialStep={report.current_step ?? null}
         // A type picked just now still needs the server-side select-type call.
         skipTypeSelection={Boolean(report.report_type_id)}
+        // Tracking returns the draft's own form version as report_type.
+        pinnedForm={report.report_type ?? null}
+        pinnedVersion={report.report_type_version ?? null}
         isEditingDraft
         isAnonymous
         organizationSlug={orgSlug || report.organization_slug || null}

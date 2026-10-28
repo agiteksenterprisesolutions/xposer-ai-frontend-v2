@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { toast } from 'react-toastify';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { reportTypesAPI } from '../../api';
@@ -58,6 +59,13 @@ const EditReportType = () => {
       // Every field survives the round trip — governance fields, core-field
       // flags, option labels and section keys included.
       const saved = await reportTypesAPI.updateReportType(id, toReportTypePayload(form, { keepIds: true }));
+      // Changing the questions saves a new version; nothing else does.
+      const before = reportType?.version;
+      toast.success(
+        saved?.version != null && before != null && saved.version > before
+          ? `Saved as version ${saved.version}`
+          : 'Changes saved',
+      );
       // governance_problems reflect the settings just saved; fetch them if
       // the save didn't send them back.
       const fresh =
@@ -93,6 +101,8 @@ const EditReportType = () => {
       isNew={false}
       codeLocked={Boolean(reportType.code)}
       problems={reportType.governance_problems || []}
+      typeId={reportType.id || reportType._id}
+      version={reportType.version ?? null}
       saving={saving}
       onSave={save}
       onExit={() => navigate(listPath)}

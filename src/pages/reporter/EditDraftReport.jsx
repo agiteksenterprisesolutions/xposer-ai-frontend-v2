@@ -198,6 +198,7 @@ const EditDraftReport = () => {
         initialFormData={report.form_data || null}
         // A type picked just now still needs the server-side select-type call.
         skipTypeSelection={Boolean(report.report_type_id)}
+        pinnedVersion={report.report_type_version ?? null}
         isEditingDraft
         isAnonymous={false}
         organizationSlug={orgSlug || null}

@@ -6,20 +6,23 @@
 // /users/change-password — admins included; the reset-password endpoint never
 // works on yourself. Only an admin may change their own name or email (PUT
 // /users/{me} with just those two); for anyone else they're read-only here,
-// since the server refuses any self-edit with cannot_change_own. Role,
-// sign-in method and directory link are shown, not edited.
+// since the server refuses any self-edit with cannot_change_own. An admin
+// may also move their own account onto Google or Microsoft sign-in; never
+// back onto a password, which only another admin can set (a password can't be
+// set on yourself). Role is shown, not edited.
 import { useState } from 'react';
-import { Check, Eye, EyeOff, KeyRound, Lock, UserRound } from 'lucide-react';
+import { Check, Eye, EyeOff, KeyRound, LogIn, Lock, UserRound } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Badge from '../../components/ui/Badge';
+import { ConfirmationModal } from '../../components/ui/Modal';
 import { usersAPI } from '../../api/users';
 import { authAPI } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
-import { authProviderLabel, isPasswordAccount } from '../../utils/authProviders';
+import { AUTH_PROVIDERS, authProviderLabel, isPasswordAccount } from '../../utils/authProviders';
 import { PASSWORD_RULES, changePasswordSchema } from '../../utils/passwordPolicy';
 import { describeError } from '../../utils/errors';
 import { useCan } from '../../hooks/useCan';
@@ -242,6 +245,78 @@ const Password = ({ user }) => {
   );
 };
 
+const SSO_PROVIDERS = [AUTH_PROVIDERS.GOOGLE, AUTH_PROVIDERS.MICROSOFT];
+
+/** Admins only: move your own account onto single sign-on. */
+const SignInMethod = ({ user }) => {
+  const current = user.auth_provider || AUTH_PROVIDERS.PASSWORD;
+  const choices = SSO_PROVIDERS.filter((provider) => provider !== current);
+  const [next, setNext] = useState(choices[0]);
+  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await usersAPI.updateMe(user.id, { auth_provider: next });
+      await useAuthStore.getState().refreshUser();
+      toast.success(`You now sign in with ${authProviderLabel(next)}.`);
+    } catch (err) {
+      setError(describeError(err).summary);
+    } finally {
+      setSaving(false);
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <Card>
+      <Card.Header>
+        <Card.Title className="flex items-center gap-2">
+          <LogIn className="h-4 w-4 text-ink-muted" /> Sign-in method
+        </Card.Title>
+      </Card.Header>
+      <Card.Content className="space-y-3">
+        <p className="text-sm text-ink-secondary">
+          You sign in with <span className="font-medium text-ink">{authProviderLabel(current)}</span>.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <Field id="acc-provider" label="Switch to">
+            <select id="acc-provider" value={next} onChange={(e) => setNext(e.target.value)} className={`${inputClass} sm:w-56`}>
+              {choices.map((provider) => (
+                <option key={provider} value={provider}>
+                  {authProviderLabel(provider)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Button variant="secondary" onClick={() => setConfirming(true)} disabled={saving}>
+            Switch
+          </Button>
+        </div>
+        {error && <Alert variant="error">{error}</Alert>}
+        <p className="text-xs text-ink-muted">
+          {isPasswordAccount(user) ? 'Your password is removed when you switch. ' : ''}
+          To go back to a password, ask another admin. A password can&apos;t be set on your own account.
+        </p>
+      </Card.Content>
+      <ConfirmationModal
+        isOpen={confirming}
+        onClose={() => setConfirming(false)}
+        onConfirm={save}
+        title={`Sign in with ${authProviderLabel(next)}?`}
+        message={`From now on you sign in with the ${authProviderLabel(next)} account for ${user.email}.${
+          isPasswordAccount(user) ? ' Your password stops working.' : ''
+        } Only another admin can move you back onto a password.`}
+        confirmText="Switch"
+        cancelText="Cancel"
+      />
+    </Card>
+  );
+};
+
 const Account = () => {
   useSEO({ title: 'My account', description: 'Your name, email and password.', noIndex: true });
   const user = useAuthStore((state) => state.user);
@@ -265,6 +340,7 @@ const Account = () => {
         <ReadOnlyProfile user={user} />
       )}
       <Password user={user} />
+      {canEditProfile && <SignInMethod key={user.auth_provider || 'password'} user={user} />}
 
       <Card>
         <Card.Content className="space-y-2">
@@ -278,12 +354,16 @@ const Account = () => {
             <dd className="text-ink">
               <Badge size="small">{user.role_name || nameFor(user.role)}</Badge>
             </dd>
-            <dt className="text-ink-muted">Sign-in method</dt>
-            <dd className="text-ink">{authProviderLabel(user.auth_provider)}</dd>
+            {!canEditProfile && (
+              <>
+                <dt className="text-ink-muted">Sign-in method</dt>
+                <dd className="text-ink">{authProviderLabel(user.auth_provider)}</dd>
+              </>
+            )}
           </dl>
           <p className="text-xs text-ink-muted">
             {canEditProfile
-              ? 'Your directory link and sign-in method are on User Management. Your own role and active state can only be changed by another admin.'
+              ? 'Your directory link is on User Management. Your own role and active state can only be changed by another admin.'
               : 'Your role, sign-in method and place in the directory can only be changed by an admin.'}
           </p>
         </Card.Content>

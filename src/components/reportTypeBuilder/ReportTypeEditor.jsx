@@ -10,8 +10,12 @@
 // Publish and Active stay off until it's there, and the server's 400
 // missing_core_field is a backstop, shown verbatim on Review with a way to
 // add what it names.
+//
+// Only the questions are versioned: changing them saves a new version, and
+// reports already started keep the one they began with. The header shows the
+// current version, which opens the history.
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Eye, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Eye, History, Info, Send } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Button from '../ui/Button';
 import Modal, { ConfirmationModal } from '../layout/Modal';
@@ -24,7 +28,8 @@ import ReporterPreview from './ReporterPreview';
 import { findIssues, saveErrorFields } from './model';
 import { buildCatalog } from './catalog';
 import { reportTypesAPI } from '../../api';
-import { reportTypeStatus } from '../../utils/reportTypes';
+import { reportTypeStatus, toReportTypePayload } from '../../utils/reportTypes';
+import VersionHistory from './VersionHistory';
 import { describeError } from '../../utils/errors';
 
 const STEPS = [
@@ -46,7 +51,8 @@ const STATUS_PILL = {
  * `onSave(form)` resolves when saved and throws the server's error when
  * refused; a refusal about one field (an owner role, the compliance code, the
  * retention period) is shown under that field. `problems` is the server's
- * governance_problems for the saved type.
+ * governance_problems for the saved type. `typeId` and `version` (the
+ * current form version) are for an existing type.
  */
 const ReportTypeEditor = ({
   initialData,
@@ -58,6 +64,8 @@ const ReportTypeEditor = ({
   onExit,
   initialStep,
   onStepChange,
+  typeId = null,
+  version = null,
 }) => {
   const draft = useReportTypeDraft(initialData);
   const { form, dirty, select } = draft;
@@ -67,6 +75,18 @@ const ReportTypeEditor = ({
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [triedSave, setTriedSave] = useState(false);
   const [serverErrors, setServerErrors] = useState({});
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // The questions as a save would send them, to tell whether this save makes a
+  // new version. Ids are kept, as on a real save, so moving nothing reads as
+  // unchanged.
+  const questionsOf = (sections) => JSON.stringify(toReportTypePayload({ sections }, { keepIds: true }).sections);
+  const [savedQuestions] = useState(() => questionsOf(initialData?.sections || []));
+  const questionsChanged = useMemo(
+    () => !isNew && dirty && questionsOf(form.sections || []) !== savedQuestions,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isNew, dirty, form.sections, savedQuestions],
+  );
 
   const { catalog, setCatalog } = draft;
   // A refused activation: { message, fields } from 400 missing_core_field.
@@ -206,6 +226,20 @@ const ReportTypeEditor = ({
                   All changes saved
                 </>
               )}
+              {!isNew && version != null && typeId && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryOpen(true)}
+                    className="inline-flex items-center gap-1 font-medium text-link hover:underline"
+                    title="See every saved version of the questions"
+                  >
+                    <History className="h-3.5 w-3.5" aria-hidden="true" />
+                    Version {version}
+                  </button>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -289,6 +323,16 @@ const ReportTypeEditor = ({
         </div>
       </header>
 
+      {questionsChanged && (
+        <p className="flex items-start gap-2 border-b border-line bg-info-soft px-4 py-2 text-xs text-info-fg sm:px-6" role="status">
+          <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>
+            Changes to the questions save as a new version{version != null ? ` (version ${version + 1})` : ''}. Reports
+            already started keep the version they began with.
+          </span>
+        </p>
+      )}
+
       <div id="rtb-scroll" className={`flex min-h-0 flex-1 flex-col ${step === 'questions' ? '' : 'lg:overflow-y-auto lg:scrollbar-thin'}`}>
         {step === 'questions' && (
           <QuestionsStep draft={draft} issues={visibleIssues} />
@@ -344,6 +388,15 @@ const ReportTypeEditor = ({
           <ReporterPreview key={previewDevice} form={form} device={previewDevice} />
         </div>
       </Modal>
+
+      {typeId && (
+        <VersionHistory
+          isOpen={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          typeId={typeId}
+          currentVersion={version}
+        />
+      )}
 
       <ConfirmationModal
         isOpen={confirmLeave}

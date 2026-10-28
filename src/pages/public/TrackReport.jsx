@@ -41,7 +41,8 @@ import { isDraftReport, getReportDescription, getReportTitle } from "../../utils
 import { isIdentifiedUser, isStaffUser } from "../../utils/roles";
 import { copyToClipboard } from "../../utils/clipboard";
 import VoiceAnswers from "../../components/reports/VoiceAnswers";
-import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
+import { formatAnswer, orderedAnswers } from '../../utils/reportAnswers';
+import { useReportForm } from '../../hooks/useReportForm';
 
 const TrackReport = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -57,6 +58,8 @@ const TrackReport = () => {
   const [downloadingKey, setDownloadingKey] = useState(null);
   const [error, setError] = useState("");
   const [report, setReport] = useState(null);
+  // Tracking returns the report's own form version inline as report_type.
+  const reportForm = useReportForm(report);
   const [showDetails, setShowDetails] = useState(false);
   const [messages, setMessages] = useState([]);
   const { orgSlug } = useParams();
@@ -626,19 +629,13 @@ const TrackReport = () => {
                     Submitted Form Data
                   </h3>
                   <div className="bg-subtle rounded-lg p-4 min-w-0 overflow-hidden space-y-3">
-                    {Object.entries(form_data).map(([key, value]) => (
+                    {orderedAnswers(form_data, reportForm).map(({ key, value, label, question }) => (
                       <div key={key} className="min-w-0 overflow-hidden">
                         <span className="block text-xs font-medium text-ink-subtle uppercase mb-1">
-                          {key.replace(/_/g, " ")}
+                          {label}
                         </span>
                         <span className="block text-ink wrap-break-word whitespace-pre-wrap">
-                          {value === null || value === undefined
-                            ? "N/A"
-                            : isCurrencyAnswer(value)
-                              ? formatCurrencyAnswer(value)
-                              : Array.isArray(value)
-                                ? value.join(", ")
-                                : String(value)}
+                          {formatAnswer(value, question)}
                         </span>
                       </div>
                     ))}

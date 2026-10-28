@@ -24,7 +24,6 @@ export const PERM = {
   // back to their own caseload — never to the whole organization.
   reportReadSubordinates: 'report:read_subordinates',
   reportUpdateAll: 'report:update_all',
-  reportDeleteAll: 'report:delete_all',
   reportManage: 'report:manage',
   // Clearance for a case's confidentiality level, on top of access to it.
   reportReadConfidential: 'report:read_confidential',
@@ -87,7 +86,6 @@ export const PERMISSION_INFO = {
   'report:read_assigned': 'Read reports assigned to them',
   'report:read_subordinates': "Read their team's reports — everyone below them in the hierarchy",
   'report:update_all': "Edit any report's details",
-  'report:delete_all': 'Delete reports',
   'report:manage': 'Change status and priority, and assign reports',
   'report:read_confidential': 'See confidential cases',
   'report:read_restricted': 'See restricted cases',

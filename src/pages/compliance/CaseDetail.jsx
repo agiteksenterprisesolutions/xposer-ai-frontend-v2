@@ -21,7 +21,7 @@ import Skeleton from '../../components/ui/Skeleton';
 import Button from "../../components/ui/Button";
 import Badge, { StatusBadge, PriorityBadge } from "../../components/ui/Badge";
 import { Textarea } from "../../components/ui/Input";
-import { reportsAPI, reportTypesAPI, messagesAPI, usersAPI } from "../../api";
+import { reportsAPI, messagesAPI, usersAPI } from "../../api";
 import { useReportTypeNames } from "../../hooks/useReportTypeNames";
 import { useCan } from "../../hooks/useCan";
 import { useOrgRoles, roleCanWorkReports } from "../../hooks/useOrgRoles";
@@ -34,10 +34,11 @@ import EscalationRecord, { hasEscalationRecord } from '../../components/reports/
 import { staffPath } from '../../utils/navigation';
 import { getReportDescription, getReportTitle } from '../../utils/reports';
 import { toast } from 'react-toastify';
-import { formatFileSize, formatRelativeTime, formatDateTime, formatDate } from "../../utils/formatters";
+import { formatFileSize, formatRelativeTime, formatDateTime } from "../../utils/formatters";
 import useSEO from "../../hooks/useSEO";
 import { normalizeListResponse } from '../../utils/pagination';
-import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
+import { formatAnswer, orderedAnswers, questionsByName } from '../../utils/reportAnswers';
+import { useReportForm } from '../../hooks/useReportForm';
 import { errorSummary } from '../../utils/errors';
 import { MaskedValue, TierBadge, isAutoAssigned, maskedKeys, slaClock } from '../../components/reports/CaseGovernance';
 import { CaseNotices, DeadlinesCard, DisposedCase, RecordsCard, isDisposed } from '../../components/reports/CasePanels';
@@ -226,8 +227,6 @@ const CaseDetail = () => {
     },
     [orgRoles, report],
   );
-  // Labels and sensitivity of the type's questions, for the answers below.
-  const [typeQuestions, setTypeQuestions] = useState(null);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -267,22 +266,10 @@ const CaseDetail = () => {
     fetchReport();
   }, [fetchReport]);
 
-  const reportTypeId = report?.report_type_id;
-  useEffect(() => {
-    if (!reportTypeId) return undefined;
-    let live = true;
-    reportTypesAPI
-      .getReportType(reportTypeId, true, { quiet: true })
-      .then((type) => {
-        if (!live) return;
-        const questions = (type?.sections || []).flatMap((section) => section.questions || []);
-        setTypeQuestions(new Map(questions.map((q) => [q.name, q])));
-      })
-      .catch(() => live && setTypeQuestions(new Map()));
-    return () => {
-      live = false;
-    };
-  }, [reportTypeId]);
+  // The form this report was filed against (its pinned version): labels,
+  // order, option labels and sensitivity of its answers.
+  const reportForm = useReportForm(report);
+  const typeQuestions = useMemo(() => questionsByName(reportForm), [reportForm]);
 
   const handleUpdateStatus = async (newStatus) => {
     if (!canUpdateStatus) {
@@ -317,33 +304,6 @@ const CaseDetail = () => {
     const foundUser = users.find((user) => String(user.id) === String(userRef));
     return foundUser?.full_name || foundUser?.username || String(userRef);
   }, [users]);
-
-  const formatFormValue = (value) => {
-    if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || "N/A";
-    if (value === null || value === undefined || value === "") return "N/A";
-    if (typeof value === "boolean") return value ? "Yes" : "No";
-    if (Array.isArray(value)) return value.length ? value.join(", ") : "N/A";
-    if (typeof value === "object") return JSON.stringify(value);
-
-    const str = String(value);
-
-    // Match ISO 8601 date/time patterns:
-    //   2026-06-27T14:15:29+05:00
-    //   2026-06-27T09:15:29Z
-    //   2026-06-27T09:15:29.000Z
-    //   2026-06-27 (date-only)
-    const iso8601Regex =
-      /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/;
-
-    if (iso8601Regex.test(str.trim())) {
-      // Use date-only format when there's no time component
-      const hasTime = str.includes("T");
-      return hasTime ? formatDateTime(str) : formatDate(str);
-    }
-
-    return str;
-    // return String(value);
-  };
 
   const resolveMessageTimestamp = (msg) => {
     const raw =
@@ -594,15 +554,15 @@ const CaseDetail = () => {
                     </p>
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(report.form_data).map(([key, value]) => (
+                    {orderedAnswers(report.form_data, reportForm).map(({ key, value, label, question }) => (
                       <div key={key} className="space-y-1">
                         <p className="text-xs font-medium text-ink-muted uppercase">
-                          {typeQuestions?.get(key)?.label || key.replace(/_/g, " ")}
+                          {label}
                         </p>
                         {masked.has(key) ? (
                           <MaskedValue value={value} />
                         ) : (
-                          <p className="text-sm text-ink wrap-break-word">{formatFormValue(value)}</p>
+                          <p className="text-sm text-ink wrap-break-word">{formatAnswer(value, question)}</p>
                         )}
                       </div>
                     ))}

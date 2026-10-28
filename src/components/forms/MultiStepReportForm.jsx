@@ -319,6 +319,11 @@ const MultiStepReportForm = ({
   // at best and could clear saved answers, so it is skipped.
   skipTypeSelection = false,
   isEditingDraft = false,
+  // The form version the draft was started on (report_type_version), or the
+  // pinned form itself when the caller already has it (tracking returns it).
+  // A draft keeps its version's questions even after the type is edited.
+  pinnedVersion = null,
+  pinnedForm = null,
 }) => {
   const anonymousOrgSlug = isAnonymous && organizationSlug ? organizationSlug : null;
   const [stage, setStage] = useState("loading");
@@ -447,7 +452,17 @@ const MultiStepReportForm = ({
       try {
         let type;
         try {
-          type = withoutRefusedAnonymity(await reportTypesAPI.getReportType(reportTypeId, true, { quiet: true }));
+          type = await reportTypesAPI.getReportType(reportTypeId, true, { quiet: true });
+          // Only the form is versioned; the type's other settings stay live.
+          const pinned = existingReportNumber
+            ? pinnedForm?.sections
+              ? pinnedForm
+              : pinnedVersion != null
+                ? await reportTypesAPI.getVersion(reportTypeId, pinnedVersion).catch(() => null)
+                : null
+            : null;
+          if (pinned?.sections) type = { ...type, sections: pinned.sections };
+          type = withoutRefusedAnonymity(type);
         } catch (err) {
           // Types that need sign-in are hidden from anonymous reporters, and
           // answer 404 to a direct link.
@@ -474,7 +489,11 @@ const MultiStepReportForm = ({
             setGeneratedReportNumber(currentReportNumber);
             toast.success("Report initialized. Your report is linked to your account.");
           } catch (err) {
-            throw new Error("Failed to start report. Please try again.");
+            // 403 reporters_only: a staff account can't file; say so plainly.
+            const detail = err?.response?.data?.detail;
+            throw new Error(
+              detail?.code === "reporters_only" ? detail.message : "Failed to start report. Please try again.",
+            );
           }
         }
 

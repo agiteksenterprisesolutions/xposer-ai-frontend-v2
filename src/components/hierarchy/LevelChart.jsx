@@ -4,9 +4,12 @@
 // call however large the organization is, levels most senior first, each with
 // the roles present at it. People are a drill-down, and each count opens the
 // list it counts: a role chip (directory people) opens the Directory at that
-// level, "N with a login" (accounts) opens Users at that level. Only admins
-// get them — a non-admin's Users list is narrowed to the roles they may see,
-// so it wouldn't match the org-wide numbers here.
+// level (admins only — the Directory is theirs), "N with a login" (accounts)
+// opens Users at that level.
+//
+// The server scopes every count to the people the viewer may see (their
+// role's viewable_roles), so the numbers match the lists they open — and
+// differ between viewers by design. A level with nobody visible is vacant.
 //
 // Escalation is shown as the backend resolves it (`receives_escalations`):
 // the lowest level and levels marked "not an escalation target" never receive
@@ -22,8 +25,6 @@ import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
 import { ACCESS, PERM } from '../../utils/permissions';
-import { usersAPI } from '../../api/users';
-import { normalizeListResponse } from '../../utils/pagination';
 import { staffPath } from '../../utils/navigation';
 import { errorSummary } from '../../utils/errors';
 
@@ -137,35 +138,21 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
   const [error, setError] = useState(null);
   const canSeeUsers = can(ACCESS.users);
   const canManage = can(PERM.hierarchyManage);
-  // The chart counts unlinked accounts org-wide; "See them" opens a list
-  // narrowed to the roles this viewer may see. The banner uses that list's
-  // own total so the two always agree.
-  const [unlinked, setUnlinked] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      const [data, visible] = await Promise.all([
-        orgHierarchyAPI.chart(),
-        canSeeUsers
-          ? usersAPI.getAllUsers({ unlinked: true, page_size: 1 }, { quiet: true })
-            .then((response) => normalizeListResponse(response).total)
-            .catch(() => null)
-          : null,
-      ]);
-      setChart(data);
-      setUnlinked(visible ?? data?.unlinked_accounts ?? 0);
+      setChart(await orgHierarchyAPI.chart());
       setError(null);
     } catch (err) {
       setError(errorSummary(err));
     }
-  }, [canSeeUsers]);
+  }, []);
 
   useEffect(() => {
     load();
   }, [load, reloadKey]);
 
   const usersHref = canSeeUsers ? (params) => usersLink(orgSlug, params) : null;
-  const levelUsersHref = canManage ? usersHref : null;
   const directoryHref = canManage ? (code) => ({ search: `?tab=directory&level=${encodeURIComponent(code)}` }) : null;
 
   if (error) {
@@ -181,6 +168,7 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
   if (!chart) return <LevelChartSkeleton />;
 
   const levels = chart.levels || [];
+  const unlinked = chart.unlinked_accounts ?? 0;
   const lowest = levels.at(-1)?.code;
 
   return (
@@ -242,7 +230,7 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
                 key={level.code}
                 level={level}
                 isLowest={level.code === lowest}
-                usersHref={levelUsersHref}
+                usersHref={usersHref}
                 directoryHref={directoryHref}
                 nameFor={nameFor}
               />

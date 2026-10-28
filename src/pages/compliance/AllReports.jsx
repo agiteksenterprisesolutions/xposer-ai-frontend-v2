@@ -7,6 +7,7 @@ import {
   Calendar,
   Layers,
   ArrowRight,
+  EyeOff,
   X
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
@@ -40,26 +41,12 @@ import {
 
 const ALL_REPORTS_TOUR_KEY = 'xposer_all_reports_tour_seen';
 
-// List rows don't always carry `is_anonymous`; an anonymous submission is the
-// one with no reporter account behind it.
-const isAnonymousReport = (report) => report.is_anonymous ?? !report.reporter_id;
-
-// Set once the list endpoint is seen returning named reports for
-// is_anonymous=true, so later pages go straight to the fallback below.
-let anonymousFilterIgnored = false;
-
-// Every row matching `params`, for filtering here when the API won't.
-const fetchAllReports = async (params) => {
-  const rows = [];
-  for (let page = 1; page <= 50; page += 1) {
-    const { items, hasNext } = normalizeListResponse(
-      await reportsAPI.getAllReports({ ...params, page, page_size: 100 })
-    );
-    rows.push(...items);
-    if (!hasNext || !items.length) break;
-  }
-  return rows;
-};
+// Who filed: ?anonymous=true (no account behind it) or false (filed from an
+// account), sent to the API as is_anonymous.
+const FILED_BY = [
+  { value: 'true', label: 'Anonymous', chip: 'Anonymous only' },
+  { value: 'false', label: 'From an account', chip: 'Filed from an account' },
+];
 
 // Column order here is the column order in the table.
 const buildSortColumns = (typeNameFor, nameFor) => ({
@@ -104,7 +91,7 @@ const AllReports = () => {
   const typeIdParam = searchParams.get('report_type_id') || '';
   const typeNameParam = searchParams.get('report_type') || '';
   const priorityParam = searchParams.get('priority') || '';
-  const anonymousOnly = searchParams.get('anonymous') === 'true';
+  const filedBy = FILED_BY.find((f) => f.value === searchParams.get('anonymous'));
   // Cases with either deadline in this state (breached = overdue).
   const slaParam = searchParams.get('sla') || '';
   // One person's cases, from the Users page after a role change strands them.
@@ -180,9 +167,8 @@ const AllReports = () => {
   const sortColumns = useMemo(() => buildSortColumns(typeNameFor, nameFor), [typeNameFor, nameFor]);
 
   // The API filters and paginates; re-filtering here would hide rows that
-  // matched on fields this page doesn't render (the anonymous flag has its own
-  // fallback in fetchReports). Sorting is different: `sort_by`/`order`
-  // go to the API, and the rows on screen are ordered here too so the column
+  // matched on fields this page doesn't render. Sorting is different:
+  // `sort_by`/`order` go to the API, and the rows on screen are ordered here too so the column
   // still responds on a backend that ignores those parameters. Note this orders
   // the current page — with more than one page, the server decides which rows
   // land on it.
@@ -199,26 +185,15 @@ const AllReports = () => {
         search: searchQuery.trim() || undefined,
         report_type_id: resolvedTypeId || undefined,
         priority: priorityParam || undefined,
-        is_anonymous: anonymousOnly ? true : undefined,
+        is_anonymous: filedBy ? filedBy.value === 'true' : undefined,
         sla: slaParam || undefined,
         assigned_to: assigneeParam || undefined,
         // The deadlines column is ordered on this page only.
         sort_by: sortBy === 'sla' ? undefined : sortBy,
         order: sortOrder,
       };
-      const response = anonymousOnly && anonymousFilterIgnored ? null : await reportsAPI.getAllReports(params);
-      let { items, total, totalPages: pages } = normalizeListResponse(response);
-
-      // A backend that ignores is_anonymous returns every report, with the
-      // unfiltered total. Filter the whole set here and page it locally so the
-      // rows, the footer count and the dashboard card all agree.
-      if (anonymousOnly && (anonymousFilterIgnored || !items.every(isAnonymousReport))) {
-        anonymousFilterIgnored = true;
-        const matching = (await fetchAllReports(params)).filter(isAnonymousReport);
-        total = matching.length;
-        pages = Math.max(1, Math.ceil(total / DEFAULT_PAGE_SIZE));
-        items = matching.slice((currentPage - 1) * DEFAULT_PAGE_SIZE, currentPage * DEFAULT_PAGE_SIZE);
-      }
+      const response = await reportsAPI.getAllReports(params);
+      const { items, total, totalPages: pages } = normalizeListResponse(response);
       setReports(items);
       setTotalPages(pages);
       setTotalReports(total);
@@ -227,7 +202,7 @@ const AllReports = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, activeStatus, resolvedTypeId, priorityParam, anonymousOnly, slaParam, assigneeParam, sortBy, sortOrder]);
+  }, [currentPage, searchQuery, activeStatus, resolvedTypeId, priorityParam, filedBy, slaParam, assigneeParam, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchReports();
@@ -247,7 +222,7 @@ const AllReports = () => {
   // rarely a valid page of the new one.
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeStatus, resolvedTypeId, priorityParam, anonymousOnly, slaParam, assigneeParam, sortBy, sortOrder]);
+  }, [activeStatus, resolvedTypeId, priorityParam, filedBy, slaParam, assigneeParam, sortBy, sortOrder]);
 
   const statusTabs = [
     { id: 'all', label: 'All Reports' },
@@ -280,15 +255,15 @@ const AllReports = () => {
         clear: () => updateFilters({ assigned_to: '', assignee: '' }),
       });
     }
-    if (anonymousOnly) {
+    if (filedBy) {
       chips.push({
         key: 'anonymous',
-        label: 'Anonymous only',
+        label: filedBy.chip,
         clear: () => updateFilters({ anonymous: '' }),
       });
     }
     return chips;
-  }, [activeTypeName, priorityParam, assigneeParam, assigneeName, anonymousOnly, updateFilters]);
+  }, [activeTypeName, priorityParam, assigneeParam, assigneeName, filedBy, updateFilters]);
 
   const slaLabel = SLA_FILTERS.find((f) => f.value === slaParam)?.label;
 
@@ -371,6 +346,21 @@ const AllReports = () => {
           >
             <option value="">Any deadline</option>
             {SLA_FILTERS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Filed by"
+            value={filedBy?.value || ''}
+            onChange={(e) => updateFilters({ anonymous: e.target.value })}
+            className={`h-9 shrink-0 rounded-lg border bg-surface px-2.5 text-sm outline-none focus:border-line-accent ${
+              filedBy ? 'border-line-accent text-accent-fg' : 'border-line-strong text-ink-secondary'
+            }`}
+          >
+            <option value="">Anyone</option>
+            {FILED_BY.map((f) => (
               <option key={f.value} value={f.value}>
                 {f.label}
               </option>
@@ -476,6 +466,12 @@ const AllReports = () => {
                     <div className="flex flex-col items-start gap-1">
                       <span>#{report.report_number}</span>
                       <TierBadge tier={report.confidentiality_tier} />
+                      {report.is_anonymous && (
+                        <span className="inline-flex items-center gap-1 text-xs font-normal text-ink-muted">
+                          <EyeOff className="h-3 w-3" aria-hidden="true" />
+                          Anonymous
+                        </span>
+                      )}
                     </div>
                   </Table.Cell>
                   <Table.Cell className="text-ink-muted">

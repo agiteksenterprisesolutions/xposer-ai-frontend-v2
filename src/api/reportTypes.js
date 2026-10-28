@@ -36,6 +36,21 @@ let typeIndexPromise = null;
 
 let fieldCatalogPromise = null;
 
+// `${typeId}:${version}` → Promise<version>. Versions are immutable.
+const versionCache = new Map();
+
+/**
+ * The type and form version a report was filed against. Voice and chat
+ * reports matched to a type carry it as matched_report_type_*.
+ */
+export const reportTypeVersionOf = (report) => {
+  const id = report?.report_type_id || report?.matched_report_type_id || null;
+  const version = report?.report_type_version
+    ?? (id && id === report?.matched_report_type_id ? report?.matched_report_type_version : null)
+    ?? null;
+  return { id, version };
+};
+
 export const reportTypesAPI = {
   // Get one page of report types. Returns the raw envelope
   // ({ items, page, page_size, total, total_pages, has_next, has_previous }).
@@ -141,10 +156,61 @@ export const reportTypesAPI = {
     }
   },
 
+  /**
+   * A type's form history, newest first, without sections:
+   * `[{ id, report_type_id, version, code, name, category, created_at, created_by }]`.
+   * Needs report_type:manage.
+   */
+  listVersions: async (id) => {
+    const response = await api.get(`/report-types/${id}/versions`, { skipErrorToast: true });
+    return Array.isArray(response.data) ? response.data : normalizeListResponse(response.data).items;
+  },
+
+  /**
+   * One saved version of a type's form: `{ version, name, category, sections, … }`.
+   * A version never changes, so each is fetched once per session. 404 when the
+   * type has no such version (versions before the backend kept history).
+   */
+  getVersion: (id, version) => {
+    const key = `${id}:${version}`;
+    if (!versionCache.has(key)) {
+      versionCache.set(
+        key,
+        api
+          .get(`/report-types/${id}/versions/${version}`, { skipErrorToast: true })
+          .then((response) => response.data)
+          .catch((error) => {
+            versionCache.delete(key);
+            throw error;
+          }),
+      );
+    }
+    return versionCache.get(key);
+  },
+
+  /**
+   * The form a report was filled in against: its pinned version when it has
+   * one, else the type's current form (reports from before versioning, or a
+   * version the server no longer has). Labels, options and order of a report's
+   * answers come from here, never from the live type alone.
+   */
+  formForReport: async (report, { quiet = true } = {}) => {
+    const { id, version } = reportTypeVersionOf(report);
+    if (!id) return null;
+    if (version != null) {
+      try {
+        return await reportTypesAPI.getVersion(id, version);
+      } catch (error) {
+        if (error?.response?.status !== 404) throw error;
+      }
+    }
+    return reportTypesAPI.getReportType(id, true, { quiet });
+  },
+
   // Update report type
   updateReportType: async (id, data) => {
+    // The caller says what was saved — "Saved as version 3" when the questions changed.
     const response = await api.patch(`/report-types/${id}`, data, { skipErrorToast: true });
-    toast.success('Report type updated successfully!');
     return response.data;
   },
 

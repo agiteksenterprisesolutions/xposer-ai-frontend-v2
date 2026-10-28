@@ -25,30 +25,13 @@ import { StatusBadge, PriorityBadge } from "../../components/ui/Badge";
 import Skeleton from "../../components/ui/Skeleton";
 import Alert from "../../components/ui/Alert";
 import { Textarea } from "../../components/ui/Input";
-import { formatDate, formatDateTime, formatRelativeTime, formatFileSize } from "../../utils/formatters";
+import { formatDateTime, formatRelativeTime, formatFileSize } from "../../utils/formatters";
 import useSEO from '../../hooks/useSEO';
 import { isDraftReport, getReportDescription, getReportTitle } from '../../utils/reports';
 import VoiceAnswers from '../../components/reports/VoiceAnswers';
 import { toast } from "react-toastify";
-import { formatCurrencyAnswer, isCurrencyAnswer } from '../../utils/reportTypes';
-
-const formatFormValue = (value) => {
-  if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || "N/A";
-  if (value == null) return "N/A";
-
-  const str = String(value);
-
-  const iso8601Regex =
-    /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/;
-
-  if (iso8601Regex.test(str.trim())) {
-    // Use date-only format when there's no time component
-    const hasTime = str.includes("T");
-    return hasTime ? formatDateTime(str) : formatDate(str);
-  }
-
-  return str;
-};
+import { formatAnswer, orderedAnswers } from '../../utils/reportAnswers';
+import { useReportForm } from '../../hooks/useReportForm';
 
 /** The report page while it loads: the same header, cards and sidebar. */
 const ReportDetailSkeleton = ({ backLabel, steps }) => (
@@ -147,6 +130,8 @@ const ReportDetail = () => {
   const { fetchReport } = useReports();
 
   const [report, setReport] = useState(null);
+  // The form this report was filed against, for its answers' labels and order.
+  const reportForm = useReportForm(report);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -450,15 +435,15 @@ const ReportDetail = () => {
                         Additional Information
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Object.entries(report.form_data).map(([key, value]) => (
+                        {orderedAnswers(report.form_data, reportForm).map(({ key, value, label, question }) => (
                           <div
                             key={key}
                             className="bg-surface border border-line p-3 rounded-lg overflow-hidden"
                           >
                             <span className="block text-xs font-medium text-ink-muted uppercase mb-1">
-                              {key.replace(/_/g, " ")}
+                              {label}
                             </span>
-                            <span className="text-ink wrap-break-word">{formatFormValue(value)}</span>
+                            <span className="text-ink wrap-break-word">{formatAnswer(value, question)}</span>
                           </div>
                         ))}
                       </div>

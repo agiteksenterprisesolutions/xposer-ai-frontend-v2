@@ -5,9 +5,9 @@ import { blobDownload } from '../utils/download';
 
 export const usersAPI = {
   // Get all users
-  getAllUsers: async (params = {}, { quiet = false } = {}) => {
+  getAllUsers: async (params = {}) => {
     try {
-      const response = await api.get('/users/', { params, skipErrorToast: quiet });
+      const response = await api.get('/users/', { params });
       return response.data;
     } catch (error) {
       throw error;
@@ -47,12 +47,13 @@ export const usersAPI = {
   },
 
   /**
-   * Your own profile: only `full_name` and `email` may be sent for yourself
-   * (403 cannot_change_own names any other field; a password is a 400 — use
-   * POST /users/change-password). Quiet: the account page shows refusals.
+   * Your own profile. An admin may send `full_name`, `email` and
+   * `auth_provider` for themselves; anyone else gets 403 cannot_change_own
+   * (`fields` names what was refused). A password is a 400 — use POST
+   * /users/change-password. Quiet: the account page shows refusals.
    */
-  updateMe: async (id, { full_name: fullName, email }) => {
-    const response = await api.put(`/users/${id}`, { full_name: fullName, email }, { skipErrorToast: true });
+  updateMe: async (id, changes) => {
+    const response = await api.put(`/users/${id}`, changes, { skipErrorToast: true });
     return response.data;
   },
 
