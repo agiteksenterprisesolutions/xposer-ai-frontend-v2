@@ -441,7 +441,7 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
           <table className="w-full min-w-140 border-separate border-spacing-0 text-left text-sm [&_td]:border-b [&_td]:border-line-subtle [&_th]:border-b [&_th]:border-line-subtle">
             <thead>
               <tr className="bg-subtle">
-                <th scope="col" className="sticky left-0 z-10 bg-subtle px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
+                <th scope="col" className="sticky left-0 z-10 bg-subtle-solid px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
                   People with… <span className="normal-case tracking-normal">can see…</span>
                 </th>
                 {columns.map((target) => (
@@ -919,7 +919,7 @@ const Roles = () => {
                 <tr className="border-b border-line bg-subtle">
                   <th
                     scope="col"
-                    className="sticky left-0 z-10 w-72 min-w-52 bg-subtle px-4 py-3 align-bottom text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle"
+                    className="sticky left-0 z-10 w-40 min-w-40 sm:w-72 sm:min-w-52 bg-subtle-solid px-3 sm:px-4 py-3 align-bottom text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle"
                   >
                     Permission
                   </th>
@@ -974,12 +974,12 @@ const Roles = () => {
                 return (
                   <tbody key={group.key}>
                     <tr className="border-b border-line-subtle bg-subtle/60">
-                      <th scope="rowgroup" className="sticky left-0 z-10 bg-subtle p-0">
+                      <th scope="rowgroup" className="sticky left-0 z-10 bg-subtle-solid p-0">
                         <button
                           type="button"
                           onClick={() => toggleGroup(group.key)}
                           aria-expanded={open}
-                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-ink-secondary"
+                          className="flex w-full items-center gap-2 px-3 sm:px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-ink-secondary"
                         >
                           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? '' : '-rotate-90'}`} />
                           {group.label}
@@ -1008,7 +1008,7 @@ const Roles = () => {
                         const label = permissionLabel(entry.permission);
                         return (
                           <tr key={entry.permission} className="border-b border-line-subtle last:border-b-0 hover:bg-hover/50">
-                            <th scope="row" className="sticky left-0 z-10 bg-surface px-4 py-3 font-normal">
+                            <th scope="row" className="sticky left-0 z-10 bg-surface px-3 sm:px-4 py-3 font-normal">
                               <span className="block text-sm text-ink">{label}</span>
                               {PERMISSION_HINTS[entry.permission] && (
                                 <span className="mt-0.5 block max-w-80 text-xs text-ink-muted">{PERMISSION_HINTS[entry.permission]}</span>

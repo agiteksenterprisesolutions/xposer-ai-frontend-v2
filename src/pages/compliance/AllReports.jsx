@@ -28,7 +28,7 @@ import useSEO from '../../hooks/useSEO';
 import { casePath } from '../../utils/navigation';
 import { DEFAULT_PAGE_SIZE, normalizeListResponse } from '../../utils/pagination';
 import TableSortControl from '../../components/ui/TableSortControl';
-import { OwnerCell, SLA_FILTERS, SlaCell, TierBadge, ownerName, slaUrgency } from '../../components/reports/CaseGovernance';
+import { OwnerCell, SLA_CLOCKS, SLA_FILTERS, SlaBadge, SlaCell, TierBadge, ownerName, slaClock, slaUrgency } from '../../components/reports/CaseGovernance';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import {
   useTableSort,
@@ -47,6 +47,43 @@ const FILED_BY = [
   { value: 'true', label: 'Anonymous', chip: 'Anonymous only' },
   { value: 'false', label: 'From an account', chip: 'Filed from an account' },
 ];
+
+/**
+ * A report on a phone: what it is, where it stands and when it came in. A
+ * third line appears only when something needs attention: high or critical
+ * priority, or a deadline overdue or due soon. Everything else (owner, tier,
+ * anonymity, routine priority) is on the case and in the desktop table.
+ */
+const URGENT_SLA = ['breached', 'due_soon'];
+const URGENT_PRIORITY = ['high', 'critical'];
+
+const ReportSummary = ({ report, typeName }) => {
+  const urgentClocks = SLA_CLOCKS.map(({ key, short }) => ({ key, short, clock: slaClock(report, key) }))
+    .filter(({ clock }) => URGENT_SLA.includes(clock?.state));
+  const urgentPriority = URGENT_PRIORITY.includes(report.priority);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-medium text-ink">#{report.report_number}</span>
+        <StatusBadge status={report.status} />
+      </div>
+      <div className="flex items-baseline justify-between gap-3 text-sm">
+        <span className="min-w-0 truncate text-ink-secondary">{typeName ?? <Skeleton.Text className="w-32" />}</span>
+        <span className="shrink-0 text-xs text-ink-muted">
+          {parseServerDate(report.created_at)?.toLocaleDateString() || ''}
+        </span>
+      </div>
+      {(urgentPriority || urgentClocks.length > 0) && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          {urgentPriority && <PriorityBadge priority={report.priority} />}
+          {urgentClocks.map(({ key, short, clock }) => (
+            <SlaBadge key={key} clock={clock} prefix={short} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Column order here is the column order in the table.
 const buildSortColumns = (typeNameFor, nameFor) => ({
@@ -462,6 +499,7 @@ const AllReports = () => {
                   key={report.id}
                   onClick={() => navigate(casePath(user?.organization_slug, report.id))}
                   className="cursor-pointer"
+                  mobile={<ReportSummary report={report} typeName={typeNameFor(report)} />}
                 >
                   <Table.Cell className="font-medium text-ink">
                     <div className="flex flex-col items-start gap-1">

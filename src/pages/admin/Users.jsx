@@ -356,6 +356,144 @@ const Users = () => {
     }
   };
 
+  // Where an account sits in the directory, under its role: the entry's name
+  // and level, or a flag when it's unlinked or its entry is gone. Nothing for
+  // reporters, who aren't placed.
+  const renderPlacement = (user) => {
+    if (user.role === REPORTER_ROLE) return null;
+    const member = memberFor(user);
+    const seesTeam = byCode.get(user.role)?.permissions?.includes(PERM.reportReadSubordinates);
+    // An admin may also link their own account.
+    const open = canUpdateUsers && (rowCanManage(user) || isSelf(user)) ? () => setLinkUser(user) : undefined;
+    // Linked, but the entry is still being looked up: no flag yet.
+    if (!member && user.hierarchy_member_id && linkLookup.pending) {
+      return <span className="block h-4 w-24 animate-pulse rounded bg-active" />;
+    }
+    return member ? (
+      <button
+        type="button"
+        onClick={open}
+        disabled={!open}
+        className="min-w-0 text-left disabled:cursor-default"
+        title={open ? 'Change directory entry' : undefined}
+      >
+        <span className="block truncate text-sm font-medium text-ink">{member.name}</span>
+        <span className="block truncate text-xs text-ink-muted">
+          {member.level_code ? levelTitle(member.level_code) : 'No level'}
+        </span>
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={open}
+        disabled={!open}
+        title={[
+          // Unlinked: no link at all. Entry missing: linked to an
+          // employee ID that is no longer in the directory —
+          // usually a person removed after the account was linked.
+          user.hierarchy_member_id
+            ? `Linked to employee ID ${user.hierarchy_member_id}, which is no longer in the directory — the entry was probably removed. Re-link them to an existing entry, or unlink them.`
+            : 'Not linked to anyone in the directory, so they aren’t placed in the org chart. Link them to their directory entry, or add them to the directory.',
+          seesTeam && "Until then they see only their own cases, not their team's.",
+          open && 'Click to fix.',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning-fg hover:bg-warning-line disabled:cursor-default"
+      >
+        <AlertTriangle className="h-3 w-3" />
+        {user.hierarchy_member_id ? 'Entry missing' : 'Unlinked'}
+      </button>
+    );
+  };
+
+  // A row's actions: your own account, or the admin controls for another's.
+  const renderActions = (user) => (
+    <>
+      {isSelf(user) && (
+        <Link
+          to={staffPath(orgSlug, 'account')}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-link hover:bg-accent-soft"
+          title={canUpdateUsers ? 'Edit your name and email, or change your password' : 'Change your password'}
+        >
+          <KeyRound className="h-4 w-4" />
+          {canUpdateUsers ? 'My account' : 'Change my password'}
+        </Link>
+      )}
+      {rowCanManage(user) && (
+        <div className="flex justify-end space-x-2">
+          {canChangeRoles && (
+            <Button
+              variant="ghost"
+              size="small"
+              title="Change role"
+              aria-label={`Change role for ${user.full_name || user.username}`}
+              onClick={() => setRoleChangeUser(user)}
+            >
+              <Shield className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="small"
+            title="Manage sign-in"
+            onClick={() => handleResetPassword(user)}
+          >
+            <PenBoxIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="small"
+            title={user.is_active ? 'Deactivate' : 'Activate'}
+            onClick={() => setConfirmModal({
+              open: true,
+              type: user.is_active ? 'deactivate' : 'activate',
+              user
+            })}
+          >
+            {user.is_active
+              ? <UserX className="h-4 w-4 text-danger-fg" />
+              : <UserPlus className="h-4 w-4 text-success-fg" />
+            }
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
+  // A user on a phone: who they are, their role and sign-in, and what you can
+  // do. Username, created date and the directory entry are in the desktop
+  // table; a directory problem or a pending first sign-in still shows here.
+  const renderSummary = (user) => {
+    const member = canReadHierarchy && user.role !== REPORTER_ROLE ? memberFor(user) : null;
+    // Only a known problem: not while a linked entry is still being looked up.
+    const placementProblem =
+      canReadHierarchy && user.role !== REPORTER_ROLE && !member && !(user.hierarchy_member_id && linkLookup.pending);
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <UserAvatar user={user} size="small" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-ink">{user.full_name || user.username}</p>
+            <p className="truncate text-xs text-ink-muted">{user.email}</p>
+          </div>
+          <Badge variant={user.is_active ? 'success' : 'danger'} dot size="small">
+            {user.is_active ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+        <div className="flex items-center justify-between gap-2 pl-12">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+            <RoleBadge role={user.role} label={roleLabel(user)} />
+            <span>{authProviderLabel(user.auth_provider)}</span>
+            {placementProblem && renderPlacement(user)}
+            {user.must_change_password && <span className="font-medium text-warning-fg">Hasn’t set a password</span>}
+          </div>
+          <div className="-my-1 shrink-0 [&_.space-x-2]:space-x-0">{renderActions(user)}</div>
+        </div>
+      </div>
+    );
+  };
+
   const tourSteps = useMemo(() => {
     const steps = [];
     if (isDesktop) {
@@ -584,7 +722,7 @@ const Users = () => {
               />
             ) : (
               filteredUsers.map((user) => (
-                <Table.Row key={user.id}>
+                <Table.Row key={user.id} mobile={renderSummary(user)}>
                   <Table.Cell>
                     <div className="flex items-center space-x-3">
                       <UserAvatar user={user} size="medium" />
@@ -603,54 +741,7 @@ const Users = () => {
                         Their level comes from their role, via their directory entry. */}
                     {canReadHierarchy && (
                       <div className="mt-1.5">
-                        {user.role === REPORTER_ROLE ? (
-                          null
-                        ) : (() => {
-                          const member = memberFor(user);
-                          const seesTeam = byCode.get(user.role)?.permissions?.includes(PERM.reportReadSubordinates);
-                          // An admin may also link their own account.
-                          const open = canUpdateUsers && (rowCanManage(user) || isSelf(user)) ? () => setLinkUser(user) : undefined;
-                          // Linked, but the entry is still being looked up: no flag yet.
-                          if (!member && user.hierarchy_member_id && linkLookup.pending) {
-                            return <span className="block h-4 w-24 animate-pulse rounded bg-active" />;
-                          }
-                          return member ? (
-                            <button
-                              type="button"
-                              onClick={open}
-                              disabled={!open}
-                              className="min-w-0 text-left disabled:cursor-default"
-                              title={open ? 'Change directory entry' : undefined}
-                            >
-                              <span className="block truncate text-sm font-medium text-ink">{member.name}</span>
-                              <span className="block truncate text-xs text-ink-muted">
-                                {member.level_code ? levelTitle(member.level_code) : 'No level'}
-                              </span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={open}
-                              disabled={!open}
-                              title={[
-                                // Unlinked: no link at all. Entry missing: linked to an
-                                // employee ID that is no longer in the directory —
-                                // usually a person removed after the account was linked.
-                                user.hierarchy_member_id
-                                  ? `Linked to employee ID ${user.hierarchy_member_id}, which is no longer in the directory — the entry was probably removed. Re-link them to an existing entry, or unlink them.`
-                                  : 'Not linked to anyone in the directory, so they aren’t placed in the org chart. Link them to their directory entry, or add them to the directory.',
-                                seesTeam && "Until then they see only their own cases, not their team's.",
-                                open && 'Click to fix.',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                              className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning-fg hover:bg-warning-line disabled:cursor-default"
-                            >
-                              <AlertTriangle className="h-3 w-3" />
-                              {user.hierarchy_member_id ? 'Entry missing' : 'Unlinked'}
-                            </button>
-                          );
-                        })()}
+                        {renderPlacement(user)}
                       </div>
                     )}
                   </Table.Cell>
@@ -676,54 +767,7 @@ const Users = () => {
                   </Table.Cell>
 
                   <Table.Cell className="text-right">
-                    {isSelf(user) && (
-                      <Link
-                        to={staffPath(orgSlug, 'account')}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-link hover:bg-accent-soft"
-                        title={canUpdateUsers ? 'Edit your name and email, or change your password' : 'Change your password'}
-                      >
-                        <KeyRound className="h-4 w-4" />
-                        {canUpdateUsers ? 'My account' : 'Change my password'}
-                      </Link>
-                    )}
-                    {rowCanManage(user) && (
-                      <div className="flex justify-end space-x-2">
-                        {canChangeRoles && (
-                          <Button
-                            variant="ghost"
-                            size="small"
-                            title="Change role"
-                            aria-label={`Change role for ${user.full_name || user.username}`}
-                            onClick={() => setRoleChangeUser(user)}
-                          >
-                            <Shield className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          title="Manage sign-in"
-                          onClick={() => handleResetPassword(user)}
-                        >
-                          <PenBoxIcon className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          title={user.is_active ? 'Deactivate' : 'Activate'}
-                          onClick={() => setConfirmModal({
-                            open: true,
-                            type: user.is_active ? 'deactivate' : 'activate',
-                            user
-                          })}
-                        >
-                          {user.is_active
-                            ? <UserX className="h-4 w-4 text-danger-fg" />
-                            : <UserPlus className="h-4 w-4 text-success-fg" />
-                          }
-                        </Button>
-                      </div>
-                    )}
+                    {renderActions(user)}
                   </Table.Cell>
                 </Table.Row>
               ))

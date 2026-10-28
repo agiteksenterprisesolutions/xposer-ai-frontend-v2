@@ -52,7 +52,7 @@ const humanize = (key) => key.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpper
 const ProblemTable = ({ problems, tone = 'error' }) => (
   <div className={`max-h-72 overflow-auto rounded-lg border ${tone === 'warning' ? 'border-warning-line' : 'border-line'}`}>
     <table className="w-full text-left text-xs">
-      <thead className="sticky top-0 bg-subtle text-ink-subtle">
+      <thead className="sticky top-0 bg-subtle-solid text-ink-subtle">
         <tr>
           <th className="px-3 py-2 font-semibold">Where</th>
           <th className="px-3 py-2 font-semibold">Problem</th>

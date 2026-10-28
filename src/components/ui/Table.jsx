@@ -19,6 +19,8 @@ const isEmptyCell = (value) =>
 
 // Reads the `<Table.Header>` / `<Table.Body>` tree so the compound form can be
 // rendered as a label/value list on phones, the same way the columns/data form is.
+// A row with a `mobile` prop shows that instead: a short summary for tables
+// whose every column on a phone would be too much to take in.
 const readCompoundTable = (children) => {
   const header = findChild(children, TableHeader);
   const body = findChild(children, TableBody);
@@ -168,7 +170,7 @@ const Table = ({ children, columns, data, onRowClick, getSortProps, className = 
                 }
 
                 const row = item.element;
-                const { onClick, className: rowClassName = '' } = row.props;
+                const { onClick, className: rowClassName = '', mobile } = row.props;
                 const cells = flattenChildren(row.props.children).filter(
                   (cell) => isValidElement(cell) && (cell.type === TableCell || cell.type === TableActions)
                 );
@@ -191,7 +193,7 @@ const Table = ({ children, columns, data, onRowClick, getSortProps, className = 
                     }
                     className={`px-4 py-3 bg-surface transition-colors ${onClick ? 'cursor-pointer active:bg-hover' : ''} ${rowClassName}`}
                   >
-                    {cells.map((cell, cellIdx) => {
+                    {mobile ?? cells.map((cell, cellIdx) => {
                       const label = compound.headers[cellIdx];
                       if (isEmptyCell(cell.props.children)) return null;
                       return (
@@ -241,7 +243,9 @@ const TableFooter = ({ children, className = '', ...props }) => (
   </tfoot>
 );
 
-const TableRow = ({ children, className = '', hover = true, ...props }) => (
+// `mobile` is read by Table for the phone layout, never rendered on the <tr>.
+// eslint-disable-next-line no-unused-vars
+const TableRow = ({ children, className = '', hover = true, mobile, ...props }) => (
   <tr
     className={`border-b border-line-subtle last:border-0 transition-colors duration-150 ${hover ? 'hover:bg-hover' : ''} ${className}`}
     {...props}

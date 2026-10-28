@@ -273,6 +273,12 @@ input[type='time']::-webkit-calendar-picker-indicator:hover {
    UTILITIES
    ========================================================================== */
 
+/* bg-subtle is a translucent tint, so anything sticky painted with it shows
+   what scrolls underneath. This is the same colour, laid over the surface. */
+@utility bg-subtle-solid {
+  background: linear-gradient(var(--color-subtle), var(--color-subtle)), var(--color-surface);
+}
+
 /* Still scrolls sideways (trackpad, touch, arrow keys), but shows no bar.
    For tab rows, where a bar under the tabs looks like a stray line. */
 @utility scrollbar-none {
