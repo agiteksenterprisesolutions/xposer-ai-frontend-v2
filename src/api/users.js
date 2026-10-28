@@ -68,12 +68,13 @@ export const usersAPI = {
     return response.data;
   },
 
-  // Change a user's sign-in method (PATCH, unlike the full-record PUT above).
-  // Switching to 'password' requires a new password in the same call; switching
-  // to an SSO provider removes the stored password.
+  // Change a user's sign-in method — a PUT with just `auth_provider` (the
+  // endpoint has no PATCH). Switching to 'password' requires a new password in
+  // the same call; switching to an SSO provider removes the stored password and
+  // needs an email on the account.
   updateAuthProvider: async (id, data) => {
     try {
-      const response = await api.patch(`/users/${id}`, data);
+      const response = await api.put(`/users/${id}`, data);
       toast.success('Sign-in method updated successfully!');
       return response.data;
     } catch (error) {

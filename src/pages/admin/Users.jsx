@@ -332,8 +332,8 @@ const Users = () => {
 
     try {
       if (nextProvider !== currentProvider) {
-        // Changing the method is a PATCH. A switch back to password sign-in
-        // must carry the new password in the same request.
+        // A switch back to password sign-in must carry the new password in
+        // the same request.
         await usersAPI.updateAuthProvider(selectedUser.id, {
           auth_provider: nextProvider,
           ...(nextProvider === AUTH_PROVIDERS.PASSWORD
