@@ -322,8 +322,9 @@ const AllReports = () => {
       <DashboardTour ref={tourRef} storageKey={ALL_REPORTS_TOUR_KEY} steps={tourSteps} />
 
       {/* Search and Global Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-96" data-tour="reports-search">
+      {/* Below lg the search takes its own row and the filters wrap. */}
+      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 lg:gap-4">
+        <div className="relative w-full lg:w-96" data-tour="reports-search">
           <Input
             placeholder="Search by ID, category, or reporter..."
             value={searchTerm}
@@ -335,7 +336,7 @@ const AllReports = () => {
           <Button variant="secondary" startIcon={Download}>Export</Button>
           <Button variant="ghost" startIcon={Filter}>Advanced Filters</Button>
         </div> */}
-        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center lg:justify-end gap-2 sm:gap-3 min-w-0">
           <select
             aria-label="Deadlines"
             value={slaParam}
@@ -370,7 +371,7 @@ const AllReports = () => {
           {loading ? (
             <Skeleton.Text className="w-20" />
           ) : (
-            <span className="text-sm text-ink-muted whitespace-nowrap tabular-nums">
+            <span className="ml-auto lg:ml-0 text-sm text-ink-muted whitespace-nowrap tabular-nums">
               {totalReports} report{totalReports === 1 ? '' : 's'}
             </span>
           )}

@@ -437,9 +437,10 @@ const Users = () => {
         </Alert>
       )}
 
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-96" data-tour="users-search">
+      {/* Header Actions. Below lg the search takes its own row, the filters
+          wrap, and on phones the two actions share a full-width row. */}
+      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 lg:gap-4">
+        <div className="relative w-full lg:w-96" data-tour="users-search">
           <Input
             placeholder="Search by name, email, or username..."
             value={searchTerm}
@@ -447,8 +448,8 @@ const Users = () => {
           // startAdornment={<Search className="h-4 w-4 text-ink-subtle" />}
           />
         </div>
-        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-          <div className="inline-flex rounded-lg border border-line p-0.5">
+        <div className="flex flex-wrap items-center lg:justify-end gap-2 sm:gap-3 min-w-0">
+          <div className="inline-flex shrink-0 rounded-lg border border-line p-0.5">
             {[
               { id: 'all', label: 'All' },
               { id: 'active', label: 'Active' },
@@ -472,7 +473,7 @@ const Users = () => {
               value={roleFilter}
               onChange={(event) => setRoleFilter(event.target.value)}
               aria-label="Filter by role"
-              className="h-9 rounded-lg border border-line bg-surface px-2.5 text-sm text-ink"
+              className="h-9 min-w-0 max-w-full rounded-lg border border-line bg-surface px-2.5 text-sm text-ink"
             >
               <option value="">All roles</option>
               {visibleRoles.map((role) => (
@@ -487,19 +488,20 @@ const Users = () => {
           )}
           <TableSortControl {...sort} id="users" className="shrink-0" />
           {canCreateUsers && (
-            <Button variant="outline" startIcon={Upload} onClick={() => setImportOpen(true)}>
-              Import
-            </Button>
-          )}
-          {canCreateUsers && (
-            <Button
-              variant="secondary"
-              startIcon={UserPlus}
-              onClick={() => setIsAddModalOpen(true)}
-              data-tour="users-add"
-            >
-              Add person
-            </Button>
+            <div className="flex w-full gap-2 sm:w-auto sm:gap-3">
+              <Button variant="outline" startIcon={Upload} onClick={() => setImportOpen(true)} className="flex-1 sm:flex-none">
+                Import
+              </Button>
+              <Button
+                variant="secondary"
+                startIcon={UserPlus}
+                onClick={() => setIsAddModalOpen(true)}
+                data-tour="users-add"
+                className="flex-1 sm:flex-none"
+              >
+                Add person
+              </Button>
+            </div>
           )}
         </div>
       </div>

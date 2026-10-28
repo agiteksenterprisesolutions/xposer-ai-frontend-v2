@@ -130,12 +130,12 @@ const ComplianceTeam = () => {
       </div>
 
       <Card padding="none">
-        <Card.Header className="p-6 border-b border-line-subtle flex items-center justify-between">
+        <Card.Header className="p-4 sm:p-6 border-b border-line-subtle flex flex-wrap items-center justify-between gap-3">
           <Card.Title className="flex items-center">
             <Users className="h-5 w-5 mr-2 text-accent-fg" />
             Compliance Personnel
           </Card.Title>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <TableSortControl {...sort} id="team" className="shrink-0" />
             {can(ACCESS.roles) && (
               <Link to={staffPath(orgSlug, 'roles')}>
