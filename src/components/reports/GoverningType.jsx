@@ -45,7 +45,7 @@ const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
 const STATUS = {
   asked: { icon: CheckCircle2, className: 'text-success-fg', label: 'Asked' },
   declined: { icon: MinusCircle, className: 'text-warning-fg', label: 'Declined' },
-  missing: { icon: CircleDashed, className: 'text-ink-subtle', label: 'Not asked' },
+  missing: { icon: CircleDashed, className: 'text-ink-subtle', label: 'Not needed' },
 };
 
 const Comparison = ({ report, governing }) => {
