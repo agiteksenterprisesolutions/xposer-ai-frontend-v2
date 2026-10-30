@@ -22,7 +22,7 @@ import Button from "../../components/ui/Button";
 import Badge, { StatusBadge, PriorityBadge } from "../../components/ui/Badge";
 import { Textarea } from "../../components/ui/Input";
 import { reportsAPI, messagesAPI, usersAPI } from "../../api";
-import { useReportTypeNames } from "../../hooks/useReportTypeNames";
+import { NO_TYPE_LABEL, useReportTypeNames } from "../../hooks/useReportTypeNames";
 import { useCan } from "../../hooks/useCan";
 import { useOrgRoles, roleCanWorkReports } from "../../hooks/useOrgRoles";
 import { PERM } from "../../utils/permissions";
@@ -39,6 +39,7 @@ import useSEO from "../../hooks/useSEO";
 import { normalizeListResponse } from '../../utils/pagination';
 import { formatAnswer, orderedAnswers, questionsByName } from '../../utils/reportAnswers';
 import { useReportForm } from '../../hooks/useReportForm';
+import GoverningType from '../../components/reports/GoverningType';
 import { errorSummary } from '../../utils/errors';
 import { MaskedValue, TierBadge, isAutoAssigned, maskedKeys, slaClock } from '../../components/reports/CaseGovernance';
 import { CaseNotices, DeadlinesCard, DisposedCase, RecordsCard, isDisposed } from '../../components/reports/CasePanels';
@@ -182,7 +183,7 @@ const CaseDetail = () => {
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
   // The type's name, from the shared cached list; never holds up the case.
-  const { typeName: typeNameOf } = useReportTypeNames();
+  const { typeName: typeNameOf, isAiReport } = useReportTypeNames();
   const [messages, setMessages] = useState([]);
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -474,7 +475,12 @@ const CaseDetail = () => {
               Case #{report.report_number}
               <TierBadge tier={report.confidentiality_tier} size="medium" />
             </h2>
-            <p className="text-sm text-ink-muted">{typeName ?? <Skeleton.Text className="w-32" />}</p>
+            <p className="text-sm text-ink-muted">
+              {typeName ?? <Skeleton.Text className="w-32" />}
+              {typeName && typeName !== NO_TYPE_LABEL && isAiReport(report) && (
+                <span className="text-ink-subtle"> · via AI Assistant</span>
+              )}
+            </p>
           </div>
         </div>
         <div className="flex space-x-2">
@@ -815,6 +821,10 @@ const CaseDetail = () => {
                 {/* Why routing did what it did — unassigned, or sent to the backup owner. */}
                 {report.routing_note && <p className="text-xs text-ink-muted">{report.routing_note}</p>}
               </div>
+
+              {/* The type that governs this case, linked; for an AI report,
+                  with what it asked against that type's questions. */}
+              <GoverningType report={report} orgSlug={report?.organization_slug || orgSlug} />
 
             </Card.Content>
             {/* <Card.Footer>

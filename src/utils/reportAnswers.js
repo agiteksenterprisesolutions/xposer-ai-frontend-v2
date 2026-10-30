@@ -18,6 +18,8 @@ export const formatAnswer = (value, question) => {
   if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || 'N/A';
   if (value === null || value === undefined || value === '') return 'N/A';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  // The voice agent stores a yes/no answer as text.
+  if (question?.type === 'boolean' && (value === 'true' || value === 'false')) return value === 'true' ? 'Yes' : 'No';
   const label = (v) => (question?.options?.length ? labelForValue(question.options, v) : v);
   if (Array.isArray(value)) return value.length ? value.map((v) => String(label(v))).join(', ') : 'N/A';
   if (typeof value === 'object') return JSON.stringify(value);
