@@ -2,23 +2,20 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  AlertCircle,
   FileText,
-  ChevronRight,
   Shield,
   Clock,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import Card from '../../components/ui/Card';
-import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
-import Alert from '../../components/ui/Alert';
 import MultiStepReportForm from '../../components/forms/MultiStepReportForm';
 import { reportTypesAPI } from '../../api/reportTypes';
 import LoadingSpinner from '../../components/layout/LoadingSpinner';
 import { toast } from 'react-toastify';
 import useSEO from '../../hooks/useSEO';
 import { normalizeListResponse } from '../../utils/pagination';
+import ReportTypePicker from '../../components/forms/ReportTypePicker';
+import { useDeflectionExits } from '../../hooks/useDeflectionExits';
 
 const SubmitReport = () => {
   useSEO({
@@ -32,6 +29,7 @@ const SubmitReport = () => {
   const [reportTypes, setReportTypes] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [isLoadingTypes, setIsLoadingTypes] = useState(true);
+  const deflection = useDeflectionExits(user?.organization_slug);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -44,7 +42,7 @@ const SubmitReport = () => {
         try {
           // The picker shows every active type as a card, so pull the full set
           // rather than a single page of the API's envelope.
-          const response = await reportTypesAPI.getReportTypes(true);
+          const response = await reportTypesAPI.getReportTypes(true, false);
           setReportTypes(normalizeListResponse(response).items);
         } catch (error) {
           console.error('Failed to fetch report types:', error);
@@ -132,82 +130,14 @@ const SubmitReport = () => {
         </div>
       </div>
 
-      {/* Report Type Selection */}
-      <div>
-        <h2 className="text-xl font-semibold text-ink mb-6">
-          Select Report Type
-        </h2>
-
-        {isLoadingTypes ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" aria-busy="true">
-            {[0, 1].map((i) => (
-              <div key={i} className="bg-surface rounded-xl border-2 border-line h-full p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <Skeleton.Text size="lg" className="mb-2 w-3/4" />
-                    <Skeleton.Lines lines={2} />
-                  </div>
-                  <Skeleton className="ml-2 h-5 w-5 rounded" />
-                </div>
-                <div className="flex items-center justify-between pt-4 border-t border-line-subtle">
-                  <Skeleton.Text size="xs" className="w-14" />
-                  <Skeleton.Text size="xs" className="w-20" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : reportTypes.length === 0 ? (
-          <Card>
-            <Alert variant="warning">
-              <div className="flex items-start">
-                <div>
-                  <p className="font-medium">No report types available</p>
-                  <p className="text-sm mt-1">Please check back later or contact support if this persists.</p>
-                </div>
-              </div>
-            </Alert>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {reportTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => handleTypeSelect(type.id)}
-                className="text-left group"
-              >
-                <div className="bg-surface rounded-xl border-2 border-line hover:border-line-accent transition-all duration-200 h-full p-6 hover:shadow-lg group-hover:-translate-y-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-ink text-lg mb-2 group-hover:text-accent-fg transition-colors">
-                        {type.name}
-                      </h3>
-                      <p className="text-sm text-ink-muted line-clamp-3">
-                        {type.description || 'Submit a report for this category'}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-ink-subtle group-hover:text-accent-fg group-hover:translate-x-1 transition-all shrink-0 ml-2" />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-line-subtle">
-                    {type.sections && type.sections.length > 0 ? (
-                      <span className="inline-flex items-center text-xs font-medium text-ink-muted">
-                        <FileText className="w-3.5 h-3.5 mr-1.5" />
-                        {type.sections.length} step{type.sections.length !== 1 ? 's' : ''}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-ink-subtle">Multi-step form</span>
-                    )}
-
-                    <span className="text-xs font-medium text-accent-fg group-hover:text-accent-fg">
-                      Start Report →
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Report type picker: deflection, then category, then type. */}
+      <ReportTypePicker
+        types={reportTypes}
+        loading={isLoadingTypes || deflection.loading}
+        onSelect={(type) => handleTypeSelect(type.id)}
+        exits={deflection.loading ? null : deflection.exits}
+        key={deflection.loading ? 'loading' : 'ready'}
+      />
     </div>
   );
 

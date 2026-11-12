@@ -5,7 +5,6 @@ import {
   Lock,
   FileText,
   AlertCircle,
-  ChevronRight,
   CheckCircle,
   Key,
   Eye,
@@ -14,12 +13,13 @@ import {
   Download,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
-import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Input from '../../components/ui/Input';
 import MultiStepReportForm from '../../components/forms/MultiStepReportForm';
 import { reportTypesAPI } from '../../api/reportTypes';
+import ReportTypePicker, { DeflectionModal } from '../../components/forms/ReportTypePicker';
+import { useDeflectionExits } from '../../hooks/useDeflectionExits';
 import { reportsAPI } from '../../api/reports';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../store/authStore';
@@ -70,8 +70,13 @@ const SubmitAnonymous = () => {
   const { user } = useAuthStore();
   /** Prefer session org when logged in; otherwise use slug from /:orgSlug/... */
   const effectiveOrgSlug = user?.organization_slug ?? orgSlug;
+  const deflection = useDeflectionExits(effectiveOrgSlug);
+  // The deflection popup opens once, on arrival, before credentials exist, so
+  // a complaint or an HR request never creates an anonymous report it doesn't need.
+  const [deflectionClosed, setDeflectionClosed] = useState(false);
   const navigate = useNavigate();
   const [stage, setStage] = useState('init'); // 'init', 'selectType', 'form'
+  const deflecting = stage === 'init' && !deflection.loading && deflection.exits.length > 0 && !deflectionClosed;
   const [reportTypes, setReportTypes] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -105,7 +110,7 @@ const SubmitAnonymous = () => {
     const fetchReportTypes = async () => {
       setIsLoadingTypes(true);
       try {
-        const types = await reportTypesAPI.getReportTypes(true, true, effectiveOrgSlug); // Pass org slug
+        const types = await reportTypesAPI.getReportTypes(true, false, effectiveOrgSlug); // Pass org slug
         setReportTypes(types || []);
       } catch (error) {
         console.error('Failed to fetch report types:', error);
@@ -361,6 +366,7 @@ Generated on: ${new Date().toLocaleString()}
         </p>
       </div>
 
+
       <Card>
         <div
           className="flex items-start gap-3 pb-5 mb-5 border-b border-line-subtle"
@@ -537,62 +543,15 @@ Generated on: ${new Date().toLocaleString()}
               .
             </p>
           )}
-          {isLoadingTypes ? (
-            // Skeletons rather than a bare string — keeps the layout from jumping
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[1, 2].map((i) => (
-                <Card key={i} className="h-full flex flex-col" aria-hidden="true">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <Skeleton.Text size="base" className="w-3/4" />
-                    <Skeleton className="h-5 w-5 shrink-0 rounded" />
-                  </div>
-                  <div className="mb-4">
-                    <span className="flex h-[1.625em] items-center text-sm"><Skeleton className="h-3 w-full" /></span>
-                    <span className="flex h-[1.625em] items-center text-sm"><Skeleton className="h-3 w-2/3" /></span>
-                  </div>
-                  <Skeleton className="mt-auto h-6.5 w-16 rounded-full" />
-                </Card>
-              ))}
-            </div>
-          ) : reportTypes.length === 0 ? (
-            <Card>
-              <Alert variant="warning">
-                <p>No report types available at this time. Please try again later.</p>
-              </Alert>
-            </Card>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {reportTypes.map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => handleTypeSelect(type.id)}
-                  disabled={isLoading}
-                  className="text-left h-full group disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus rounded-xl"
-                >
-                  <Card className="h-full flex flex-col transition-[border-color,box-shadow,transform] duration-200 ease-out-xp group-hover:border-line-accent group-hover:shadow-md group-hover:-translate-y-0.5">
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <h3 className="font-semibold text-ink text-base leading-snug">
-                        {type.name}
-                      </h3>
-                      <ChevronRight className="w-5 h-5 text-ink-subtle shrink-0 transition-colors group-hover:text-accent-fg" />
-                    </div>
-
-                    <p className="text-sm text-ink-muted leading-relaxed mb-4">
-                      {type.description || 'No description available'}
-                    </p>
-
-                    {type.sections && (
-                      <div className="mt-auto">
-                        <span className="inline-flex items-center rounded-full border border-line bg-subtle px-2.5 py-1 text-[11px] font-medium text-ink-muted">
-                          {type.sections.length} step{type.sections.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-                  </Card>
-                </button>
-              ))}
-            </div>
-          )}
+          <ReportTypePicker
+            types={reportTypes}
+            loading={isLoadingTypes}
+            onSelect={(type) => handleTypeSelect(type.id)}
+            disabled={isLoading}
+            wide={false}
+            exits={deflection.exits}
+            openDeflection={false}
+          />
         </div>
 
         {/* Sidebar Info */}
@@ -662,7 +621,8 @@ Generated on: ${new Date().toLocaleString()}
       {/* Keyed on the stage so switching screens remounts the tour and the new
           stage's steps get their own auto-start rather than reusing the last
           stage's `seen` flag. */}
-      {TOUR_KEYS[stage] && (
+      {/* The tour waits for the deflection popup, so the two never overlap. */}
+      {TOUR_KEYS[stage] && !(stage === 'init' && (deflection.loading || deflecting)) && (
         <DashboardTour
           key={stage}
           ref={tourRef}
@@ -672,6 +632,7 @@ Generated on: ${new Date().toLocaleString()}
       )}
 
       {stage === 'init' && renderInitStage()}
+      <DeflectionModal isOpen={deflecting} onClose={() => setDeflectionClosed(true)} exits={deflection.exits} />
       {stage === 'selectType' && renderSelectTypeStage()}
       {stage === 'form' && selectedType && credentials && (
         <MultiStepReportForm
