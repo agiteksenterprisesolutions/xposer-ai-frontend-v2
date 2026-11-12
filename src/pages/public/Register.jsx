@@ -195,9 +195,9 @@ const Register = () => {
       {checked ? (
         <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
       ) : (
-        <XCircle className="w-4 h-4 text-gray-300 mr-2" />
+        <XCircle className="w-4 h-4 text-ink-subtle mr-2" />
       )}
-      <span className={`text-sm ${checked ? 'text-green-600' : 'text-gray-500'}`}>
+      <span className={`text-sm ${checked ? 'text-green-600' : 'text-ink-muted'}`}>
         {label}
       </span>
     </div>
@@ -208,11 +208,11 @@ const Register = () => {
       <div className="max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-            <Shield className="h-8 w-8 text-primary-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-accent-soft rounded-full mb-4">
+            <Shield className="h-8 w-8 text-link" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Create Your Account</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-ink">Create Your Account</h1>
+          <p className="text-ink-muted mt-2">
             Join our secure Xposer AI reporting platform
           </p>
         </div>
@@ -230,6 +230,7 @@ const Register = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Full Name"
+                autoComplete="name"
                 startAdornment={<User className="w-4 h-4" />}
                 {...registerForm('full_name')}
                 error={errors.full_name?.message}
@@ -238,6 +239,7 @@ const Register = () => {
 
               <Input
                 label="Username"
+                autoComplete="username"
                 startAdornment={<User className="w-4 h-4" />}
                 {...registerForm('username')}
                 error={errors.username?.message}
@@ -249,6 +251,7 @@ const Register = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Email Address"
+                autoComplete="email"
                 type="email"
                 startAdornment={<Mail className="w-4 h-4" />}
                 {...registerForm('email')}
@@ -258,6 +261,7 @@ const Register = () => {
 
               <Input
                 label="Phone Number"
+                autoComplete="tel"
                 type="tel"
                 startAdornment={<Phone className="w-4 h-4" />}
                 {...registerForm('phone')}
@@ -275,6 +279,7 @@ const Register = () => {
 
               <Input
                 label="Position"
+                autoComplete="organization-title"
                 startAdornment={<Briefcase className="w-4 h-4" />}
                 {...registerForm('position')}
                 error={errors.position?.message}
@@ -284,6 +289,7 @@ const Register = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className='relative'>
                 <Input
+ autoComplete="new-password"
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
                   {...registerForm('password')}
@@ -293,7 +299,7 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 translate-y-1 right-3 transform  text-gray-500 hover:text-gray-700"
+                  className="absolute top-1/2 translate-y-1 right-3 transform  text-ink-muted hover:text-ink"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4 cursor-pointer" /> : <Eye className="w-4 h-4 cursor-pointer" />}
                 </button>
@@ -301,6 +307,7 @@ const Register = () => {
 
               <div className='relative'>
                 <Input
+ autoComplete="new-password"
                   label="Confirm Password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   {...registerForm('confirm_password')}
@@ -310,7 +317,7 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute top-1/2 translate-y-1 right-3 transform  text-gray-500 hover:text-gray-700"
+                  className="absolute top-1/2 translate-y-1 right-3 transform  text-ink-muted hover:text-ink"
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4 cursor-pointer" /> : <Eye className="w-4 h-4 cursor-pointer" />}
                 </button>
@@ -323,15 +330,15 @@ const Register = () => {
                 <input
                   type="checkbox"
                   {...registerForm('agree_to_terms')}
-                  className="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  className="mt-1 rounded border-line text-link focus:ring-accent-ring"
                 />
-                <span className="ml-2 text-sm text-gray-700">
+                <span className="ml-2 text-sm text-ink-secondary">
                   I agree to the{' '}
-                  <Link to="/terms" className="text-primary-600 hover:text-primary-700 font-medium">
+                  <Link to="/terms" className="text-link hover:text-link-hover font-medium">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link to="/privacy" className="text-primary-600 hover:text-primary-700 font-medium">
+                  <Link to="/privacy" className="text-link hover:text-link-hover font-medium">
                     Privacy Policy
                   </Link>
                   . I understand that this platform is for reporting workplace concerns only.
@@ -367,25 +374,21 @@ const Register = () => {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+              <div className="w-full border-t border-line"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Already have an account?</span>
+              <span className="px-2 bg-surface text-ink-muted">Already have an account?</span>
             </div>
           </div>
 
           <div className="space-y-3">
-            <Link to="/login">
-              <Button variant="secondary" className="w-full">
+            <Button variant="secondary" className="w-full" to="/login">
                 Sign In to Existing Account
               </Button>
-            </Link>
 
-            <Link to="/submit-anonymous">
-              <Button variant="ghost" className="w-full mt-2" >
+            <Button variant="ghost" className="w-full mt-2" to="/submit-anonymous">
                 Or submit anonymously without account
               </Button>
-            </Link>
           </div>
         </Card>
 

@@ -34,7 +34,7 @@ export const CaseNotices = ({ report }) => {
           <p>
             <span className="font-semibold">Regulator: </span>
             {report.regulatory_trigger}
-            <span className="mt-0.5 block text-xs opacity-80">A reminder for whoever handles this case. Nobody has been notified.</span>
+            <span className="mt-0.5 block text-xs">A reminder for whoever handles this case. Nobody has been notified.</span>
           </p>
         </div>
       )}

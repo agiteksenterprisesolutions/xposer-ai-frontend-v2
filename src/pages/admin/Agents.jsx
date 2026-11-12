@@ -849,11 +849,9 @@ const Agents = () => {
           <Button variant="outline" onClick={loadAll} disabled={loading} aria-label="Refresh" title="Refresh">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
-          <Link to={paths.workflows}>
-            <Button variant="outline" startIcon={GitBranch}>
+          <Button variant="outline" startIcon={GitBranch} to={paths.workflows}>
               Workflows
             </Button>
-          </Link>
           {canManage && (
             <Button startIcon={Plus} onClick={() => setEditing({ agent: null })} disabled={!capabilityCatalog}>
               New agent

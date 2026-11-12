@@ -81,19 +81,15 @@ const ProblemAction = ({ code, agentsPath, canManage, onAllowAttachments }) => {
     // One ships with every organization, so this means it was deleted.
     case 'no_summarizer_agent':
       return (
-        <Link to={`${agentsPath}?new=summarizer`}>
-          <Button variant="outline" size="small">
+        <Button variant="outline" size="small" to={`${agentsPath}?new=summarizer`}>
             Recreate the summarizer
           </Button>
-        </Link>
       );
     case 'summarizer_inactive':
       return (
-        <Link to={`${agentsPath}?agent=summarizer`}>
-          <Button variant="outline" size="small">
+        <Button variant="outline" size="small" to={`${agentsPath}?agent=summarizer`}>
             Open the agent
           </Button>
-        </Link>
       );
     case 'cannot_read_attachments':
       return (

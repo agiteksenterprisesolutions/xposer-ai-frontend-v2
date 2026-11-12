@@ -26,15 +26,15 @@ const CookiePolicy = () => {
   const lastUpdated = 'January 30, 2026';
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-subtle py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-100 rounded-full mx-auto mb-4">
-            <Cookie className="w-10 h-10 text-primary-600" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-accent-soft rounded-full mx-auto mb-4">
+            <Cookie className="w-10 h-10 text-link" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Cookie Policy</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold text-ink mb-3">Cookie Policy</h1>
+          <p className="text-ink-muted max-w-2xl mx-auto">
             This Cookie Policy explains how we use cookies and similar technologies to recognize you when you visit our whistleblowing platform.
           </p>
         </div>
@@ -43,25 +43,25 @@ const CookiePolicy = () => {
           {/* Sidebar / TOC */}
           <aside className="lg:col-span-1">
             <Card padding="small" className="sticky top-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">On This Page</h3>
-              <nav className="text-sm text-gray-600 space-y-2">
-                <a href="#what-are-cookies" className="block hover:text-primary-600">What are cookies</a>
-                <a href="#why-we-use" className="block hover:text-primary-600">Why we use cookies</a>
-                <a href="#types" className="block hover:text-primary-600">Types of cookies</a>
-                <a href="#third-party" className="block hover:text-primary-600">Third-party cookies</a>
-                <a href="#manage" className="block hover:text-primary-600">Manage cookies</a>
-                <a href="#updates" className="block hover:text-primary-600">Policy updates</a>
-                <a href="#contact" className="block hover:text-primary-600">Contact</a>
+              <h3 className="text-sm font-semibold text-ink mb-3">On This Page</h3>
+              <nav className="text-sm text-ink-muted space-y-2">
+                <a href="#what-are-cookies" className="block py-0.5 hover:text-link-hover">What are cookies</a>
+                <a href="#why-we-use" className="block py-0.5 hover:text-link-hover">Why we use cookies</a>
+                <a href="#types" className="block py-0.5 hover:text-link-hover">Types of cookies</a>
+                <a href="#third-party" className="block py-0.5 hover:text-link-hover">Third-party cookies</a>
+                <a href="#manage" className="block py-0.5 hover:text-link-hover">Manage cookies</a>
+                <a href="#updates" className="block py-0.5 hover:text-link-hover">Policy updates</a>
+                <a href="#contact" className="block py-0.5 hover:text-link-hover">Contact</a>
               </nav>
             </Card>
 
             <Card padding="small" className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Links</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3">Quick Links</h3>
               <div className="flex flex-col space-y-2">
-                <Link to="/privacy" className="text-sm text-primary-600 hover:text-primary-700">Privacy Policy</Link>
-                <Link to="/terms" className="text-sm text-primary-600 hover:text-primary-700">Terms of Service</Link>
-                <Link to="/submit-anonymous" className="text-sm text-primary-600 hover:text-primary-700">Submit Anonymous Report</Link>
-                <Link to="/track-report" className="text-sm text-primary-600 hover:text-primary-700">Track a Report</Link>
+                <Link to="/privacy" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Privacy Policy</Link>
+                <Link to="/terms" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Terms of Service</Link>
+                <Link to="/submit-anonymous" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Submit Anonymous Report</Link>
+                <Link to="/track-report" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Track a Report</Link>
               </div>
             </Card>
           </aside>
@@ -80,10 +80,10 @@ const CookiePolicy = () => {
             <article id="what-are-cookies">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">What are cookies?</h2>
+                  <Info className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">What are cookies?</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>Cookies are small text files that are placed on your computer or mobile device when you visit a website. They are widely used to make websites work more efficiently and provide information to the site owners.</p>
                   <p>Cookies can be "persistent" or "session" cookies. Persistent cookies remain on your device after you close your browser, while session cookies are deleted when you close your browser.</p>
                 </div>
@@ -93,10 +93,10 @@ const CookiePolicy = () => {
             <article id="why-we-use">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Why we use cookies</h2>
+                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Why we use cookies</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We use cookies for several important reasons:</p>
                   <ul className="list-disc list-inside space-y-2">
                     <li><strong>Essential functionality:</strong> To enable core features like secure login, session management, and report tracking.</li>
@@ -112,12 +112,12 @@ const CookiePolicy = () => {
             <article id="types">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Settings className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Types of cookies we use</h2>
+                  <Settings className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Types of cookies we use</h2>
                 </div>
-                <div className="space-y-4 text-gray-700 text-sm">
+                <div className="space-y-4 text-ink-secondary text-sm">
                   <div className="border-l-4 border-green-500 pl-4 py-2">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <h3 className="font-semibold text-ink mb-2 flex items-center">
                       <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
                       Essential Cookies
                     </h3>
@@ -130,9 +130,9 @@ const CookiePolicy = () => {
                     </ul>
                   </div>
 
-                  <div className="border-l-4 border-blue-500 pl-4 py-2">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                      <BarChart className="w-4 h-4 mr-2 text-blue-500" />
+                  <div className="border-l-4 border-line-accent pl-4 py-2">
+                    <h3 className="font-semibold text-ink mb-2 flex items-center">
+                      <BarChart className="w-4 h-4 mr-2 text-link" />
                       Performance & Analytics Cookies
                     </h3>
                     <p className="mb-2">These cookies help us understand how visitors interact with our platform by collecting and reporting information anonymously. This helps us improve the way our website works.</p>
@@ -145,7 +145,7 @@ const CookiePolicy = () => {
                   </div>
 
                   <div className="border-l-4 border-purple-500 pl-4 py-2">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <h3 className="font-semibold text-ink mb-2 flex items-center">
                       <Settings className="w-4 h-4 mr-2 text-purple-500" />
                       Functional Cookies
                     </h3>
@@ -159,7 +159,7 @@ const CookiePolicy = () => {
                   </div>
 
                   <div className="border-l-4 border-orange-500 pl-4 py-2">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <h3 className="font-semibold text-ink mb-2 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-2 text-orange-500" />
                       Targeting & Advertising Cookies
                     </h3>
@@ -172,10 +172,10 @@ const CookiePolicy = () => {
             <article id="third-party">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Shield className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Third-party cookies</h2>
+                  <Shield className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Third-party cookies</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>In addition to our own cookies, we may use various third-party cookies to report usage statistics and deliver relevant content. These third parties include:</p>
                   <ul className="list-disc list-inside space-y-2">
                     <li><strong>Google Analytics:</strong> To analyze how users interact with our platform and improve our services.</li>
@@ -190,14 +190,14 @@ const CookiePolicy = () => {
             <article id="manage">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Settings className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">How to manage cookies</h2>
+                  <Settings className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">How to manage cookies</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>You have the right to decide whether to accept or reject cookies. You can exercise your cookie preferences by:</p>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-3">
-                    <h4 className="font-semibold text-gray-900 mb-2">Browser Settings</h4>
+                  <div className="bg-subtle border border-line rounded-lg p-4 mt-3">
+                    <h4 className="font-semibold text-ink mb-2">Browser Settings</h4>
                     <p className="mb-2">Most web browsers allow you to control cookies through their settings. You can:</p>
                     <ul className="list-disc list-inside space-y-1 ml-2">
                       <li>View what cookies are stored and delete them individually</li>
@@ -208,8 +208,8 @@ const CookiePolicy = () => {
                     </ul>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">Browser-Specific Instructions</h4>
+                  <div className="bg-subtle border border-line rounded-lg p-4">
+                    <h4 className="font-semibold text-ink mb-2">Browser-Specific Instructions</h4>
                     <ul className="list-disc list-inside space-y-1">
                       <li><strong>Chrome:</strong> Settings → Privacy and security → Cookies and other site data</li>
                       <li><strong>Firefox:</strong> Options → Privacy & Security → Cookies and Site Data</li>
@@ -228,11 +228,11 @@ const CookiePolicy = () => {
                   </Alert>
 
                   <div className="mt-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">Opt-out Links</h4>
+                    <h4 className="font-semibold text-ink mb-2">Opt-out Links</h4>
                     <p className="mb-2">You can also opt out of certain third-party cookies:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Google Analytics: <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">Google Analytics Opt-out Browser Add-on</a></li>
-                      <li>Network Advertising Initiative: <a href="http://www.networkadvertising.org/choices/" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">NAI Opt-out Tool</a></li>
+                      <li>Google Analytics: <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">Google Analytics Opt-out Browser Add-on</a></li>
+                      <li>Network Advertising Initiative: <a href="http://www.networkadvertising.org/choices/" target="_blank" rel="noopener noreferrer" className="text-link hover:underline">NAI Opt-out Tool</a></li>
                     </ul>
                   </div>
                 </div>
@@ -242,10 +242,10 @@ const CookiePolicy = () => {
             <article id="updates">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Changes to this Cookie Policy</h2>
+                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Changes to this Cookie Policy</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We may update this Cookie Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes by posting the new Cookie Policy on this page and updating the "Last Updated" date.</p>
                   <p>We encourage you to review this Cookie Policy periodically to stay informed about how we use cookies.</p>
                 </div>
@@ -255,16 +255,16 @@ const CookiePolicy = () => {
             <article id="contact">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Contact us</h2>
+                  <Info className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Contact us</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>If you have questions or concerns about our use of cookies or this Cookie Policy, please contact us:</p>
                   <div className="mt-2">
-                    <p className="text-sm"><strong>Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary-600 hover:underline">{SUPPORT_EMAIL}</a></p>
-                    <p className="text-sm"><strong>Support:</strong> <Link to="/help" className="text-primary-600 hover:underline">Help Center</Link></p>
+                    <p className="text-sm"><strong>Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-link hover:underline">{SUPPORT_EMAIL}</a></p>
+                    <p className="text-sm"><strong>Support:</strong> <Link to="/help" className="text-link hover:underline">Help Center</Link></p>
                   </div>
-                  <p className="mt-3">For more information about how we handle your personal data, please see our <Link to="/privacy" className="text-primary-600 hover:underline">Privacy Policy</Link>.</p>
+                  <p className="mt-3">For more information about how we handle your personal data, please see our <Link to="/privacy" className="text-link hover:underline">Privacy Policy</Link>.</p>
                 </div>
               </Card>
             </article>
@@ -272,28 +272,24 @@ const CookiePolicy = () => {
             <Card>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Last updated: <span className="font-medium text-gray-900">{lastUpdated}</span></p>
-                  <p className="text-sm text-gray-600 mt-1">For more details, see our <Link to="/privacy" className="text-primary-600 hover:underline">Privacy Policy</Link> and <Link to="/terms" className="text-primary-600 hover:underline">Terms of Service</Link>.</p>
+                  <p className="text-sm text-ink-muted">Last updated: <span className="font-medium text-ink">{lastUpdated}</span></p>
+                  <p className="text-sm text-ink-muted mt-1">For more details, see our <Link to="/privacy" className="text-link hover:underline">Privacy Policy</Link> and <Link to="/terms" className="text-link hover:underline">Terms of Service</Link>.</p>
                 </div>
 
                 <div className="hidden sm:block shrink-0">
-                  <Link to="/submit-anonymous">
-                    <Button variant="secondary" size="medium" className="cursor-pointer">
+                  <Button variant="secondary" size="medium" className="cursor-pointer" to="/submit-anonymous">
                       Submit a Report
                       <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
-                  </Link>
                 </div>
               </div>
             </Card>
 
             {/* Mobile CTA */}
             <div className="block sm:hidden">
-              <Link to="/submit-anonymous">
-                <Button variant="secondary" size="large" fullWidth>
+              <Button variant="secondary" size="large" fullWidth to="/submit-anonymous">
                   Submit a Report
                 </Button>
-              </Link>
             </div>
           </main>
         </div>

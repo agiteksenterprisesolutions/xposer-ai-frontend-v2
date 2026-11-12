@@ -171,8 +171,8 @@ const ComplianceAnalytics = () => {
           <Card.Content>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-ink-secondary">Start Date</label>
-                <input
+                <label htmlFor="analytics-field-1" className="text-sm font-medium text-ink-secondary">Start Date</label>
+                <input id="analytics-field-1"
                   type="date"
                   className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
                   value={filters.start_date}
@@ -181,8 +181,8 @@ const ComplianceAnalytics = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-ink-secondary">End Date</label>
-                <input
+                <label htmlFor="analytics-field-2" className="text-sm font-medium text-ink-secondary">End Date</label>
+                <input id="analytics-field-2"
                   type="date"
                   className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
                   value={filters.end_date}
@@ -192,8 +192,8 @@ const ComplianceAnalytics = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-ink-secondary">Interval</label>
-                <select
+                <label htmlFor="analytics-field-3" className="text-sm font-medium text-ink-secondary">Interval</label>
+                <select id="analytics-field-3"
                   className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
                   value={filters.interval}
                   onChange={(e) => setFilters((prev) => ({ ...prev, interval: e.target.value }))}
@@ -291,7 +291,9 @@ const ComplianceAnalytics = () => {
               <div className="min-w-0">
                 {/* Percentage radii so the pie scales with the container, and a
                     shorter chart on phones. */}
-                <div className="w-full h-56 sm:h-64 lg:h-72">
+                <div className="w-full h-56 sm:h-64 lg:h-72"
+                  role="img"
+                  aria-label={`Category distribution, pie chart: ${reportTypeData.map((t) => `${t.name} ${t.total}`).join(', ')}`}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                       <Pie

@@ -240,23 +240,19 @@ const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => 
       <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted">
         <div className="flex items-center gap-1.5">
           <dt className="sr-only">Steps</dt>
-          <Bot className="h-3.5 w-3.5 text-ink-subtle" />
-          <dd>{plural(stages.length, 'step')}</dd>
+          <dd className="flex items-center gap-1.5"><Bot className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{plural(stages.length, 'step')}</dd>
         </div>
         <div className="flex items-center gap-1.5">
           <dt className="sr-only">Handled by people</dt>
-          <UserRound className="h-3.5 w-3.5 text-ink-subtle" />
-          <dd>{people} by people</dd>
+          <dd className="flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{people} by people</dd>
         </div>
         <div className="flex items-center gap-1.5">
           <dt className="sr-only">Branches</dt>
-          <GitBranch className="h-3.5 w-3.5 text-ink-subtle" />
-          <dd>{plural(branches, 'branch', 'branches')}</dd>
+          <dd className="flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{plural(branches, 'branch', 'branches')}</dd>
         </div>
         <div className="flex items-center gap-1.5">
           <dt className="sr-only">Visit limit</dt>
-          <RefreshCw className="h-3.5 w-3.5 text-ink-subtle" />
-          <dd>up to {workflow.max_stage_visits ?? 3} visits</dd>
+          <dd className="flex items-center gap-1.5"><RefreshCw className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />up to {workflow.max_stage_visits ?? 3} visits</dd>
         </div>
       </dl>
 

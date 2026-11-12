@@ -537,7 +537,7 @@ const ReportDetails = () => {
                 </div>
 
                 {/* <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-500">Messages</span>
+                  <span className="text-sm font-medium text-ink-muted">Messages</span>
                   <Badge>{report.message_count || 0} messages</Badge>
                 </div> */}
               </div>

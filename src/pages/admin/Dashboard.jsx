@@ -279,7 +279,6 @@ const AdminDashboard = () => {
             padding="small"
             role="button"
             tabIndex={0}
-            aria-label={`${stat.title}: ${stat.value}. Open the filtered list.`}
             onClick={() => navigate(stat.to)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -295,15 +294,16 @@ const AdminDashboard = () => {
                 {loading ? (
                   <Skeleton.Text size="2xl" className="mt-1 w-12 sm:h-9" />
                 ) : (
-                  <h3 className="text-2xl sm:text-3xl font-bold text-ink mt-1 tabular-nums tracking-[-0.02em]">
+                  <p className="text-2xl sm:text-3xl font-bold text-ink mt-1 tabular-nums tracking-[-0.02em]">
                     {stat.value}
-                  </h3>
+                  </p>
                 )}
               </div>
               <span className={`inline-flex items-center justify-center h-9 w-9 shrink-0 rounded-lg ${tone(stat.color).soft} ${tone(stat.color).fg}`}>
-                <stat.icon className="h-4.5 w-4.5" />
+                <stat.icon className="h-4.5 w-4.5" aria-hidden="true" />
               </span>
             </div>
+            <span className="sr-only">Open the filtered list.</span>
             {/* <div className="flex items-baseline gap-1.5 mt-3">
               <span className={`text-xs font-semibold tabular-nums ${stat.trend === 'up' ? 'text-success-fg'
                   : stat.trend === 'down' ? 'text-danger-fg'
@@ -323,8 +323,9 @@ const AdminDashboard = () => {
         <Card.Content>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
             <div className="space-y-1">
-              <label className="text-sm font-medium text-ink-secondary">Start Date</label>
+              <label htmlFor="dash-start-date" className="text-sm font-medium text-ink-secondary">Start Date</label>
               <input
+                id="dash-start-date"
                 type="date"
                 className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
                 value={draftFilters.start_date}
@@ -333,8 +334,9 @@ const AdminDashboard = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-ink-secondary">End Date</label>
+              <label htmlFor="dash-end-date" className="text-sm font-medium text-ink-secondary">End Date</label>
               <input
+                id="dash-end-date"
                 type="date"
                 className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
                 value={draftFilters.end_date}
@@ -344,8 +346,9 @@ const AdminDashboard = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-ink-secondary">Interval</label>
+              <label htmlFor="dash-interval" className="text-sm font-medium text-ink-secondary">Interval</label>
               <select
+                id="dash-interval"
                 className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
                 value={draftFilters.interval}
                 onChange={(e) => setDraftFilters((prev) => ({ ...prev, interval: e.target.value }))}
@@ -440,7 +443,9 @@ const AdminDashboard = () => {
               <div className="min-w-0">
                 {/* Percentage radii so the pie scales with the container, and a
                     shorter chart on phones. */}
-                <div className="w-full h-56 sm:h-64 lg:h-72">
+                <div className="w-full h-56 sm:h-64 lg:h-72"
+                  role="img"
+                  aria-label={`Category distribution, pie chart: ${reportTypeData.map((t) => `${t.name} ${t.total}`).join(', ')}`}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                       <Pie

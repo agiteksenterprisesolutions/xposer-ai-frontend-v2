@@ -86,7 +86,7 @@ const Table = ({ children, columns, data, onRowClick, getSortProps, className = 
                   data.map((row, rowIdx) => (
                     <TableRow
                       key={row.id || rowIdx}
-                      onClick={() => onRowClick && onRowClick(row)}
+                      onClick={onRowClick ? () => onRowClick(row) : undefined}
                       className={onRowClick ? 'cursor-pointer' : ''}
                     >
                       {columns.map((col, colIdx) => (
@@ -179,19 +179,11 @@ const Table = ({ children, columns, data, onRowClick, getSortProps, className = 
                   <div
                     key={row.key ?? `row-${itemIdx}`}
                     onClick={onClick}
-                    role={onClick ? 'button' : undefined}
+                    // No role="button": a card can hold its own buttons and links,
+                    // and a button may not contain them (WCAG 4.1.2).
                     tabIndex={onClick ? 0 : undefined}
-                    onKeyDown={
-                      onClick
-                        ? (event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            onClick(event);
-                          }
-                        }
-                        : undefined
-                    }
-                    className={`px-4 py-3 bg-surface transition-colors ${onClick ? 'cursor-pointer active:bg-hover' : ''} ${rowClassName}`}
+                    onKeyDown={onClick ? rowKeyHandler(onClick) : undefined}
+                    className={`px-4 py-3 bg-surface transition-colors ${onClick ? `cursor-pointer active:bg-hover ${ROW_FOCUS}` : ''} ${rowClassName}`}
                   >
                     {mobile ?? cells.map((cell, cellIdx) => {
                       const label = compound.headers[cellIdx];
@@ -245,9 +237,24 @@ const TableFooter = ({ children, className = '', ...props }) => (
 
 // `mobile` is read by Table for the phone layout, never rendered on the <tr>.
 // eslint-disable-next-line no-unused-vars
-const TableRow = ({ children, className = '', hover = true, mobile, ...props }) => (
+// A clickable row opens with Enter or Space too (WCAG 2.1.1). Only when the row
+// itself has focus: a button or link inside the row keeps its own keys.
+export const rowKeyHandler = (onClick) => (event) => {
+  if (event.target !== event.currentTarget) return;
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    onClick(event);
+  }
+};
+
+const ROW_FOCUS = 'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus';
+
+const TableRow = ({ children, className = '', hover = true, mobile, onClick, ...props }) => (
   <tr
-    className={`border-b border-line-subtle last:border-0 transition-colors duration-150 ${hover ? 'hover:bg-hover' : ''} ${className}`}
+    className={`border-b border-line-subtle last:border-0 transition-colors duration-150 ${hover ? 'hover:bg-hover' : ''} ${onClick ? ROW_FOCUS : ''} ${className}`}
+    onClick={onClick}
+    tabIndex={onClick ? 0 : undefined}
+    onKeyDown={onClick ? rowKeyHandler(onClick) : undefined}
     {...props}
   >
     {children}
@@ -264,16 +271,17 @@ const TableHead = ({
 }) => (
   <th
     className={`px-4 py-3 sm:px-5 text-left text-[10px] font-semibold text-ink-subtle uppercase tracking-wider whitespace-nowrap ${className}`}
+    aria-sort={sortable ? (sortDirection === 'asc' ? 'ascending' : sortDirection === 'desc' ? 'descending' : 'none') : undefined}
     {...props}
   >
     {sortable ? (
       <button
         type="button"
-        className="flex items-center gap-1.5 uppercase tracking-wider transition-colors hover:text-ink focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="flex min-h-[24px] items-center gap-1.5 uppercase tracking-wider transition-colors hover:text-ink focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         onClick={onSort}
       >
         <span>{children}</span>
-        <span className="flex flex-col">
+        <span className="flex flex-col" aria-hidden="true">
           <ChevronUp
             className={`w-3 h-3 ${sortDirection === 'asc' ? 'text-accent-fg' : 'text-ink-subtle'}`}
           />

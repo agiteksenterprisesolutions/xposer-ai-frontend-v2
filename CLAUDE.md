@@ -60,3 +60,30 @@ To get the panel's context, read `../xposer-superadmin/CLAUDE.md` and its
 - **Live backends:** `api.xposer.ai` is shared with real demo tenants. Reading
   is fine. Ask before creating, changing or deleting data there.
 - **Git:** the remote is `XPOSER-AI-FRONTEND-V2`. Commit only when asked.
+
+## Accessibility (WCAG 2.2 AA)
+
+The app passes WCAG 2.2 AA on the automated checks (axe-core) and a keyboard
+pass. Keep it there:
+
+- **Colours:** use the theme tokens (`text-ink-*`, `text-link`, `bg-subtle`, …),
+  never fixed Tailwind greys or blues; those fail contrast in dark mode.
+  `text-ink-subtle` is the lightest colour allowed for text.
+- **Dialogs:** use `components/ui/Modal` (or `layout/Modal`). A hand-built
+  overlay must call `useDialogFocus(ref, isOpen)` (`src/hooks/useDialogFocus.js`)
+  and carry `role="dialog" aria-modal="true"` and a label.
+- **Links that look like buttons:** `<Button to="/path">`, never a `<Button>`
+  inside a `<Link>`.
+- **Clickable rows:** pass `onClick` to `Table.Row`; it is keyboard-operable.
+  Don't put `onClick` on a plain `div`/`tr` yourself.
+- **Fields:** every input, select and textarea needs a label (the shared
+  `Input`/`Select`/`Textarea` do this, and link their error text). Option
+  groups (radios, checkboxes) need `role="group"`/`"radiogroup"` with
+  `aria-labelledby`. Icon-only buttons need `aria-label`; click targets are at
+  least 24×24 px.
+- **Personal data fields** (the user's own name, email, phone, password) get
+  `autoComplete`. Fields about someone else don't.
+- **Arabic text** gets `lang="ar" dir="rtl"`.
+- **Page structure:** layouts render a skip link and `#main-content`;
+  `RouteAnnouncer` adds a hidden `<h1>` when a page has none and moves focus to
+  it on navigation.

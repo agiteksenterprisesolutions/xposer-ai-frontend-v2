@@ -896,8 +896,8 @@ const ReportTypeBuilder = ({
                 <div key={ruleIndex} className="bg-surface rounded-lg border border-line shadow-sm p-4">
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
                     <div className="sm:col-span-3 lg:col-span-2">
-                      <label className="block text-xs font-medium text-ink-secondary mb-1.5">Action</label>
-                      <select
+                      <label htmlFor="reporttypebuilder-field-1" className="block text-xs font-medium text-ink-secondary mb-1.5">Action</label>
+                      <select id="reporttypebuilder-field-1"
                         value={rule.condition_type || 'show'}
                         onChange={(e) => updateSectionConditionRule(sectionIndex, ruleIndex, 'condition_type', e.target.value)}
                         className="w-full text-sm border border-line-strong rounded-lg px-3 py-2 bg-surface focus:ring-2 focus:ring-accent-ring focus:border-line-accent outline-none transition-all"
@@ -909,8 +909,8 @@ const ReportTypeBuilder = ({
                     </div>
 
                     <div className="sm:col-span-5 lg:col-span-4">
-                      <label className="block text-xs font-medium text-ink-secondary mb-1.5">When Question</label>
-                      <select
+                      <label htmlFor="reporttypebuilder-field-2" className="block text-xs font-medium text-ink-secondary mb-1.5">When Question</label>
+                      <select id="reporttypebuilder-field-2"
                         value={rule.when_question}
                         onChange={(e) => updateSectionConditionRule(sectionIndex, ruleIndex, 'when_question', e.target.value)}
                         className="w-full text-sm border border-line-strong rounded-lg px-3 py-2 bg-surface focus:ring-2 focus:ring-accent-ring focus:border-line-accent outline-none transition-all"
@@ -925,8 +925,8 @@ const ReportTypeBuilder = ({
                     </div>
 
                     <div className="sm:col-span-4 lg:col-span-2">
-                      <label className="block text-xs font-medium text-ink-secondary mb-1.5">Operator</label>
-                      <select
+                      <label htmlFor="reporttypebuilder-field-3" className="block text-xs font-medium text-ink-secondary mb-1.5">Operator</label>
+                      <select id="reporttypebuilder-field-3"
                         value={rule.operator}
                         onChange={(e) => updateSectionConditionRule(sectionIndex, ruleIndex, 'operator', e.target.value)}
                         className="w-full text-sm border border-line-strong rounded-lg px-3 py-2 bg-surface focus:ring-2 focus:ring-accent-ring focus:border-line-accent outline-none transition-all"
@@ -1847,7 +1847,7 @@ const ReportTypeBuilder = ({
                     return (
                       <div key={question.id} className="space-y-2">
                         <div className="flex items-start justify-between">
-                          <label className="block text-sm font-medium text-ink">
+                          <label htmlFor={`preview-${question.id}`} className="block text-sm font-medium text-ink">
                             {question.label}
                             {question.required && <span className="text-danger-fg ml-1">*</span>}
                           </label>
@@ -1865,6 +1865,7 @@ const ReportTypeBuilder = ({
                         {normalizedType === 'text' && (
                           <input
                             type="text"
+                            id={`preview-${question.id}`}
                             className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
                             // placeholder={question.placeholder}
                             disabled
@@ -1873,6 +1874,7 @@ const ReportTypeBuilder = ({
 
                         {normalizedType === 'textarea' && (
                           <textarea
+                            id={`preview-${question.id}`}
                             className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
                             placeholder={question.placeholder}
                             rows={3}
@@ -1882,6 +1884,7 @@ const ReportTypeBuilder = ({
 
                         {normalizedType === 'select' && (
                           <select
+                            id={`preview-${question.id}`}
                             className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
                             disabled
                           >
@@ -1919,6 +1922,7 @@ const ReportTypeBuilder = ({
                         {normalizedType === 'number' && (
                           <input
                             type="number"
+                            id={`preview-${question.id}`}
                             className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
                             placeholder={question.placeholder}
                             maxLength={14}
@@ -1934,6 +1938,7 @@ const ReportTypeBuilder = ({
                         {normalizedType === 'email' && (
                           <input
                             type="email"
+                            id={`preview-${question.id}`}
                             className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
                             placeholder={question.placeholder || 'email@example.com'}
                             disabled
@@ -1943,6 +1948,7 @@ const ReportTypeBuilder = ({
                         {normalizedType === 'time' && (
                           <input
                             type="time"
+                            id={`preview-${question.id}`}
                             className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
                             disabled
                           />
@@ -1965,6 +1971,7 @@ const ReportTypeBuilder = ({
 
                         {normalizedType === 'date' && (
                           <input
+                            id={`preview-${question.id}`}
                             type="date"
                             className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
                             max={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split("T")[0]}
@@ -2007,7 +2014,7 @@ const ReportTypeBuilder = ({
             <button className="px-4 py-2 text-ink-secondary font-medium hover:bg-active rounded-lg transition-all" disabled>
               Cancel
             </button>
-            <button className="px-6 py-2 bg-sunken text-ink font-medium rounded-lg opacity-50 cursor-not-allowed">
+            <button type="button" disabled className="px-6 py-2 bg-sunken text-ink font-medium rounded-lg opacity-50 cursor-not-allowed">
               Submit Report
             </button>
           </div>

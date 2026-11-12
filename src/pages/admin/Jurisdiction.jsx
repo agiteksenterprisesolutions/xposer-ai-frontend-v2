@@ -246,7 +246,7 @@ const Jurisdiction = () => {
                   <span className="block space-y-1">
                     {pack.ai_notice.en && <span className="block whitespace-pre-wrap">{pack.ai_notice.en}</span>}
                     {pack.ai_notice.ar && (
-                      <span className="block whitespace-pre-wrap" dir="rtl">
+                      <span className="block whitespace-pre-wrap" dir="rtl" lang="ar">
                         {pack.ai_notice.ar}
                       </span>
                     )}

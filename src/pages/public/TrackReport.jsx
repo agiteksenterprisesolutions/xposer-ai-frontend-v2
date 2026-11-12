@@ -319,6 +319,7 @@ const TrackReport = () => {
             <form onSubmit={handleTrack} className="space-y-5">
               <div>
                 <Input
+ autoComplete="username"
                   label="Report Number"
                   value={reportNumber}
                   onChange={(e) => setReportNumber(e.target.value)}
@@ -348,6 +349,7 @@ const TrackReport = () => {
               ) : (
                 <div className="relative">
                   <Input
+ autoComplete="current-password"
                     label="Report Password"
                     type={showPassword ? "text" : "password"}
                     value={password}
@@ -358,7 +360,7 @@ const TrackReport = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-ink-subtle hover:text-ink transition-colors absolute right-3 top-1/2 transform -translate-y-1/2"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded text-ink-subtle hover:text-ink transition-colors absolute right-2 top-1/2 -translate-y-1/2"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
@@ -427,10 +429,10 @@ const TrackReport = () => {
                     </div>
                   </div>
                   <div className="ml-3">
-                    <h4 className="text-sm font-medium text-gray-900">
+                    <h4 className="text-sm font-medium text-ink">
                       View Messages
                     </h4>
-                    <p className="text-xs text-gray-600 mt-0.5">
+                    <p className="text-xs text-ink-muted mt-0.5">
                       Read updates from investigators
                     </p>
                   </div>
@@ -443,10 +445,10 @@ const TrackReport = () => {
                     </div>
                   </div>
                   <div className="ml-3">
-                    <h4 className="text-sm font-medium text-gray-900">
+                    <h4 className="text-sm font-medium text-ink">
                       Track Timeline
                     </h4>
-                    <p className="text-xs text-gray-600 mt-0.5">
+                    <p className="text-xs text-ink-muted mt-0.5">
                       See all activities and updates
                     </p>
                   </div>
@@ -459,10 +461,10 @@ const TrackReport = () => {
                     </div>
                   </div>
                   <div className="ml-3">
-                    <h4 className="text-sm font-medium text-gray-900">
+                    <h4 className="text-sm font-medium text-ink">
                       Stay Anonymous
                     </h4>
-                    <p className="text-xs text-gray-600 mt-0.5">
+                    <p className="text-xs text-ink-muted mt-0.5">
                       No personal information required
                     </p>
                   </div>
@@ -591,7 +593,7 @@ const TrackReport = () => {
                 and receive notifications,{" "}
                 <Link
                   to="/register"
-                  className="underline font-medium hover:text-primary-800"
+                  className="underline font-medium hover:text-link-hover"
                 >
                   create a free account
                 </Link>
@@ -699,12 +701,10 @@ const TrackReport = () => {
                       Create an account to send secure messages to investigators
                       and receive instant notifications.
                     </p>
-                    <Link to="/register">
-                      <Button variant="secondary" size="small">
+                    <Button variant="secondary" size="small" to="/register">
                         Create Free Account
                         <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
-                    </Link>
                   </div>
                 </div>
               </div>
@@ -768,18 +768,14 @@ const TrackReport = () => {
                   <Printer className="w-4 h-4 mr-3" />
                   Print Report Details
                 </Button>
-                <Link to="/submit-anonymous" className="block">
-                  <Button variant="ghost" className="w-full justify-start">
+                <Button variant="ghost" className="w-full justify-start" to="/submit-anonymous">
                     <FileText className="w-4 h-4 mr-3" />
                     Submit Another Report
                   </Button>
-                </Link>
-                <Link to="/help" className="block">
-                  <Button variant="ghost" className="w-full justify-start">
+                <Button variant="ghost" className="w-full justify-start" to="/help">
                     <Info className="w-4 h-4 mr-3" />
                     Get Help
                   </Button>
-                </Link>
               </div>
             </Card>
 
@@ -796,15 +792,12 @@ const TrackReport = () => {
                   Get advanced tracking, messaging, and notifications with a
                   free account.
                 </p>
-                <Link to="/register">
-                  <Button
+                <Button
                     variant="secondary"
                     size="small"
-                    className="w-full mb-2"
-                  >
+                    className="w-full mb-2" to="/register">
                     Create Account
                   </Button>
-                </Link>
                 <Link
                   to="/login"
                   className="text-xs text-accent-fg hover:opacity-80 font-medium"

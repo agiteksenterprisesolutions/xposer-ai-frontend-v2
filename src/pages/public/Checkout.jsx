@@ -780,8 +780,8 @@ const Checkout = () => {
               </div>
 
               <div className="co-input-group">
-                <label className="co-input-label">Workspace Description (Optional)</label>
-                <textarea
+                <label htmlFor="checkout-field-1" className="co-input-label">Workspace Description (Optional)</label>
+                <textarea id="checkout-field-1"
                   className="co-textarea"
                   rows={3}
                   placeholder="Tell us briefly about the workspace scope..."
@@ -815,6 +815,7 @@ const Checkout = () => {
                 <label className="co-input-label">Email Address *</label>
                 <div className="co-input-wrapper">
                   <input
+ autoComplete="email"
                     type="email"
                     required
                     className={`co-input ${errors.admin_email ? 'error' : ''}`}

@@ -1,7 +1,8 @@
 // src/components/layout/Modal.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import Button from '../ui/Button';
+import { isTopDialog, useDialogFocus } from '../../hooks/useDialogFocus';
 
 const Modal = ({
   isOpen,
@@ -16,12 +17,17 @@ const Modal = ({
   showBackdrop = true,
   closeOnEsc = true,
 }) => {
+  const panelRef = useRef(null);
+  const titleId = useId();
+  useDialogFocus(panelRef, isOpen);
+
   // Close on escape key
   useEffect(() => {
     if (!closeOnEsc || !isOpen) return;
 
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
+      // Only the dialog on top closes; one opened from another stays put.
+      if (e.key === 'Escape' && isTopDialog(panelRef.current)) {
         onClose();
       }
     };
@@ -81,20 +87,23 @@ const Modal = ({
       >
         <div
           className={`w-full ${sizeClass} max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden rounded-2xl bg-surface border border-line text-left shadow-xl animate-slide-up ${className}`}
+          ref={panelRef}
           role="dialog"
           aria-modal="true"
-          aria-labelledby="modal-title"
+          aria-labelledby={title ? titleId : undefined}
+          aria-label={title ? undefined : 'Dialog'}
+          tabIndex={-1}
         >
           {/* Header */}
           {(title || showCloseButton) && (
             <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b border-line-subtle shrink-0">
               {title ? (
-                <h3
-                  id="modal-title"
+                <h2
+                  id={titleId}
                   className="text-base sm:text-lg font-semibold text-ink tracking-[-0.01em] truncate"
                 >
                   {title}
-                </h3>
+                </h2>
               ) : (
                 <span />
               )}
@@ -181,6 +190,17 @@ export const FullscreenModal = ({
   showCloseButton = true,
   className = '',
 }) => {
+  const panelRef = useRef(null);
+  const titleId = useId();
+  useDialogFocus(panelRef, isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => e.key === 'Escape' && isTopDialog(panelRef.current) && onClose?.();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -196,12 +216,19 @@ export const FullscreenModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-canvas overflow-hidden">
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
+      tabIndex={-1}
+      className="fixed inset-0 z-[200] bg-canvas overflow-hidden"
+    >
       {/* Header */}
       <div className="sticky top-0 z-10 bg-surface border-b border-line px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           {title && (
-            <h2 className="text-lg sm:text-xl font-semibold text-ink tracking-[-0.01em] truncate">{title}</h2>
+            <h2 id={titleId} className="text-lg sm:text-xl font-semibold text-ink tracking-[-0.01em] truncate">{title}</h2>
           )}
           {showCloseButton && (
             <Button

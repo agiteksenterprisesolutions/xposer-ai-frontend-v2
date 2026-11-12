@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -24,6 +24,7 @@ import { Textarea } from "../../components/ui/Input";
 import { reportsAPI, messagesAPI, usersAPI } from "../../api";
 import { NO_TYPE_LABEL, useReportTypeNames } from "../../hooks/useReportTypeNames";
 import { useCan } from "../../hooks/useCan";
+import { useDialogFocus } from "../../hooks/useDialogFocus";
 import { useOrgRoles, roleCanWorkReports } from "../../hooks/useOrgRoles";
 import { PERM } from "../../utils/permissions";
 import { parseServerDate } from "../../utils/formatters";
@@ -198,6 +199,8 @@ const CaseDetail = () => {
   const [updating, setUpdating] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const assignDialogRef = useRef(null);
+  useDialogFocus(assignDialogRef, showAssignModal);
   const can = useCan();
   const canAssignReports = can(PERM.reportManage);
   const canUpdateStatus = can(PERM.reportManage);
@@ -495,6 +498,7 @@ const CaseDetail = () => {
             </Button>
           )}
           <select
+            aria-label="Case status"
             className="border-line-strong rounded-lg shadow-sm focus:ring-accent-ring focus:border-line-accent text-sm px-3 py-2"
             value={report.status}
             onChange={(e) => handleUpdateStatus(e.target.value)}
@@ -871,10 +875,18 @@ const CaseDetail = () => {
 
       {/* Assignment Modal */}
       {showAssignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm">
+        <div
+          ref={assignDialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="assign-case-title"
+          tabIndex={-1}
+          onKeyDown={(e) => e.key === 'Escape' && setShowAssignModal(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-sm"
+        >
           <Card className="w-full max-w-md shadow-2xl">
             <Card.Header>
-              <Card.Title>Assign Case</Card.Title>
+              <Card.Title id="assign-case-title">Assign Case</Card.Title>
               <Card.Description>
                 Select an assignee. Only people whose role can open reports are listed; those who can't take this case are greyed out.
               </Card.Description>

@@ -92,7 +92,7 @@ export const SlaBadge = ({ clock, prefix, size = 'small' }) => {
       title={`${SLA_EXPLAIN[clock.state]}${due ? ` · due ${due}` : ''}`}
     >
       {state.icon && <Check className="h-2.5 w-2.5" aria-hidden="true" />}
-      {prefix && <span className="font-medium opacity-80">{prefix}</span>}
+      {prefix && <span className="font-medium">{prefix}</span>}
       {state.label(clock)}
     </Badge>
   );

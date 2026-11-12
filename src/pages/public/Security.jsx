@@ -34,15 +34,15 @@ const Security = () => {
   const lastUpdated = 'January 30, 2026';
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-subtle py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-100 rounded-full mx-auto mb-4">
-            <Shield className="w-10 h-10 text-primary-600" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-accent-soft rounded-full mx-auto mb-4">
+            <Shield className="w-10 h-10 text-link" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Security</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold text-ink mb-3">Security</h1>
+          <p className="text-ink-muted max-w-2xl mx-auto">
             Security and privacy are at the core of our whistleblowing platform. We implement comprehensive security measures to protect your data and maintain confidentiality.
           </p>
         </div>
@@ -51,33 +51,33 @@ const Security = () => {
           {/* Sidebar / TOC */}
           <aside className="lg:col-span-1">
             <Card padding="small" className="sticky top-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">On This Page</h3>
-              <nav className="text-sm text-gray-600 space-y-2">
-                <a href="#overview" className="block hover:text-primary-600">Security Overview</a>
-                <a href="#encryption" className="block hover:text-primary-600">Encryption</a>
-                <a href="#infrastructure" className="block hover:text-primary-600">Infrastructure</a>
-                <a href="#access-control" className="block hover:text-primary-600">Access Control</a>
-                <a href="#monitoring" className="block hover:text-primary-600">Monitoring</a>
-                <a href="#vulnerability" className="block hover:text-primary-600">Vulnerability Management</a>
-                <a href="#incident" className="block hover:text-primary-600">Incident Response</a>
-                <a href="#best-practices" className="block hover:text-primary-600">Best Practices</a>
-                <a href="#reporting" className="block hover:text-primary-600">Report Security Issues</a>
+              <h3 className="text-sm font-semibold text-ink mb-3">On This Page</h3>
+              <nav className="text-sm text-ink-muted space-y-2">
+                <a href="#overview" className="block py-0.5 hover:text-link-hover">Security Overview</a>
+                <a href="#encryption" className="block py-0.5 hover:text-link-hover">Encryption</a>
+                <a href="#infrastructure" className="block py-0.5 hover:text-link-hover">Infrastructure</a>
+                <a href="#access-control" className="block py-0.5 hover:text-link-hover">Access Control</a>
+                <a href="#monitoring" className="block py-0.5 hover:text-link-hover">Monitoring</a>
+                <a href="#vulnerability" className="block py-0.5 hover:text-link-hover">Vulnerability Management</a>
+                <a href="#incident" className="block py-0.5 hover:text-link-hover">Incident Response</a>
+                <a href="#best-practices" className="block py-0.5 hover:text-link-hover">Best Practices</a>
+                <a href="#reporting" className="block py-0.5 hover:text-link-hover">Report Security Issues</a>
               </nav>
             </Card>
 
             <Card padding="small" className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Links</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3">Quick Links</h3>
               <div className="flex flex-col space-y-2">
-                <Link to="/compliance" className="text-sm text-primary-600 hover:text-primary-700">Compliance</Link>
-                <Link to="/privacy" className="text-sm text-primary-600 hover:text-primary-700">Privacy Policy</Link>
-                <Link to="/terms" className="text-sm text-primary-600 hover:text-primary-700">Terms of Service</Link>
-                <Link to="/submit-anonymous" className="text-sm text-primary-600 hover:text-primary-700">Submit Anonymous Report</Link>
+                <Link to="/compliance" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Compliance</Link>
+                <Link to="/privacy" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Privacy Policy</Link>
+                <Link to="/terms" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Terms of Service</Link>
+                <Link to="/submit-anonymous" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Submit Anonymous Report</Link>
               </div>
             </Card>
           </aside>
 
           {/* Main content */}
-          <main className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             <Alert variant="info">
               <div className="flex items-start">
                 <div>
@@ -90,29 +90,29 @@ const Security = () => {
             <article id="overview">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Shield className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Security Overview</h2>
+                  <Shield className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Security Overview</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>Our security program is designed to protect the confidentiality, integrity, and availability of all data on our platform. We employ a defense-in-depth strategy with multiple layers of security controls.</p>
                   
                   <div className="grid sm:grid-cols-3 gap-4 mt-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                      <Lock className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                      <h3 className="font-semibold text-gray-900 text-sm mb-1">Confidentiality</h3>
-                      <p className="text-xs text-gray-600">Data is protected from unauthorized access</p>
+                    <div className="bg-accent-soft border border-line-accent rounded-lg p-4 text-center">
+                      <Lock className="w-8 h-8 text-link mx-auto mb-2" />
+                      <h3 className="font-semibold text-ink text-sm mb-1">Confidentiality</h3>
+                      <p className="text-xs text-ink-muted">Data is protected from unauthorized access</p>
                     </div>
 
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                       <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                      <h3 className="font-semibold text-gray-900 text-sm mb-1">Integrity</h3>
-                      <p className="text-xs text-gray-600">Data accuracy and completeness is maintained</p>
+                      <h3 className="font-semibold text-ink text-sm mb-1">Integrity</h3>
+                      <p className="text-xs text-ink-muted">Data accuracy and completeness is maintained</p>
                     </div>
 
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
                       <Zap className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                      <h3 className="font-semibold text-gray-900 text-sm mb-1">Availability</h3>
-                      <p className="text-xs text-gray-600">Services are accessible when needed</p>
+                      <h3 className="font-semibold text-ink text-sm mb-1">Availability</h3>
+                      <p className="text-xs text-ink-muted">Services are accessible when needed</p>
                     </div>
                   </div>
                 </div>
@@ -122,17 +122,17 @@ const Security = () => {
             <article id="encryption">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Lock className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Encryption</h2>
+                  <Lock className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Encryption</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We use industry-standard encryption to protect your data at every stage:</p>
                   
                   <div className="space-y-4 mt-4">
-                    <div className="border-l-4 border-blue-500 pl-4 py-2">
+                    <div className="border-l-4 border-line-accent pl-4 py-2">
                       <div className="flex items-start mb-2">
-                        <Key className="w-4 h-4 text-blue-600 mr-2 mt-0.5 skrink-0" />
-                        <h3 className="font-semibold text-gray-900">Data in Transit</h3>
+                        <Key className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <h3 className="font-semibold text-ink">Data in Transit</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 ml-6 text-sm">
                         <li>TLS 1.3 encryption for all network communications</li>
@@ -146,7 +146,7 @@ const Security = () => {
                     <div className="border-l-4 border-green-500 pl-4 py-2">
                       <div className="flex items-start mb-2">
                         <Database className="w-4 h-4 text-green-600 mr-2 mt-0.5 skrink-0" />
-                        <h3 className="font-semibold text-gray-900">Data at Rest</h3>
+                        <h3 className="font-semibold text-ink">Data at Rest</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 ml-6 text-sm">
                         <li>AES-256 encryption for all stored data</li>
@@ -160,7 +160,7 @@ const Security = () => {
                     <div className="border-l-4 border-purple-500 pl-4 py-2">
                       <div className="flex items-start mb-2">
                         <Shield className="w-4 h-4 text-purple-600 mr-2 mt-0.5 skrink-0" />
-                        <h3 className="font-semibold text-gray-900">End-to-End Encryption</h3>
+                        <h3 className="font-semibold text-ink">End-to-End Encryption</h3>
                       </div>
                       <p className="ml-6 text-sm">For maximum security, sensitive report data can be encrypted end-to-end, ensuring that only authorized investigators can decrypt and view the information.</p>
                     </div>
@@ -172,17 +172,17 @@ const Security = () => {
             <article id="infrastructure">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Server className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Infrastructure Security</h2>
+                  <Server className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Infrastructure Security</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>Our infrastructure is built on secure, reliable cloud platforms with multiple layers of protection:</p>
                   
                   <div className="grid md:grid-cols-2 gap-4 mt-4">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <Server className="w-4 h-4 text-primary-600 mr-2 mt-0.5 skrink-0" />
-                        <h3 className="font-semibold text-gray-900">Cloud Security</h3>
+                        <Server className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <h3 className="font-semibold text-ink">Cloud Security</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>SOC 2 Type II certified infrastructure</li>
@@ -192,10 +192,10 @@ const Security = () => {
                       </ul>
                     </div>
 
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <Shield className="w-4 h-4 text-primary-600 mr-2 mt-0.5 skrink-0" />
-                        <h3 className="font-semibold text-gray-900">Network Security</h3>
+                        <Shield className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <h3 className="font-semibold text-ink">Network Security</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Web Application Firewall (WAF)</li>
@@ -205,10 +205,10 @@ const Security = () => {
                       </ul>
                     </div>
 
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <Database className="w-4 h-4 text-primary-600 mr-2 mt-0.5 skrink-0" />
-                        <h3 className="font-semibold text-gray-900">Data Isolation</h3>
+                        <Database className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <h3 className="font-semibold text-ink">Data Isolation</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Logical data separation per organization</li>
@@ -218,10 +218,10 @@ const Security = () => {
                       </ul>
                     </div>
 
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <CheckCircle className="w-4 h-4 text-primary-600 mr-2 mt-0.5 skrink-0" />
-                        <h3 className="font-semibold text-gray-900">Backup & Recovery</h3>
+                        <CheckCircle className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <h3 className="font-semibold text-ink">Backup & Recovery</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Automated daily encrypted backups</li>
@@ -238,17 +238,17 @@ const Security = () => {
             <article id="access-control">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Key className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Access Control & Authentication</h2>
+                  <Key className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Access Control & Authentication</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We implement strict access controls to ensure that only authorized users can access data:</p>
                   
                   <div className="space-y-3 mt-4">
                     <div className="flex items-start">
                       <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-semibold text-gray-900">Multi-Factor Authentication (MFA)</h4>
+                        <h4 className="font-semibold text-ink">Multi-Factor Authentication (MFA)</h4>
                         <p className="text-sm">Required for all administrative accounts and available for all users. Supports TOTP, SMS, and hardware security keys.</p>
                       </div>
                     </div>
@@ -256,7 +256,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-semibold text-gray-900">Role-Based Access Control (RBAC)</h4>
+                        <h4 className="font-semibold text-ink">Role-Based Access Control (RBAC)</h4>
                         <p className="text-sm">Granular permissions system ensures users can only access data relevant to their role and responsibilities.</p>
                       </div>
                     </div>
@@ -264,7 +264,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-semibold text-gray-900">Principle of Least Privilege</h4>
+                        <h4 className="font-semibold text-ink">Principle of Least Privilege</h4>
                         <p className="text-sm">Users and systems are granted the minimum level of access required to perform their functions.</p>
                       </div>
                     </div>
@@ -272,7 +272,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-semibold text-gray-900">Session Management</h4>
+                        <h4 className="font-semibold text-ink">Session Management</h4>
                         <p className="text-sm">Secure session tokens, automatic timeout after inactivity, and the ability to remotely terminate sessions.</p>
                       </div>
                     </div>
@@ -280,7 +280,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-semibold text-gray-900">Password Security</h4>
+                        <h4 className="font-semibold text-ink">Password Security</h4>
                         <p className="text-sm">Strong password requirements, secure hashing (bcrypt), protection against credential stuffing, and support for password managers.</p>
                       </div>
                     </div>
@@ -288,7 +288,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-semibold text-gray-900">Single Sign-On (SSO)</h4>
+                        <h4 className="font-semibold text-ink">Single Sign-On (SSO)</h4>
                         <p className="text-sm">Enterprise SSO support via SAML 2.0 and OAuth 2.0 for seamless and secure authentication.</p>
                       </div>
                     </div>
@@ -300,14 +300,14 @@ const Security = () => {
             <article id="monitoring">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Eye className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Security Monitoring & Logging</h2>
+                  <Eye className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Security Monitoring & Logging</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We continuously monitor our systems to detect and respond to security threats:</p>
                   
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-3">
-                    <h4 className="font-semibold text-gray-900 mb-3">24/7 Security Operations</h4>
+                  <div className="bg-subtle border border-line rounded-lg p-4 mt-3">
+                    <h4 className="font-semibold text-ink mb-3">24/7 Security Operations</h4>
                     <ul className="list-disc list-inside space-y-2 text-sm">
                       <li><strong>Real-time monitoring:</strong> Automated alerting for suspicious activities and security events</li>
                       <li><strong>Security Information and Event Management (SIEM):</strong> Centralized logging and correlation of security events</li>
@@ -318,11 +318,11 @@ const Security = () => {
                     </ul>
                   </div>
 
-                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mt-3">
+                  <div className="bg-accent-soft border border-line-accent rounded-lg p-4 mt-3">
                     <div className="flex items-start">
-                      <Info className="w-5 h-5 text-primary-600 mr-3 skrink-0 mt-0.5" />
+                      <Info className="w-5 h-5 text-link mr-3 skrink-0 mt-0.5" />
                       <div>
-                        <h4 className="font-semibold text-gray-900 mb-2">Transparency</h4>
+                        <h4 className="font-semibold text-ink mb-2">Transparency</h4>
                         <p className="text-sm">Users with appropriate permissions can access audit logs to review access to their reports and data.</p>
                       </div>
                     </div>
@@ -334,15 +334,15 @@ const Security = () => {
             <article id="vulnerability">
               <Card>
                 <div className="flex items-start mb-4">
-                  <ShieldAlert className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Vulnerability Management</h2>
+                  <ShieldAlert className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Vulnerability Management</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We proactively identify and remediate security vulnerabilities through a comprehensive vulnerability management program:</p>
                   
                   <div className="grid md:grid-cols-2 gap-4 mt-4">
                     <div className="border-l-4 border-orange-500 pl-4 py-2">
-                      <h3 className="font-semibold text-gray-900 mb-2">Regular Scanning</h3>
+                      <h3 className="font-semibold text-ink mb-2">Regular Scanning</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Weekly automated vulnerability scans</li>
                         <li>Continuous dependency monitoring</li>
@@ -352,7 +352,7 @@ const Security = () => {
                     </div>
 
                     <div className="border-l-4 border-red-500 pl-4 py-2">
-                      <h3 className="font-semibold text-gray-900 mb-2">Penetration Testing</h3>
+                      <h3 className="font-semibold text-ink mb-2">Penetration Testing</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Annual third-party penetration tests</li>
                         <li>Testing of both infrastructure and applications</li>
@@ -362,7 +362,7 @@ const Security = () => {
                     </div>
 
                     <div className="border-l-4 border-yellow-500 pl-4 py-2">
-                      <h3 className="font-semibold text-gray-900 mb-2">Bug Bounty Program</h3>
+                      <h3 className="font-semibold text-ink mb-2">Bug Bounty Program</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Responsible disclosure program</li>
                         <li>Rewards for valid security findings</li>
@@ -372,7 +372,7 @@ const Security = () => {
                     </div>
 
                     <div className="border-l-4 border-green-500 pl-4 py-2">
-                      <h3 className="font-semibold text-gray-900 mb-2">Patch Management</h3>
+                      <h3 className="font-semibold text-ink mb-2">Patch Management</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Critical patches within 24-48 hours</li>
                         <li>Regular update schedule for all systems</li>
@@ -388,15 +388,15 @@ const Security = () => {
             <article id="incident">
               <Card>
                 <div className="flex items-start mb-4">
-                  <AlertTriangle className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Incident Response</h2>
+                  <AlertTriangle className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Incident Response</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We maintain a comprehensive incident response plan to quickly detect, contain, and remediate security incidents:</p>
                   
                   <div className="space-y-3 mt-4">
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                      <h4 className="font-semibold text-ink mb-2 flex items-center">
                         <Clock className="w-4 h-4 mr-2 text-red-600" />
                         Incident Response Process
                       </h4>
@@ -411,8 +411,8 @@ const Security = () => {
                     </div>
 
                     <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-gray-900 mb-2">Response Times</h4>
+                      <div className="bg-subtle border border-line rounded-lg p-4">
+                        <h4 className="font-semibold text-ink mb-2">Response Times</h4>
                         <ul className="list-disc list-inside space-y-1 text-sm">
                           <li>Critical incidents: Immediate response</li>
                           <li>High severity: Within 1 hour</li>
@@ -421,8 +421,8 @@ const Security = () => {
                         </ul>
                       </div>
 
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-gray-900 mb-2">Communication</h4>
+                      <div className="bg-subtle border border-line rounded-lg p-4">
+                        <h4 className="font-semibold text-ink mb-2">Communication</h4>
                         <ul className="list-disc list-inside space-y-1 text-sm">
                           <li>Timely notification to affected users</li>
                           <li>Transparent incident reporting</li>
@@ -439,17 +439,17 @@ const Security = () => {
             <article id="best-practices">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Code className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Secure Development Practices</h2>
+                  <Code className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Secure Development Practices</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>Security is integrated into every phase of our software development lifecycle:</p>
                   
                   <div className="space-y-2 mt-4">
                     <div className="flex items-start">
                       <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">Security by Design</h4>
+                        <h4 className="font-semibold text-ink">Security by Design</h4>
                         <p className="text-sm">Security requirements are identified and addressed from the initial design phase.</p>
                       </div>
                     </div>
@@ -457,7 +457,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">Code Review</h4>
+                        <h4 className="font-semibold text-ink">Code Review</h4>
                         <p className="text-sm">All code changes undergo peer review with security considerations before deployment.</p>
                       </div>
                     </div>
@@ -465,7 +465,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">Automated Testing</h4>
+                        <h4 className="font-semibold text-ink">Automated Testing</h4>
                         <p className="text-sm">Continuous integration pipelines include security tests, dependency checks, and vulnerability scans.</p>
                       </div>
                     </div>
@@ -473,7 +473,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">Developer Training</h4>
+                        <h4 className="font-semibold text-ink">Developer Training</h4>
                         <p className="text-sm">Regular security training for all developers on secure coding practices and emerging threats.</p>
                       </div>
                     </div>
@@ -481,7 +481,7 @@ const Security = () => {
                     <div className="flex items-start">
                       <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">Dependency Management</h4>
+                        <h4 className="font-semibold text-ink">Dependency Management</h4>
                         <p className="text-sm">Automated monitoring and updating of third-party dependencies to address known vulnerabilities.</p>
                       </div>
                     </div>
@@ -493,10 +493,10 @@ const Security = () => {
             <article id="reporting">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Report Security Issues</h2>
+                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Report Security Issues</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We take security vulnerabilities seriously and appreciate the security community's help in keeping our platform secure.</p>
                   
                   <Alert variant="warning" className="mt-4">
@@ -508,8 +508,8 @@ const Security = () => {
                     </div>
                   </Alert>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-3">Include in Your Report</h4>
+                  <div className="bg-subtle border border-line rounded-lg p-4">
+                    <h4 className="font-semibold text-ink mb-3">Include in Your Report</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm">
                       <li>Description of the vulnerability</li>
                       <li>Steps to reproduce the issue</li>
@@ -519,8 +519,8 @@ const Security = () => {
                     </ul>
                   </div>
 
-                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">Our Commitment</h4>
+                  <div className="bg-accent-soft border border-line-accent rounded-lg p-4">
+                    <h4 className="font-semibold text-ink mb-2">Our Commitment</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm">
                       <li>We will acknowledge receipt within 24 hours</li>
                       <li>We will keep you informed of our progress</li>
@@ -535,30 +535,26 @@ const Security = () => {
             <Card>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Last updated: <span className="font-medium text-gray-900">{lastUpdated}</span></p>
-                  <p className="text-sm text-gray-600 mt-1">For more information, see our <Link to="/privacy" className="text-primary-600 hover:underline">Privacy Policy</Link> and <Link to="/compliance" className="text-primary-600 hover:underline">Compliance</Link> pages.</p>
+                  <p className="text-sm text-ink-muted">Last updated: <span className="font-medium text-ink">{lastUpdated}</span></p>
+                  <p className="text-sm text-ink-muted mt-1">For more information, see our <Link to="/privacy" className="text-link hover:underline">Privacy Policy</Link> and <Link to="/compliance" className="text-link hover:underline">Compliance</Link> pages.</p>
                 </div>
 
                 <div className="hidden sm:block skrink-0">
-                  <Link to="/submit-anonymous">
-                    <Button variant="secondary" size="medium" className="cursor-pointer">
+                  <Button variant="secondary" size="medium" className="cursor-pointer" to="/submit-anonymous">
                       Submit a Report
                       <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
-                  </Link>
                 </div>
               </div>
             </Card>
 
             {/* Mobile CTA */}
             <div className="block sm:hidden">
-              <Link to="/submit-anonymous">
-                <Button variant="secondary" size="large" fullWidth>
+              <Button variant="secondary" size="large" fullWidth to="/submit-anonymous">
                   Submit a Report
                 </Button>
-              </Link>
             </div>
-          </main>
+          </div>
         </div>
       </div>
     </div>

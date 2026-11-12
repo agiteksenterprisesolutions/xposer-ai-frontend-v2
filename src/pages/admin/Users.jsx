@@ -865,10 +865,10 @@ const Users = () => {
           </p>
 
           <div className="flex flex-col">
-            <label className="text-sm font-medium text-ink-secondary mb-1">
+            <label htmlFor="users-field-1" className="text-sm font-medium text-ink-secondary mb-1">
               Sign-in Method
             </label>
-            <select
+            <select id="users-field-1"
               name="auth_provider"
               value={resetPasswordFormData.auth_provider}
               onChange={(e) => setResetPasswordFormData((prev) => ({

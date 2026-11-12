@@ -261,7 +261,7 @@ const HowToUse = () => {
                   </Step>
                   <Step n="4" title="No account? You can still report">
                     You do not need to sign in to raise a concern — skip ahead to{' '}
-                    <a href="#anonymous" className="text-link hover:text-link-hover">
+                    <a href="#anonymous" className="text-link underline underline-offset-2 hover:text-link-hover">
                       anonymous reporting
                     </a>
                     .

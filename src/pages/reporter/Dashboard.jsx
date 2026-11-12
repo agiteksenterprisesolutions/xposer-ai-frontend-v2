@@ -305,11 +305,9 @@ const Dashboard = () => {
                   ? "You haven't submitted any reports yet."
                   : `No reports with status "${filter}" found.`}
               </p>
-              <Link to={`/${user?.organization_slug}/reporter/submit`}>
-                <Button startIcon={Plus}>
+              <Button startIcon={Plus} to={`/${user?.organization_slug}/reporter/submit`}>
                   Submit Your First Report
                 </Button>
-              </Link>
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid md:grid-cols-2 gap-4">
@@ -351,11 +349,9 @@ const Dashboard = () => {
 
           {(isLoading || filteredReports.length > 0) && (
             <div className="mt-6 pt-6 border-t border-line">
-              <Link to={`/${user ? user.organization_slug : ''}/reporter/reports`}>
-                <Button variant="secondary" className="w-full">
+              <Button variant="secondary" className="w-full" to={`/${user ? user.organization_slug : ''}/reporter/reports`}>
                   View All Reports
                 </Button>
-              </Link>
             </div>
           )}
         </Card>
@@ -405,16 +401,12 @@ const Dashboard = () => {
             Start by submitting a report. You can choose to submit anonymously or with your account for better tracking.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/reporter/submit">
-              <Button startIcon={Plus}>
+            <Button startIcon={Plus} to="/reporter/submit">
                 Submit with Account
               </Button>
-            </Link>
-            <Link to="/submit-anonymous">
-              <Button variant="secondary">
+            <Button variant="secondary" to="/submit-anonymous">
                 Submit Anonymously
               </Button>
-            </Link>
           </div>
         </Card> */}
       {/* )} */}

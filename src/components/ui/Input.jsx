@@ -124,6 +124,8 @@ const Input = forwardRef(({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           aria-invalid={error ? 'true' : undefined}
+          // The error or hint under the field is read with it (WCAG 3.3.1, 1.3.1).
+          aria-describedby={error || helperText ? `${id}-hint` : undefined}
           className={[
             tokens.control,
             sizePadding[size] || sizePadding.medium,
@@ -158,7 +160,7 @@ const Input = forwardRef(({
       </div>
 
       {(error || helperText) && (
-        <p className={`${tokens.hint} ${error ? 'text-danger-fg' : 'text-ink-subtle'}`}>
+        <p id={`${id}-hint`} className={`${tokens.hint} ${error ? 'text-danger-fg' : 'text-ink-subtle'}`}>
           {error || helperText}
         </p>
       )}
@@ -200,6 +202,8 @@ export const Textarea = forwardRef(({
           rows={rows}
           placeholder=" "
           aria-invalid={error ? 'true' : undefined}
+          // The error or hint under the field is read with it (WCAG 3.3.1, 1.3.1).
+          aria-describedby={error || helperText ? `${id}-hint` : undefined}
           className={[
             'peer w-full bg-subtle',
             'border border-line rounded-lg',
@@ -240,7 +244,7 @@ export const Textarea = forwardRef(({
       </div>
 
       {(error || helperText) && (
-        <p className={`${tokens.hint} ${error ? 'text-danger-fg' : 'text-ink-subtle'}`}>
+        <p id={`${id}-hint`} className={`${tokens.hint} ${error ? 'text-danger-fg' : 'text-ink-subtle'}`}>
           {error || helperText}
         </p>
       )}
@@ -285,6 +289,8 @@ export const Select = forwardRef(({
           ref={ref}
           disabled={disabled}
           aria-invalid={error ? 'true' : undefined}
+          // The error or hint under the field is read with it (WCAG 3.3.1, 1.3.1).
+          aria-describedby={error || helperText ? `${id}-hint` : undefined}
           className={[
             'w-full appearance-none bg-subtle',
             'border border-line rounded-lg',
@@ -332,7 +338,7 @@ export const Select = forwardRef(({
       </div>
 
       {(error || helperText) && (
-        <p className={`${tokens.hint} ${error ? 'text-danger-fg' : 'text-ink-subtle'}`}>
+        <p id={`${id}-hint`} className={`${tokens.hint} ${error ? 'text-danger-fg' : 'text-ink-subtle'}`}>
           {error || helperText}
         </p>
       )}

@@ -98,7 +98,8 @@ const Profile = ({ user }) => {
               <input id="acc-name" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
             </Field>
             <Field id="acc-email" label="Email" error={!email.trim() ? 'Enter your email' : null}>
-              <input id="acc-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+              <input
+ autoComplete="email" id="acc-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
             </Field>
           </div>
           {error && <Alert variant="error">{error}</Alert>}
@@ -130,7 +131,7 @@ const PasswordField = ({ id, label, value, onChange, error, autoComplete }) => {
           type="button"
           onClick={() => setShow((v) => !v)}
           aria-label={show ? 'Hide password' : 'Show password'}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-ink-subtle hover:text-ink"
+          className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-ink-subtle hover:text-ink"
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>

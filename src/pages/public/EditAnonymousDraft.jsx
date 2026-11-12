@@ -175,6 +175,7 @@ const EditAnonymousDraft = () => {
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div className="relative">
                 <Input
+ autoComplete="current-password"
                   label="Report Password"
                   type={showPassword ? 'text' : 'password'}
                   value={passwordInput}

@@ -404,6 +404,7 @@ Generated on: ${new Date().toLocaleString()}
               {useCustomPassword && (
                 <div className="mt-3 pl-7">
                   <Input
+ autoComplete="new-password"
                     label="Password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}

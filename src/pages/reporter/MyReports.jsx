@@ -257,21 +257,14 @@ const MyReports = () => {
             header: 'Actions',
             cell: (_, row) => (
                 <div className="flex justify-start gap-1">
-                    <Link to={`/${user?.organization_slug}/reporter/reports/${row.id}`}>
-                        <Button variant="ghost" size="small" aria-label="View Details">
+                    <Button variant="ghost" size="small" aria-label="View Details" to={`/${user?.organization_slug}/reporter/reports/${row.id}`}>
                             <Eye className="w-4 h-4 text-ink-muted" />
                         </Button>
-                    </Link>
                     {isDraftReport(row) && (
                         // Row clicks open the detail page, so keep the click here.
-                        <Link
-                            to={`/${user?.organization_slug}/reporter/reports/${row.id}/edit`}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <Button variant="ghost" size="small" aria-label="Edit Draft" title="Edit draft">
+                        <Button variant="ghost" size="small" aria-label="Edit Draft" title="Edit draft" to={`/${user?.organization_slug}/reporter/reports/${row.id}/edit`} onClick={(e) => e.stopPropagation()}>
                                 <Pencil className="w-4 h-4 text-accent-fg" />
                             </Button>
-                        </Link>
                     )}
                 </div>
             ),
@@ -365,11 +358,9 @@ const MyReports = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Link to={`/${user?.organization_slug}/reporter/submit`} data-tour="myreports-submit">
-                        <Button variant="secondary" startIcon={Plus}>
+                    <Button variant="secondary" startIcon={Plus} to={`/${user?.organization_slug}/reporter/submit`} data-tour="myreports-submit">
                             Submit New Report
                         </Button>
-                    </Link>
                 </div>
             </div>
 
@@ -481,11 +472,9 @@ const MyReports = () => {
                             }
                             action={
                                 !(filters.search || filters.status || filters.priority) && (
-                                    <Link to={`/${user?.organization_slug}/reporter/submit`}>
-                                        <Button size="small" className="mt-4" variant="secondary">
+                                    <Button size="small" className="mt-4" variant="secondary" to={`/${user?.organization_slug}/reporter/submit`}>
                                             Submit Report
                                         </Button>
-                                    </Link>
                                 )
                             }
                         />

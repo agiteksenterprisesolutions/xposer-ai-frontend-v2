@@ -132,14 +132,14 @@ const ForgetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-            <Shield className="h-8 w-8 text-primary-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-accent-soft rounded-full mb-4">
+            <Shield className="h-8 w-8 text-link" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Reset Your Password</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-ink">Reset Your Password</h1>
+          <p className="text-ink-muted mt-2">
             {step === 'request'
               ? 'Enter your email to receive a reset code.'
               : 'Enter the reset code and choose a new password.'}
@@ -159,6 +159,7 @@ const ForgetPassword = () => {
             <form onSubmit={handleEmailSubmit(handleRequestReset)} className="space-y-6">
               <Input
                 label="Email Address"
+                autoComplete="email"
                 type="email"
                 startAdornment={<Mail className="w-4 h-4" />}
                 {...registerEmail('email')}
@@ -180,11 +181,11 @@ const ForgetPassword = () => {
             </form>
           ) : (
             <form onSubmit={handleResetSubmit(handleResetPassword)} className="space-y-6">
-              <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <div className="rounded-lg border border-line bg-subtle px-4 py-3 text-sm text-ink-secondary">
                 Resetting password for <span className="font-medium">{email}</span>
                 <button
                   type="button"
-                  className="ml-2 text-primary-600 hover:text-primary-700"
+                  className="ml-2 text-link hover:text-link-hover"
                   onClick={() => setStep('request')}
                 >
                   Use different email
@@ -193,6 +194,7 @@ const ForgetPassword = () => {
 
               <Input
                 label="Reset Code"
+                autoComplete="one-time-code"
                 startAdornment={<Key className="w-4 h-4" />}
                 {...registerReset('reset_code')}
                 error={resetErrors.reset_code?.message}
@@ -202,6 +204,7 @@ const ForgetPassword = () => {
               <div className="relative">
                 <Input
                   label="New Password"
+                autoComplete="new-password"
                   type={showPassword ? 'text' : 'password'}
                   startAdornment={<Key className="w-4 h-4" />}
                   {...registerReset('new_password')}
@@ -211,7 +214,7 @@ const ForgetPassword = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-ink-muted hover:text-ink"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -220,6 +223,7 @@ const ForgetPassword = () => {
               <div className="relative">
                 <Input
                   label="Confirm New Password"
+                autoComplete="new-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   startAdornment={<Key className="w-4 h-4" />}
                   {...registerReset('confirm_password')}
@@ -229,7 +233,7 @@ const ForgetPassword = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-ink-muted hover:text-ink"
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -239,11 +243,11 @@ const ForgetPassword = () => {
                 <button
                   type="button"
                   onClick={handleResend}
-                  className="text-primary-600 hover:text-primary-700"
+                  className="text-link hover:text-link-hover"
                 >
                   Resend code
                 </button>
-                <span className="text-gray-500">Check your spam folder if needed</span>
+                <span className="text-ink-muted">Check your spam folder if needed</span>
               </div>
 
               <Button
@@ -261,9 +265,9 @@ const ForgetPassword = () => {
         </Card>
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-ink-muted">
             Remembered your password?{' '}
-            <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+            <Link to="/login" className="text-link hover:text-link-hover font-medium">
               Sign in
             </Link>
           </p>
@@ -272,7 +276,7 @@ const ForgetPassword = () => {
         <div className="mt-6 text-center">
           <Link
             to="/"
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+            className="inline-flex items-center text-sm text-ink-muted hover:text-ink"
           >
             ← Back to home
           </Link>

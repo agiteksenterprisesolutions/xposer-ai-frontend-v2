@@ -2766,13 +2766,15 @@ Generated: ${new Date().toLocaleString()}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 1.1 }}
             onClick={() => (awaitingLogin ? cancelLoginHandoff() : setIsOpen(!isOpen))}
+            aria-label={isOpen ? 'Close the reporting assistant' : 'Open the reporting assistant'}
+            aria-expanded={isOpen}
             className={`
               ${isOpen && step === "chat" ? "hidden sm:flex" : "flex"} items-center justify-center w-14 h-14 rounded-full shadow-glow
               transition-all duration-300 relative z-70
               ${isOpen ? "bg-raised text-ink rotate-90" : "bg-accent text-on-accent hover:opacity-85"}
             `}
           >
-            {isOpen ? <X onClick={disconnectFromRoom} size={24} /> : <MessageCircle size={24} />}
+            {isOpen ? <X onClick={disconnectFromRoom} size={24} aria-hidden="true" /> : <MessageCircle size={24} aria-hidden="true" />}
 
             {!isOpen && !credentials && (
               <span className="absolute top-3 right-3.5 w-3 h-3 bg-danger-solid rounded-full border-2 border-line"></span>

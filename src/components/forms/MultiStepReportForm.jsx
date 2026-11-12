@@ -837,6 +837,12 @@ const MultiStepReportForm = ({
     const isStepValid = validateCurrentStep();
     if (!isStepValid) {
       toast.error("Please fix validation errors before saving");
+      // Take the reporter to the first field with a problem (WCAG 3.3.1).
+      requestAnimationFrame(() => {
+        const first = document.querySelector('main [aria-invalid="true"]');
+        first?.focus();
+        first?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
       return false;
     }
     setIsSaving(true);
@@ -1306,10 +1312,16 @@ const MultiStepReportForm = ({
                 const handleBooleanChange = (checked) =>
                   handleStepDataChange(question.name, checked ? "1" : "0");
 
+                // The question text names its field (or its group of options) for
+                // screen readers; placeholders are not labels (WCAG 1.3.1, 4.1.2).
+                const labelId = `q-${question.id || question.name || idx}-label`;
+                const named = { "aria-labelledby": labelId };
+                const group = { role: "group", "aria-labelledby": labelId };
+
                 return (
                   <div key={question.id || idx} className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <label className="block text-sm font-medium text-ink">
+                      <label id={labelId} className="block text-sm font-medium text-ink">
                         {question.label}
                         {isRequired && <span className="text-danger-fg ml-1">*</span>}
                       </label>
@@ -1317,6 +1329,7 @@ const MultiStepReportForm = ({
 
                     {normalizedType === "textarea" ? (
                       <Textarea
+                        {...named}
                         value={value}
                         onChange={(e) => handleStepDataChange(question.name, e.target.value)}
                         onBlur={(e) => validateQuestionOnBlur(question, e.target.value)}
@@ -1329,6 +1342,7 @@ const MultiStepReportForm = ({
                       />
                     ) : normalizedType === "select" ? (
                       <Select
+                        {...named}
                         value={value}
                         onChange={(e) => handleStepDataChange(question.name, e.target.value)}
                         onBlur={(e) => validateQuestionOnBlur(question, e.target.value)}
@@ -1345,7 +1359,7 @@ const MultiStepReportForm = ({
                         ))}
                       </Select>
                     ) : normalizedType === "multiselect" ? (
-                      <div className="space-y-2">
+                      <div className="space-y-2" {...group}>
                         {normalizeOptions(question.options).map((option, optIdx) => {
                           const optionValue = option.value;
                           const optionLabel = option.label;
@@ -1369,7 +1383,7 @@ const MultiStepReportForm = ({
                         })}
                       </div>
                     ) : normalizedType === "boolean" ? (
-                      <div className="flex gap-6">
+                      <div className="flex gap-6" role="radiogroup" aria-labelledby={labelId}>
                         <label className="flex items-center">
                           <input
                             type="radio" name={question.name} value="1"
@@ -1395,6 +1409,7 @@ const MultiStepReportForm = ({
                       // Inline file questions in the form save the file reference in stepData,
                       // but the actual upload happens via the AttachmentsPanel.
                       // We auto-upload when the file is selected.
+                      <div {...group}>
                       <InlineFileUpload
                         question={question}
                         value={value}
@@ -1405,7 +1420,9 @@ const MultiStepReportForm = ({
                         onAttachmentSync={setAttachments}
                         onUploaded={(filename) => handleStepDataChange(question.name, filename)}
                       />
+                      </div>
                     ) : normalizedType === "currency" ? (
+                      <div {...group}>
                       <CurrencyField
                         value={value && typeof value === "object" ? value : null}
                         defaultCurrency={defaultCurrencyFor(question, organization)}
@@ -1416,10 +1433,12 @@ const MultiStepReportForm = ({
                         onChange={(next) => handleStepDataChange(question.name, next)}
                         onBlur={(next) => validateQuestionOnBlur(question, next)}
                       />
+                      </div>
                     ) : isDateTimeField ? (
                       // Firefox's datetime-local picker only offers the calendar — the
                       // time has to be typed blind — so the field is split in two and
                       // recombined into the same YYYY-MM-DDTHH:MM string.
+                      <div {...group}>
                       <DateTimeField
                         value={value}
                         disabled={isLoading || isSaving}
@@ -1428,8 +1447,10 @@ const MultiStepReportForm = ({
                         onChange={(next) => handleStepDataChange(question.name, next)}
                         onBlur={(next) => validateQuestionOnBlur(question, next)}
                       />
+                      </div>
                     ) : (
                       <Input
+                        {...named}
                         type={
                           normalizedType === "email" ? "email"
                             : normalizedType === "phone" ? "tel"
@@ -1718,6 +1739,7 @@ const CurrencyField = ({ value, defaultCurrency, disabled, required, error, plac
         <input
           type="text"
           inputMode="decimal"
+          aria-label="Amount"
           value={draft}
           required={required}
           disabled={disabled}
@@ -1771,6 +1793,7 @@ const DateTimeField = ({ value, disabled, required, error, onChange, onBlur }) =
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input
           type="date"
+          aria-label="Date"
           value={parts.date}
           max={maxDate}
           required={required}
@@ -1783,6 +1806,7 @@ const DateTimeField = ({ value, disabled, required, error, onChange, onBlur }) =
         />
         <Input
           type="time"
+          aria-label="Time"
           value={parts.time}
           max={maxTime}
           required={required}
@@ -1968,14 +1992,16 @@ const InlineFileUpload = ({
               setUploadedFilename(null);
               onUploaded("");
             }}
-            className="text-ink-subtle hover:text-danger-fg"
+            className="inline-flex h-7 w-7 items-center justify-center rounded text-ink-subtle hover:text-danger-fg"
+            aria-label={`Remove ${uploadedFilename}`}
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       ) : (
         <input
           type="file"
+          aria-label={question.label}
           onChange={handleChange}
           accept={ATTACHMENT_ACCEPT}
           disabled={isDisabled}

@@ -200,15 +200,15 @@ const Help = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-subtle py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-100 rounded-full mx-auto mb-4">
-            <HelpCircle className="w-10 h-10 text-primary-600" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-accent-soft rounded-full mx-auto mb-4">
+            <HelpCircle className="w-10 h-10 text-link" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Help Center</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold text-ink mb-3">Help Center</h1>
+          <p className="text-ink-muted max-w-2xl mx-auto">
             Find answers to common questions, browse resources, and get support for using our whistleblowing platform.
           </p>
         </div>
@@ -216,13 +216,13 @@ const Help = () => {
         {/* Search Bar */}
         <Card className="mb-8">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-ink-subtle w-5 h-5" />
             <input
               type="text"
               placeholder="Search for help..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-3 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-transparent"
             />
           </div>
         </Card>
@@ -233,13 +233,13 @@ const Help = () => {
             <Card padding="small" className="h-full hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-start">
                 <div className="skrink-0">
-                  <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-                    <MessageCircle className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center justify-center w-10 h-10 bg-accent-soft rounded-lg">
+                    <MessageCircle className="w-5 h-5 text-link" />
                   </div>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-semibold text-gray-900">Submit a Report</h3>
-                  <p className="text-xs text-gray-600 mt-1">Report a concern securely</p>
+                  <h3 className="text-sm font-semibold text-ink">Submit a Report</h3>
+                  <p className="text-xs text-ink-muted mt-1">Report a concern securely</p>
                 </div>
               </div>
             </Card>
@@ -254,8 +254,8 @@ const Help = () => {
                   </div>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-semibold text-gray-900">Track a Report</h3>
-                  <p className="text-xs text-gray-600 mt-1">Check your report status</p>
+                  <h3 className="text-sm font-semibold text-ink">Track a Report</h3>
+                  <p className="text-xs text-ink-muted mt-1">Check your report status</p>
                 </div>
               </div>
             </Card>
@@ -270,8 +270,8 @@ const Help = () => {
                   </div>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-semibold text-gray-900">Email Support</h3>
-                  <p className="text-xs text-gray-600 mt-1">Get help via email</p>
+                  <h3 className="text-sm font-semibold text-ink">Email Support</h3>
+                  <p className="text-xs text-ink-muted mt-1">Get help via email</p>
                 </div>
               </div>
             </Card>
@@ -286,8 +286,8 @@ const Help = () => {
                   </div>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-semibold text-gray-900">Security Info</h3>
-                  <p className="text-xs text-gray-600 mt-1">Learn about our security</p>
+                  <h3 className="text-sm font-semibold text-ink">Security Info</h3>
+                  <p className="text-xs text-ink-muted mt-1">Learn about our security</p>
                 </div>
               </div>
             </Card>
@@ -298,7 +298,7 @@ const Help = () => {
           {/* Sidebar */}
           <aside className="lg:col-span-1">
             <Card padding="small" className="sticky top-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Categories</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3">Categories</h3>
               <nav className="space-y-1">
                 {categories.map((category) => {
                   const Icon = category.icon;
@@ -308,8 +308,8 @@ const Help = () => {
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
                       className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${isActive
-                        ? 'bg-primary-100 text-primary-700 font-medium'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        ? 'bg-accent-soft text-link font-medium'
+                        : 'text-ink-muted hover:bg-hover'
                         }`}
                     >
                       <Icon className="w-4 h-4 mr-2" />
@@ -321,24 +321,24 @@ const Help = () => {
             </Card>
 
             <Card padding="small" className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Contact Support</h3>
-              <div className="space-y-3 text-sm text-gray-600">
+              <h3 className="text-sm font-semibold text-ink mb-3">Contact Support</h3>
+              <div className="space-y-3 text-sm text-ink-muted">
                 <div className="flex items-start">
-                  <Mail className="w-4 h-4 mr-2 mt-0.5 text-primary-600 skrink-0" />
+                  <Mail className="w-4 h-4 mr-2 mt-0.5 text-link skrink-0" />
                   <div>
-                    <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary-600 hover:underline">
+                    <a href={`mailto:${SUPPORT_EMAIL}`} className="text-link hover:underline">
                       {SUPPORT_EMAIL}
                     </a>
                   </div>
                 </div>
                 <div className="flex items-start">
-                  <Phone className="w-4 h-4 mr-2 mt-0.5 text-primary-600 skrink-0" />
+                  <Phone className="w-4 h-4 mr-2 mt-0.5 text-link skrink-0" />
                   <div>
                     <p>+1 (555) 123-4567</p>
                   </div>
                 </div>
                 <div className="flex items-start">
-                  <Clock className="w-4 h-4 mr-2 mt-0.5 text-primary-600 skrink-0" />
+                  <Clock className="w-4 h-4 mr-2 mt-0.5 text-link skrink-0" />
                   <div>
                     <p>Mon-Fri: 9AM - 6PM EST</p>
                   </div>
@@ -348,7 +348,7 @@ const Help = () => {
           </aside>
 
           {/* Main Content */}
-          <main className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             {/* Alert for no results */}
             {searchQuery && filteredFaqs.length === 0 && (
               <Alert variant="warning">
@@ -367,12 +367,12 @@ const Help = () => {
             <article>
               <Card>
                 <div className="flex items-start mb-4">
-                  <HelpCircle className="w-5 h-5 text-primary-600 mr-3" />
+                  <HelpCircle className="w-5 h-5 text-link mr-3" />
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
+                    <h2 className="text-lg font-semibold text-ink">
                       Frequently Asked Questions
                     </h2>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-ink-muted mt-1">
                       {filteredFaqs.length} {filteredFaqs.length === 1 ? 'question' : 'questions'} found
                     </p>
                   </div>
@@ -382,24 +382,24 @@ const Help = () => {
                   {filteredFaqs.map((faq) => (
                     <div
                       key={faq.id}
-                      className="border border-gray-200 rounded-lg overflow-hidden"
+                      className="border border-line rounded-lg overflow-hidden"
                     >
                       <button
                         onClick={() => toggleFaq(faq.id)}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-gray-50 transition-colors text-left"
+                        className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-hover transition-colors text-left"
                       >
-                        <span className="font-medium text-gray-900 text-sm pr-4">
+                        <span className="font-medium text-ink text-sm pr-4">
                           {faq.question}
                         </span>
                         {openFaqId === faq.id ? (
-                          <ChevronUp className="w-5 h-5 text-gray-400 skrink-0" />
+                          <ChevronUp className="w-5 h-5 text-ink-subtle skrink-0" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-400 skrink-0" />
+                          <ChevronDown className="w-5 h-5 text-ink-subtle skrink-0" />
                         )}
                       </button>
                       {openFaqId === faq.id && (
-                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                          <p className="text-sm text-gray-700">{faq.answer}</p>
+                        <div className="px-4 py-3 bg-subtle border-t border-line">
+                          <p className="text-sm text-ink-secondary">{faq.answer}</p>
                         </div>
                       )}
                     </div>
@@ -408,7 +408,7 @@ const Help = () => {
               </Card>
             </article>
 
-          </main>
+          </div>
         </div>
       </div>
     </div>

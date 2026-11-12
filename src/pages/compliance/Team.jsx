@@ -138,9 +138,7 @@ const ComplianceTeam = () => {
           <div className="flex flex-wrap items-center gap-2">
             <TableSortControl {...sort} id="team" className="shrink-0" />
             {can(ACCESS.roles) && (
-              <Link to={staffPath(orgSlug, 'roles')}>
-                <Button variant="secondary" size="small">Manage Roles</Button>
-              </Link>
+              <Button variant="secondary" size="small" to={staffPath(orgSlug, 'roles')}>Manage Roles</Button>
             )}
           </div>
         </Card.Header>

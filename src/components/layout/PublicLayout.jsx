@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"
 import { Navigate, Outlet, useParams, useLocation } from "react-router-dom"
 import Footer from "./Footer"
 import Navbar from "./Navbar"
+import RouteAnnouncer from "./RouteAnnouncer"
 import AIChatWidget from "./AIChatWidget"
 import { useAuthStore } from "../../store/authStore"
 import { isOutsideOwnOrganization, toOwnOrganizationPath } from "../../utils/roles"
@@ -110,8 +111,10 @@ const PublicLayout = ({ requireOrg = false }) => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <Navbar />
-      <main className="flex-1">
+      <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+        <RouteAnnouncer />
         <Outlet />
       </main>
       {orgSlug && <AIChatWidget />}

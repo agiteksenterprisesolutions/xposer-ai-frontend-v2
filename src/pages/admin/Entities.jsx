@@ -184,6 +184,7 @@ const EntityForm = ({ isOpen, onClose, entity, region, defaultPack, onSaved }) =
             <input
               id="ent-ar"
               dir="rtl"
+              lang="ar"
               className={inputClass}
               value={form.name.ar}
               onChange={(e) => set('name', { ...form.name, ar: e.target.value })}

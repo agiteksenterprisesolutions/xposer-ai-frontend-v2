@@ -26,6 +26,7 @@ import Badge, { PriorityBadge, StatusBadge } from '../ui/Badge';
 import Skeleton from '../ui/Skeleton';
 import { AGENT_LABELS, DECISION_LABELS, agentErrorMessage, citationVerdict, isManualAction } from '../../utils/agents';
 import { agentRunsAPI } from '../../api';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { parseServerDate } from '../../utils/formatters';
 
 const VERDICT_ICONS = { success: ShieldCheck, warning: ShieldAlert, danger: ShieldX };
@@ -259,6 +260,8 @@ const RunDrawer = ({ run, casePath, onClose }) => {
   const [error, setError] = useState(null);
   const [tab, setTab] = useState('timeline');
   const panelRef = useRef(null);
+  // The panel focuses itself below; this keeps Tab inside and returns focus on close.
+  useDialogFocus(panelRef, true, { initialFocus: false });
   const reportId = run.report_id;
 
   useEffect(() => {

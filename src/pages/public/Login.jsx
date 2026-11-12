@@ -295,17 +295,13 @@ const Login = () => {
 
           {/* Quick Actions */}
           {/* <div className="space-y-3 mt-6">
-            <Link to="/submit-anonymous">
-              <Button variant="secondary" fullWidth>
+            <Button variant="secondary" fullWidth to="/submit-anonymous">
                 Submit Anonymous Report
               </Button>
-            </Link>
 
-            <Link to="/register">
-              <Button variant="ghost" fullWidth>
+            <Button variant="ghost" fullWidth to="/register">
                 Create New Account
               </Button>
-            </Link>
           </div> */}
         </Card>
 

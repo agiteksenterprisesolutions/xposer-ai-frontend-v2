@@ -22,7 +22,7 @@ const PrivacyPolicy = () => {
   const lastUpdated = 'January 30, 2026';
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-subtle py-12 px-4 sm:px-6 lg:px-8">
       <SEO
         title="Privacy Policy"
         description="How Xposer AI collects, uses and protects your personal information, and the choices you have over your data."
@@ -31,11 +31,11 @@ const PrivacyPolicy = () => {
       <div className="max-w-7xl mx-auto">
         {/* Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-100 rounded-full mx-auto mb-4">
-            <ShieldCheck className="w-10 h-10 text-primary-600" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-accent-soft rounded-full mx-auto mb-4">
+            <ShieldCheck className="w-10 h-10 text-link" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Privacy Policy</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold text-ink mb-3">Privacy Policy</h1>
+          <p className="text-ink-muted max-w-2xl mx-auto">
             We respect your privacy and are committed to protecting your personal information. This policy explains what we collect, how we use it, and the choices you have.
           </p>
         </div>
@@ -44,30 +44,30 @@ const PrivacyPolicy = () => {
           {/* Sidebar / TOC */}
           <aside className="lg:col-span-1">
             <Card padding="small" className="sticky top-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">On This Page</h3>
-              <nav className="text-sm text-gray-600 space-y-2">
-                <a href="#what-we-collect" className="block hover:text-primary-600">What we collect</a>
-                <a href="#how-we-use" className="block hover:text-primary-600">How we use your data</a>
-                <a href="#cookies" className="block hover:text-primary-600">Cookies & Tracking</a>
-                <a href="#security" className="block hover:text-primary-600">Security</a>
-                <a href="#retention" className="block hover:text-primary-600">Data Retention</a>
-                <a href="#your-rights" className="block hover:text-primary-600">Your rights</a>
-                <a href="#contact" className="block hover:text-primary-600">Contact</a>
+              <h3 className="text-sm font-semibold text-ink mb-3">On This Page</h3>
+              <nav className="text-sm text-ink-muted space-y-2">
+                <a href="#what-we-collect" className="block py-0.5 hover:text-link-hover">What we collect</a>
+                <a href="#how-we-use" className="block py-0.5 hover:text-link-hover">How we use your data</a>
+                <a href="#cookies" className="block py-0.5 hover:text-link-hover">Cookies & Tracking</a>
+                <a href="#security" className="block py-0.5 hover:text-link-hover">Security</a>
+                <a href="#retention" className="block py-0.5 hover:text-link-hover">Data Retention</a>
+                <a href="#your-rights" className="block py-0.5 hover:text-link-hover">Your rights</a>
+                <a href="#contact" className="block py-0.5 hover:text-link-hover">Contact</a>
               </nav>
             </Card>
 
             <Card padding="small" className="mt-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Links</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3">Quick Links</h3>
               <div className="flex flex-col space-y-2">
-                <Link to="/terms" className="text-sm text-primary-600 hover:text-primary-700">Terms of Service</Link>
-                <Link to="/submit-anonymous" className="text-sm text-primary-600 hover:text-primary-700">Submit Anonymous Report</Link>
-                <Link to="/track-report" className="text-sm text-primary-600 hover:text-primary-700">Track a Report</Link>
+                <Link to="/terms" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Terms of Service</Link>
+                <Link to="/submit-anonymous" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Submit Anonymous Report</Link>
+                <Link to="/track-report" className="inline-flex min-h-6 items-center text-sm text-link hover:text-link-hover">Track a Report</Link>
               </div>
             </Card>
           </aside>
 
           {/* Main content */}
-          <main className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             <Alert variant="info">
               <div className="flex items-start">
                 <div>
@@ -80,10 +80,10 @@ const PrivacyPolicy = () => {
             <article id="what-we-collect">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">What we collect</h2>
+                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">What we collect</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We may collect the following types of information:</p>
                   <ul className="list-disc list-inside space-y-2">
                     <li><strong>Report content:</strong> The details you provide in a report (text, attachments). If you choose to report anonymously, we do not collect identifying information unless you enter it.</li>
@@ -98,10 +98,10 @@ const PrivacyPolicy = () => {
             <article id="how-we-use">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Globe className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">How we use your data</h2>
+                  <Globe className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">How we use your data</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We use the information we collect to:</p>
                   <ul className="list-disc list-inside space-y-2">
                     <li>Process and investigate reports and facilitate secure communication between reporters and investigators.</li>
@@ -116,10 +116,10 @@ const PrivacyPolicy = () => {
             <article id="cookies">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Cookies & Tracking</h2>
+                  <Info className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Cookies & Tracking</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We use cookies and similar technologies to operate the site and analyze usage. Cookies may include:</p>
                   <ul className="list-disc list-inside space-y-2">
                     <li><strong>Essential cookies:</strong> Required for core functionality (e.g., sessions).</li>
@@ -134,10 +134,10 @@ const PrivacyPolicy = () => {
             <article id="security">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Lock className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Security</h2>
+                  <Lock className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Security</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We use industry-standard technical and organizational measures to protect data, including encryption in transit and at rest, access controls, and secure development practices.</p>
                   <p>While we take reasonable steps to protect information, no system is completely secure; if you suspect a security issue, contact us immediately (see Contact below).</p>
                 </div>
@@ -147,10 +147,10 @@ const PrivacyPolicy = () => {
             <article id="retention">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Clock className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Data retention</h2>
+                  <Clock className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Data retention</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We retain personal data only for as long as necessary to fulfill the purposes described in this policy, comply with legal obligations, resolve disputes, and enforce our agreements.</p>
                   <p>Retention periods may vary depending on the type of data and applicable law.</p>
                 </div>
@@ -160,10 +160,10 @@ const PrivacyPolicy = () => {
             <article id="your-rights">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Users className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Your rights</h2>
+                  <Users className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Your rights</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>Depending on your jurisdiction, you may have certain rights regarding your personal data, including:</p>
                   <ul className="list-disc list-inside space-y-2">
                     <li><strong>Access:</strong> Request a copy of the personal data we hold about you.</li>
@@ -180,14 +180,14 @@ const PrivacyPolicy = () => {
             <article id="contact">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Mail className="w-5 h-5 text-primary-600 mr-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Contact</h2>
+                  <Mail className="w-5 h-5 text-link mr-3" />
+                  <h2 className="text-lg font-semibold text-ink">Contact</h2>
                 </div>
-                <div className="space-y-3 text-gray-700 text-sm">
+                <div className="space-y-3 text-ink-secondary text-sm">
                   <p>If you have questions about this policy or want to exercise your rights, contact our Data Protection Officer:</p>
                   <div className="mt-2">
-                    <p className="text-sm"><strong>Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary-600 hover:underline">{SUPPORT_EMAIL}</a></p>
-                    <p className="text-sm"><strong>Support:</strong> <Link to="/help" className="text-primary-600 hover:underline">Help Center</Link></p>
+                    <p className="text-sm"><strong>Email:</strong> <a href={`mailto:${SUPPORT_EMAIL}`} className="text-link hover:underline">{SUPPORT_EMAIL}</a></p>
+                    <p className="text-sm"><strong>Support:</strong> <Link to="/help" className="text-link hover:underline">Help Center</Link></p>
                   </div>
                 </div>
               </Card>
@@ -196,30 +196,26 @@ const PrivacyPolicy = () => {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Last updated: <span className="font-medium text-gray-900">{lastUpdated}</span></p>
-                  <p className="text-sm text-gray-600 mt-1">By using our service you agree to this policy. For more, see our <Link to="/terms" className="text-primary-600 hover:underline">Terms of Service</Link>.</p>
+                  <p className="text-sm text-ink-muted">Last updated: <span className="font-medium text-ink">{lastUpdated}</span></p>
+                  <p className="text-sm text-ink-muted mt-1">By using our service you agree to this policy. For more, see our <Link to="/terms" className="text-link hover:underline">Terms of Service</Link>.</p>
                 </div>
 
                 <div className="hidden sm:block">
-                  <Link to="/submit-anonymous">
-                    <Button variant="secondary" size="medium" className="ml-4 cursor-pointer">
+                  <Button variant="secondary" size="medium" className="ml-4 cursor-pointer" to="/submit-anonymous">
                       Submit a Report
                       <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
-                  </Link>
                 </div>
               </div>
             </Card>
 
             {/* Mobile CTA */}
             <div className="block sm:hidden">
-              <Link to="/submit-anonymous">
-                <Button variant="secondary" size="large" fullWidth>
+              <Button variant="secondary" size="large" fullWidth to="/submit-anonymous">
                   Submit a Report
                 </Button>
-              </Link>
             </div>
-          </main>
+          </div>
         </div>
       </div>
     </div>

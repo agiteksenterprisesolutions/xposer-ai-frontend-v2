@@ -1,5 +1,6 @@
 // src/components/ui/Button.jsx
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 const Button = React.forwardRef(({
@@ -14,6 +15,9 @@ const Button = React.forwardRef(({
   className = '',
   type = 'button',
   onClick,
+  // With `to`, the button is a router link styled as a button: one control,
+  // one Tab stop, instead of a <button> nested in an <a> (WCAG 4.1.2).
+  to,
   ...props
 }, ref) => {
   const baseClasses = [
@@ -58,6 +62,29 @@ const Button = React.forwardRef(({
   const sizeClass = variant === 'link' ? 'text-sm' : (sizes[size] || sizes.medium);
   const iconSize = size === 'small' ? 'w-3.5 h-3.5' : 'w-4 h-4';
 
+  const content = (
+    <>
+      {isLoading && <Loader2 className={`${iconSize} animate-spin`} aria-hidden="true" />}
+      {!isLoading && StartIcon && <StartIcon className={`${iconSize} shrink-0`} aria-hidden="true" />}
+      {children}
+      {!isLoading && EndIcon && <EndIcon className={`${iconSize} shrink-0`} aria-hidden="true" />}
+    </>
+  );
+
+  if (to !== undefined) {
+    return (
+      <Link
+        ref={ref}
+        to={to}
+        onClick={onClick}
+        className={`${baseClasses} ${variantClass} ${sizeClass} ${widthClass} no-underline ${className}`}
+        {...props}
+      >
+        {content}
+      </Link>
+    );
+  }
+
   return (
     <button
       ref={ref}
@@ -67,10 +94,7 @@ const Button = React.forwardRef(({
       onClick={onClick}
       {...props}
     >
-      {isLoading && <Loader2 className={`${iconSize} animate-spin`} />}
-      {!isLoading && StartIcon && <StartIcon className={`${iconSize} shrink-0`} />}
-      {children}
-      {!isLoading && EndIcon && <EndIcon className={`${iconSize} shrink-0`} />}
+      {content}
     </button>
   );
 });

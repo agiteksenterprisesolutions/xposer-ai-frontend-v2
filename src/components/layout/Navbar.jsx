@@ -220,7 +220,7 @@ const Navbar = ({ onMenuClick }) => {
           {isAuthenticated && (
             <Dropdown
               trigger={
-                <button className="flex items-center gap-1 bg-subtle border border-line rounded-lg transition-colors p-1 hover:bg-hover hover:border-line-strong" type="button">
+                <button className="flex items-center gap-1 bg-subtle border border-line rounded-lg transition-colors p-1 hover:bg-hover hover:border-line-strong" type="button" aria-label="Account menu" aria-haspopup="menu">
                   <UserAvatar user={user} size="xs" />
                   <ChevronDown className="w-4 h-4 text-ink-subtle" />
                 </button>
