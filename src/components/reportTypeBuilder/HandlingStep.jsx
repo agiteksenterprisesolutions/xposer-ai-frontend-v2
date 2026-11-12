@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, AlertTriangle, Archive, Clock, FileText, Info, Lock, ShieldCheck, Users } from 'lucide-react';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
+import { useOrgJurisdiction } from '../../hooks/useOrgJurisdiction';
 import { reportTypesAPI } from '../../api';
 import { parseServerDate } from '../../utils/formatters';
 import { CONFIDENTIALITY_TIERS } from '../../utils/reportTypes';
@@ -155,6 +156,11 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
   const approvedAt = parseServerDate(form.approved_at);
   const tier = form.confidentiality_tier || 'standard';
   const retentionError = serverErrors.retention_years || retentionProblem(form.retention_years);
+  // A case keeps the longer of this and its jurisdiction pack's minimum, so a
+  // shorter setting here doesn't shorten anything. Only an active pack counts.
+  const { pack, active } = useOrgJurisdiction();
+  const packMinimum = active ? pack?.retention?.min_years : null;
+  const belowPack = packMinimum != null && Number(form.retention_years) > 0 && Number(form.retention_years) < packMinimum;
 
   const setField = (field, value) => {
     setDraftField(field, value);
@@ -379,6 +385,12 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
             error={retentionError}
             hint="After this, the case's answers, messages and files are permanently deleted."
           />
+          {belowPack && (
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-warning-fg">
+              <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              Your jurisdiction pack ({pack.code}) keeps cases for at least {packMinimum} years, so that minimum still applies.
+            </p>
+          )}
           <Divider />
           <div>
             <Label htmlFor="rt-code" hint={codeLocked ? 'fixed' : 'optional'}>

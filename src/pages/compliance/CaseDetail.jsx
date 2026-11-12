@@ -40,6 +40,7 @@ import { normalizeListResponse } from '../../utils/pagination';
 import { formatAnswer, orderedAnswers, questionsByName } from '../../utils/reportAnswers';
 import { useReportForm } from '../../hooks/useReportForm';
 import GoverningType from '../../components/reports/GoverningType';
+import CaseEntity from '../../components/reports/CaseEntity';
 import { errorSummary } from '../../utils/errors';
 import { MaskedValue, TierBadge, isAutoAssigned, maskedKeys, slaClock } from '../../components/reports/CaseGovernance';
 import { CaseNotices, DeadlinesCard, DisposedCase, RecordsCard, isDisposed } from '../../components/reports/CasePanels';
@@ -825,6 +826,15 @@ const CaseDetail = () => {
               {/* The type that governs this case, linked; for an AI report,
                   with what it asked against that type's questions. */}
               <GoverningType report={report} orgSlug={report?.organization_slug || orgSlug} />
+
+              {/* The company the case is about: set by the AI, correctable by staff
+                  who can update any case. Re-read afterwards: another entity's
+                  pack can change the deadlines and retention. */}
+              <CaseEntity
+                report={report}
+                canChange={can(PERM.reportUpdateAll) && can(PERM.entityRead)}
+                onChanged={fetchReport}
+              />
 
             </Card.Content>
             {/* <Card.Footer>

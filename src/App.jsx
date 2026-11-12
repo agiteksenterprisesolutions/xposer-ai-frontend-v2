@@ -44,6 +44,8 @@ import AgentActivity from './pages/admin/AgentActivity'
 import QuestionSets from './pages/admin/QuestionSets'
 import VoiceProfile from './pages/admin/VoiceProfile'
 import Account from './pages/admin/Account'
+import Entities from './pages/admin/Entities'
+import Jurisdiction from './pages/admin/Jurisdiction'
 import ChangePassword from './pages/reporter/ChangePassword'
 import SetPassword from './pages/auth/SetPassword'
 
@@ -210,6 +212,8 @@ function App() {
           <Route path="agents" element={gate(ACCESS.agents, <Agents />)} />
           <Route path="summarizer" element={gate(ACCESS.agents, <Summarizer />)} />
           <Route path="hierarchy" element={gate(ACCESS.hierarchy, <Hierarchy />)} />
+          <Route path="entities" element={gate(ACCESS.entities, <Entities />)} />
+          <Route path="jurisdiction" element={gate(ACCESS.jurisdiction, <Jurisdiction />)} />
           <Route path="workflows" element={gate(ACCESS.agents, <Workflows />)} />
           <Route path="workflows/new" element={gate(ACCESS.agentsManage, <WorkflowEditor />)} />
           <Route path="workflows/:id" element={gate(ACCESS.agents, <WorkflowEditor />)} />

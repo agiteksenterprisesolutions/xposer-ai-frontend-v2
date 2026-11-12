@@ -258,6 +258,30 @@ export const reportTypesAPI = {
     return response.data;
   },
 
+  /**
+   * Active sector packs (XPAI-87): ready-made report types for an industry.
+   * `[{ code, name: {en, ar}, description, version, report_types: [{ code, name, category }] }]`.
+   * report_type:read.
+   */
+  sectorPacks: async () => {
+    const response = await api.get('/sector-packs/', { skipErrorToast: true });
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
+  /**
+   * Copy a pack's report types into this organization. Dry run unless told
+   * otherwise: `{ ok, dry_run, pack, would_create | created, skipped, problems }`.
+   * Codes the organization already has are skipped; any other problem refuses
+   * the whole install (422) and writes nothing. report_type:manage.
+   */
+  installSectorPack: async (code, { dryRun = true } = {}) => {
+    const response = await api.post(`/sector-packs/${encodeURIComponent(code)}/install`, null, {
+      params: { dry_run: dryRun },
+      skipErrorToast: true,
+    });
+    return response.data;
+  },
+
   /** Draft, active or inactive — `status` is a type's whole availability. */
   setReportTypeStatus: async (id, status) => {
     const response = await api.patch(`/report-types/${id}`, { status });
@@ -435,7 +459,7 @@ export const reportTypesAPI = {
 
 // Anything that can add, rename or remove a type makes the shared name index
 // stale; drop it after the call, whether or not the call succeeded.
-['createReportType', 'updateReportType', 'deleteReportType', 'setReportTypeStatus', 'cloneReportType', 'importReportTypes', 'createFromTemplate'].forEach(
+['createReportType', 'updateReportType', 'deleteReportType', 'setReportTypeStatus', 'cloneReportType', 'importReportTypes', 'createFromTemplate', 'installSectorPack'].forEach(
   (name) => {
     const call = reportTypesAPI[name];
     if (typeof call !== 'function') return;

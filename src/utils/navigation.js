@@ -8,6 +8,8 @@
 // that page needs. The reporter portal stays at /:orgSlug/reporter.
 import {
   Home,
+  Building,
+  Landmark,
   FileText,
   Users,
   Settings,
@@ -65,6 +67,8 @@ export const STAFF_NAV = [
   { section: 'Organization', name: 'User Management', icon: Users, path: 'users', access: ACCESS.users },
   { section: 'Organization', name: 'Roles & Permissions', icon: ShieldCheck, path: 'roles', access: ACCESS.roles },
   { section: 'Organization', name: 'Reporting Hierarchy', icon: Network, path: 'hierarchy', access: ACCESS.hierarchy },
+  { section: 'Organization', name: 'Legal Entities', icon: Building, path: 'entities', access: ACCESS.entities },
+  { section: 'Organization', name: 'Jurisdiction', icon: Landmark, path: 'jurisdiction', access: ACCESS.jurisdiction },
   // Your own name, email and password.
   { section: 'Account', name: 'My Account', icon: UserRound, path: 'account', access: ACCESS.account },
 ];

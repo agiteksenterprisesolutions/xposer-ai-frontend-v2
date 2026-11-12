@@ -46,8 +46,33 @@ export const DEFAULT_CURRENCY = 'SAR';
 /** Currencies offered by the currency widget; any ISO code is accepted. */
 export const CURRENCIES = ['SAR', 'AED', 'BHD', 'KWD', 'OMR', 'QAR', 'EGP', 'USD', 'EUR', 'GBP', 'PKR', 'INR'];
 
-/** Minor units per major unit; anything not listed uses 2 decimals. */
-const MINOR_DIGITS = { BHD: 3, KWD: 3, OMR: 3, JPY: 0 };
+/** Decimal places per currency, as the API enforces them; anything not listed uses 2. */
+const MINOR_DIGITS = { BHD: 3, KWD: 3, OMR: 3, JOD: 3, IQD: 3, LYD: 3, TND: 3, JPY: 0 };
+
+/** A region's currency, the last fallback for money answers (XPAI-88). */
+export const REGION_CURRENCY = { UAE: 'AED', KSA: 'SAR' };
+
+/**
+ * The currency a money question starts on: the question's own default, then
+ * the organization's default_currency, then its region's. (A case's entity
+ * currency comes first on the server, but a reporter never picks an entity.)
+ */
+export const defaultCurrencyFor = (question, organization) =>
+  question?.default_value?.currency ||
+  organization?.default_currency ||
+  REGION_CURRENCY[organization?.region] ||
+  DEFAULT_CURRENCY;
+
+/**
+ * A money answer as the API takes it: `{ amount: "150000.50", currency }`.
+ * The form holds `{ amount_minor, currency }` (what the API sends back), so
+ * this converts on the way out; anything else passes through unchanged.
+ */
+export const toAmountPayload = (answer) => {
+  if (!isCurrencyAnswer(answer)) return answer;
+  if (answer.amount_minor === null || answer.amount_minor === undefined) return null;
+  return { amount: fromMinorUnits(answer.amount_minor, answer.currency || DEFAULT_CURRENCY), currency: answer.currency || DEFAULT_CURRENCY };
+};
 export const currencyDigits = (currency) => MINOR_DIGITS[currency] ?? 2;
 
 /** "1234.5" in SAR → 123450. Money is stored as an integer, never a float. */

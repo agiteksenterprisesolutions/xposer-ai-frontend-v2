@@ -19,6 +19,7 @@ import {
   ArrowDownUp,
   ChevronDown,
   FileSpreadsheet,
+  Package,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { REPORT_TYPE_STATUSES, reportTypeStatus } from "../../utils/reportTypes";
@@ -45,6 +46,7 @@ import { DEFAULT_PAGE_SIZE, normalizeListResponse } from '../../utils/pagination
 import TableSortControl from '../../components/ui/TableSortControl';
 import { useTableSort, byText, byDate } from '../../hooks/useTableSort';
 import { parseServerDate } from '../../utils/formatters';
+import SectorPackInstall from '../../components/reportTypes/SectorPackInstall';
 
 const STATUS_BADGE = { active: 'success', draft: 'default', inactive: 'warning' };
 const STATUS_STYLE = {
@@ -99,6 +101,7 @@ const ReportTypes = () => {
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [installingPack, setInstallingPack] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -437,6 +440,14 @@ const ReportTypes = () => {
                   <FileSpreadsheet className="w-4 h-4 shrink-0" />
                   Download blank template
                 </Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Item
+                  onClick={() => setInstallingPack(true)}
+                  title="Add a ready-made set of report types for your industry"
+                >
+                  <Package className="w-4 h-4 shrink-0" />
+                  Install a sector pack
+                </Dropdown.Item>
               </Dropdown>
               <Button
                 variant="secondary"
@@ -509,6 +520,14 @@ const ReportTypes = () => {
                       {type.name}
                     </p>
                     {type.code && <p className="font-mono text-xs text-ink-subtle">{type.code}</p>}
+                    {/* Installed from a sector pack; it's the organization's own now. */}
+                    {type.sector_pack?.code && (
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
+                        <Package className="h-3 w-3 shrink-0" aria-hidden="true" />
+                        From the {type.sector_pack.code} pack
+                        {type.sector_pack.version != null && ` (v${type.sector_pack.version})`}
+                      </p>
+                    )}
                   </Table.Cell>
                   <Table.Cell>
                     <Badge variant="info" size="small">
@@ -601,6 +620,12 @@ const ReportTypes = () => {
           </div>
         )}
       </Card>
+
+      <SectorPackInstall
+        isOpen={installingPack}
+        onClose={() => setInstallingPack(false)}
+        onInstalled={() => fetchTypes()}
+      />
 
       <Modal
         isOpen={Boolean(importResult)}

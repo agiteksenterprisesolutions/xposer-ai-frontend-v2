@@ -41,6 +41,8 @@ import {
   CURRENCIES,
   DEFAULT_CURRENCY,
   currencyDigits,
+  defaultCurrencyFor,
+  toAmountPayload,
   fromMinorUnits,
   normalizeOptions,
   normalizeValidation,
@@ -48,6 +50,7 @@ import {
   toMinorUnits,
 } from "../../utils/reportTypes";
 import { describeError } from "../../utils/errors";
+import { organizationAPI } from "../../api/jurisdiction";
 
 /**
  * A type that refuses anonymous reports doesn't offer "anonymous" on its
@@ -342,6 +345,15 @@ const MultiStepReportForm = ({
   const [generatedReportNumber, setGeneratedReportNumber] = useState(null);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
+
+  // The organization's default_currency and region, for money questions'
+  // starting currency. By slug, which is public, so anonymous reporters get it too.
+  const [organization, setOrganization] = useState(null);
+  const orgSlugForCurrency = organizationSlug || user?.organization_slug || null;
+  useEffect(() => {
+    if (!orgSlugForCurrency) return;
+    organizationAPI.bySlug(orgSlugForCurrency).then(setOrganization).catch(() => {});
+  }, [orgSlugForCurrency]);
 
   const hasInitialized = useRef(false);
   const initPromiseRef = useRef(null);
@@ -830,10 +842,13 @@ const MultiStepReportForm = ({
     setIsSaving(true);
     setError("");
     try {
+      // Money goes to the API as { amount, currency }; the form keeps the
+      // { amount_minor, currency } shape the API sends back.
+      const payload = Object.fromEntries(Object.entries(currentData).map(([name, answer]) => [name, toAmountPayload(answer)]));
       const response = await reportsAPI.saveStep(
         currentReportNumber,
         currentStep,
-        currentData,
+        payload,
         isAnonymous ? password : null,
         anonymousOrgSlug || undefined
       );
@@ -1393,7 +1408,7 @@ const MultiStepReportForm = ({
                     ) : normalizedType === "currency" ? (
                       <CurrencyField
                         value={value && typeof value === "object" ? value : null}
-                        defaultCurrency={question.default_value?.currency}
+                        defaultCurrency={defaultCurrencyFor(question, organization)}
                         placeholder={question.placeholder}
                         disabled={isLoading || isSaving}
                         required={isRequired}

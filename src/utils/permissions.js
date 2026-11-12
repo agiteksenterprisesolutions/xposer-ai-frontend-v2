@@ -66,6 +66,10 @@ export const PERM = {
   voiceProfileRead: 'voice_profile:read',
   voiceProfileManage: 'voice_profile:manage',
 
+  // Legal entities (the companies a tenant is made of)
+  entityRead: 'entity:read',
+  entityManage: 'entity:manage',
+
   // Roles
   roleManage: 'role:manage',
 
@@ -111,6 +115,8 @@ export const PERMISSION_INFO = {
   'agent:summary_read': "Read the AI summary on a report",
   'voice_profile:read': 'View the voice profile',
   'voice_profile:manage': 'Edit the voice profile',
+  'entity:read': 'View the legal entities',
+  'entity:manage': 'Add and edit legal entities',
   'role:manage': 'Create and edit roles — including their own',
   'system:stats': 'View organization statistics and analytics',
 };
@@ -208,6 +214,11 @@ export const ACCESS = {
   agentsManage: { all: [PERM.agentRead, PERM.agentManage] },
   // Non-admins with org_hierarchy:read get the org chart (levels and people),
   // read-only, and nothing else; the rest of the section is admin only.
+  // The organization's region and jurisdiction pack: any staff member reads packs.
+  jurisdiction: { staff: true },
+  // Legal entities: entity:manage requires entity:read.
+  entities: { all: [PERM.entityRead] },
+  entitiesManage: { all: [PERM.entityRead, PERM.entityManage] },
   hierarchy: { all: [PERM.hierarchyRead] },
   hierarchyAdmin: { all: [PERM.hierarchyManage] },
   voiceProfile: { all: [PERM.voiceProfileRead] },

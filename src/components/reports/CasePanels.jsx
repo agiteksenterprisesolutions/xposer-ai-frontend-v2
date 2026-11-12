@@ -5,7 +5,8 @@
 //
 //   CaseNotices    the regulator reminder, voice eligibility warnings
 //   DeadlinesCard  acknowledge / triage, and "Mark as acknowledged"
-//   RecordsCard    when the content is deleted, and the legal hold
+//   RecordsCard    when the content is deleted, the legal hold, and the
+//                  jurisdiction pack the case was filed under
 //   DisposedCase   the read-only page once retention has destroyed the content
 //
 // Nothing here works out a deadline or a deletion date; the server sends both
@@ -56,17 +57,37 @@ export const CaseNotices = ({ report }) => {
 
 // ─── Deadlines ───────────────────────────────────────────────────────────
 
+// Where each clock's length and basis sit on report.sla.
+const SLA_FIELDS = {
+  acknowledge: { days: 'ack_days', basis: 'ack_basis' },
+  triage: { days: 'triage_days', basis: 'triage_basis' },
+};
+
+/**
+ * "7 business days" / "7 calendar days". Cases filed without an active
+ * jurisdiction pack carry no basis and count calendar days, as before.
+ */
+export const deadlineLength = (sla, days, basis) => {
+  const n = sla?.[days];
+  if (n === null || n === undefined) return null;
+  const kind = sla?.[basis] === 'business' ? 'business' : 'calendar';
+  return `${n} ${kind} day${n === 1 ? '' : 's'}`;
+};
+
 const CLOCK_NOTES = {
   acknowledge: 'Met by the first message to the reporter, or by marking it below.',
   triage: 'Met the first time someone moves the case out of Pending, including assigning it by hand.',
 };
 
-const ClockRow = ({ clock, label, note }) => {
+const ClockRow = ({ clock, label, note, length }) => {
   const set = clock && clock.state && clock.state !== 'not_set';
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-ink">{label}</p>
+        <p className="text-sm font-medium text-ink">
+          {label}
+          {length && <span className="ml-1.5 text-xs font-normal text-ink-muted">· {length}</span>}
+        </p>
         {set ? <SlaBadge clock={clock} size="medium" /> : <span className="text-xs text-ink-subtle">No deadline</span>}
       </div>
       {set && (
@@ -99,6 +120,10 @@ const ClockRow = ({ clock, label, note }) => {
 export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
   const [busy, setBusy] = useState(false);
   const ack = slaClock(report, 'acknowledge');
+  const sla = report?.sla || {};
+  const calendar = sla.calendar || null;
+  const businessDays = Object.values(SLA_FIELDS).some(({ basis }) => sla[basis] === 'business') || sla.feedback_basis === 'business';
+  const feedbackLength = deadlineLength(sla, 'feedback_days', 'feedback_basis');
   const showAcknowledge = canAcknowledge && !ack?.done_at;
 
   const acknowledge = async () => {
@@ -121,12 +146,41 @@ export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
           <CalendarClock className="h-4 w-4 text-accent-fg" />
           Deadlines
         </Card.Title>
-        <Card.Description>Set by the report type when this case was filed. Times are in your time zone.</Card.Description>
+        <Card.Description>
+          {calendar
+            ? `Set when this case was filed, under the ${calendar.pack_code} jurisdiction pack (version ${calendar.pack_version}). Times are in your time zone.`
+            : 'Set by the report type when this case was filed. Times are in your time zone.'}
+        </Card.Description>
       </Card.Header>
       <Card.Content className="space-y-4">
         {SLA_CLOCKS.map(({ key, label }) => (
-          <ClockRow key={key} clock={slaClock(report, key)} label={label} note={CLOCK_NOTES[key]} />
+          <ClockRow
+            key={key}
+            clock={slaClock(report, key)}
+            label={label}
+            note={CLOCK_NOTES[key]}
+            length={SLA_FIELDS[key] && deadlineLength(sla, SLA_FIELDS[key].days, SLA_FIELDS[key].basis)}
+          />
         ))}
+        {/* For information only: nothing reminds anyone about it yet. */}
+        {(sla.feedback_due_at || feedbackLength) && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium text-ink">
+                Feedback to the reporter
+                {feedbackLength && <span className="ml-1.5 text-xs font-normal text-ink-muted">· {feedbackLength}</span>}
+              </p>
+              {sla.feedback_due_at && <span className="text-xs text-ink-secondary">Due {formatWhen(sla.feedback_due_at)}</span>}
+            </div>
+            <p className="text-xs text-ink-subtle">For information. No reminders are sent for it yet.</p>
+          </div>
+        )}
+        {businessDays && (
+          <p className="border-t border-line-subtle pt-3 text-xs text-ink-muted">
+            Business days skip weekends and public holidays{calendar ? ` in the ${calendar.pack_code} calendar` : ''}. If a holiday is added,
+            a running deadline moves later.
+          </p>
+        )}
         {showAcknowledge && (
           <div className="space-y-1.5 border-t border-line-subtle pt-4">
             <Button variant="secondary" size="small" startIcon={CheckCircle2} onClick={acknowledge} isLoading={busy} fullWidth>
@@ -156,7 +210,8 @@ export const RecordsCard = ({ report, canHold, onUpdated }) => {
   const [busy, setBusy] = useState(false);
   const closed = report?.status === 'closed';
   const onHold = Boolean(report?.legal_hold);
-  if (!closed && !onHold && !canHold) return null;
+  const jurisdiction = report?.jurisdiction || null;
+  if (!closed && !onHold && !canHold && !jurisdiction) return null;
 
   const setHold = async (hold) => {
     setBusy(true);
@@ -198,6 +253,33 @@ export const RecordsCard = ({ report, canHold, onUpdated }) => {
           <p className="text-xs text-ink-muted">
             Closed {formatDay(report.closed_at)} · kept {report.retention_years} years. Reopening the case cancels the date.
           </p>
+        )}
+        {/* The jurisdiction pack the case was filed under, when one applied. */}
+        {jurisdiction && (
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-line-subtle pt-3 text-xs">
+            <dt className="text-ink-muted">Jurisdiction</dt>
+            <dd className="text-ink-secondary">
+              <span className="font-mono">{jurisdiction.pack_code}</span>
+              {jurisdiction.pack_version != null && ` · version ${jurisdiction.pack_version}`}
+            </dd>
+            {jurisdiction.regulators?.length > 0 && (
+              <>
+                <dt className="text-ink-muted">Regulators</dt>
+                <dd className="text-ink-secondary">{jurisdiction.regulators.join(', ')}</dd>
+              </>
+            )}
+            {jurisdiction.retention_min_years != null && (
+              <>
+                <dt className="text-ink-muted">Kept at least</dt>
+                <dd className="text-ink-secondary">
+                  {jurisdiction.retention_min_years} years
+                  {report.retention_years != null && report.retention_years > jurisdiction.retention_min_years
+                    ? ` (this case: ${report.retention_years}, from its report type)`
+                    : ''}
+                </dd>
+              </>
+            )}
+          </dl>
         )}
         {canHold && (
           <Button variant="secondary" size="small" startIcon={Gavel} onClick={() => setHold(!onHold)} isLoading={busy} fullWidth>

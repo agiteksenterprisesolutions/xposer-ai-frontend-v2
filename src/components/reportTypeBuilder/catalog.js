@@ -29,10 +29,16 @@ const SECTION_TITLES = {
  * The catalogue as the builder uses it: entries in `baseline_order` (the
  * order a reporter meets them), then any others; by name; and each one's
  * position, for placing it among the others.
+ *
+ * The endpoint now sends one flat `fields` list, already in reporter order,
+ * with no tiers: every standard question can be turned off. The older
+ * tiered shape (core / recommended / optional) is still read.
  */
 export const buildCatalog = (raw) => {
   if (!raw) return null;
-  const entries = [...(raw.core || []), ...(raw.recommended || []), ...(raw.optional || [])];
+  const entries = Array.isArray(raw.fields)
+    ? raw.fields
+    : [...(raw.core || []), ...(raw.recommended || []), ...(raw.optional || [])];
   const byName = new Map(entries.map((entry) => [entry.name, entry]));
   const baseline = (raw.baseline_order || []).filter((name) => byName.has(name));
   const ordered = [
