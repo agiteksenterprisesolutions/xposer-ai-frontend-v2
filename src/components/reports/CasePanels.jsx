@@ -148,7 +148,7 @@ export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
         </Card.Title>
         <Card.Description>
           {calendar
-            ? `Set when this case was filed, under the ${calendar.pack_code} jurisdiction pack (version ${calendar.pack_version}). Times are in your time zone.`
+            ? `These follow the ${calendar.pack_code} jurisdiction pack (version ${calendar.pack_version}). It can change when the case's legal entity is set; a deadline already met stays as it was. Times are in your time zone.`
             : 'Set by the report type when this case was filed. Times are in your time zone.'}
         </Card.Description>
       </Card.Header>
@@ -230,7 +230,10 @@ export const RecordsCard = ({ report, canHold, onUpdated }) => {
   if (onHold) line = 'Legal hold: content will not be deleted.';
   else if (closed && report.retain_until) line = `Content will be deleted on ${formatDay(report.retain_until)}.`;
   else if (closed) line = 'This report type sets no retention period, so the content is kept.';
-  else line = 'Nothing is scheduled. The retention period starts when the case is closed.';
+  else if (report.retain_until) line = `Content will be deleted on ${formatDay(report.retain_until)}.`;
+  // The pack decides whether retention counts from submission or from closure,
+  // and the case doesn't say which, so don't claim either.
+  else line = 'No deletion date is set yet.';
 
   return (
     <Card>
