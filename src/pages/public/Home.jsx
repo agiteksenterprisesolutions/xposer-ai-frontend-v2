@@ -143,7 +143,7 @@ const Home = () => {
               </h1>
 
               <p className="text-ink-muted text-base sm:text-[1.0625rem] leading-[1.75] text-pretty max-w-xl mb-9 font-light">
-                XPOSER.AI is one of its kind voice-first whistleblowing platform. From incident to audit-ready insight in under 60 seconds — 24/7, 100+ languages, you make the decisions.
+                XPOSER.AI is an AI-Powered, voice-first whistleblowing platform. From incident to audit-ready insight in under 60 seconds — 24/7, 100+ languages, zero human bottleneck.
               </p>
 
               <div className="flex flex-wrap items-center gap-3">
