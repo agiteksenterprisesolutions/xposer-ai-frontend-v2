@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Shield, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { reportsAPI } from '../../api';
 import useSEO from '../../hooks/useSEO';
@@ -12,18 +13,19 @@ import { getHomePath } from '../../utils/navigation';
 
 const HOME_TOUR_KEY = 'xposer_home_tour_seen';
 
+// Labels are keys under public:home.triage.items, translated at render.
 const triageItems = [
-  { label: 'Financial Misconduct — Q3 Reporting', dot: 'bg-red-400', badge: 'HIGH', badgeClass: 'bg-amber-400/10 text-amber-400' },
-  { label: 'Workplace Safety Violation', dot: 'bg-amber-400', badge: 'MED', badgeClass: 'bg-blue-400/10 text-blue-400' },
-  { label: 'HR Policy Concern — Anonymous', dot: 'bg-emerald-400', badge: 'TRIAGED', badgeClass: 'bg-emerald-400/10 text-emerald-400' },
+  { key: 'financial', dot: 'bg-red-400', badge: 'high', badgeClass: 'bg-amber-400/10 text-amber-400' },
+  { key: 'safety', dot: 'bg-amber-400', badge: 'medium', badgeClass: 'bg-blue-400/10 text-blue-400' },
+  { key: 'hr', dot: 'bg-emerald-400', badge: 'triaged', badgeClass: 'bg-emerald-400/10 text-emerald-400' },
 ];
 
 const Home = () => {
+  const { t } = useTranslation('public');
   useSEO({
-    title: 'Xposer AI | Secure Whistleblowing & Anonymous Reporting',
+    title: t('home.seo.title'),
     titleTemplate: null,
-    description:
-      "Xposer AI is an autonomous, voice-first whistleblowing platform. From incident to audit-ready insight in under 60 seconds — 24/7, 100+ languages.",
+    description: t('home.seo.description'),
     keywords: ['whistleblowing', 'anonymous reporting', 'compliance', 'AI triage', 'speak up platform'],
   });
   const { user } = useAuthStore();
@@ -76,9 +78,8 @@ const Home = () => {
     if (orgSlug) {
       steps.push({
         target: '[data-tour="tour-submit"]',
-        title: 'Submit an anonymous report',
-        content:
-          'Start here. You get a report number and password up front — no name, no email, no account.',
+        title: t('home.tour.submit.title'),
+        content: t('home.tour.submit.content'),
         placement: 'top',
       });
     }
@@ -86,10 +87,8 @@ const Home = () => {
     steps.push(
       {
         target: '[data-tour="tour-dashboard"]',
-        title: user ? 'Open your dashboard' : 'Team access',
-        content: user
-          ? 'Jump back to your dashboard to review and manage reports.'
-          : 'Compliance teams sign in here to triage, assign, and resolve incoming reports. Reporters can login to check status of submitted reports.',
+        title: user ? t('home.tour.dashboard.title') : t('home.tour.team.title'),
+        content: user ? t('home.tour.dashboard.content') : t('home.tour.team.content'),
         placement: 'top',
       },
       // {
@@ -106,7 +105,7 @@ const Home = () => {
     if (steps.length) steps[0] = { ...steps[0], skipBeacon: true };
 
     return steps;
-  }, [orgSlug, user, isDesktop]);
+  }, [orgSlug, user, isDesktop, t]);
 
   return (
     <>
@@ -128,22 +127,22 @@ const Home = () => {
 
             {/* Left: headline */}
             <div data-tour="tour-hero">
-              <h1 className="font-extrabold text-[2.6rem] sm:text-5xl lg:text-6xl leading-[1.06] tracking-[-0.03em] text-balance mb-6">
-                Instant AI Triage.{' '}
+              <h1 className="font-extrabold text-[2.6rem] sm:text-5xl lg:text-6xl rtl:text-[2.2rem] rtl:sm:text-4xl rtl:lg:text-5xl leading-[1.06] rtl:leading-[1.3] tracking-[-0.03em] text-balance mb-6">
+                {t('home.hero.line1')}{' '}
                 <span className="relative inline-block">
-                  Human Decisions.
+                  {t('home.hero.line2')}
                   <span
                     aria-hidden="true"
-                    className="absolute left-0 -bottom-1 h-0.75 w-full rounded-full bg-accent-fg/60"
+                    className="absolute inset-s-0 -bottom-1 h-0.75 w-full rounded-full bg-accent-fg/60"
                   />
                 </span>{' '}
                 <span className="block mt-3 text-accent-fg text-3xl sm:text-4xl lg:text-[2.75rem] leading-[1.12] font-bold">
-                  Audit-Ready Whistleblowing Platform.
+                  {t('home.hero.line3')}
                 </span>
               </h1>
 
               <p className="text-ink-muted text-base sm:text-[1.0625rem] leading-[1.75] text-pretty max-w-xl mb-9 font-light">
-                XPOSER.AI is an AI-Powered, voice-first whistleblowing platform. From incident to audit-ready insight in under 60 seconds — 24/7, 100+ languages, zero human bottleneck.
+                {t('home.hero.lead')}
               </p>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -153,8 +152,8 @@ const Home = () => {
                     data-tour="tour-submit"
                     className="group inline-flex items-center gap-2 bg-accent-fg text-canvas text-[14.5px] font-semibold px-6 py-3 rounded-lg border border-line-accent shadow-[0_8px_24px_-8px_var(--color-accent-ring)] transition-all duration-200 hover:bg-transparent hover:text-accent-fg hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-8px_var(--color-accent-ring)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                   >
-                    Submit Anonymous Report
-                    <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                    {t('home.cta.submit')}
+                    <ArrowRight size={15} aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
                   </Link>
                 )}
                 <Link
@@ -162,16 +161,16 @@ const Home = () => {
                   data-tour="tour-dashboard"
                   className="inline-flex items-center gap-2 border border-line text-ink-muted text-[14.5px] font-medium px-6 py-3 rounded-lg transition-all duration-200 hover:text-ink hover:border-line-strong hover:bg-subtle hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                 >
-                  {user ? 'Open Dashboard' : 'Team Login'}
+                  {user ? t('home.cta.dashboard') : t('home.cta.teamLogin')}
                 </Link>
               </div>
             </div>
 
             {/* Right: AI triage panel mockup */}
             <div className="relative">
-              <div className="absolute -top-6 -right-4 sm:right-2 bg-subtle border border-line-subtle rounded-xl px-5 py-3 shadow-2xl z-10">
+              <div className="absolute -top-6 -inset-e-4 sm:inset-e-2 bg-subtle border border-line-subtle rounded-xl px-5 py-3 shadow-2xl z-10">
                 <div className="text-accent-fg font-bold text-2xl leading-none">0.8s</div>
-                <div className="text-ink-subtle text-xs mt-1">Avg. triage time</div>
+                <div className="text-ink-subtle text-xs mt-1">{t('home.triage.avgTime')}</div>
               </div>
 
               <div className="bg-subtle/90 border border-line-subtle rounded-2xl p-6 shadow-2xl backdrop-blur-sm ring-1 ring-line-subtle/40" data-tour="tour-triage">
@@ -180,30 +179,30 @@ const Home = () => {
                     <Shield className="text-accent-fg" size={20} />
                   </div>
                   <div>
-                    <div className="font-semibold text-ink text-[15px]">AI Triage Active</div>
-                    <div className="text-ink-subtle text-[13px]">3 reports processing now</div>
+                    <div className="font-semibold text-ink text-[15px]">{t('home.triage.active')}</div>
+                    <div className="text-ink-subtle text-[13px]">{t('home.triage.processing', { count: 3 })}</div>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1 mb-6">
                   {triageItems.map((item) => (
                     <div
-                      key={item.label}
+                      key={item.key}
                       className="flex items-center justify-between gap-3 py-3 border-b border-line-subtle last:border-b-0"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${item.dot}`} />
-                        <span className="text-ink-muted text-[13.5px] truncate">{item.label}</span>
+                        <span className="text-ink-muted text-[13.5px] truncate">{t(`home.triage.items.${item.key}`)}</span>
                       </div>
                       <span className={`text-[10.5px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${item.badgeClass}`}>
-                        {item.badge}
+                        {t(`home.triage.badges.${item.badge}`)}
                       </span>
                     </div>
                   ))}
                 </div>
 
                 <div className="flex items-center justify-between text-[13px] text-ink-subtle mb-2">
-                  <span>AI processing...</span>
+                  <span>{t('home.triage.aiProcessing')}</span>
                   <span>53%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-sunken border border-line-subtle overflow-hidden">

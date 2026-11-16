@@ -1,0 +1,186 @@
+{
+  "size": {
+    "bytes": "{{value}} B",
+    "kb": "{{value}} KB",
+    "mb": "{{value}} MB"
+  },
+  "panel": {
+    "uploading": "Uploading… {{percent}}%",
+    "maxReached_one": "Maximum of {{count}} file reached",
+    "maxReached_other": "Maximum of {{count}} files reached",
+    "dropHere": "Click or drag files here to upload",
+    "loading": "Loading attachments…",
+    "empty": "No attachments yet",
+    "download": "Download",
+    "downloadFile": "Download {{name}}",
+    "delete": "Delete",
+    "deleteFile": "Delete {{name}}",
+    "deleteConfirm": "Delete “{{name}}”?",
+    "uploaded": "Files uploaded",
+    "uploadFailed": "Upload failed",
+    "downloadFailed": "Couldn't get the download link",
+    "deleted": "Attachment deleted",
+    "deleteFailed": "Couldn't delete the attachment"
+  },
+  "load": {
+    "typeUnavailableAnonymous": "This report type isn't available here. Some report types are only available after you sign in.",
+    "typeUnavailable": "This report type isn't available.",
+    "formFailed": "Couldn't load the report form. Please try again.",
+    "started": "Report started. It's linked to your account.",
+    "startFailed": "Couldn't start the report. Please try again.",
+    "typeSelected": "Report type “{{name}}” selected"
+  },
+  "validation": {
+    "field": "This field",
+    "required": "{{label}} is required",
+    "negative": "{{label}} can't be negative",
+    "minAmount": "{{label}} must be at least {{min}} {{currency}}",
+    "maxAmount": "{{label}} must be at most {{max}} {{currency}}",
+    "chooseAtLeast_one": "Choose at least {{count}} option",
+    "chooseAtLeast_other": "Choose at least {{count}} options",
+    "chooseAtMost_one": "Choose at most {{count}} option",
+    "chooseAtMost_other": "Choose at most {{count}} options",
+    "minLength_one": "{{label}} must be at least {{count}} character",
+    "minLength_other": "{{label}} must be at least {{count}} characters",
+    "maxLength_one": "{{label}} must be at most {{count}} character",
+    "maxLength_other": "{{label}} must be at most {{count}} characters",
+    "pattern": "{{label}} isn't in the expected format",
+    "email": "{{label}} must be a valid email address",
+    "phone": "{{label}} must be a valid phone number",
+    "phoneDigits_one": "{{label}} must be at most {{count}} digit",
+    "phoneDigits_other": "{{label}} must be at most {{count}} digits",
+    "number": "{{label}} must be a number",
+    "nonNegative": "{{label}} can't be negative",
+    "minValue": "{{label}} must be at least {{min}}",
+    "maxValue": "{{label}} must be at most {{max}}",
+    "time": "{{label}} must be a valid time",
+    "dateTime": "{{label}} must be a valid date and time",
+    "date": "{{label}} must be a valid date",
+    "before": "{{label}} can't be before {{date}}",
+    "after": "{{label}} can't be after {{date}}",
+    "future": "{{label}} can't be in the future",
+    "futureDateTime": "{{label}} can't be a future date and time"
+  },
+  "steps": {
+    "notInitialized": "The report hasn't started yet. Please go back and try again.",
+    "fixErrors": "Please fix the highlighted answers before saving",
+    "saved": "Step {{step}} saved",
+    "saveFailed": "Couldn't save this step"
+  },
+  "submit": {
+    "success": "Report submitted",
+    "failed": "Couldn't submit the report"
+  },
+  "credentials": {
+    "copy": "Copy credentials",
+    "clipboard": "Report number: {{number}}\nPassword: {{password}}",
+    "copied": "Credentials copied",
+    "copyFailed": "Couldn't copy. Please select the credentials and copy them yourself."
+  },
+  "loading": {
+    "restoring": "Restoring your saved answers…",
+    "anonymous": "Setting up your secure anonymous form…",
+    "linking": "Linking the report to your account…"
+  },
+  "attachStage": {
+    "title": "Attach supporting files",
+    "description": "You can upload evidence or documents to support your report. {{hint}}.",
+    "notInitialized": "The report hasn't started yet, so files can't be attached.",
+    "backToForm": "Back to the form",
+    "continueToReview": "Continue to review"
+  },
+  "summary": {
+    "title": "Ready to submit",
+    "completed": "You've completed {{completed}} of {{total}} steps.",
+    "stepsCompleted": "Steps completed",
+    "visibleSteps": "Steps",
+    "completion": "Completion",
+    "attachments": "Attachments",
+    "percent": "{{value}}%",
+    "reportInfo": "Report information",
+    "reportType": "Report type",
+    "reportNumber": "Report number",
+    "incompleteTitle": "Some steps may have no answers",
+    "incompleteBody": "You've completed {{completed}} of {{total}} steps. You can go back and fill in the missing steps, or submit as it is.",
+    "manageAttachments": "Manage attachments",
+    "reviewSteps": "Review and edit answers",
+    "submit": "Submit report"
+  },
+  "formStage": {
+    "noSectionsTitle": "No sections to show",
+    "noSectionsBody": "Based on your earlier answers, there are no more sections.",
+    "reviewAnswers": "Review answers",
+    "continueToAttachments": "Continue to attachments",
+    "back": "Back",
+    "editingDraft": "Editing draft <number>{{number}}</number>",
+    "reportNumber": "Report: <number>{{number}}</number>",
+    "linked": "Linked to your account",
+    "sectionStep": "{{section}} • Step {{current}} of {{total}}",
+    "stepOf": "Step {{current}} of {{total}}",
+    "step": "Step {{number}}",
+    "conditionalTitle": "Some questions depend on your answers",
+    "conditionalBody_one": "Showing {{visible}} of {{count}} question.",
+    "conditionalBody_other": "Showing {{visible}} of {{count}} questions.",
+    "noQuestionsTitle": "No questions to show",
+    "noQuestionsBody": "Based on your earlier answers, this section has no questions for you.",
+    "previous": "Previous",
+    "saveStep": "Save step",
+    "saveAndAttach": "Save and attach files",
+    "saveAndContinue": "Save and continue",
+    "linkedNoPassword": "Your report is linked to your account, so you don't need a password."
+  },
+  "success": {
+    "title": "Report submitted",
+    "receivedAnonymous": "Your anonymous report has been received and is being processed.",
+    "receivedAccount": "Your report has been received and is being processed. You can follow it from your dashboard.",
+    "password": "Password",
+    "saveTitle": "Save your credentials",
+    "saveBody": "You need both the report number and the password to track this report. <strong>They can't be recovered if lost.</strong>",
+    "trackThis": "Track this report",
+    "yourNumber": "Your report number",
+    "linkedNote": "This report is linked to your account.",
+    "linkedAlert": "Your report has been submitted and is linked to your account.",
+    "dashboard": "Go to dashboard",
+    "another": "Submit another report"
+  },
+  "error": {
+    "unavailable": "This form can't be opened",
+    "generic": "Something went wrong",
+    "body": "The report form couldn't be loaded. Please try again.",
+    "goBack": "Go back"
+  },
+  "fields": {
+    "selectPlaceholder": "Select an option",
+    "yes": "Yes",
+    "no": "No",
+    "phoneTitle": "Enter the number with the country code and without the + sign (for example 971501234567)",
+    "currency": "Currency",
+    "amount": "Amount",
+    "date": "Date",
+    "time": "Time"
+  },
+  "upload": {
+    "notInitialized": "The report hasn't started yet, so the file can't be uploaded.",
+    "uploaded": "“{{name}}” uploaded",
+    "failed": "File upload failed",
+    "remove": "Remove {{name}}"
+  },
+  "answers": {
+    "none": "Not answered",
+    "yes": "Yes",
+    "no": "No",
+    "listSeparator": ", "
+  },
+  "attachments": {
+    "types": "Images, video, audio, PDF, Word, Excel and ZIP",
+    "hint_one": "{{types}} · up to {{size}} each · {{count}} file at a time",
+    "hint_other": "{{types}} · up to {{size}} each · {{count}} files at a time",
+    "tooMany_one": "You can attach at most {{count}} file.",
+    "tooMany_other": "You can attach at most {{count}} files.",
+    "unsupported": "“{{name}}” isn't a supported file type. Only {{types}}.",
+    "empty": "“{{name}}” is empty.",
+    "tooLarge": "“{{name}}” is over the {{size}} limit.",
+    "dropped_one": "You can attach at most {{max}} files. {{count}} file wasn't added.",
+    "dropped_other": "You can attach at most {{max}} files. {{count}} files weren't added."
+  }
+}

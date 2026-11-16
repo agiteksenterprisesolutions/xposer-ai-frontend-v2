@@ -35,6 +35,8 @@ import { copyToClipboard } from '../../utils/clipboard';
 import VoiceAnswers from '../../components/reports/VoiceAnswers';
 import { formatAnswer, orderedAnswers } from '../../utils/reportAnswers';
 import { useReportForm } from '../../hooks/useReportForm';
+import { useTranslation } from 'react-i18next';
+import { intlLocale } from '../../utils/locale';
 
 const REPORT_DETAILS_TOUR_KEY = 'xposer_report_details_tour_seen';
 
@@ -43,6 +45,7 @@ const ReportDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user: authUser } = useAuthStore();
+  const { t, i18n } = useTranslation('track');
   const [report, setReport] = useState(null);
   // The form this report was filed against, for its answers' labels and order.
   const reportForm = useReportForm(report);
@@ -58,7 +61,7 @@ const ReportDetails = () => {
   useSEO({
     enabled: !isLoading && !!report,
     title: report
-      ? [`Report #${report.report_number}`, getReportTitle(report)].filter(Boolean).join(' — ')
+      ? [t('seo.reportTitle', { number: report.report_number }), getReportTitle(report)].filter(Boolean).join(' — ')
       : '',
     noIndex: true,
   });
@@ -93,8 +96,10 @@ const ReportDetails = () => {
         }
       } catch (err) {
         console.error('Error fetching report:', err);
-        setError(err.response?.data?.detail || 'Failed to load report details.');
-        toast.error('Could not load report details');
+        // The server's detail is English-only and technical ("Not authenticated");
+        // the reporter gets the translated explanation instead.
+        setError(t('reportPage.loadFailed'));
+        toast.error(t('reportPage.loadFailedToast'));
       } finally {
         setIsLoading(false);
       }
@@ -116,10 +121,10 @@ const ReportDetails = () => {
 
       // Update local messages
       setMessages([...messages, response]);
-      toast.success('Message sent');
+      toast.success(t('toast.messageSent'));
     } catch (err) {
       console.error('Failed to send message:', err);
-      toast.error('Failed to send message');
+      toast.error(t('toast.sendFailed'));
     } finally {
       setIsSending(false);
     }
@@ -137,21 +142,21 @@ const ReportDetails = () => {
       if (result?.download_url) {
         window.open(result.download_url, '_blank', 'noopener,noreferrer');
       } else {
-        toast.error('Download URL not available');
+        toast.error(t('toast.downloadUnavailable'));
       }
     } catch (err) {
       console.error('Failed to download attachment:', err);
-      toast.error('Failed to download file');
+      toast.error(t('toast.downloadFailed'));
     } finally {
       setDownloadingKey(null);
     }
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('reportPage.notAvailable');
     const date = parseServerDate(dateString);
-    if (!date) return 'N/A';
-    return date.toLocaleDateString('en-US', {
+    if (!date) return t('reportPage.notAvailable');
+    return date.toLocaleDateString(intlLocale(), {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -162,9 +167,9 @@ const ReportDetails = () => {
 
   const handleCopy = async (text) => {
     if (await copyToClipboard(text)) {
-      toast.success('Copied to clipboard!');
+      toast.success(t('toast.copiedText'));
     } else {
-      toast.error('Could not copy — please select the text and copy it manually.');
+      toast.error(t('toast.copyTextFailed'));
     }
   };
 
@@ -174,60 +179,62 @@ const ReportDetails = () => {
 
   const tourSteps = useMemo(() => {
     if (!report) return [];
+    // Tooltips sit beside the sidebar, which is on the other side in Arabic.
+    const side = i18n.dir() === 'rtl' ? 'right' : 'left';
     const steps = [
       {
         target: '[data-tour="details-info"]',
-        title: 'Report information',
-        content: 'The title and any form data you submitted with this report.',
+        title: t('tour.infoTitle'),
+        content: t('tour.infoText'),
         placement: 'bottom',
         skipBeacon: true,
       },
       {
         target: '[data-tour="details-status"]',
-        title: 'Status & priority',
-        content: 'Track where your report stands and how it has been prioritized.',
-        placement: 'left',
+        title: t('tour.statusTitle'),
+        content: t('tour.statusText'),
+        placement: side,
       },
       {
         target: '[data-tour="details-timeline"]',
-        title: 'Timeline',
-        content: 'See when the report was submitted and when it was last updated.',
-        placement: 'left',
+        title: t('tour.timelineTitle'),
+        content: t('tour.timelineText'),
+        placement: side,
       },
     ];
 
     if (report.attachments && report.attachments.length > 0) {
       steps.push({
         target: '[data-tour="details-files"]',
-        title: 'Evidence & files',
-        content: 'Download any files you attached as evidence.',
-        placement: 'left',
+        title: t('tour.filesTitle'),
+        content: t('tour.filesText'),
+        placement: side,
       });
     }
 
     steps.push(
       {
         target: '[data-tour="details-chat"]',
-        title: 'Messages',
-        content: 'Communicate directly and securely with the compliance team here.',
+        title: t('tour.messagesTitle'),
+        content: t('tour.messagesText'),
         placement: 'top',
       },
       {
         target: '[data-tour="details-security"]',
-        title: 'Your privacy is protected',
-        content: 'Your identity stays protected and all communication is end-to-end encrypted.',
-        placement: 'left',
+        title: t('tour.privacyTitle'),
+        content: t('tour.privacyText'),
+        placement: side,
       },
       {
         target: '[data-tour="details-actions"]',
-        title: 'What\'s next',
-        content: 'Track another report, submit a new one, or print this page for your records.',
+        title: t('tour.nextTitle'),
+        content: t('tour.nextText'),
         placement: 'top',
       }
     );
 
     return steps;
-  }, [report]);
+  }, [report, t, i18n]);
 
   if (isLoading) {
     // The page's own header and cards, with the report's details stubbed.
@@ -239,16 +246,16 @@ const ReportDetails = () => {
               to={`/${orgSlug ? orgSlug : ''}/track-report`}
               className="inline-flex items-center text-sm text-accent-fg hover:opacity-80 mb-4"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back to Report Tracking
+              <ChevronLeft className="w-4 h-4 me-1" />
+              {t('reportPage.back')}
             </Link>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center mb-2">
-                  <Shield className="h-6 w-6 text-accent-fg mr-2" />
-                  <h1 className="text-2xl font-bold text-ink">Report Details</h1>
+                  <Shield className="h-6 w-6 text-accent-fg me-2" />
+                  <h1 className="text-2xl font-bold text-ink">{t('reportPage.title')}</h1>
                 </div>
-                <p className="text-ink-muted">View all details of your submitted report</p>
+                <p className="text-ink-muted">{t('reportPage.subtitle')}</p>
               </div>
               <Skeleton.Button small className="mt-4 sm:mt-0 w-44" />
             </div>
@@ -257,8 +264,8 @@ const ReportDetails = () => {
             <div className="lg:col-span-2 space-y-6 min-w-0">
               <Card>
                 <h2 className="text-lg font-semibold text-ink mb-4 flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-accent-fg" />
-                  Report Information
+                  <FileText className="w-5 h-5 me-2 text-accent-fg" />
+                  {t('reportPage.info')}
                 </h2>
                 <div className="space-y-4">
                   <div>
@@ -274,7 +281,7 @@ const ReportDetails = () => {
             </div>
             <div className="space-y-6">
               <Card>
-                <h2 className="text-lg font-semibold text-ink mb-4">Report Status</h2>
+                <h2 className="text-lg font-semibold text-ink mb-4">{t('reportPage.statusCard')}</h2>
                 <div className="space-y-4">
                   {['w-16', 'w-14', 'w-20'].map((w) => (
                     <div key={w} className="flex items-center justify-between">
@@ -285,7 +292,7 @@ const ReportDetails = () => {
                 </div>
               </Card>
               <Card>
-                <h2 className="text-lg font-semibold text-ink mb-4">Timeline</h2>
+                <h2 className="text-lg font-semibold text-ink mb-4">{t('reportPage.timeline')}</h2>
                 <div className="flex items-start gap-3">
                   <Skeleton.Circle size="h-8 w-8" />
                   <div>
@@ -310,13 +317,13 @@ const ReportDetails = () => {
         <Card className="max-w-md w-full">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-danger-fg mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-ink mb-2">Report Not Found</h2>
+            <h2 className="text-xl font-semibold text-ink mb-2">{t('reportPage.notFound')}</h2>
             <p className="text-ink-muted mb-6">
-              {error || 'The report you are looking for does not exist or you do not have permission to view it.'}
+              {error || t('reportPage.notFoundText')}
             </p>
             <Button onClick={() => navigate(`/${orgSlug}/track-report`)}>
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Back to Report Tracking
+              <ChevronLeft className="w-4 h-4 me-2" />
+              {t('reportPage.back')}
             </Button>
           </div>
         </Card>
@@ -335,22 +342,22 @@ const ReportDetails = () => {
             to={`/${orgSlug ? orgSlug : ''}/track-report`}
             className="inline-flex items-center text-sm text-accent-fg hover:opacity-80 mb-4"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Back to Report Tracking
+            <ChevronLeft className="w-4 h-4 me-1" />
+            {t('reportPage.back')}
           </Link>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center mb-2">
-                <Shield className="h-6 w-6 text-accent-fg mr-2" />
-                <h1 className="text-2xl font-bold text-ink">Report Details</h1>
+                <Shield className="h-6 w-6 text-accent-fg me-2" />
+                <h1 className="text-2xl font-bold text-ink">{t('reportPage.title')}</h1>
               </div>
               <p className="text-ink-muted">
-                View all details of your submitted report
+                {t('reportPage.subtitle')}
               </p>
             </div>
 
-            <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+            <div className="mt-4 sm:mt-0 flex items-center gap-3">
               {isDraftReport(report) && (
                 <Button
                   variant="primary"
@@ -361,8 +368,8 @@ const ReportDetails = () => {
                     })
                   }
                 >
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Continue Editing
+                  <Pencil className="w-4 h-4 me-2" />
+                  {t('reportPage.continueEditing')}
                 </Button>
               )}
               <Button
@@ -370,15 +377,15 @@ const ReportDetails = () => {
                 onClick={() => handleCopy(report.report_number)}
                 size="sm"
               >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy Report Number
+                <Copy className="w-4 h-4 me-2" />
+                {t('reportPage.copyNumber')}
               </Button>
               {/* <Button
                 variant="ghost"
                 onClick={handlePrint}
                 size="sm"
               >
-                <Printer className="w-4 h-4 mr-2" />
+                <Printer className="w-4 h-4 me-2" />
                 Print
               </Button> */}
             </div>
@@ -391,8 +398,8 @@ const ReportDetails = () => {
             {/* Report Information Card */}
             <Card className="min-w-0 overflow-hidden" data-tour="details-info">
               <h2 className="text-lg font-semibold text-ink mb-4 flex items-center">
-                <FileText className="w-5 h-5 mr-2 text-accent-fg" />
-                Report Information
+                <FileText className="w-5 h-5 me-2 text-accent-fg" />
+                {t('reportPage.info')}
               </h2>
 
               <div className="space-y-4 min-w-0">
@@ -400,14 +407,14 @@ const ReportDetails = () => {
                     carry neither, and an empty "N/A" row is noise. */}
                 {reportTitle && (
                   <div className="min-w-0">
-                    <h3 className="text-sm font-medium text-ink-subtle">Title</h3>
+                    <h3 className="text-sm font-medium text-ink-subtle">{t('reportPage.fieldTitle')}</h3>
                     <p className="mt-1 text-ink wrap-break-word">{reportTitle}</p>
                   </div>
                 )}
 
                 {reportDescription && (
                   <div className="min-w-0">
-                    <h3 className="text-sm font-medium text-ink-subtle">Description</h3>
+                    <h3 className="text-sm font-medium text-ink-subtle">{t('reportPage.description')}</h3>
                     <p className="mt-1 text-ink whitespace-pre-wrap wrap-break-word">
                       {reportDescription}
                     </p>
@@ -419,12 +426,12 @@ const ReportDetails = () => {
                 {/* Form Data Section */}
                 {report.form_data && Object.keys(report.form_data).length > 0 && (
                   <div className="min-w-0">
-                    <h3 className="text-sm font-medium text-ink-subtle mb-2">Submitted Form Data</h3>
+                    <h3 className="text-sm font-medium text-ink-subtle mb-2">{t('details.formData')}</h3>
                     <div className="bg-subtle rounded-lg p-4 min-w-0 overflow-hidden space-y-3">
                       {orderedAnswers(report.form_data, reportForm).map(({ key, value, label, question }) => (
                         <div key={key} className="min-w-0 overflow-hidden">
                           <span className="block font-medium text-ink-muted capitalize mb-0.5">
-                            {label}:
+                            {t('reportPage.answerLabel', { label })}
                           </span>
                           <span className="text-ink wrap-break-word">{formatAnswer(value, question)}</span>
                         </div>
@@ -439,24 +446,24 @@ const ReportDetails = () => {
             {report.report_type && (
               <Card>
                 <h2 className="text-lg font-semibold text-ink mb-4 flex items-center">
-                  <Tag className="w-5 h-5 mr-2 text-accent-fg" />
-                  Report Type Details
+                  <Tag className="w-5 h-5 me-2 text-accent-fg" />
+                  {t('reportPage.typeDetails')}
                 </h2>
 
                 <div className="space-y-3">
                   <div>
-                    <h3 className="text-sm font-medium text-ink-subtle">Report Type</h3>
+                    <h3 className="text-sm font-medium text-ink-subtle">{t('reportPage.reportType')}</h3>
                     <p className="mt-1 text-ink">{report.report_type.name}</p>
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-medium text-ink-subtle">Description</h3>
+                    <h3 className="text-sm font-medium text-ink-subtle">{t('reportPage.description')}</h3>
                     <p className="mt-1 text-ink">{report.report_type.description}</p>
                   </div>
 
                   {report.report_type.questions && report.report_type.questions.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-medium text-ink-subtle mb-2">Form Questions</h3>
+                      <h3 className="text-sm font-medium text-ink-subtle mb-2">{t('reportPage.formQuestions')}</h3>
                       <div className="space-y-2">
                         {report.report_type.questions.map((question, index) => (
                           <div key={question.id} className="bg-subtle rounded p-3">
@@ -466,7 +473,7 @@ const ReportDetails = () => {
                                   {index + 1}. {question.label}
                                 </span>
                                 {question.required && (
-                                  <span className="ml-2 text-xs text-danger-fg">(Required)</span>
+                                  <span className="ms-2 text-xs text-danger-fg">{t('reportPage.required')}</span>
                                 )}
                               </div>
                               <Badge size="sm">{question.type}</Badge>
@@ -487,7 +494,7 @@ const ReportDetails = () => {
             <div data-tour="details-chat">
               <ChatInterface
                 messages={messages}
-                currentUser={authUser || { id: 'anonymous', full_name: 'Anonymous Reporter', role: 'reporter' }}
+                currentUser={authUser || { id: 'anonymous', full_name: t('details.anonymousReporter'), role: 'reporter' }}
                 onSendMessage={handleSendMessage}
                 isReporter={true}
                 isLoading={isSending}
@@ -500,38 +507,41 @@ const ReportDetails = () => {
           <div className="space-y-6">
             {/* Status Card */}
             <Card data-tour="details-status">
-              <h2 className="text-lg font-semibold text-ink mb-4">Report Status</h2>
+              <h2 className="text-lg font-semibold text-ink mb-4">{t('reportPage.statusCard')}</h2>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-ink-subtle">Status</span>
+                  <span className="text-sm font-medium text-ink-subtle">{t('details.status')}</span>
                   {report.status ? (
                     <StatusBadge status={report.status} />
                   ) : (
-                    <Badge size="small">Unknown</Badge>
+                    <Badge size="small">{t('reportPage.unknown')}</Badge>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-ink-subtle">Priority</span>
+                  <span className="text-sm font-medium text-ink-subtle">{t('details.priority')}</span>
                   {report.priority ? (
                     <PriorityBadge priority={report.priority} />
                   ) : (
-                    <Badge size="small">N/A</Badge>
+                    <Badge size="small">{t('reportPage.notAvailable')}</Badge>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-ink-subtle">Report Number</span>
+                  <span className="text-sm font-medium text-ink-subtle">{t('form.reportNumber')}</span>
                   <div className="flex items-center">
                     <span className="font-mono text-sm font-semibold text-ink">
                       {report.report_number}
                     </span>
                     <button
+                      type="button"
                       onClick={() => handleCopy(report.report_number)}
-                      className="ml-2 text-ink-subtle hover:text-ink"
+                      className="ms-1 inline-flex h-7 w-7 items-center justify-center rounded text-ink-subtle hover:text-ink"
+                      aria-label={t('reportPage.copyNumber')}
+                      title={t('reportPage.copyNumber')}
                     >
-                      <Copy className="w-4 h-4" />
+                      <Copy className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -545,7 +555,7 @@ const ReportDetails = () => {
 
             {/* Timeline Card */}
             <Card data-tour="details-timeline">
-              <h2 className="text-lg font-semibold text-ink mb-4">Timeline</h2>
+              <h2 className="text-lg font-semibold text-ink mb-4">{t('reportPage.timeline')}</h2>
 
               <div className="space-y-4">
                 <div className="flex items-start">
@@ -554,8 +564,8 @@ const ReportDetails = () => {
                       <CheckCircle className="w-4 h-4 text-success-fg" />
                     </div>
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-ink">Report Submitted</p>
+                  <div className="ms-3">
+                    <p className="text-sm font-medium text-ink">{t('reportPage.submitted')}</p>
                     <p className="text-sm text-ink-subtle">{formatDate(report.created_at)}</p>
                   </div>
                 </div>
@@ -566,8 +576,8 @@ const ReportDetails = () => {
                       <Clock className="w-4 h-4 text-info-fg" />
                     </div>
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-ink">Last Updated</p>
+                  <div className="ms-3">
+                    <p className="text-sm font-medium text-ink">{t('details.lastUpdated')}</p>
                     <p className="text-sm text-ink-subtle">{formatDate(report.updated_at)}</p>
                   </div>
                 </div>
@@ -578,8 +588,8 @@ const ReportDetails = () => {
             {report.attachments && report.attachments.length > 0 && (
               <Card data-tour="details-files">
                 <h2 className="text-lg font-semibold text-ink mb-4 flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-accent-fg" />
-                  Evidence &amp; Files
+                  <FileText className="w-5 h-5 me-2 text-accent-fg" />
+                  {t('details.evidence')}
                 </h2>
                 <ul className="divide-y divide-line-subtle">
                   {report.attachments.map((file, idx) => (
@@ -587,20 +597,20 @@ const ReportDetails = () => {
                       key={idx}
                       className="py-3 flex items-center justify-between"
                     >
-                      <div className="flex items-center space-x-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <div className="p-2 bg-subtle rounded shrink-0">
                           <FileText className="h-4 w-4 text-ink-subtle" />
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm font-medium text-ink-muted truncate max-w-35">
-                            {file.filename || 'Unnamed file'}
+                            {file.filename || t('details.unnamedFile')}
                           </span>
                           <span className="text-xs text-ink-subtle">
                             {formatFileSize(file.size || 0)}
                           </span>
                           {file.uploaded_at && (
                             <span className="text-xs text-ink-subtle">
-                              Uploaded {formatRelativeTime(file.uploaded_at)}
+                              {t('details.uploaded', { when: formatRelativeTime(file.uploaded_at) })}
                             </span>
                           )}
                         </div>
@@ -610,7 +620,8 @@ const ReportDetails = () => {
                         size="small"
                         onClick={() => handleDownloadAttachment(file)}
                         disabled={downloadingKey === file.key}
-                        title="Download / View"
+                        title={t('details.download')}
+                        aria-label={t('details.downloadFile', { name: file.filename || t('details.unnamedFile') })}
                       >
                         {downloadingKey === file.key ? (
                           <Loader className="h-4 w-4 animate-spin" />
@@ -627,32 +638,32 @@ const ReportDetails = () => {
             {/* Security Info Card */}
             <Card data-tour="details-security">
               <h2 className="text-lg font-semibold text-ink mb-4 flex items-center">
-                <Lock className="w-5 h-5 mr-2 text-accent-fg" />
-                Security Information
+                <Lock className="w-5 h-5 me-2 text-accent-fg" />
+                {t('reportPage.security')}
               </h2>
 
               <div className="space-y-3">
                 <div className="flex items-center text-sm">
-                  <Eye className="w-4 h-4 text-green-500 mr-2" />
-                  <span className="text-ink-muted">Your identity is protected</span>
+                  <Eye className="w-4 h-4 text-green-500 me-2" />
+                  <span className="text-ink-muted">{t('reportPage.identityProtected')}</span>
                 </div>
 
                 <div className="flex items-center text-sm">
-                  <Shield className="w-4 h-4 text-green-500 mr-2" />
-                  <span className="text-ink-muted">End-to-end encrypted</span>
+                  <Shield className="w-4 h-4 text-green-500 me-2" />
+                  <span className="text-ink-muted">{t('reportPage.encrypted')}</span>
                 </div>
 
                 <div className="flex items-center text-sm">
-                  <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
+                  <AlertCircle className="w-4 h-4 text-yellow-500 me-2" />
                   <span className="text-ink-muted">
-                    {report.email ? 'Email notifications enabled' : 'No email contact provided'}
+                    {report.email ? t('reportPage.emailOn') : t('reportPage.emailOff')}
                   </span>
                 </div>
               </div>
 
               <div className="mt-4 pt-4 border-t border-line-subtle">
                 <p className="text-xs text-ink-subtle">
-                  Keep your report number and password secure. You'll need them to check updates.
+                  {t('reportPage.keepSecure')}
                 </p>
               </div>
             </Card>
@@ -661,7 +672,7 @@ const ReportDetails = () => {
 
         {/* Action Buttons */}
         <div
-          className="mt-8 flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4 print:hidden"
+          className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 print:hidden"
           data-tour="details-actions"
         >
           <Button
@@ -669,7 +680,7 @@ const ReportDetails = () => {
             onClick={() => navigate(`/${orgSlug}/track-report`)}
             className="sm:w-auto"
           >
-            Track Another Report
+            {t('reportPage.trackAnother')}
           </Button>
 
           <Button
@@ -677,7 +688,7 @@ const ReportDetails = () => {
             onClick={() => navigate(`/${orgSlug}/submit-anonymous`)}
             className="sm:w-auto"
           >
-            Submit New Report
+            {t('reportPage.submitNew')}
           </Button>
 
           {/* <Button
@@ -685,7 +696,7 @@ const ReportDetails = () => {
             variant="outline"
             className="sm:w-auto"
           >
-            <Printer className="w-4 h-4 mr-2" />
+            <Printer className="w-4 h-4 me-2" />
             Print This Page
           </Button> */}
         </div>

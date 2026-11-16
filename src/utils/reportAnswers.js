@@ -4,6 +4,7 @@
 // `value`; the label shown comes from the form the report was filed against
 // (reportTypesAPI.formForReport), so an option renamed or removed later still
 // reads as what the reporter chose.
+import i18n from '../i18n';
 import { formatDate, formatDateTime } from './formatters';
 import { formatCurrencyAnswer, isCurrencyAnswer, labelForValue } from './reportTypes';
 
@@ -15,13 +16,15 @@ export const questionsByName = (form) =>
 
 /** One answer as text. `question` (optional) supplies option labels. */
 export const formatAnswer = (value, question) => {
-  if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || 'N/A';
-  if (value === null || value === undefined || value === '') return 'N/A';
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  const none = i18n.t('form:answers.none');
+  const yesNo = (yes) => i18n.t(yes ? 'form:answers.yes' : 'form:answers.no');
+  if (isCurrencyAnswer(value)) return formatCurrencyAnswer(value) || none;
+  if (value === null || value === undefined || value === '') return none;
+  if (typeof value === 'boolean') return yesNo(value);
   // The voice agent stores a yes/no answer as text.
-  if (question?.type === 'boolean' && (value === 'true' || value === 'false')) return value === 'true' ? 'Yes' : 'No';
+  if (question?.type === 'boolean' && (value === 'true' || value === 'false')) return yesNo(value === 'true');
   const label = (v) => (question?.options?.length ? labelForValue(question.options, v) : v);
-  if (Array.isArray(value)) return value.length ? value.map((v) => String(label(v))).join(', ') : 'N/A';
+  if (Array.isArray(value)) return value.length ? value.map((v) => String(label(v))).join(i18n.t('form:answers.listSeparator')) : none;
   if (typeof value === 'object') return JSON.stringify(value);
 
   const str = String(label(value));

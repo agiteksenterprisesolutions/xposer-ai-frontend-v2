@@ -120,12 +120,12 @@ const Outline = ({ draft, problemIds }) => {
                 className={`group flex items-center rounded-lg transition-colors ${into ? 'bg-accent-soft ring-2 ring-accent' : stepSelected ? 'bg-surface shadow-[0_0_0_1.5px_var(--color-accent)]' : open ? '' : 'hover:bg-hover'
                   }`}
               >
-              <GripVertical className="ml-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-ink-subtle opacity-0 group-hover:opacity-100" aria-hidden="true" />
+              <GripVertical className="ms-0.5 h-3.5 w-3.5 shrink-0 cursor-grab text-ink-subtle opacity-0 group-hover:opacity-100" aria-hidden="true" />
               <button
                 type="button"
                 aria-expanded={open}
                 onClick={() => select({ sectionId: section.id, questionId: null })}
-                className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-2 text-left"
+                className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 py-2 text-start"
               >
                 <span
                   className={`flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${open ? 'bg-accent text-on-accent' : 'bg-active text-ink-secondary'
@@ -143,7 +143,7 @@ const Outline = ({ draft, problemIds }) => {
               {/* On the open step: add a question, or delete the step, without
                   leaving the outline. A step holding core questions can't go. */}
               {open && (
-                <span className="flex shrink-0 items-center pr-1">
+                <span className="flex shrink-0 items-center pe-1">
                   <button
                     type="button"
                     onClick={() => addQuestion(section.id, 'text', selection?.questionId ?? null)}
@@ -173,7 +173,7 @@ const Outline = ({ draft, problemIds }) => {
               </div>
 
               {open && section.questions.length > 0 && (
-                <ul className="space-y-px py-1 pl-3">
+                <ul className="space-y-px py-1 ps-3">
                   {section.questions.map((question, qIndex) => {
                     const Icon = typeInfo(question.type).icon;
                     const active = selection?.questionId === question.id;
@@ -199,7 +199,7 @@ const Outline = ({ draft, problemIds }) => {
                           type="button"
                           aria-current={active ? 'true' : undefined}
                           onClick={() => select({ sectionId: section.id, questionId: question.id })}
-                          className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${active
+                          className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-start text-sm transition-colors ${active
                             ? 'bg-surface font-medium text-ink shadow-[0_0_0_1.5px_var(--color-accent)]'
                             : 'text-ink-secondary hover:bg-surface/70'
                             }`}
@@ -293,7 +293,7 @@ const AddQuestionBar = ({ onAdd }) => {
       className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-line-strong bg-surface/60 px-4 py-3.5"
       data-tour="rtb-add-question"
     >
-      <span className="mr-1 flex items-center gap-1.5 text-sm font-medium text-ink-secondary">
+      <span className="me-1 flex items-center gap-1.5 text-sm font-medium text-ink-secondary">
         Add a question :
       </span>
       {QUICK_TYPES.map((value) => {
@@ -324,7 +324,7 @@ const AddQuestionBar = ({ onAdd }) => {
         {moreOpen && (
           <div
             role="menu"
-            className={`absolute left-0 z-20 w-52 rounded-xl border border-line bg-surface p-1.5 shadow-lg ${openUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+            className={`absolute start-0 z-20 w-52 rounded-xl border border-line bg-surface p-1.5 shadow-lg ${openUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}
           >
             {QUESTION_TYPES.filter((t) => !QUICK_TYPES.includes(t.value)).map((type) => (
               <button
@@ -332,7 +332,7 @@ const AddQuestionBar = ({ onAdd }) => {
                 type="button"
                 role="menuitem"
                 onClick={() => add(type.value)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-ink-secondary hover:bg-hover hover:text-ink"
+                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-sm text-ink-secondary hover:bg-hover hover:text-ink"
               >
                 <type.icon className="h-4 w-4 text-ink-muted" aria-hidden="true" />
                 {type.label}
@@ -389,7 +389,7 @@ const QuestionCard = ({ draft, section, question, index, count, problem, onRemov
   return (
     <div className="relative" ref={ref}>
       {active && (
-        <div className="absolute -bottom-4 right-4 z-10 flex gap-0.5 rounded-lg border border-line bg-surface p-0.5 shadow-sm">
+        <div className="absolute -bottom-4 end-4 z-10 flex gap-0.5 rounded-lg border border-line bg-surface p-0.5 shadow-sm">
           <ToolButton label="Move up" disabled={index === 0} onClick={() => moveQuestion(section.id, question.id, -1)}>
             <ArrowUp className="h-3.5 w-3.5" />
           </ToolButton>
@@ -409,7 +409,7 @@ const QuestionCard = ({ draft, section, question, index, count, problem, onRemov
       <div
         {...selectable(() => select({ sectionId: section.id, questionId: question.id }))}
         aria-pressed={active}
-        className={`cursor-pointer space-y-2 rounded-2xl border bg-surface px-6 py-4.5 text-left outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${active
+        className={`cursor-pointer space-y-2 rounded-2xl border bg-surface px-6 py-4.5 text-start outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${active
           ? 'border-accent shadow-[0_0_0_1px_var(--color-accent),0_6px_20px_-8px_color-mix(in_srgb,var(--color-accent)_35%,transparent)]'
           : problem
             ? 'border-danger-line hover:border-danger-fg'
@@ -425,7 +425,7 @@ const QuestionCard = ({ draft, section, question, index, count, problem, onRemov
         <div className="flex items-start gap-3">
           <span className="min-w-0 flex-1 text-[0.9375rem] font-semibold text-ink">
             {question.label || <span className="font-normal italic text-ink-muted">Untitled question</span>}
-            {question.required && <span className="ml-0.5 text-danger-fg">*</span>}
+            {question.required && <span className="ms-0.5 text-danger-fg">*</span>}
           </span>
           {(isCore(question) || entry) && (
             <span
@@ -519,7 +519,7 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
 
       <div className="relative">
         {stepActive && (
-          <div className="absolute -bottom-4 right-4 z-10 flex gap-0.5 rounded-lg border border-line bg-surface p-0.5 shadow-sm">
+          <div className="absolute -bottom-4 end-4 z-10 flex gap-0.5 rounded-lg border border-line bg-surface p-0.5 shadow-sm">
             <ToolButton label="Move step earlier" disabled={index === 0} onClick={() => moveSection(section.id, -1)}>
               <ArrowUp className="h-3.5 w-3.5" />
             </ToolButton>
@@ -620,7 +620,7 @@ const QuestionsStep = ({ draft, issues }) => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-      <aside className="hidden w-68 shrink-0 border-r border-line bg-surface lg:block">
+      <aside className="hidden w-68 shrink-0 border-e border-line bg-surface lg:block">
         <Outline draft={draft} problemIds={problemIds} />
       </aside>
       <main className="min-w-0 flex-1 bg-canvas lg:overflow-y-auto lg:scrollbar-thin">
@@ -628,7 +628,7 @@ const QuestionsStep = ({ draft, issues }) => {
       </main>
       <aside
         aria-label="Settings"
-        className="shrink-0 border-t border-line bg-surface lg:w-88 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:scrollbar-thin"
+        className="shrink-0 border-t border-line bg-surface lg:w-88 lg:overflow-y-auto lg:border-s lg:border-t-0 lg:scrollbar-thin"
         data-tour="rtb-inspector"
       >
         <Inspector draft={draft} issuesFor={issuesFor} onRemove={remove} />

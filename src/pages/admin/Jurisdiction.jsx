@@ -60,7 +60,7 @@ const Named = ({ items, nameKey = 'name' }) =>
       {items.map((item) => (
         <li key={item.code}>
           <span className="font-medium">{localized(item[nameKey]) || item.code}</span>
-          {localized(item[nameKey]) && <span className="ml-1 font-mono text-xs text-ink-muted">{item.code}</span>}
+          {localized(item[nameKey]) && <span className="ms-1 font-mono text-xs text-ink-muted">{item.code}</span>}
           {item.regulator && <span className="text-xs text-ink-muted"> · {item.regulator}</span>}
           {localized(item.description) && <span className="block text-xs text-ink-muted">{localized(item.description)}</span>}
           {item.url && (
@@ -322,7 +322,7 @@ const Jurisdiction = () => {
               <li key={p.code} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                 <span className="text-sm text-ink">
                   <span className="font-mono">{p.code}</span> · {localized(p.name)}
-                  {p.code === code && <span className="ml-2 text-xs text-ink-muted">(yours)</span>}
+                  {p.code === code && <span className="ms-2 text-xs text-ink-muted">(yours)</span>}
                 </span>
                 <span className="flex items-center gap-3">
                   {p.active_version ? (

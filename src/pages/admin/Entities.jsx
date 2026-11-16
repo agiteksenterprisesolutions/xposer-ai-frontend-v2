@@ -38,7 +38,7 @@ const Field = ({ label, htmlFor, hint, error, required, children }) => (
   <div className="space-y-1.5">
     <label htmlFor={htmlFor} className="block text-sm font-medium text-ink-secondary">
       {label}
-      {required && <span className="ml-0.5 text-danger-fg">*</span>}
+      {required && <span className="ms-0.5 text-danger-fg">*</span>}
     </label>
     {children}
     {error ? <p className="text-xs text-danger-fg">{error}</p> : hint && <p className="text-xs text-ink-muted">{hint}</p>}
@@ -360,7 +360,7 @@ const Entities = () => {
                 <Table.Head>Regulators</Table.Head>
                 <Table.Head>Currency</Table.Head>
                 <Table.Head>Status</Table.Head>
-                {canManage && <Table.Head className="text-right">Actions</Table.Head>}
+                {canManage && <Table.Head className="text-end">Actions</Table.Head>}
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -373,7 +373,7 @@ const Entities = () => {
                     <Skeleton.Text key="r" className="w-16" />,
                     <Skeleton.Text key="c" className="w-10" />,
                     <Skeleton.Badge key="s" />,
-                    ...(canManage ? [<Skeleton.Text key="a" className="ml-auto w-16" />] : []),
+                    ...(canManage ? [<Skeleton.Text key="a" className="ms-auto w-16" />] : []),
                   ]}
                 />
               ) : (
@@ -437,7 +437,7 @@ const Entities = () => {
                           {inactive ? 'Deactivated' : 'Active'}
                         </Badge>
                       </Table.Cell>
-                      {canManage && <Table.Cell className="text-right">{actions}</Table.Cell>}
+                      {canManage && <Table.Cell className="text-end">{actions}</Table.Cell>}
                     </Table.Row>
                   );
                 })

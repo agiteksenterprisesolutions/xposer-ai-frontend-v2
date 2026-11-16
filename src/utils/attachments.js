@@ -8,6 +8,12 @@
 // rejected spreadsheets, the main submit form accepted literally any file with
 // no type check at all, two components carried picker-only `accept` strings
 // that nothing enforced, and constants.js held a fifth list no one imported.
+//
+// Messages are translated when they're built (namespace `form`, key
+// `attachments.*`). ATTACHMENT_TYPES_LABEL and ATTACHMENT_HINT stay as English
+// constants for older callers; use attachmentTypesLabel() / attachmentHint()
+// for text in the interface language.
+import i18n from '../i18n';
 
 /** Hard ceiling per file. */
 export const ATTACHMENT_MAX_BYTES = 50 * 1024 * 1024; // 50 MB
@@ -71,6 +77,17 @@ export const ATTACHMENT_TYPES_LABEL =
 
 export const ATTACHMENT_HINT = `${ATTACHMENT_TYPES_LABEL} · up to ${ATTACHMENT_MAX_SIZE_LABEL} each · ${ATTACHMENT_MAX_FILES} files at a time`;
 
+/** ATTACHMENT_TYPES_LABEL in the interface language. */
+export const attachmentTypesLabel = () => i18n.t('form:attachments.types');
+
+/** ATTACHMENT_HINT in the interface language. */
+export const attachmentHint = () =>
+  i18n.t('form:attachments.hint', {
+    types: attachmentTypesLabel(),
+    size: ATTACHMENT_MAX_SIZE_LABEL,
+    count: ATTACHMENT_MAX_FILES,
+  });
+
 const extensionOf = (filename = '') => {
   const dot = filename.lastIndexOf('.');
   return dot === -1 ? '' : filename.slice(dot).toLowerCase();
@@ -110,24 +127,24 @@ export const validateAttachments = (files = [], existingCount = 0) => {
     return {
       valid,
       rejected: [...files],
-      errors: [`You can attach at most ${ATTACHMENT_MAX_FILES} files.`],
+      errors: [i18n.t('form:attachments.tooMany', { count: ATTACHMENT_MAX_FILES })],
     };
   }
 
   files.forEach((file) => {
     if (!isAllowedAttachment(file)) {
       rejected.push(file);
-      errors.push(`"${file.name}" is not a supported file type. ${ATTACHMENT_TYPES_LABEL} only.`);
+      errors.push(i18n.t('form:attachments.unsupported', { name: file.name, types: attachmentTypesLabel() }));
       return;
     }
     if (file.size === 0) {
       rejected.push(file);
-      errors.push(`"${file.name}" is empty.`);
+      errors.push(i18n.t('form:attachments.empty', { name: file.name }));
       return;
     }
     if (file.size > ATTACHMENT_MAX_BYTES) {
       rejected.push(file);
-      errors.push(`"${file.name}" is over the ${ATTACHMENT_MAX_SIZE_LABEL} limit.`);
+      errors.push(i18n.t('form:attachments.tooLarge', { name: file.name, size: ATTACHMENT_MAX_SIZE_LABEL }));
       return;
     }
     valid.push(file);
@@ -137,7 +154,7 @@ export const validateAttachments = (files = [], existingCount = 0) => {
     const dropped = valid.splice(room);
     rejected.push(...dropped);
     errors.push(
-      `You can attach at most ${ATTACHMENT_MAX_FILES} files — ${dropped.length} were not added.`,
+      i18n.t('form:attachments.dropped', { max: ATTACHMENT_MAX_FILES, count: dropped.length }),
     );
   }
 

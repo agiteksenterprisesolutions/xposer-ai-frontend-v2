@@ -340,7 +340,7 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
                   aria-checked={on}
                   disabled={disabled}
                   onClick={() => setType(type.value)}
-                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors disabled:opacity-50 ${
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-start transition-colors disabled:opacity-50 ${
                     on ? 'border-[1.5px] border-accent bg-accent-soft' : 'border border-line hover:border-line-strong'
                   }`}
                 >
@@ -721,7 +721,7 @@ const QuestionSets = () => {
                 type="button"
                 onClick={() => setSelected(OPENING)}
                 aria-pressed={selected === OPENING}
-                className={`mb-3 w-full rounded-xl px-3 py-2.5 text-left transition-colors ${
+                className={`mb-3 w-full rounded-xl px-3 py-2.5 text-start transition-colors ${
                   selected === OPENING ? 'bg-accent-soft ring-1 ring-line-accent' : 'hover:bg-hover'
                 }`}
               >
@@ -783,7 +783,7 @@ const QuestionSets = () => {
                       type="button"
                       onClick={() => setSelected(question.id)}
                       aria-pressed={on}
-                      className="min-w-0 flex-1 text-left"
+                      className="min-w-0 flex-1 text-start"
                     >
                       <span className={`block text-sm font-semibold ${question.label.trim() ? 'text-ink' : 'text-ink-subtle'}`}>
                         {question.label.trim() || 'New question'}
@@ -923,7 +923,7 @@ const QuestionSets = () => {
 
       {/* Save bar */}
       {dirty && (
-        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:pl-5">
+        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:ps-5">
           <p className="min-w-0 flex-1 text-sm">Unsaved changes · they apply from the next call</p>
           <div className="flex shrink-0 gap-2">
             <button

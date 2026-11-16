@@ -76,8 +76,8 @@ const PolicyCitation = ({ citation }) => {
       </div>
 
       {citation.quote && (
-        <blockquote className="border-l-2 border-line-strong pl-3 text-sm italic leading-relaxed text-ink">
-          <Quote className="mr-1 inline h-3 w-3 text-ink-subtle" />
+        <blockquote className="border-s-2 border-line-strong ps-3 text-sm italic leading-relaxed text-ink">
+          <Quote className="me-1 inline h-3 w-3 text-ink-subtle" />
           {citation.quote}
         </blockquote>
       )}
@@ -99,9 +99,9 @@ const AgentStep = ({ action }) => {
   const decision = action.decision ? DECISION_LABELS[action.decision] : null;
 
   return (
-    <li className="relative pl-8">
+    <li className="relative ps-8">
       {/* Timeline rail */}
-      <span className="absolute left-0 top-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-line bg-surface text-ink-muted">
+      <span className="absolute start-0 top-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-line bg-surface text-ink-muted">
         {manual ? <UserCog className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
       </span>
 
@@ -260,7 +260,7 @@ const AgentRunDetailModal = ({ run, isOpen, onClose, orgSlug }) => {
         )}
 
         {!loading && !error && actions.length > 0 && (
-          <ol className="relative before:absolute before:bottom-6 before:left-3 before:top-6 before:w-px before:bg-line-subtle">
+          <ol className="relative before:absolute before:bottom-6 before:start-3 before:top-6 before:w-px before:bg-line-subtle">
             {actions.map((action, index) => (
               <AgentStep key={`${action.agent_type}-${index}`} action={action} />
             ))}

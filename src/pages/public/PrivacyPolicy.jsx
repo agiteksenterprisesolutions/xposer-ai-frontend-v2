@@ -80,7 +80,7 @@ const PrivacyPolicy = () => {
             <article id="what-we-collect">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <FileText className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">What we collect</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -98,7 +98,7 @@ const PrivacyPolicy = () => {
             <article id="how-we-use">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Globe className="w-5 h-5 text-link mr-3" />
+                  <Globe className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">How we use your data</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -116,7 +116,7 @@ const PrivacyPolicy = () => {
             <article id="cookies">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-link mr-3" />
+                  <Info className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Cookies & Tracking</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -134,7 +134,7 @@ const PrivacyPolicy = () => {
             <article id="security">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Lock className="w-5 h-5 text-link mr-3" />
+                  <Lock className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Security</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -147,7 +147,7 @@ const PrivacyPolicy = () => {
             <article id="retention">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Clock className="w-5 h-5 text-link mr-3" />
+                  <Clock className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Data retention</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -160,7 +160,7 @@ const PrivacyPolicy = () => {
             <article id="your-rights">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Users className="w-5 h-5 text-link mr-3" />
+                  <Users className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Your rights</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -180,7 +180,7 @@ const PrivacyPolicy = () => {
             <article id="contact">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Mail className="w-5 h-5 text-link mr-3" />
+                  <Mail className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Contact</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -201,9 +201,9 @@ const PrivacyPolicy = () => {
                 </div>
 
                 <div className="hidden sm:block">
-                  <Button variant="secondary" size="medium" className="ml-4 cursor-pointer" to="/submit-anonymous">
+                  <Button variant="secondary" size="medium" className="ms-4 cursor-pointer" to="/submit-anonymous">
                       Submit a Report
-                      <ArrowRight className="ml-2 w-4 h-4" />
+                      <ArrowRight className="ms-2 w-4 h-4" />
                     </Button>
                 </div>
               </div>

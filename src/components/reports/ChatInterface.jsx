@@ -96,7 +96,7 @@ const ChatInterface = ({
     }
 
     if (alignment === 'right') {
-      return 'bg-accent-soft border-line-accent ml-auto';
+      return 'bg-accent-soft border-line-accent ms-auto';
     }
 
     return 'bg-subtle border-line';
@@ -120,14 +120,14 @@ const ChatInterface = ({
             <div className="flex items-center">
               {isInternal ? (
                 <>
-                  <Shield className="w-4 h-4 text-warning-fg mr-2" />
+                  <Shield className="w-4 h-4 text-warning-fg me-2" />
                   <span className="text-sm font-medium text-warning-fg">
                     Internal Note
                   </span>
                 </>
               ) : (
                 <>
-                  <User className="w-4 h-4 text-ink-muted mr-2" />
+                  <User className="w-4 h-4 text-ink-muted me-2" />
                   <span className="text-sm font-medium text-ink">
                     {message.sender?.full_name || message.sender?.name || message.sender?.username || 'Unknown'}
                     {isCurrentUser && ' (You)'}
@@ -178,7 +178,7 @@ const ChatInterface = ({
           {message.read && (
             <div className="text-xs text-ink-muted mt-2">
               <span className="flex items-center">
-                <Eye className="w-3 h-3 mr-1" />
+                <Eye className="w-3 h-3 me-1" />
                 Read
               </span>
             </div>
@@ -239,14 +239,14 @@ const ChatInterface = ({
                 onChange={(e) => setIsInternal(e.target.checked)}
                 className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
               />
-              <span className="ml-2 text-sm text-ink-secondary">
+              <span className="ms-2 text-sm text-ink-secondary">
                 Send as internal note
               </span>
             </label>
 
             {isInternal && (
               <div className="flex items-center text-sm text-warning-fg">
-                <Shield className="w-4 h-4 mr-1" />
+                <Shield className="w-4 h-4 me-1" />
                 Only visible to compliance team
               </div>
             )}
@@ -255,7 +255,7 @@ const ChatInterface = ({
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto mb-4 pr-2 min-h-50">
+      <div className="flex-1 overflow-y-auto mb-4 pe-2 min-h-50">
         {filteredMessages.length === 0 ? (
           renderEmptyState()
         ) : (
@@ -273,7 +273,7 @@ const ChatInterface = ({
           <div className="mb-3 p-3 bg-subtle rounded-lg border border-line">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <FileText className="w-5 h-5 text-ink-muted mr-3" />
+                <FileText className="w-5 h-5 text-ink-muted me-3" />
                 <div>
                   <p className="text-sm font-medium text-ink">
                     {file.name}
@@ -350,7 +350,7 @@ const ChatInterface = ({
         <div className="mt-2 text-xs text-ink-muted">
           {isInternal ? (
             <div className="flex items-center">
-              <Shield className="w-3 h-3 mr-1 text-warning-fg" />
+              <Shield className="w-3 h-3 me-1 text-warning-fg" />
               Internal notes are only visible to the compliance team
             </div>
           ) : isReporter ? (

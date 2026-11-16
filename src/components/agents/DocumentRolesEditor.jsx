@@ -53,7 +53,7 @@ const DocumentRolesEditor = ({ doc, agents = [], sentinel = DEFAULT_SENTINEL, on
         disabled={disabled}
         onClick={() => setOpen(true)}
         aria-label={`Change which agents can use ${doc.filename}`}
-        className="group inline-flex max-w-full items-center gap-1.5 rounded-lg border border-transparent px-1.5 py-1 text-left transition-colors hover:border-line hover:bg-hover disabled:cursor-default focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="group inline-flex max-w-full items-center gap-1.5 rounded-lg border border-transparent px-1.5 py-1 text-start transition-colors hover:border-line hover:bg-hover disabled:cursor-default focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         <span className="flex flex-wrap gap-1">
           {allAgents ? (

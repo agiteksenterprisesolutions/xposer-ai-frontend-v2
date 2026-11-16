@@ -213,7 +213,7 @@ const ComplianceDashboard = () => {
           <Card.Header className="p-6 border-b border-line-subtle flex items-center justify-between">
             <Card.Title>Recent Submissions</Card.Title>
             <Link to={`/${user?.organization_slug}/staff/reports`} className="text-sm font-medium text-accent-fg hover:text-accent-fg flex items-center">
-              View All <ArrowRight className="h-4 w-4 ml-1" />
+              View All <ArrowRight className="h-4 w-4 ms-1" />
             </Link>
           </Card.Header>
           <Table>
@@ -258,7 +258,7 @@ const ComplianceDashboard = () => {
         <Card className="lg:col-span-1" data-tour="compliance-category">
           <Card.Header>
             <Card.Title className="flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2 text-accent-fg" />
+              <BarChart3 className="h-5 w-5 me-2 text-accent-fg" />
               Reports by Category
             </Card.Title>
           </Card.Header>
@@ -275,7 +275,7 @@ const ComplianceDashboard = () => {
                   return (
                     <div key={i} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-ink-secondary truncate pr-2">
+                        <span className="font-medium text-ink-secondary truncate pe-2">
                           {categoryFor(item.report_type_id, item.report_type_name) ?? <Skeleton.Text className="w-28" />}
                         </span>
                         <span className="text-ink-muted shrink-0">{item.count} ({percentage}%)</span>

@@ -18,11 +18,13 @@ import Skeleton from '../../components/ui/Skeleton';
 import { StatusBadge } from '../../components/ui/Badge';
 import { formatRelativeTime, parseServerDate } from '../../utils/formatters';
 import useSEO from '../../hooks/useSEO';
+import { useTranslation } from 'react-i18next';
 
 const Messages = () => {
+    const { t } = useTranslation('reporter');
     useSEO({
-        title: 'Messages',
-        description: 'Secure messages between you and the investigators handling your reports.',
+        title: t('seo.messagesTitle'),
+        description: t('seo.messagesDescription'),
         noIndex: true,
     });
     const { fetchMyReports, reports, isLoading } = useReports();
@@ -57,9 +59,9 @@ const Messages = () => {
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-ink">Messages</h1>
+                    <h1 className="text-2xl font-bold text-ink">{t('messages.title')}</h1>
                     <p className="text-ink-muted mt-1">
-                        Secure communication history with the compliance team
+                        {t('messages.subtitle')}
                     </p>
                 </div>
             </div>
@@ -67,10 +69,11 @@ const Messages = () => {
             <Card>
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink-subtle h-5 w-5" />
+                        <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-ink-subtle h-5 w-5" />
                         <Input
-                            placeholder="Search conversations..."
-                            className="pl-10 w-full"
+                            placeholder={t('messages.searchPlaceholder')}
+                            aria-label={t('messages.searchLabel')}
+                            className="ps-10 w-full"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -100,9 +103,9 @@ const Messages = () => {
                     ) : messageThreads.length === 0 ? (
                         <div className="text-center py-12">
                             <MessageSquare className="w-12 h-12 text-ink-subtle mx-auto mb-3" />
-                            <h3 className="text-lg font-medium text-ink">No messages found</h3>
+                            <h3 className="text-lg font-medium text-ink">{t('messages.emptyTitle')}</h3>
                             <p className="text-ink-muted mt-1">
-                                You don't have any active conversations matching your criteria.
+                                {t('messages.emptyBody')}
                             </p>
                         </div>
                     ) : (
@@ -131,18 +134,18 @@ const Messages = () => {
                                                     <StatusBadge status={report.status} size="small" />
                                                 </span>
                                                 <span className="flex items-center">
-                                                    <Clock className="w-3 h-3 mr-1" />
+                                                    <Clock className="w-3 h-3 me-1" />
                                                     {formatRelativeTime(report.updated_at)}
                                                 </span>
                                                 <span className="flex items-center">
-                                                    <MessageSquare className="w-3 h-3 mr-1" />
-                                                    {report.messages_count || 0} messages
+                                                    <MessageSquare className="w-3 h-3 me-1" />
+                                                    {t('messages.count', { count: report.messages_count || 0 })}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="shrink-0 ml-4">
-                                        <ArrowRight className="w-5 h-5 text-ink-subtle group-hover:text-accent-fg transform group-hover:translate-x-1 transition-all" />
+                                    <div className="shrink-0 ms-4">
+                                        <ArrowRight className="w-5 h-5 text-ink-subtle group-hover:text-accent-fg transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-all" />
                                     </div>
                                 </div>
                             </Link>

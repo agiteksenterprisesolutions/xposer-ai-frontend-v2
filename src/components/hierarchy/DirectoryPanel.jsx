@@ -234,13 +234,13 @@ const DirectoryPanel = ({ levels, canManage, onChanged, reloadKey }) => {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search name, email, title…"
               aria-label="Search the directory"
-              className="w-full rounded-lg border border-line bg-subtle py-2 pl-9 pr-3 text-sm text-ink outline-none transition-colors hover:border-line-strong focus:border-line-accent focus:ring-2 focus:ring-accent-ring"
+              className="w-full rounded-lg border border-line bg-subtle py-2 ps-9 pe-3 text-sm text-ink outline-none transition-colors hover:border-line-strong focus:border-line-accent focus:ring-2 focus:ring-accent-ring"
             />
           </div>
           <select
@@ -289,7 +289,7 @@ const DirectoryPanel = ({ levels, canManage, onChanged, reloadKey }) => {
               <Table.Head>Manager</Table.Head>
               <Table.Head>Login</Table.Head>
               <Table.Head>Source</Table.Head>
-              {canManage && <Table.Head className="text-right">Actions</Table.Head>}
+              {canManage && <Table.Head className="text-end">Actions</Table.Head>}
             </Table.Row>
           </Table.Header>
           <Table.Body className={loading && data ? 'opacity-60 transition-opacity' : ''}>
@@ -373,7 +373,7 @@ const DirectoryPanel = ({ levels, canManage, onChanged, reloadKey }) => {
                     </div>
                   </Table.Cell>
                   {canManage && (
-                    <Table.Cell className="text-right">
+                    <Table.Cell className="text-end">
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"

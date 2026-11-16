@@ -22,7 +22,7 @@ const StepBody = ({ section, sections, compact }) => (
           )}
           <p className={`font-semibold text-ink ${compact ? 'text-[13px]' : 'text-sm'}`}>
             {question.label || <span className="font-normal italic text-ink-muted">Untitled question</span>}
-            {question.required && <span className="ml-0.5 text-danger-fg">*</span>}
+            {question.required && <span className="ms-0.5 text-danger-fg">*</span>}
           </p>
           {question.help_text && <p className={`${compact ? 'text-[11px]' : 'text-xs'} text-ink-muted`}>{question.help_text}</p>}
           <FieldPreview question={question} compact={compact} />
@@ -69,7 +69,7 @@ const ReporterPreview = ({ form, device = 'phone' }) => {
         <button
           type="button"
           onClick={() => !last && setIndex(step + 1)}
-          className={`rounded-lg bg-accent font-semibold text-on-accent hover:bg-accent-hover ${compact ? 'h-10 flex-[2] text-sm' : 'ml-auto h-10 px-6 text-sm'}`}
+          className={`rounded-lg bg-accent font-semibold text-on-accent hover:bg-accent-hover ${compact ? 'h-10 flex-[2] text-sm' : 'ms-auto h-10 px-6 text-sm'}`}
         >
           {last ? 'Submit report' : 'Continue'}
         </button>
@@ -92,7 +92,7 @@ const ReporterPreview = ({ form, device = 'phone' }) => {
         <span className="h-2.5 w-2.5 rounded-full bg-active" />
         <span className="h-2.5 w-2.5 rounded-full bg-active" />
         <span className="h-2.5 w-2.5 rounded-full bg-active" />
-        <span className="ml-3 truncate text-xs text-ink-muted">{form.name || 'New report type'}</span>
+        <span className="ms-3 truncate text-xs text-ink-muted">{form.name || 'New report type'}</span>
       </div>
       <div className="mx-auto flex max-h-[70dvh] min-h-105 max-w-xl flex-col gap-5 overflow-y-auto px-6 py-7 scrollbar-thin">{body}</div>
     </div>

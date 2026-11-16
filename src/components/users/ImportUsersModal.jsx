@@ -51,7 +51,7 @@ const humanize = (key) => key.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpper
 
 const ProblemTable = ({ problems, tone = 'error' }) => (
   <div className={`max-h-72 overflow-auto rounded-lg border ${tone === 'warning' ? 'border-warning-line' : 'border-line'}`}>
-    <table className="w-full text-left text-xs">
+    <table className="w-full text-start text-xs">
       <thead className="sticky top-0 bg-subtle-solid text-ink-subtle">
         <tr>
           <th className="px-3 py-2 font-semibold">Where</th>
@@ -68,7 +68,7 @@ const ProblemTable = ({ problems, tone = 'error' }) => (
             <td className="px-3 py-2 text-ink">
               {problem.message}
               {problem.value != null && problem.value !== '' && (
-                <span className="ml-1 font-mono text-ink-muted">“{String(problem.value)}”</span>
+                <span className="ms-1 font-mono text-ink-muted">“{String(problem.value)}”</span>
               )}
               {PROBLEM_HINTS[problem.code] && <span className="block text-ink-subtle">{PROBLEM_HINTS[problem.code]}</span>}
             </td>
@@ -263,7 +263,7 @@ const ImportUsersModal = ({ onClose, onImported }) => {
                   Fix these in the file and upload it again — nothing was imported.
                 </Alert>
                 {fileProblems.length > 0 && (
-                  <ul className="list-disc space-y-1 pl-5 text-sm text-danger-fg">
+                  <ul className="list-disc space-y-1 ps-5 text-sm text-danger-fg">
                     {fileProblems.map((problem, index) => (
                       <li key={index}>
                         {problem.message}

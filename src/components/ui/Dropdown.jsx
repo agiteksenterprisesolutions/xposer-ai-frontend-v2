@@ -41,8 +41,8 @@ const Dropdown = ({
   }, []);
 
   const alignClasses = {
-    left: 'left-0',
-    right: 'right-0',
+    left: 'start-0',
+    right: 'end-0',
     center: 'left-1/2 -translate-x-1/2',
   };
 
@@ -97,7 +97,7 @@ const DropdownItem = ({
 }) => (
   <button
     type="button"
-    className={`flex w-full items-center gap-2 text-left px-3.5 py-2 text-sm text-ink-secondary transition-colors hover:bg-hover hover:text-ink focus:outline-none focus-visible:bg-hover disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+    className={`flex w-full items-center gap-2 text-start px-3.5 py-2 text-sm text-ink-secondary transition-colors hover:bg-hover hover:text-ink focus:outline-none focus-visible:bg-hover disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     onClick={onClick}
     disabled={disabled}
     role="menuitem"

@@ -48,7 +48,7 @@ export function useDialogFocus(ref, isOpen, { initialFocus = true } = {}) {
     const frame = requestAnimationFrame(() => {
       if (!initialFocus || root.contains(document.activeElement)) return;
       const preferred = root.querySelector('[data-autofocus]');
-      const target = preferred || focusables(root).find((el) => el.getAttribute('aria-label') !== 'Close dialog') || focusables(root)[0];
+      const target = preferred || focusables(root).find((el) => !el.hasAttribute('data-dialog-close')) || focusables(root)[0];
       (target || root).focus({ preventScroll: false });
     });
 

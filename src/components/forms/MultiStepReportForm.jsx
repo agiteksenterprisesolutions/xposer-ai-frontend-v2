@@ -1,5 +1,6 @@
 // src/components/forms/MultiStepReportForm.jsx
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import {
   AlertCircle,
   CheckCircle,
@@ -31,9 +32,9 @@ import { useAuthStore } from "../../store/authStore";
 import { isValidDate, isValidEmail, isValidPhone } from "../../utils/validators";
 import {
   ATTACHMENT_ACCEPT,
-  ATTACHMENT_HINT,
   ATTACHMENT_MAX_BYTES,
   ATTACHMENT_MAX_FILES,
+  attachmentHint,
   validateAttachments,
 } from "../../utils/attachments";
 import { copyToClipboard } from "../../utils/clipboard";
@@ -51,6 +52,7 @@ import {
 } from "../../utils/reportTypes";
 import { describeError } from "../../utils/errors";
 import { organizationAPI } from "../../api/jurisdiction";
+import { intlLocale } from "../../utils/locale";
 
 /**
  * A type that refuses anonymous reports doesn't offer "anonymous" on its
@@ -78,10 +80,11 @@ import { toast } from 'react-toastify';
 import { useNavigate, useParams } from "react-router-dom";
 
 // ============ FILE SIZE HELPER ============
-const formatBytes = (bytes) => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1048576).toFixed(1)} MB`;
+const formatBytes = (bytes, t) => {
+  const n = (value) => value.toLocaleString(intlLocale(), { maximumFractionDigits: 1 });
+  if (bytes < 1024) return t("size.bytes", { value: n(bytes) });
+  if (bytes < 1048576) return t("size.kb", { value: n(bytes / 1024) });
+  return t("size.mb", { value: n(bytes / 1048576) });
 };
 
 const MAX_FILE_SIZE_BYTES = ATTACHMENT_MAX_BYTES;
@@ -101,6 +104,7 @@ const getAttachmentDisplayName = (value) => {
 
 // ============ ATTACHMENTS PANEL ============
 const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlug, onAttachmentsChange }) => {
+  const { t } = useTranslation("form");
   const anonymousOrgSlug = isAnonymous && organizationSlug ? organizationSlug : null;
   const [attachments, setAttachments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -156,9 +160,9 @@ const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlu
       );
       // Refresh list
       await fetchAttachments();
-      toast.success(result.message || "File(s) uploaded successfully");
+      toast.success(result.message || t("panel.uploaded"));
     } catch (err) {
-      const msg = err.response?.data?.detail || "Upload failed";
+      const msg = err.response?.data?.detail || t("panel.uploadFailed");
       toast.error(msg);
     } finally {
       setIsUploading(false);
@@ -177,12 +181,12 @@ const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlu
       );
       window.open(result.download_url, "_blank", "noopener,noreferrer");
     } catch {
-      toast.error("Failed to get download link");
+      toast.error(t("panel.downloadFailed"));
     }
   };
 
   const handleDelete = async (attachment) => {
-    if (!window.confirm(`Delete "${attachment.filename}"?`)) return;
+    if (!window.confirm(t("panel.deleteConfirm", { name: attachment.filename }))) return;
     setDeletingKey(attachment.key);
     try {
       await reportsAPI.deleteAttachment(
@@ -196,9 +200,9 @@ const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlu
         onAttachmentsChange?.(next);
         return next;
       });
-      toast.success("Attachment deleted");
+      toast.success(t("panel.deleted"));
     } catch {
-      toast.error("Failed to delete attachment");
+      toast.error(t("panel.deleteFailed"));
     } finally {
       setDeletingKey(null);
     }
@@ -223,7 +227,7 @@ const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlu
         {isUploading ? (
           <div className="space-y-2">
             <Loader className="w-8 h-8 text-accent-fg animate-spin mx-auto" />
-            <p className="text-sm text-ink-muted">Uploading… {uploadProgress}%</p>
+            <p className="text-sm text-ink-muted">{t("panel.uploading", { percent: uploadProgress })}</p>
             <div className="w-full bg-active rounded-full h-2">
               <div
                 className="bg-accent h-2 rounded-full transition-all"
@@ -238,10 +242,10 @@ const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlu
             </span>
             <p className="text-sm font-medium text-ink">
               {attachments.length >= MAX_ATTACHMENTS
-                ? "Maximum 10 files reached"
-                : "Click or drag files here to upload"}
+                ? t("panel.maxReached", { count: MAX_ATTACHMENTS })
+                : t("panel.dropHere")}
             </p>
-            <p className="text-xs text-ink-muted mt-1">{ATTACHMENT_HINT}</p>
+            <p className="text-xs text-ink-muted mt-1">{attachmentHint()}</p>
           </>
         )}
       </div>
@@ -249,11 +253,11 @@ const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlu
       {/* File list */}
       {isLoading ? (
         <div className="flex items-center justify-center py-4">
-          <Loader className="w-5 h-5 text-ink-subtle animate-spin mr-2" />
-          <span className="text-sm text-ink-muted">Loading attachments…</span>
+          <Loader className="w-5 h-5 text-ink-subtle animate-spin me-2" />
+          <span className="text-sm text-ink-muted">{t("panel.loading")}</span>
         </div>
       ) : attachments.length === 0 ? (
-        <p className="text-sm text-center text-ink-subtle py-2">No attachments yet</p>
+        <p className="text-sm text-center text-ink-subtle py-2">{t("panel.empty")}</p>
       ) : (
         <ul className="divide-y divide-line-subtle">
           {attachments.map((att) => (
@@ -266,15 +270,16 @@ const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlu
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-ink truncate">{att.filename}</p>
                   <p className="text-xs text-ink-subtle">
-                    {formatBytes(att.size)} · {att.content_type}
+                    {formatBytes(att.size, t)} · {att.content_type}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0 ml-4">
+              <div className="flex items-center gap-2 shrink-0 ms-4">
                 <button
                   onClick={() => handleDownload(att)}
                   className="p-1 text-ink-muted hover:text-accent-fg"
-                  title="Download"
+                  title={t("panel.download")}
+                  aria-label={t("panel.downloadFile", { name: att.filename })}
                 >
                   <Download className="w-4 h-4" />
                 </button>
@@ -282,7 +287,8 @@ const AttachmentsPanel = ({ reportNumber, password, isAnonymous, organizationSlu
                   onClick={() => handleDelete(att)}
                   disabled={deletingKey === att.key}
                   className="p-1 text-ink-muted hover:text-danger-fg disabled:opacity-50"
-                  title="Delete"
+                  title={t("panel.delete")}
+                  aria-label={t("panel.deleteFile", { name: att.filename })}
                 >
                   {deletingKey === att.key ? (
                     <Loader className="w-4 h-4 animate-spin" />
@@ -344,6 +350,7 @@ const MultiStepReportForm = ({
   const [savedProgress, setSavedProgress] = useState(null);
   const [generatedReportNumber, setGeneratedReportNumber] = useState(null);
   const navigate = useNavigate();
+  const { t } = useTranslation("form");
   const { user, isAuthenticated } = useAuthStore();
 
   // The organization's default_currency and region, for money questions'
@@ -481,9 +488,9 @@ const MultiStepReportForm = ({
           throw new Error(
             err?.response?.status === 404
               ? isAnonymous
-                ? "This report type isn't available here. Some report types are only available after you sign in."
-                : "This report type isn't available."
-              : "Couldn't load the report form. Please try again.",
+                ? t("load.typeUnavailableAnonymous")
+                : t("load.typeUnavailable")
+              : t("load.formFailed"),
           );
         }
         setReportType(type);
@@ -499,12 +506,12 @@ const MultiStepReportForm = ({
             const initResponse = await reportsAPI.startAuthenticatedReport(organizationSlug || undefined);
             currentReportNumber = initResponse.report_number;
             setGeneratedReportNumber(currentReportNumber);
-            toast.success("Report initialized. Your report is linked to your account.");
+            toast.success(t("load.started"));
           } catch (err) {
             // 403 reporters_only: a staff account can't file; say so plainly.
             const detail = err?.response?.data?.detail;
             throw new Error(
-              detail?.code === "reporters_only" ? detail.message : "Failed to start report. Please try again.",
+              detail?.code === "reporters_only" ? detail.message : t("load.startFailed"),
             );
           }
         }
@@ -518,7 +525,7 @@ const MultiStepReportForm = ({
               isAnonymous ? (anonymousOrgSlug || undefined) : (organizationSlug || undefined),
               { quiet: true },
             );
-            toast.success(`Report type "${type.name}" selected`);
+            toast.success(t("load.typeSelected", { name: type.name }));
           } catch (err) {
             // 403 anonymous_not_allowed: this type needs a signed-in reporter
             // (an old link, say). Nothing else can be filed on it.
@@ -529,7 +536,7 @@ const MultiStepReportForm = ({
 
         setStage("form");
       } catch (err) {
-        setError(err.message || describeError(err).summary || "Failed to load report form");
+        setError(err.message || describeError(err).summary || t("load.formFailed"));
         setStage("unavailable");
       } finally {
         setIsLoading(false);
@@ -658,18 +665,18 @@ const MultiStepReportForm = ({
   // Most of these constraints aren't enforced by the server (it checks only
   // max_length, pattern and email format), so this is the only check there is.
   const validateQuestionValue = useCallback((question, rawValue) => {
-    const label = question.label || question.name || "Field";
+    const label = question.label || question.name || t("validation.field");
     const normalizedType = normalizeQuestionType(question.type);
     const rules = normalizeValidation(question.validation);
 
     if (normalizedType === "currency") {
       const minor = rawValue && typeof rawValue === "object" ? rawValue.amount_minor : null;
-      if (minor === null || minor === undefined) return question.required ? `${label} is required` : "";
+      if (minor === null || minor === undefined) return question.required ? t("validation.required", { label }) : "";
       const currency = rawValue.currency || DEFAULT_CURRENCY;
       const amount = minor / 10 ** currencyDigits(currency);
-      if (amount < 0) return `${label} can't be negative`;
-      if (rules.min_value !== undefined && amount < Number(rules.min_value)) return `${label} must be at least ${rules.min_value} ${currency}`;
-      if (rules.max_value !== undefined && amount > Number(rules.max_value)) return `${label} must be at most ${rules.max_value} ${currency}`;
+      if (amount < 0) return t("validation.negative", { label });
+      if (rules.min_value !== undefined && amount < Number(rules.min_value)) return t("validation.minAmount", { label, min: rules.min_value, currency });
+      if (rules.max_value !== undefined && amount > Number(rules.max_value)) return t("validation.maxAmount", { label, max: rules.max_value, currency });
       return "";
     }
 
@@ -677,67 +684,67 @@ const MultiStepReportForm = ({
     const isEmpty = value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0);
 
     if (question.required && isEmpty) {
-      return `${label} is required`;
+      return t("validation.required", { label });
     }
     if (isEmpty) return "";
 
     if (normalizedType === "multiselect") {
       if (rules.min_selections !== undefined && value.length < Number(rules.min_selections)) {
-        return `Choose at least ${rules.min_selections}`;
+        return t("validation.chooseAtLeast", { count: Number(rules.min_selections) });
       }
       if (rules.max_selections !== undefined && value.length > Number(rules.max_selections)) {
-        return `Choose at most ${rules.max_selections}`;
+        return t("validation.chooseAtMost", { count: Number(rules.max_selections) });
       }
       return "";
     }
 
     if (["text", "textarea"].includes(normalizedType)) {
       if (rules.min_length !== undefined && value.length < Number(rules.min_length)) {
-        return `${label} must be at least ${rules.min_length} characters`;
+        return t("validation.minLength", { label, count: Number(rules.min_length) });
       }
       if (rules.max_length !== undefined && value.length > Number(rules.max_length)) {
-        return `${label} must be at most ${rules.max_length} characters`;
+        return t("validation.maxLength", { label, count: Number(rules.max_length) });
       }
     }
 
     if (rules.pattern) {
       try {
-        if (!new RegExp(rules.pattern).test(String(value))) return `${label} isn't in the expected format`;
+        if (!new RegExp(rules.pattern).test(String(value))) return t("validation.pattern", { label });
       } catch {
         // A pattern the browser can't compile is the server's to judge.
       }
     }
 
     if (normalizedType === "email" && !isValidEmail(String(value))) {
-      return `${label} must be a valid email address`;
+      return t("validation.email", { label });
     }
 
     if (normalizedType === "phone" && !isValidPhone(String(value))) {
-      return `${label} must be a valid phone number`;
+      return t("validation.phone", { label });
     }
 
     if (normalizedType === "phone" && String(value).replace(/\D/g, "").length > PHONE_DIGIT_LIMIT) {
-      return `${label} must be at most ${PHONE_DIGIT_LIMIT} digits`;
+      return t("validation.phoneDigits", { label, count: PHONE_DIGIT_LIMIT });
     }
 
     if (normalizedType === "number") {
       const numberValue = Number(value);
       if (Number.isNaN(numberValue)) {
-        return `${label} must be a number`;
+        return t("validation.number", { label });
       }
       const minValue = rules.min_value ?? 0;
       if (numberValue < Number(minValue)) {
         return Number(minValue) === 0
-          ? `${label} must be a non-negative number`
-          : `${label} must be at least ${minValue}`;
+          ? t("validation.nonNegative", { label })
+          : t("validation.minValue", { label, min: minValue });
       }
       if (rules.max_value !== undefined && numberValue > Number(rules.max_value)) {
-        return `${label} must be at most ${rules.max_value}`;
+        return t("validation.maxValue", { label, max: rules.max_value });
       }
     }
 
     if (normalizedType === "time" && !/^\d{2}:\d{2}(:\d{2})?$/.test(String(value))) {
-      return `${label} must be a valid time`;
+      return t("validation.time", { label });
     }
 
     const isDate = normalizedType === "date";
@@ -746,26 +753,26 @@ const MultiStepReportForm = ({
       if (isDateTime) {
         const datetimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
         if (!datetimeRegex.test(String(value)) || !isValidDate(String(value))) {
-          return `${label} must be a valid date and time`;
+          return t("validation.dateTime", { label });
         }
       } else if (!isValidDate(String(value))) {
-        return `${label} must be a valid date`;
+        return t("validation.date", { label });
       }
       const day = String(value).slice(0, 10);
       const minDate = resolveDateBound(rules.min_date);
       // With no latest date set, a report can't describe the future.
       const maxDate = resolveDateBound(rules.max_date) || localToday();
-      if (minDate && day < minDate) return `${label} can't be before ${minDate}`;
+      if (minDate && day < minDate) return t("validation.before", { label, date: minDate });
       if (day > maxDate) {
-        return rules.max_date ? `${label} can't be after ${maxDate}` : `${label} cannot be a future date`;
+        return rules.max_date ? t("validation.after", { label, date: maxDate }) : t("validation.future", { label });
       }
       if (isDateTime && !rules.max_date && new Date(String(value)) > new Date()) {
-        return `${label} cannot be a future date and time`;
+        return t("validation.futureDateTime", { label });
       }
     }
 
     return "";
-  }, []);
+  }, [t]);
 
   const validateCurrentStep = useCallback(() => {
     const section = visibleSections[currentStep];
@@ -823,7 +830,7 @@ const MultiStepReportForm = ({
   }, []);
 
   const handleSaveStep = useCallback(async () => {
-    if (!currentReportNumber) { toast.error("Report not initialized"); return false; }
+    if (!currentReportNumber) { toast.error(t("steps.notInitialized")); return false; }
     // Defaults are seeded up front, but a question revealed later by
     // conditional logic missed that pass — so fold them in again here. An
     // explicit answer, including one the reporter cleared to "", still wins.
@@ -836,7 +843,7 @@ const MultiStepReportForm = ({
     );
     const isStepValid = validateCurrentStep();
     if (!isStepValid) {
-      toast.error("Please fix validation errors before saving");
+      toast.error(t("steps.fixErrors"));
       // Take the reporter to the first field with a problem (WCAG 3.3.1).
       requestAnimationFrame(() => {
         const first = document.querySelector('main [aria-invalid="true"]');
@@ -861,10 +868,10 @@ const MultiStepReportForm = ({
       setProgressInfo(response);
       setStepData((prev) => ({ ...prev, [currentStep]: currentData }));
       setAllFormData((prev) => ({ ...prev, ...currentData }));
-      toast.success(`Step ${currentStep + 1} saved!`);
+      toast.success(t("steps.saved", { step: currentStep + 1 }));
       return true;
     } catch (err) {
-      const message = err.response?.data?.detail || "Failed to save step";
+      const message = err.response?.data?.detail || t("steps.saveFailed");
       setError(message);
       toast.error(message);
       return false;
@@ -872,7 +879,7 @@ const MultiStepReportForm = ({
       setIsSaving(false);
     }
   }, [currentReportNumber, currentStep, stepData, isAnonymous, password, validateCurrentStep,
-      anonymousOrgSlug, collectDefaults, getVisibleQuestions, visibleSections]);
+      anonymousOrgSlug, collectDefaults, getVisibleQuestions, visibleSections, t]);
 
   const handleSaveAndContinue = useCallback(async () => {
     const didSave = await handleSaveStep();
@@ -895,7 +902,7 @@ const MultiStepReportForm = ({
 
   // ============ SUBMISSION ============
   const handleFinalSubmit = useCallback(async () => {
-    if (!currentReportNumber) { toast.error("Report not initialized"); return; }
+    if (!currentReportNumber) { toast.error(t("steps.notInitialized")); return; }
     setIsSubmitting(true);
     setError("");
     try {
@@ -926,13 +933,13 @@ const MultiStepReportForm = ({
       );
       setProgressInfo(response);
       setStage("success");
-      toast.success("Report submitted successfully!");
+      toast.success(t("submit.success"));
       if (onSuccess) onSuccess(response);
     } catch (err) {
       // Old errors put a string in `detail`; the new ones an object with
       // `code`, `message` and sometimes `field`.
       const detail = err?.response?.data?.detail;
-      const message = describeError(err).summary || "Failed to submit report";
+      const message = describeError(err).summary || t("submit.failed");
       setError(message);
       toast.error(message);
       // A refused answer (anonymity on a type that needs a name): take the
@@ -950,16 +957,16 @@ const MultiStepReportForm = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [currentReportNumber, isAnonymous, password, onSuccess, attachments, allFormData, extractFormAttachmentKeys, anonymousOrgSlug, visibleSections]);
+  }, [currentReportNumber, isAnonymous, password, onSuccess, attachments, allFormData, extractFormAttachmentKeys, anonymousOrgSlug, visibleSections, t]);
 
   const handleCopyCredentials = useCallback(async () => {
-    const text = `Report Number: ${reportNumber}\nPassword: ${password}`;
+    const text = t("credentials.clipboard", { number: reportNumber, password });
     if (await copyToClipboard(text)) {
-      toast.success("Credentials copied!");
+      toast.success(t("credentials.copied"));
     } else {
-      toast.error("Could not copy — please select the credentials and copy them manually.");
+      toast.error(t("credentials.copyFailed"));
     }
-  }, [reportNumber, password]);
+  }, [reportNumber, password, t]);
 
   // ============ RENDER FUNCTIONS ============
 
@@ -968,10 +975,10 @@ const MultiStepReportForm = ({
       onBack={onCancel}
       message={
         isEditingDraft
-          ? "Restoring your saved answers…"
+          ? t("loading.restoring")
           : isAnonymous
-            ? "Setting up your secure anonymous form…"
-            : "Linking report to your account…"
+            ? t("loading.anonymous")
+            : t("loading.linking")
       }
     />
   );
@@ -984,9 +991,9 @@ const MultiStepReportForm = ({
           <div className="inline-flex items-center justify-center w-12 h-12 bg-accent-soft rounded-full mb-3">
             <Paperclip className="w-6 h-6 text-accent-fg" />
           </div>
-          <h2 className="text-xl font-bold text-ink">Attach Supporting Files</h2>
+          <h2 className="text-xl font-bold text-ink">{t("attachStage.title")}</h2>
           <p className="text-ink-muted text-sm mt-1">
-            Optionally upload evidence or documents to support your report. {ATTACHMENT_HINT}.
+            {t("attachStage.description", { hint: attachmentHint() })}
           </p>
         </div>
 
@@ -999,7 +1006,7 @@ const MultiStepReportForm = ({
             onAttachmentsChange={setAttachments}
           />
         ) : (
-          <Alert variant="warning">Report not yet initialized — attachments unavailable.</Alert>
+          <Alert variant="warning">{t("attachStage.notInitialized")}</Alert>
         )}
 
         <div className="mt-8 space-y-3 pt-6 border-t border-line">
@@ -1009,7 +1016,7 @@ const MultiStepReportForm = ({
             startIcon={ArrowLeft}
             className="w-full"
           >
-            Back to Form
+            {t("attachStage.backToForm")}
           </Button>
           <Button
             onClick={() => setStage("summary")}
@@ -1017,7 +1024,7 @@ const MultiStepReportForm = ({
             className="w-full"
             variant="primary"
           >
-            Continue to Review
+            {t("attachStage.continueToReview")}
           </Button>
         </div>
       </Card>
@@ -1036,9 +1043,9 @@ const MultiStepReportForm = ({
             <div className="inline-flex items-center justify-center w-16 h-16 bg-accent-soft rounded-full mb-4">
               <CheckCircle className="h-8 w-8 text-accent-fg" />
             </div>
-            <h2 className="text-2xl font-bold text-ink">Ready to Submit!</h2>
+            <h2 className="text-2xl font-bold text-ink">{t("summary.title")}</h2>
             <p className="text-ink-muted mt-2">
-              You've completed {completedSteps} out of {totalSteps} visible steps.
+              {t("summary.completed", { completed: completedSteps, total: totalSteps })}
             </p>
           </div>
 
@@ -1048,34 +1055,34 @@ const MultiStepReportForm = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <div className="text-center p-4 rounded-xl bg-success-soft border border-success-line">
                 <div className="text-2xl font-bold text-success-fg tabular-nums">{completedSteps}</div>
-                <div className="text-xs text-ink-muted mt-0.5">Steps Completed</div>
+                <div className="text-xs text-ink-muted mt-0.5">{t("summary.stepsCompleted")}</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-accent-soft border border-line-accent">
                 <div className="text-2xl font-bold text-accent-fg tabular-nums">{totalSteps}</div>
-                <div className="text-xs text-ink-muted mt-0.5">Visible Steps</div>
+                <div className="text-xs text-ink-muted mt-0.5">{t("summary.visibleSteps")}</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-info-soft border border-info-line">
                 <div className="text-2xl font-bold text-info-fg tabular-nums">
-                  {Math.round((completedSteps / totalSteps) * 100)}%
+                  {t("summary.percent", { value: Math.round((completedSteps / totalSteps) * 100) })}
                 </div>
-                <div className="text-xs text-ink-muted mt-0.5">Completion</div>
+                <div className="text-xs text-ink-muted mt-0.5">{t("summary.completion")}</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-warning-soft border border-warning-line">
                 <div className="text-2xl font-bold text-warning-fg tabular-nums">{attachments.length}</div>
-                <div className="text-xs text-ink-muted mt-0.5">Attachments</div>
+                <div className="text-xs text-ink-muted mt-0.5">{t("summary.attachments")}</div>
               </div>
             </div>
 
             <div className="bg-subtle rounded-xl p-6 mb-6">
-              <h3 className="font-semibold text-ink mb-4">Report Information</h3>
+              <h3 className="font-semibold text-ink mb-4">{t("summary.reportInfo")}</h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm font-medium text-ink-muted">Report Type</div>
+                  <div className="text-sm font-medium text-ink-muted">{t("summary.reportType")}</div>
                   <div className="text-lg font-semibold text-ink">{reportType?.name}</div>
                 </div>
                 {currentReportNumber && (
                   <div>
-                    <div className="text-sm font-medium text-ink-muted">Report Number</div>
+                    <div className="text-sm font-medium text-ink-muted">{t("summary.reportNumber")}</div>
                     <div className="text-lg font-semibold text-accent-fg font-mono">{currentReportNumber}</div>
                   </div>
                 )}
@@ -1086,9 +1093,9 @@ const MultiStepReportForm = ({
               <Alert variant="warning" className="mb-6">
                 <div className="flex items-start">
                   <div>
-                    <p className="font-medium text-sm">Some steps may not have data</p>
+                    <p className="font-medium text-sm">{t("summary.incompleteTitle")}</p>
                     <p className="text-xs mt-1">
-                      You have completed {completedSteps} out of {totalSteps} visible steps. You can go back and fill missing steps or submit as-is.
+                      {t("summary.incompleteBody", { completed: completedSteps, total: totalSteps })}
                     </p>
                   </div>
                 </div>
@@ -1111,7 +1118,7 @@ const MultiStepReportForm = ({
               startIcon={Paperclip}
               className="w-full"
             >
-              Manage Attachments
+              {t("summary.manageAttachments")}
             </Button>
 
             <Button
@@ -1120,7 +1127,7 @@ const MultiStepReportForm = ({
               startIcon={ArrowLeft}
               className="w-full"
             >
-              Review & Edit Steps
+              {t("summary.reviewSteps")}
             </Button>
 
             <Button
@@ -1131,7 +1138,7 @@ const MultiStepReportForm = ({
               className="w-full"
               variant="primary"
             >
-              Submit Report
+              {t("summary.submit")}
             </Button>
           </div>
         </Card>
@@ -1146,21 +1153,21 @@ const MultiStepReportForm = ({
           <Card>
             <Alert variant="info">
               <div className="flex items-start">
-                <GitBranch className="w-5 h-5 mr-2 mt-0.5 shrink-0" />
+                <GitBranch className="w-5 h-5 me-2 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium text-sm">No sections to display</p>
+                  <p className="font-medium text-sm">{t("formStage.noSectionsTitle")}</p>
                   <p className="text-xs mt-1">
-                    Based on your previous answers, no additional sections are available.
+                    {t("formStage.noSectionsBody")}
                   </p>
                 </div>
               </div>
             </Alert>
             <div className="mt-4 space-y-3">
               <Button onClick={() => setCurrentStep(0)} variant="secondary" className="w-full">
-                Review Answers
+                {t("formStage.reviewAnswers")}
               </Button>
               <Button onClick={() => setStage("attachments")} variant="secondary" className="w-full">
-                Continue to Attachments
+                {t("formStage.continueToAttachments")}
               </Button>
             </div>
           </Card>
@@ -1186,27 +1193,36 @@ const MultiStepReportForm = ({
               className="inline-flex items-center gap-1 text-sm text-ink-muted transition-colors hover:text-ink"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
+              {t("formStage.back")}
             </button>
             {isEditingDraft ? (
               <div className="text-sm text-ink-muted">
-                Editing draft{" "}
-                <span className="font-mono font-semibold text-ink">{currentReportNumber}</span>
+                <Trans
+                  t={t}
+                  i18nKey="formStage.editingDraft"
+                  values={{ number: currentReportNumber }}
+                  components={{ number: <span className="font-mono font-semibold text-ink" dir="ltr" /> }}
+                />
               </div>
             ) : isAnonymous ? (
               <div className="text-sm text-ink-muted">
-                Report: <span className="font-mono font-semibold text-ink">{currentReportNumber}</span>
+                <Trans
+                  t={t}
+                  i18nKey="formStage.reportNumber"
+                  values={{ number: currentReportNumber }}
+                  components={{ number: <span className="font-mono font-semibold text-ink" dir="ltr" /> }}
+                />
               </div>
             ) : (
               <div className="text-sm text-success-fg flex items-center gap-1.5">
                 <CheckCircle className="w-4 h-4 shrink-0" />
-                Linked to your account
+                {t("formStage.linked")}
               </div>
             )}
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-ink capitalize tracking-[-0.02em]">{reportType.name}</h1>
           <p className="text-sm text-ink-muted mt-1">
-            {section.title} • Step {currentStep + 1} of {totalSteps}
+            {t("formStage.sectionStep", { section: section.title, current: currentStep + 1, total: totalSteps })}
           </p>
         </div>
 
@@ -1214,10 +1230,10 @@ const MultiStepReportForm = ({
         <div className="mb-6">
           <div className="flex items-center justify-between gap-3 mb-2">
             <span className="text-xs font-medium text-ink-muted">
-              Step {currentStep + 1} of {totalSteps}
+              {t("formStage.stepOf", { current: currentStep + 1, total: totalSteps })}
             </span>
             <span className="text-xs text-ink-subtle tabular-nums">
-              {Math.round(((currentStep + 1) / totalSteps) * 100)}%
+              {t("summary.percent", { value: Math.round(((currentStep + 1) / totalSteps) * 100) })}
             </span>
           </div>
           <div className="w-full bg-subtle rounded-full h-1.5 overflow-hidden">
@@ -1250,7 +1266,7 @@ const MultiStepReportForm = ({
                   {isDone && !isCurrent
                     ? <CheckCircle className="w-3.5 h-3.5 shrink-0" />
                     : <span className="tabular-nums">{index + 1}</span>}
-                  <span className="whitespace-nowrap">Step {index + 1}</span>
+                  <span className="whitespace-nowrap">{t("formStage.step", { number: index + 1 })}</span>
                 </button>
               );
             })}
@@ -1276,11 +1292,11 @@ const MultiStepReportForm = ({
           {visibleQuestions.length < (section.questions?.length || 0) && (
             <Alert variant="info" className="mb-6">
               <div className="flex items-start">
-                <GitBranch className="w-5 h-5 mr-2 mt-0.5 shrink-0" />
+                <GitBranch className="w-5 h-5 me-2 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium text-sm">Conditional questions active</p>
+                  <p className="font-medium text-sm">{t("formStage.conditionalTitle")}</p>
                   <p className="text-xs mt-1">
-                    Showing {visibleQuestions.length} of {section.questions?.length || 0} questions.
+                    {t("formStage.conditionalBody", { visible: visibleQuestions.length, count: section.questions?.length || 0 })}
                   </p>
                 </div>
               </div>
@@ -1292,9 +1308,9 @@ const MultiStepReportForm = ({
             {visibleQuestions.length === 0 ? (
               <div className="text-center py-8">
                 <GitBranch className="w-12 h-12 text-ink-subtle mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-ink mb-2">No Questions Visible</h3>
+                <h3 className="text-lg font-semibold text-ink mb-2">{t("formStage.noQuestionsTitle")}</h3>
                 <p className="text-ink-muted">
-                  Based on your previous answers, no questions are shown in this section.
+                  {t("formStage.noQuestionsBody")}
                 </p>
               </div>
             ) : (
@@ -1323,7 +1339,7 @@ const MultiStepReportForm = ({
                     <div className="flex items-center gap-2">
                       <label id={labelId} className="block text-sm font-medium text-ink">
                         {question.label}
-                        {isRequired && <span className="text-danger-fg ml-1">*</span>}
+                        {isRequired && <span className="text-danger-fg ms-1">*</span>}
                       </label>
                     </div>
 
@@ -1349,11 +1365,11 @@ const MultiStepReportForm = ({
                         required={isRequired}
                         disabled={isLoading || isSaving}
                         options={normalizeOptions(question.options)}
-                        placeholder={question.placeholder || "Select an option"}
+                        placeholder={question.placeholder || t("fields.selectPlaceholder")}
                         error={fieldError}
                         className="outline-none focus:ring-1"
                       >
-                        <option value="">{question.placeholder || "Select an option"}</option>
+                        <option value="">{question.placeholder || t("fields.selectPlaceholder")}</option>
                         {normalizeOptions(question.options).map((option, optIdx) => (
                           <option key={optIdx} value={option.value}>{option.label}</option>
                         ))}
@@ -1377,7 +1393,7 @@ const MultiStepReportForm = ({
                                 className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
                                 disabled={isLoading || isSaving}
                               />
-                              <span className="ml-2 text-sm text-ink-secondary">{optionLabel}</span>
+                              <span className="ms-2 text-sm text-ink-secondary">{optionLabel}</span>
                             </label>
                           );
                         })}
@@ -1392,7 +1408,7 @@ const MultiStepReportForm = ({
                             className="w-4 h-4 text-accent-fg border-line-strong focus:ring-accent-ring"
                             disabled={isLoading || isSaving} required={isRequired}
                           />
-                          <span className="ml-2 text-sm text-ink-secondary">Yes</span>
+                          <span className="ms-2 text-sm text-ink-secondary">{t("fields.yes")}</span>
                         </label>
                         <label className="flex items-center">
                           <input
@@ -1402,7 +1418,7 @@ const MultiStepReportForm = ({
                             className="w-4 h-4 text-accent-fg border-line-strong focus:ring-accent-ring"
                             disabled={isLoading || isSaving} required={isRequired}
                           />
-                          <span className="ml-2 text-sm text-ink-secondary">No</span>
+                          <span className="ms-2 text-sm text-ink-secondary">{t("fields.no")}</span>
                         </label>
                       </div>
                     ) : normalizedType === "file" ? (
@@ -1485,7 +1501,7 @@ const MultiStepReportForm = ({
                         onBlur={(e) => validateQuestionOnBlur(question, e.target.value)}
                         placeholder={question.placeholder || question?.label}
                         required={isRequired}
-                        title={question.type === 'phone' ? 'Write phone number including country code and without + symbol (e.g., 251912345678)' : ''}
+                        title={question.type === 'phone' ? t("fields.phoneTitle") : ''}
                         disabled={isLoading || isSaving}
                         min={
                           normalizedType === "number" ? (normalizeValidation(question.validation).min_value ?? 0) :
@@ -1535,7 +1551,7 @@ const MultiStepReportForm = ({
                 disabled={currentStep === 0 || isLoading || isSaving}
                 startIcon={ChevronLeft}
               >
-                Previous
+                {t("formStage.previous")}
               </Button>
               <Button
                 variant="secondary"
@@ -1544,7 +1560,7 @@ const MultiStepReportForm = ({
                 disabled={isLoading || isSaving}
                 startIcon={Save}
               >
-                Save Step
+                {t("formStage.saveStep")}
               </Button>
             </div>
 
@@ -1556,7 +1572,7 @@ const MultiStepReportForm = ({
                   disabled={isLoading || isSaving}
                   startIcon={Copy}
                 >
-                  Copy Credentials
+                  {t("credentials.copy")}
                 </Button>
               )}
               <Button
@@ -1566,7 +1582,7 @@ const MultiStepReportForm = ({
                 endIcon={currentStep === totalSteps - 1 ? Paperclip : ChevronRight}
                 variant="primary"
               >
-                {currentStep === totalSteps - 1 ? "Save & Attach files" : "Save & Continue"}
+                {currentStep === totalSteps - 1 ? t("formStage.saveAndAttach") : t("formStage.saveAndContinue")}
               </Button>
             </div>
           </div>
@@ -1574,7 +1590,7 @@ const MultiStepReportForm = ({
 
         {!isAnonymous && isAuthenticated && (
           <Alert variant="success" className="mt-4">
-            <p className="text-sm">Your report is linked to your account. No password needed!</p>
+            <p className="text-sm">{t("formStage.linkedNoPassword")}</p>
           </Alert>
         )}
       </div>
@@ -1588,10 +1604,9 @@ const MultiStepReportForm = ({
           <div className="inline-flex items-center justify-center w-16 h-16 bg-success-soft rounded-full mb-4">
             <CheckCircle className="h-8 w-8 text-success-fg" />
           </div>
-          <h2 className="text-2xl font-bold text-ink">Report Submitted Successfully!</h2>
+          <h2 className="text-2xl font-bold text-ink">{t("success.title")}</h2>
           <p className="text-ink-muted mt-2">
-            Your {isAnonymous ? "anonymous " : ""}report has been received and is being processed.
-            {!isAnonymous && " You can track it in your dashboard."}
+            {isAnonymous ? t("success.receivedAnonymous") : t("success.receivedAccount")}
           </p>
         </div>
 
@@ -1600,36 +1615,35 @@ const MultiStepReportForm = ({
             <div className="bg-subtle rounded-xl p-6 mb-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-sm font-medium text-ink-muted mb-2">Report Number</div>
-                  <div className="text-2xl font-bold text-accent-fg font-mono">{currentReportNumber}</div>
+                  <div className="text-sm font-medium text-ink-muted mb-2">{t("summary.reportNumber")}</div>
+                  <div className="text-2xl font-bold text-accent-fg font-mono" dir="ltr">{currentReportNumber}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-sm font-medium text-ink-muted mb-2">Password</div>
-                  <div className="text-2xl font-bold text-ink font-mono">{password}</div>
+                  <div className="text-sm font-medium text-ink-muted mb-2">{t("success.password")}</div>
+                  <div className="text-2xl font-bold text-ink font-mono" dir="ltr">{password}</div>
                 </div>
               </div>
             </div>
             <Alert variant="warning" className="mb-6">
               <div className="flex items-start">
-                <Shield className="w-5 h-5 mr-2 mt-0.5 shrink-0" />
+                <Shield className="w-5 h-5 me-2 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium text-sm">Save Your Credentials!</p>
+                  <p className="font-medium text-sm">{t("success.saveTitle")}</p>
                   <p className="text-xs mt-1">
-                    You will need both your report number and password to track this report.
-                    <strong> These cannot be recovered if lost.</strong>
+                    <Trans t={t} i18nKey="success.saveBody" components={{ strong: <strong /> }} />
                   </p>
                 </div>
               </div>
             </Alert>
             <div className="space-y-3">
               <Button onClick={handleCopyCredentials} startIcon={Copy} className="w-full" variant="secondary">
-                Copy Credentials
+                {t("credentials.copy")}
               </Button>
               <Button
                 onClick={() => navigate(`/${user?.organization_slug}/track-report?report=${currentReportNumber}`)}
                 className="w-full" variant="secondary"
               >
-                Track This Report
+                {t("success.trackThis")}
               </Button>
             </div>
           </>
@@ -1637,20 +1651,20 @@ const MultiStepReportForm = ({
           <div className="space-y-4">
             <div className="bg-success-soft rounded-xl p-6 mb-6">
               <div className="text-center">
-                <div className="text-sm font-medium text-ink-muted mb-2">Your Report Number</div>
+                <div className="text-sm font-medium text-ink-muted mb-2">{t("success.yourNumber")}</div>
                 <div className="text-2xl font-bold text-accent-fg font-mono">{currentReportNumber}</div>
-                <p className="text-sm text-ink-muted mt-2">This report is linked to your account.</p>
+                <p className="text-sm text-ink-muted mt-2">{t("success.linkedNote")}</p>
               </div>
             </div>
             <Alert variant="success" className="mb-6">
-              <p className="text-sm">Your report has been submitted and is linked to your account.</p>
+              <p className="text-sm">{t("success.linkedAlert")}</p>
             </Alert>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button variant="secondary" onClick={() => navigate(`/${user?.organization_slug}/reporter/dashboard`)}>
-                Go to Dashboard
+                {t("success.dashboard")}
               </Button>
               <Button onClick={() => navigate(`/${user?.organization_slug}/reporter/submit`)} variant="secondary">
-                Submit Another Report
+                {t("success.another")}
               </Button>
             </div>
           </div>
@@ -1672,10 +1686,10 @@ const MultiStepReportForm = ({
         <div className="text-center py-12">
           <AlertCircle className="w-12 h-12 text-ink-subtle mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-ink mb-2">
-            {stage === "unavailable" ? "This form can't be opened" : "Something went wrong"}
+            {stage === "unavailable" ? t("error.unavailable") : t("error.generic")}
           </h2>
-          <p className="mx-auto mb-4 max-w-md text-ink-muted">{error || "Unable to load the report form. Please try again."}</p>
-          <Button onClick={onCancel} variant="secondary">Go Back</Button>
+          <p className="mx-auto mb-4 max-w-md text-ink-muted">{error || t("error.body")}</p>
+          <Button onClick={onCancel} variant="secondary">{t("error.goBack")}</Button>
         </div>
       </Card>
     </div>
@@ -1703,6 +1717,7 @@ const resolveDateBound = (bound) => (bound === "today" ? localToday() : bound ||
  * stored as an integer in the currency's smallest unit, never as a float.
  */
 const CurrencyField = ({ value, defaultCurrency, disabled, required, error, placeholder, onChange, onBlur }) => {
+  const { t } = useTranslation("form");
   const currency = value?.currency || defaultCurrency || DEFAULT_CURRENCY;
   const [draft, setDraft] = useState(() => fromMinorUnits(value?.amount_minor, currency));
 
@@ -1727,7 +1742,7 @@ const CurrencyField = ({ value, defaultCurrency, disabled, required, error, plac
           value={currency}
           onChange={(e) => emit(draft, e.target.value)}
           disabled={disabled}
-          aria-label="Currency"
+          aria-label={t("fields.currency")}
           className="w-24 shrink-0 rounded-lg border border-line bg-subtle px-3 py-2.5 text-sm text-ink outline-none focus:border-line-accent"
         >
           {options.map((code) => (
@@ -1739,7 +1754,8 @@ const CurrencyField = ({ value, defaultCurrency, disabled, required, error, plac
         <input
           type="text"
           inputMode="decimal"
-          aria-label="Amount"
+          dir="ltr"
+          aria-label={t("fields.amount")}
           value={draft}
           required={required}
           disabled={disabled}
@@ -1764,6 +1780,7 @@ const CurrencyField = ({ value, defaultCurrency, disabled, required, error, plac
 };
 
 const DateTimeField = ({ value, disabled, required, error, onChange, onBlur }) => {
+  const { t } = useTranslation("form");
   const [parts, setParts] = useState(() => splitDateTime(value));
 
   // Follow the value when it changes from outside (draft prefill, step switch),
@@ -1793,7 +1810,7 @@ const DateTimeField = ({ value, disabled, required, error, onChange, onBlur }) =
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input
           type="date"
-          aria-label="Date"
+          aria-label={t("fields.date")}
           value={parts.date}
           max={maxDate}
           required={required}
@@ -1806,7 +1823,7 @@ const DateTimeField = ({ value, disabled, required, error, onChange, onBlur }) =
         />
         <Input
           type="time"
-          aria-label="Time"
+          aria-label={t("fields.time")}
           value={parts.time}
           max={maxTime}
           required={required}
@@ -1830,7 +1847,9 @@ const DateTimeField = ({ value, disabled, required, error, onChange, onBlur }) =
  * be. Pages that load a draft before mounting the form show it too, so the
  * two loads read as one.
  */
-export const ReportFormSkeleton = ({ message, onBack }) => (
+export const ReportFormSkeleton = ({ message, onBack }) => {
+  const { t } = useTranslation("form");
+  return (
   <div className="max-w-4xl mx-auto" aria-busy="true">
     <div className="mb-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -1839,7 +1858,7 @@ export const ReportFormSkeleton = ({ message, onBack }) => (
           className="inline-flex items-center gap-1 text-sm text-ink-muted transition-colors hover:text-ink"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back
+          {t("formStage.back")}
         </button>
         <span className="flex items-center gap-1.5 text-sm text-ink-muted">
           <Loader className="w-3.5 h-3.5 animate-spin" />
@@ -1883,7 +1902,8 @@ export const ReportFormSkeleton = ({ message, onBack }) => (
       </div>
     </Card>
   </div>
-);
+  );
+};
 
 const InlineFileUpload = ({
   question,
@@ -1895,6 +1915,7 @@ const InlineFileUpload = ({
   onAttachmentSync,
   onUploaded,
 }) => {
+  const { t } = useTranslation("form");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedAttachmentKey, setUploadedAttachmentKey] = useState(
@@ -1922,7 +1943,7 @@ const InlineFileUpload = ({
       return;
     }
     if (!reportNumber) {
-      toast.error("Report not initialized for file upload");
+      toast.error(t("upload.notInitialized"));
       e.target.value = "";
       return;
     }
@@ -1944,10 +1965,10 @@ const InlineFileUpload = ({
         onUploaded(uploaded.key); // Store the S3 key as the form field value
         const list = await reportsAPI.getAttachments(reportNumber, password, orgParam);
         onAttachmentSync?.(Array.isArray(list) ? list : []);
-        toast.success(`"${uploaded.filename}" uploaded`);
+        toast.success(t("upload.uploaded", { name: uploaded.filename }));
       }
     } catch (err) {
-      const msg = err.response?.data?.detail || "File upload failed";
+      const msg = err.response?.data?.detail || t("upload.failed");
       toast.error(msg);
     } finally {
       setIsUploading(false);
@@ -1962,7 +1983,7 @@ const InlineFileUpload = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-ink-muted">
             <Loader className="w-4 h-4 animate-spin text-accent-fg" />
-            <span>Uploading… {uploadProgress}%</span>
+            <span>{t("panel.uploading", { percent: uploadProgress })}</span>
           </div>
           <div className="w-full bg-active rounded-full h-1.5">
             <div
@@ -1984,7 +2005,7 @@ const InlineFileUpload = ({
                   const list = await reportsAPI.getAttachments(reportNumber, password, orgParam);
                   onAttachmentSync?.(Array.isArray(list) ? list : []);
                 } catch {
-                  toast.error("Failed to delete attachment");
+                  toast.error(t("panel.deleteFailed"));
                   return;
                 }
               }
@@ -1993,7 +2014,7 @@ const InlineFileUpload = ({
               onUploaded("");
             }}
             className="inline-flex h-7 w-7 items-center justify-center rounded text-ink-subtle hover:text-danger-fg"
-            aria-label={`Remove ${uploadedFilename}`}
+            aria-label={t("upload.remove", { name: uploadedFilename })}
           >
             <X className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -2006,7 +2027,7 @@ const InlineFileUpload = ({
           accept={ATTACHMENT_ACCEPT}
           disabled={isDisabled}
           required={question.required}
-          className="block w-full text-sm text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent-soft file:text-accent-fg hover:file:bg-accent-soft"
+          className="block w-full text-sm text-ink-muted file:me-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent-soft file:text-accent-fg hover:file:bg-accent-soft"
         />
       )}
     </div>

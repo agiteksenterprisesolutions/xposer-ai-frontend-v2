@@ -618,7 +618,7 @@ const VoiceProfile = () => {
 
       {/* Save bar */}
       {canManage && isDirty && (
-        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:pl-5">
+        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:ps-5">
           <p className="min-w-0 flex-1 text-sm">Unsaved changes · they apply from the next call</p>
           <div className="flex shrink-0 gap-2">
             <button

@@ -90,7 +90,7 @@ const Security = () => {
             <article id="overview">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Shield className="w-5 h-5 text-link mr-3" />
+                  <Shield className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Security Overview</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -122,19 +122,19 @@ const Security = () => {
             <article id="encryption">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Lock className="w-5 h-5 text-link mr-3" />
+                  <Lock className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Encryption</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We use industry-standard encryption to protect your data at every stage:</p>
                   
                   <div className="space-y-4 mt-4">
-                    <div className="border-l-4 border-line-accent pl-4 py-2">
+                    <div className="border-s-4 border-line-accent ps-4 py-2">
                       <div className="flex items-start mb-2">
-                        <Key className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <Key className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Data in Transit</h3>
                       </div>
-                      <ul className="list-disc list-inside space-y-1 ml-6 text-sm">
+                      <ul className="list-disc list-inside space-y-1 ms-6 text-sm">
                         <li>TLS 1.3 encryption for all network communications</li>
                         <li>Perfect Forward Secrecy (PFS) to protect past sessions</li>
                         <li>Strong cipher suites only (AES-256-GCM)</li>
@@ -143,12 +143,12 @@ const Security = () => {
                       </ul>
                     </div>
 
-                    <div className="border-l-4 border-green-500 pl-4 py-2">
+                    <div className="border-s-4 border-green-500 ps-4 py-2">
                       <div className="flex items-start mb-2">
-                        <Database className="w-4 h-4 text-green-600 mr-2 mt-0.5 skrink-0" />
+                        <Database className="w-4 h-4 text-green-600 me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Data at Rest</h3>
                       </div>
-                      <ul className="list-disc list-inside space-y-1 ml-6 text-sm">
+                      <ul className="list-disc list-inside space-y-1 ms-6 text-sm">
                         <li>AES-256 encryption for all stored data</li>
                         <li>Encrypted database storage with rotating keys</li>
                         <li>Encrypted file storage for attachments</li>
@@ -157,12 +157,12 @@ const Security = () => {
                       </ul>
                     </div>
 
-                    <div className="border-l-4 border-purple-500 pl-4 py-2">
+                    <div className="border-s-4 border-purple-500 ps-4 py-2">
                       <div className="flex items-start mb-2">
-                        <Shield className="w-4 h-4 text-purple-600 mr-2 mt-0.5 skrink-0" />
+                        <Shield className="w-4 h-4 text-purple-600 me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">End-to-End Encryption</h3>
                       </div>
-                      <p className="ml-6 text-sm">For maximum security, sensitive report data can be encrypted end-to-end, ensuring that only authorized investigators can decrypt and view the information.</p>
+                      <p className="ms-6 text-sm">For maximum security, sensitive report data can be encrypted end-to-end, ensuring that only authorized investigators can decrypt and view the information.</p>
                     </div>
                   </div>
                 </div>
@@ -172,7 +172,7 @@ const Security = () => {
             <article id="infrastructure">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Server className="w-5 h-5 text-link mr-3" />
+                  <Server className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Infrastructure Security</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -181,7 +181,7 @@ const Security = () => {
                   <div className="grid md:grid-cols-2 gap-4 mt-4">
                     <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <Server className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <Server className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Cloud Security</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 text-sm">
@@ -194,7 +194,7 @@ const Security = () => {
 
                     <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <Shield className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <Shield className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Network Security</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 text-sm">
@@ -207,7 +207,7 @@ const Security = () => {
 
                     <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <Database className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <Database className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Data Isolation</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 text-sm">
@@ -220,7 +220,7 @@ const Security = () => {
 
                     <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <CheckCircle className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <CheckCircle className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Backup & Recovery</h3>
                       </div>
                       <ul className="list-disc list-inside space-y-1 text-sm">
@@ -238,7 +238,7 @@ const Security = () => {
             <article id="access-control">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Key className="w-5 h-5 text-link mr-3" />
+                  <Key className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Access Control & Authentication</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -246,7 +246,7 @@ const Security = () => {
                   
                   <div className="space-y-3 mt-4">
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Multi-Factor Authentication (MFA)</h4>
                         <p className="text-sm">Required for all administrative accounts and available for all users. Supports TOTP, SMS, and hardware security keys.</p>
@@ -254,7 +254,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Role-Based Access Control (RBAC)</h4>
                         <p className="text-sm">Granular permissions system ensures users can only access data relevant to their role and responsibilities.</p>
@@ -262,7 +262,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Principle of Least Privilege</h4>
                         <p className="text-sm">Users and systems are granted the minimum level of access required to perform their functions.</p>
@@ -270,7 +270,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Session Management</h4>
                         <p className="text-sm">Secure session tokens, automatic timeout after inactivity, and the ability to remotely terminate sessions.</p>
@@ -278,7 +278,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Password Security</h4>
                         <p className="text-sm">Strong password requirements, secure hashing (bcrypt), protection against credential stuffing, and support for password managers.</p>
@@ -286,7 +286,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Single Sign-On (SSO)</h4>
                         <p className="text-sm">Enterprise SSO support via SAML 2.0 and OAuth 2.0 for seamless and secure authentication.</p>
@@ -300,7 +300,7 @@ const Security = () => {
             <article id="monitoring">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Eye className="w-5 h-5 text-link mr-3" />
+                  <Eye className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Security Monitoring & Logging</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -320,7 +320,7 @@ const Security = () => {
 
                   <div className="bg-accent-soft border border-line-accent rounded-lg p-4 mt-3">
                     <div className="flex items-start">
-                      <Info className="w-5 h-5 text-link mr-3 skrink-0 mt-0.5" />
+                      <Info className="w-5 h-5 text-link me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink mb-2">Transparency</h4>
                         <p className="text-sm">Users with appropriate permissions can access audit logs to review access to their reports and data.</p>
@@ -334,14 +334,14 @@ const Security = () => {
             <article id="vulnerability">
               <Card>
                 <div className="flex items-start mb-4">
-                  <ShieldAlert className="w-5 h-5 text-link mr-3" />
+                  <ShieldAlert className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Vulnerability Management</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
                   <p>We proactively identify and remediate security vulnerabilities through a comprehensive vulnerability management program:</p>
                   
                   <div className="grid md:grid-cols-2 gap-4 mt-4">
-                    <div className="border-l-4 border-orange-500 pl-4 py-2">
+                    <div className="border-s-4 border-orange-500 ps-4 py-2">
                       <h3 className="font-semibold text-ink mb-2">Regular Scanning</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Weekly automated vulnerability scans</li>
@@ -351,7 +351,7 @@ const Security = () => {
                       </ul>
                     </div>
 
-                    <div className="border-l-4 border-red-500 pl-4 py-2">
+                    <div className="border-s-4 border-red-500 ps-4 py-2">
                       <h3 className="font-semibold text-ink mb-2">Penetration Testing</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Annual third-party penetration tests</li>
@@ -361,7 +361,7 @@ const Security = () => {
                       </ul>
                     </div>
 
-                    <div className="border-l-4 border-yellow-500 pl-4 py-2">
+                    <div className="border-s-4 border-yellow-500 ps-4 py-2">
                       <h3 className="font-semibold text-ink mb-2">Bug Bounty Program</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Responsible disclosure program</li>
@@ -371,7 +371,7 @@ const Security = () => {
                       </ul>
                     </div>
 
-                    <div className="border-l-4 border-green-500 pl-4 py-2">
+                    <div className="border-s-4 border-green-500 ps-4 py-2">
                       <h3 className="font-semibold text-ink mb-2">Patch Management</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm">
                         <li>Critical patches within 24-48 hours</li>
@@ -388,7 +388,7 @@ const Security = () => {
             <article id="incident">
               <Card>
                 <div className="flex items-start mb-4">
-                  <AlertTriangle className="w-5 h-5 text-link mr-3" />
+                  <AlertTriangle className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Incident Response</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -397,7 +397,7 @@ const Security = () => {
                   <div className="space-y-3 mt-4">
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                       <h4 className="font-semibold text-ink mb-2 flex items-center">
-                        <Clock className="w-4 h-4 mr-2 text-red-600" />
+                        <Clock className="w-4 h-4 me-2 text-red-600" />
                         Incident Response Process
                       </h4>
                       <ol className="list-decimal list-inside space-y-2 text-sm">
@@ -439,7 +439,7 @@ const Security = () => {
             <article id="best-practices">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Code className="w-5 h-5 text-link mr-3" />
+                  <Code className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Secure Development Practices</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -447,7 +447,7 @@ const Security = () => {
                   
                   <div className="space-y-2 mt-4">
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">Security by Design</h4>
                         <p className="text-sm">Security requirements are identified and addressed from the initial design phase.</p>
@@ -455,7 +455,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">Code Review</h4>
                         <p className="text-sm">All code changes undergo peer review with security considerations before deployment.</p>
@@ -463,7 +463,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">Automated Testing</h4>
                         <p className="text-sm">Continuous integration pipelines include security tests, dependency checks, and vulnerability scans.</p>
@@ -471,7 +471,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">Developer Training</h4>
                         <p className="text-sm">Regular security training for all developers on secure coding practices and emerging threats.</p>
@@ -479,7 +479,7 @@ const Security = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">Dependency Management</h4>
                         <p className="text-sm">Automated monitoring and updating of third-party dependencies to address known vulnerabilities.</p>
@@ -493,7 +493,7 @@ const Security = () => {
             <article id="reporting">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <FileText className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Report Security Issues</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -542,7 +542,7 @@ const Security = () => {
                 <div className="hidden sm:block skrink-0">
                   <Button variant="secondary" size="medium" className="cursor-pointer" to="/submit-anonymous">
                       Submit a Report
-                      <ArrowRight className="ml-2 w-4 h-4" />
+                      <ArrowRight className="ms-2 w-4 h-4" />
                     </Button>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 // src/components/layout/Modal.jsx
 import React, { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import { isTopDialog, useDialogFocus } from '../../hooks/useDialogFocus';
 
@@ -20,6 +21,7 @@ const Modal = ({
   const panelRef = useRef(null);
   const titleId = useId();
   useDialogFocus(panelRef, isOpen);
+  const { t } = useTranslation('common');
 
   // Close on escape key
   useEffect(() => {
@@ -86,7 +88,7 @@ const Modal = ({
         onClick={handleOverlayClick}
       >
         <div
-          className={`w-full ${sizeClass} max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden rounded-2xl bg-surface border border-line text-left shadow-xl animate-slide-up ${className}`}
+          className={`w-full ${sizeClass} max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden rounded-2xl bg-surface border border-line text-start shadow-xl animate-slide-up ${className}`}
           ref={panelRef}
           role="dialog"
           aria-modal="true"
@@ -112,8 +114,9 @@ const Modal = ({
                   variant="ghost"
                   size="icon"
                   onClick={onClose}
-                  aria-label="Close dialog"
-                  className="shrink-0 -mr-2"
+                  aria-label={t('actions.closeDialog')}
+                  data-dialog-close
+                  className="shrink-0 -me-2"
                 >
                   <X className="w-5 h-5" />
                 </Button>
@@ -143,14 +146,19 @@ export const ConfirmationModal = ({
   isOpen,
   onClose,
   onConfirm,
-  title = 'Confirm Action',
-  message = 'Are you sure you want to proceed?',
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  title,
+  message,
+  confirmText,
+  cancelText,
   variant = 'danger',
   isLoading = false,
   destructive = false,
 }) => {
+  const { t } = useTranslation('common');
+  title ??= t('confirm.title');
+  message ??= t('confirm.message');
+  confirmText ??= t('confirm.confirm');
+  cancelText ??= t('actions.cancel');
   return (
     <Modal
       isOpen={isOpen}
@@ -193,6 +201,7 @@ export const FullscreenModal = ({
   const panelRef = useRef(null);
   const titleId = useId();
   useDialogFocus(panelRef, isOpen);
+  const { t } = useTranslation('common');
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -235,7 +244,8 @@ export const FullscreenModal = ({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t('actions.close')}
+              data-dialog-close
               className="shrink-0"
             >
               <X className="w-5 h-5" />

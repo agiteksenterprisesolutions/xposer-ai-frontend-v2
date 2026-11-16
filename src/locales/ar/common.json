@@ -1,0 +1,137 @@
+{
+  "language": {
+    "switchTo": "التبديل إلى {{language}}"
+  },
+  "layout": {
+    "skipToMain": "انتقل إلى المحتوى الرئيسي",
+    "validatingOrg": "جارٍ التحقق من الجهة…"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "howToUse": "طريقة الاستخدام",
+    "logout": "تسجيل الخروج",
+    "login": "تسجيل الدخول",
+    "trackReport": "متابعة البلاغ",
+    "trackAReport": "متابعة بلاغ",
+    "reportNow": "أبلِغ الآن",
+    "takeTour": "جولة تعريفية",
+    "accountMenu": "قائمة الحساب",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة",
+    "openNavigation": "فتح قائمة التنقل",
+    "collapseSidebar": "طي الشريط الجانبي",
+    "expandSidebar": "توسيع الشريط الجانبي"
+  },
+  "theme": {
+    "toLight": "التبديل إلى المظهر الفاتح",
+    "toDark": "التبديل إلى المظهر الداكن"
+  },
+  "actions": {
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "closeDialog": "إغلاق النافذة",
+    "dismiss": "تجاهل",
+    "back": "رجوع",
+    "next": "التالي",
+    "continue": "متابعة",
+    "save": "حفظ",
+    "submit": "إرسال",
+    "retry": "إعادة المحاولة",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "download": "تنزيل",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "view": "عرض",
+    "search": "بحث",
+    "clear": "مسح"
+  },
+  "status": {
+    "loading": "جارٍ التحميل…",
+    "saving": "جارٍ الحفظ…",
+    "submitting": "جارٍ الإرسال…"
+  },
+  "confirm": {
+    "title": "تأكيد الإجراء",
+    "message": "هل أنت متأكد من المتابعة؟",
+    "confirm": "تأكيد"
+  },
+  "pagination": {
+    "noItems": "لا توجد عناصر",
+    "showing": "عرض {{start}}–{{end}} من {{total}}",
+    "previous": "الصفحة السابقة",
+    "next": "الصفحة التالية"
+  },
+  "table": {
+    "emptyTitle": "لا توجد بيانات",
+    "emptyDescription": "لا توجد عناصر لعرضها."
+  },
+  "sort": {
+    "orderBy": "ترتيب حسب",
+    "ascTitle": "تصاعدي — التبديل إلى تنازلي",
+    "descTitle": "تنازلي — التبديل إلى تصاعدي",
+    "ascLabel": "مرتب تصاعديًا. التبديل إلى تنازلي.",
+    "descLabel": "مرتب تنازليًا. التبديل إلى تصاعدي."
+  },
+  "select": {
+    "placeholder": "اختر خيارًا"
+  },
+  "form": {
+    "required": "مطلوب",
+    "optional": "اختياري"
+  },
+  "reportStatus": {
+    "draft": "مسودة",
+    "submitted": "مُقدَّم",
+    "pending": "قيد الانتظار",
+    "in_progress": "قيد المعالجة",
+    "under_review": "قيد المراجعة",
+    "resolved": "تمت المعالجة",
+    "closed": "مغلق",
+    "rejected": "مرفوض",
+    "incomplete": "غير مكتمل"
+  },
+  "priority": {
+    "low": "منخفضة",
+    "medium": "متوسطة",
+    "high": "عالية",
+    "critical": "حرجة"
+  },
+  "errors": {
+    "fallback": "حدث خطأ ما.",
+    "fieldsNeedFixing": "بعض الحقول تحتاج إلى تصحيح.",
+    "sessionExpired": "انتهت جلستك. يُرجى تسجيل الدخول مرة أخرى.",
+    "adminOnly": "يمكن للمسؤول فقط تعديل المستخدمين الآخرين.",
+    "cannotViewUser": "ليس لديك صلاحية الوصول إلى هذا المستخدم.",
+    "forbidden": "ليست لديك صلاحية للقيام بذلك.",
+    "tooManyRequests": "طلبات كثيرة جدًا. يُرجى المحاولة لاحقًا.",
+    "notFound": "غير موجود.",
+    "server": "خطأ في الخادم. يُرجى المحاولة لاحقًا.",
+    "network": "خطأ في الشبكة. يُرجى التحقق من اتصالك.",
+    "invalidCredentials": "رقم البلاغ أو كلمة المرور غير صحيحة."
+  },
+  "time": {
+    "justNow": "الآن",
+    "unknown": "غير معروف"
+  },
+  "password": {
+    "rules": {
+      "length": "8 أحرف على الأقل",
+      "upper": "حرف كبير (A–Z)",
+      "lower": "حرف صغير (a–z)",
+      "number": "رقم",
+      "symbol": "رمز، مثل ! أو #"
+    },
+    "errors": {
+      "currentRequired": "أدخل كلمة المرور الحالية",
+      "policy": "كلمة المرور الجديدة لا تستوفي جميع الشروط أدناه",
+      "mismatch": "كلمتا المرور غير متطابقتين",
+      "sameAsCurrent": "اختر كلمة مرور مختلفة عن الحالية"
+    }
+  },
+  "social": {
+    "divider": "أو تابع باستخدام",
+    "continueWith": "المتابعة باستخدام {{provider}}",
+    "failed": "تعذّر تسجيل الدخول. يُرجى المحاولة مرة أخرى."
+  }
+}

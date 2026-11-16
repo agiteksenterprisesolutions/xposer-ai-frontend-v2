@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 
 /**
@@ -15,7 +16,7 @@ const TableSortControl = ({
   sortOrder,
   setSort,
   id = 'table',
-  label = 'Order by',
+  label,
   className = '',
   // Absorbed so the whole `useTableSort` return can be spread in without these
   // landing on the wrapper as unknown DOM attributes.
@@ -24,6 +25,8 @@ const TableSortControl = ({
   getHeaderProps,
   ...props
 }) => {
+  const { t } = useTranslation('common');
+  label ??= t('sort.orderBy');
   const entries = Object.entries(columns);
   if (entries.length === 0) return null;
 
@@ -46,8 +49,8 @@ const TableSortControl = ({
       <button
         type="button"
         onClick={() => setSort(sortBy, nextOrder)}
-        title={sortOrder === 'asc' ? 'Ascending — switch to descending' : 'Descending — switch to ascending'}
-        aria-label={sortOrder === 'asc' ? 'Sorted ascending. Switch to descending.' : 'Sorted descending. Switch to ascending.'}
+        title={sortOrder === 'asc' ? t('sort.ascTitle') : t('sort.descTitle')}
+        aria-label={sortOrder === 'asc' ? t('sort.ascLabel') : t('sort.descLabel')}
         className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line-strong text-ink-muted transition-colors hover:text-ink hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         {sortOrder === 'asc' ? <ArrowUpNarrowWide className="h-4 w-4" /> : <ArrowDownWideNarrow className="h-4 w-4" />}

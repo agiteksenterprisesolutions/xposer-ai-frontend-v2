@@ -92,7 +92,7 @@
   --xp-black-a70: rgb(8 12 20 / 0.70);
 
   /* --- Non-color primitives --------------------------------------------- */
-  --xp-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --xp-font-sans: 'Inter', 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
   --xp-font-mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', monospace;
 
   /* 65% of the original scale (0.25 / 0.375 / 0.5 / 0.75 / 1 / 1.25rem) */
@@ -630,7 +630,7 @@
   border-collapse: collapse;
   font-size: var(--xp-table-font-size);
   color: var(--xp-text-secondary);
-  text-align: left;
+  text-align: start;
 }
 
 .xp-table th {
@@ -677,7 +677,7 @@
 }
 
 .xp-table__num {
-  text-align: right;
+  text-align: end;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1052,7 +1052,7 @@ p a:not(.no-underline) {
 /* "Skip to main content": hidden until it receives keyboard focus (2.4.1). */
 .skip-link {
   position: fixed;
-  left: 0.75rem;
+  inset-inline-start: 0.75rem;
   top: 0.75rem;
   z-index: 1000;
   padding: 0.5rem 0.875rem;
@@ -1067,4 +1067,25 @@ p a:not(.no-underline) {
   transform: none;
   outline: 2px solid var(--xp-text-primary);
   outline-offset: 2px;
+}
+
+/* Right-to-left (Arabic). Layout flips through the logical utilities
+   (ms-/pe-/start-/text-start…); icons that point somewhere flip here. */
+[dir="rtl"] :is(
+  .lucide-arrow-left, .lucide-arrow-right, .lucide-arrow-up-right, .lucide-arrow-down-right,
+  .lucide-chevron-left, .lucide-chevron-right, .lucide-chevrons-left, .lucide-chevrons-right,
+  .lucide-move-right, .lucide-move-left, .lucide-undo-2, .lucide-redo-2, .lucide-reply,
+  .lucide-send, .lucide-log-out, .lucide-log-in, .lucide-external-link,
+  .lucide-panel-left, .lucide-panel-left-close, .lucide-panel-left-open, .lucide-list
+) {
+  transform: scaleX(-1);
+}
+
+/* Arabic script needs more line height than Latin, and letter-spacing breaks
+   its joined letters. */
+:root[lang="ar"] body {
+  line-height: 1.7;
+}
+:root[lang="ar"] [class*="tracking-"] {
+  letter-spacing: 0;
 }

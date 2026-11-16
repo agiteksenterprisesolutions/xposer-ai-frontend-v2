@@ -797,7 +797,7 @@ const ReportTypeBuilder = ({
             <div className="w-10 h-10 rounded-lg bg-active flex items-center justify-center group-hover:bg-surface group-hover:shadow-sm transition-all">
               <GitBranch className="w-5 h-5 text-ink-subtle group-hover:text-ink-muted" />
             </div>
-            <div className="flex-1 text-left">
+            <div className="flex-1 text-start">
               <span className="text-sm font-semibold text-ink-secondary block">Section Visibility Logic</span>
               <span className="text-xs text-ink-muted">Always visible • Click to add conditions</span>
             </div>
@@ -839,7 +839,7 @@ const ReportTypeBuilder = ({
             <div className={`w-10 h-10 rounded-lg ${colors.light} flex items-center justify-center`}>
               <GitBranch className={`w-5 h-5 ${colors.text}`} />
             </div>
-            <div className="flex-1 text-left">
+            <div className="flex-1 text-start">
               <span className="text-sm font-semibold text-ink block">Section Visibility Logic</span>
               <span className="text-xs text-ink-muted">
                 {section.conditional_logic.rules.length} rule{section.conditional_logic.rules.length !== 1 ? 's' : ''} configured
@@ -857,7 +857,7 @@ const ReportTypeBuilder = ({
             variant="ghost"
             size="small"
             onClick={() => toggleSectionConditionalLogic(sectionIndex)}
-            className="text-danger-fg hover:text-danger-fg ml-2"
+            className="text-danger-fg hover:text-danger-fg ms-2"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -1263,7 +1263,7 @@ const ReportTypeBuilder = ({
           <button
             type="button"
             onClick={toggleQuestion}
-            className="flex items-center gap-3 flex-1 min-w-0 text-left group/hdr"
+            className="flex items-center gap-3 flex-1 min-w-0 text-start group/hdr"
           >
             <div className={`w-8 h-8 rounded-lg ${colors.light} flex items-center justify-center shrink-0`}>
               <Icon className={`w-4 h-4 ${colors.text}`} />
@@ -1579,7 +1579,7 @@ const ReportTypeBuilder = ({
             <button
               type="button"
               onClick={() => toggleSection(section.id)}
-              className="flex items-center gap-4 flex-1 text-left group"
+              className="flex items-center gap-4 flex-1 text-start group"
             >
               <div className={`w-12 h-12 rounded-xl ${colors.accent} ${colors.fg} flex items-center justify-center text-lg font-bold shadow-lg shrink-0`}>
                 {sectionIndex + 1}
@@ -1607,7 +1607,7 @@ const ReportTypeBuilder = ({
               </div>
             </button>
 
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-1 ms-2">
               <button
                 type="button"
                 onClick={() => moveSection(sectionIndex, 'up')}
@@ -1678,14 +1678,14 @@ const ReportTypeBuilder = ({
                       [section.id]: !(prev[section.id] ?? true)
                     }))
                   }
-                  className="flex items-center gap-3 flex-1 text-left group/qp"
+                  className="flex items-center gap-3 flex-1 text-start group/qp"
                 >
                   <Layers className={`w-5 h-5 ${colors.text}`} />
                   <h4 className="font-semibold text-ink">
                     Questions{' '}
                     <span className="text-ink-muted font-normal">({section.questions.length})</span>
                   </h4>
-                  <div className={`p-1 rounded-lg transition-all ml-1 ${(expandedQuestionsPanels[section.id] ?? true)
+                  <div className={`p-1 rounded-lg transition-all ms-1 ${(expandedQuestionsPanels[section.id] ?? true)
                     ? 'text-ink-subtle group-hover/qp:text-ink-muted group-hover/qp:bg-subtle'
                     : `${colors.text} ${colors.light}`
                     }`}>
@@ -1822,7 +1822,7 @@ const ReportTypeBuilder = ({
           <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
             {formData.sections.map((section, sectionIndex) => (
               <div key={section.id} className="relative">
-                {sectionIndex > 0 && <div className="absolute -top-4 left-0 right-0 h-px bg-active" />}
+                {sectionIndex > 0 && <div className="absolute -top-4 start-0 end-0 h-px bg-active" />}
 
                 <div className="mb-6">
                   <div className="flex items-center gap-3 mb-2">
@@ -1837,11 +1837,11 @@ const ReportTypeBuilder = ({
                     )}
                   </div>
                   {section.description && (
-                    <p className="text-sm text-ink-muted ml-11">{section.description}</p>
+                    <p className="text-sm text-ink-muted ms-11">{section.description}</p>
                   )}
                 </div>
 
-                <div className="space-y-5 ml-11">
+                <div className="space-y-5 ms-11">
                   {section.questions.map((question) => {
                     const normalizedType = normalizeQuestionType(question.type);
                     return (
@@ -1849,7 +1849,7 @@ const ReportTypeBuilder = ({
                         <div className="flex items-start justify-between">
                           <label htmlFor={`preview-${question.id}`} className="block text-sm font-medium text-ink">
                             {question.label}
-                            {question.required && <span className="text-danger-fg ml-1">*</span>}
+                            {question.required && <span className="text-danger-fg ms-1">*</span>}
                           </label>
                           {question.conditional_logic && question.conditional_logic.rules.length > 0 && (
                             <span className="bg-accent-soft text-accent-fg px-2 py-0.5 rounded text-xs font-medium">
@@ -2043,7 +2043,7 @@ const ReportTypeBuilder = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+            <div className="flex items-center gap-2 sm:gap-3 ms-auto">
               {readOnly ? (
                 /* View mode: nothing to switch between and nothing to save —
                    just a way back to the list and a way into the editor. */
@@ -2168,7 +2168,7 @@ const ReportTypeBuilder = ({
                       </div>
                       <div className={`w-12 h-6 rounded-full transition-all relative ${formData.is_active ? 'bg-success-solid' : 'bg-active'
                         }`}>
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${formData.is_active ? 'left-6' : 'left-1'
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${formData.is_active ? 'start-6' : 'start-1'
                           }`} />
                       </div>
                       <input
@@ -2189,7 +2189,7 @@ const ReportTypeBuilder = ({
                         className={`w-11 h-6 rounded-full transition-all relative ${autoGenerateFieldName ? 'bg-accent' : 'bg-active'
                           }`}
                       >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${autoGenerateFieldName ? 'left-6' : 'left-1'
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow-sm transition-all ${autoGenerateFieldName ? 'start-6' : 'start-1'
                           }`} />
                       </button>
                     </div>

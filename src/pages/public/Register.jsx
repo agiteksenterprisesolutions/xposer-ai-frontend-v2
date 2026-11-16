@@ -193,9 +193,9 @@ const Register = () => {
   const PasswordCheckItem = ({ label, checked }) => (
     <div className="flex items-center">
       {checked ? (
-        <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+        <CheckCircle className="w-4 h-4 text-green-500 me-2" />
       ) : (
-        <XCircle className="w-4 h-4 text-ink-subtle mr-2" />
+        <XCircle className="w-4 h-4 text-ink-subtle me-2" />
       )}
       <span className={`text-sm ${checked ? 'text-green-600' : 'text-ink-muted'}`}>
         {label}
@@ -299,7 +299,7 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 translate-y-1 right-3 transform  text-ink-muted hover:text-ink"
+                  className="absolute top-1/2 translate-y-1 end-3 transform  text-ink-muted hover:text-ink"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4 cursor-pointer" /> : <Eye className="w-4 h-4 cursor-pointer" />}
                 </button>
@@ -317,7 +317,7 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute top-1/2 translate-y-1 right-3 transform  text-ink-muted hover:text-ink"
+                  className="absolute top-1/2 translate-y-1 end-3 transform  text-ink-muted hover:text-ink"
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4 cursor-pointer" /> : <Eye className="w-4 h-4 cursor-pointer" />}
                 </button>
@@ -332,7 +332,7 @@ const Register = () => {
                   {...registerForm('agree_to_terms')}
                   className="mt-1 rounded border-line text-link focus:ring-accent-ring"
                 />
-                <span className="ml-2 text-sm text-ink-secondary">
+                <span className="ms-2 text-sm text-ink-secondary">
                   I agree to the{' '}
                   <Link to="/terms" className="text-link hover:text-link-hover font-medium">
                     Terms of Service
@@ -357,7 +357,7 @@ const Register = () => {
               variant="secondary"
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
-              <ArrowRight className="ml-2 w-4 h-4" />
+              <ArrowRight className="ms-2 w-4 h-4" />
             </Button>
           </form>
 

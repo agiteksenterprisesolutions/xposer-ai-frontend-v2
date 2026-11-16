@@ -129,13 +129,13 @@ const VersionHistory = ({ isOpen, onClose, typeId, currentVersion }) => {
                   <button
                     type="button"
                     onClick={() => setOpen(v.version)}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-hover"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-start hover:bg-hover"
                   >
                     <History className="h-4 w-4 shrink-0 text-ink-subtle" aria-hidden="true" />
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-medium text-ink">
                         Version {v.version}
-                        {v.version === currentVersion && <span className="ml-2 text-xs font-normal text-ink-muted">Current</span>}
+                        {v.version === currentVersion && <span className="ms-2 text-xs font-normal text-ink-muted">Current</span>}
                       </span>
                       {v.created_at && (
                         <span className="block text-xs text-ink-muted">Saved {formatDateTime(v.created_at)}</span>

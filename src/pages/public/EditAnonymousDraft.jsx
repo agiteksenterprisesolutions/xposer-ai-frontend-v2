@@ -1,6 +1,7 @@
 // src/pages/public/EditAnonymousDraft.jsx
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { ArrowLeft, AlertCircle, ChevronRight, FileText, Lock, Eye, EyeOff } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -23,6 +24,7 @@ const EditAnonymousDraft = () => {
   const { orgSlug, reportNumber } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation('submit');
 
   const [report, setReport] = useState(location.state?.report || null);
   const [password, setPassword] = useState(location.state?.password || '');
@@ -37,7 +39,7 @@ const EditAnonymousDraft = () => {
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
   useSEO({
-    title: `Continue Draft #${reportNumber}`,
+    title: t('draft.seoTitle', { number: reportNumber }),
     noIndex: true,
   });
 
@@ -72,7 +74,7 @@ const EditAnonymousDraft = () => {
       } catch (err) {
         console.error('Failed to load draft:', err);
         setPassword('');
-        setError(err.response?.data?.detail || 'Invalid report number or password.');
+        setError(err.response?.data?.detail || t('draft.invalidCredentials'));
       } finally {
         setIsLoading(false);
       }
@@ -84,7 +86,7 @@ const EditAnonymousDraft = () => {
   // Submitted reports are read-only — send them to the details view instead.
   useEffect(() => {
     if (!report || isDraftReport(report)) return;
-    toast.info('This report has already been submitted.');
+    toast.info(t('draft.alreadySubmitted'));
     navigate(`/${orgSlug || ''}/report-details/${report.report_number || reportNumber}`, {
       replace: true,
       state: { report, password, fromTrackReport: true },
@@ -115,7 +117,7 @@ const EditAnonymousDraft = () => {
         setReportTypes(types || []);
       } catch (err) {
         console.error('Failed to fetch report types:', err);
-        toast.error('Failed to load report types');
+        toast.error(t('shared.loadTypesFailed'));
       } finally {
         setIsLoadingTypes(false);
       }
@@ -136,15 +138,15 @@ const EditAnonymousDraft = () => {
       onClick={() => navigate(trackBase)}
       className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors mb-6"
     >
-      <ArrowLeft className="w-4 h-4 mr-2" />
-      Back to Report Tracking
+      <ArrowLeft className="w-4 h-4 me-2" />
+      {t('draft.back')}
     </button>
   );
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-canvas px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-28 sm:pb-12">
-        <ReportFormSkeleton message="Loading your draft…" onBack={() => navigate(trackBase)} />
+        <ReportFormSkeleton message={t('shared.loadingDraft')} onBack={() => navigate(trackBase)} />
       </div>
     );
   }
@@ -160,9 +162,9 @@ const EditAnonymousDraft = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 bg-accent-soft border border-line-accent rounded-xl mb-3">
                 <Lock className="w-6 h-6 text-accent-fg" />
               </div>
-              <h1 className="text-xl font-bold text-ink">Continue Draft #{reportNumber}</h1>
+              <h1 className="text-xl font-bold text-ink">{t('draft.title', { number: reportNumber })}</h1>
               <p className="text-sm text-ink-muted mt-1">
-                Enter the password you saved with this report to keep filling it in.
+                {t('draft.intro')}
               </p>
             </div>
 
@@ -176,7 +178,7 @@ const EditAnonymousDraft = () => {
               <div className="relative">
                 <Input
  autoComplete="current-password"
-                  label="Report Password"
+                  label={t('draft.passwordLabel')}
                   type={showPassword ? 'text' : 'password'}
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
@@ -186,14 +188,14 @@ const EditAnonymousDraft = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-ink-subtle hover:text-ink transition-colors absolute right-3 top-1/2 -translate-y-1/2"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="text-ink-subtle hover:text-ink transition-colors absolute end-3 top-1/2 -translate-y-1/2"
+                  aria-label={showPassword ? t('shared.hidePassword') : t('shared.showPassword')}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               <Button type="submit" variant="primary" fullWidth disabled={!passwordInput.trim()}>
-                Continue Draft
+                {t('draft.continue')}
               </Button>
             </form>
           </Card>
@@ -209,11 +211,14 @@ const EditAnonymousDraft = () => {
       <div className="min-h-screen bg-canvas px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-5xl mx-auto">
           {backLink}
-          <h1 className="text-2xl font-bold text-ink mb-2">Continue Your Report</h1>
+          <h1 className="text-2xl font-bold text-ink mb-2">{t('draft.pickTitle')}</h1>
           <p className="text-ink-muted mb-6">
-            This report doesn't have a type yet. Choose one to keep going — your report
-            number <span className="font-mono font-semibold text-ink">{reportNumber}</span> and
-            password stay the same.
+            <Trans
+              t={t}
+              i18nKey="draft.pickIntro"
+              values={{ number: reportNumber }}
+              components={{ number: <span className="font-mono font-semibold text-ink" dir="ltr" /> }}
+            />
           </p>
 
           {isLoadingTypes ? (
@@ -228,7 +233,7 @@ const EditAnonymousDraft = () => {
           ) : reportTypes.length === 0 ? (
             <Card>
               <Alert variant="warning">
-                <p>No report types available at this time. Please try again later.</p>
+                <p>{t('shared.noTypesNow')}</p>
               </Alert>
             </Card>
           ) : (
@@ -237,7 +242,7 @@ const EditAnonymousDraft = () => {
                 <button
                   key={type.id}
                   onClick={() => setChosenTypeId(type.id)}
-                  className="text-left h-full group focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus rounded-xl"
+                  className="text-start h-full group focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus rounded-xl"
                 >
                   <Card className="h-full flex flex-col transition-[border-color,box-shadow,transform] duration-200 ease-out-xp group-hover:border-line-accent group-hover:shadow-md group-hover:-translate-y-0.5">
                     <div className="flex items-start justify-between gap-3 mb-2">
@@ -245,13 +250,13 @@ const EditAnonymousDraft = () => {
                       <ChevronRight className="w-5 h-5 text-ink-subtle shrink-0 transition-colors group-hover:text-accent-fg" />
                     </div>
                     <p className="text-sm text-ink-muted leading-relaxed mb-4">
-                      {type.description || 'No description available'}
+                      {type.description || t('draft.noDescription')}
                     </p>
                     {type.sections && (
                       <div className="mt-auto">
                         <span className="inline-flex items-center rounded-full border border-line bg-subtle px-2.5 py-1 text-[11px] font-medium text-ink-muted">
-                          <FileText className="w-3 h-3 mr-1.5" />
-                          {type.sections.length} step{type.sections.length !== 1 ? 's' : ''}
+                          <FileText className="w-3 h-3 me-1.5" />
+                          {t('shared.steps', { count: type.sections.length })}
                         </span>
                       </div>
                     )}

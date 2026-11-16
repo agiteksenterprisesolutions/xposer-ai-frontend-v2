@@ -110,7 +110,7 @@ const Directory = ({ canManage }) => (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative sm:w-72">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
           <div className="h-9 w-full rounded-lg border border-line bg-subtle" />
         </div>
         <div className="h-9 rounded-lg border border-line bg-subtle sm:w-52" />
@@ -131,7 +131,7 @@ const Directory = ({ canManage }) => (
             <Table.Head>Level</Table.Head>
             <Table.Head>Manager</Table.Head>
             <Table.Head>Source</Table.Head>
-            {canManage && <Table.Head className="text-right">Actions</Table.Head>}
+            {canManage && <Table.Head className="text-end">Actions</Table.Head>}
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -146,7 +146,7 @@ const Directory = ({ canManage }) => (
               <Skeleton.Badge key="l" className="w-20" />,
               <Skeleton.Text key="m" className="w-24" />,
               <Skeleton.Badge key="s" className="w-12" />,
-              ...(canManage ? [<Skeleton key="a" className="ml-auto h-8 w-16 rounded-lg" />] : []),
+              ...(canManage ? [<Skeleton key="a" className="ms-auto h-8 w-16 rounded-lg" />] : []),
             ]}
           />
         </Table.Body>

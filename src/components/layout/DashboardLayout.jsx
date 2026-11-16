@@ -1,12 +1,15 @@
+import { useTranslation } from "react-i18next"
 import { Outlet } from "react-router-dom"
 import Navbar from "./Navbar"
 import RouteAnnouncer from "./RouteAnnouncer"
 import Sidebar from "./Sidebar"
 import AIChatWidget from "./AIChatWidget"
 
-const DashboardLayout = () => (
+const DashboardLayout = () => {
+  const { t } = useTranslation("common");
+  return (
   <div className="min-h-screen flex flex-col bg-canvas text-ink">
-    <a href="#main-content" className="skip-link">Skip to main content</a>
+    <a href="#main-content" className="skip-link">{t("layout.skipToMain")}</a>
     <Navbar />
     <div className="flex flex-1 min-w-0">
       <Sidebar />
@@ -21,6 +24,7 @@ const DashboardLayout = () => (
     </div>
     <AIChatWidget />
   </div>
-)
+  );
+}
 
 export default DashboardLayout

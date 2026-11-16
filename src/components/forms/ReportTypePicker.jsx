@@ -10,6 +10,7 @@
 // with one type, "Other / not sure" with one type, and a search result each
 // save a click.
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ChevronRight, ExternalLink, HelpCircle, Search, ShieldCheck, X } from 'lucide-react';
 import Card from '../ui/Card';
 import Alert from '../ui/Alert';
@@ -17,6 +18,9 @@ import Skeleton from '../ui/Skeleton';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import { localized } from '../../api/jurisdiction';
+
+// Pack text is `{ en, ar }`; show the interface language when the pack has it.
+const pick = (text, lang) => (text && typeof text === 'object' && text[lang]) || localized(text);
 
 const GENERAL = 'General';
 const isOtherCategory = (category) => /\bother\b|not\s*sure/i.test(category || '');
@@ -62,22 +66,25 @@ const RowButton = ({ onClick, disabled, children, className = '' }) => (
     type="button"
     onClick={onClick}
     disabled={disabled}
-    className={`group flex w-full items-center gap-3 rounded-xl border border-line bg-surface p-4 text-left transition-[border-color,box-shadow] hover:border-line-accent hover:shadow-sm focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    className={`group flex w-full items-center gap-3 rounded-xl border border-line bg-surface p-4 text-start transition-[border-color,box-shadow] hover:border-line-accent hover:shadow-sm focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
   >
     <span className="min-w-0 flex-1">{children}</span>
     <ChevronRight className="h-5 w-5 shrink-0 text-ink-subtle transition-colors group-hover:text-accent-fg" />
   </button>
 );
 
-const TypeRow = ({ type, onSelect, disabled, showCategory }) => (
-  <RowButton onClick={() => onSelect(type)} disabled={disabled}>
-    <span className="block font-semibold leading-snug text-ink">{type.name}</span>
-    <span className="mt-1 block text-sm leading-relaxed text-ink-muted">
-      {type.description || 'Report a concern of this kind.'}
-    </span>
-    {showCategory && type.category && <span className="mt-1.5 block text-xs text-ink-subtle">{type.category}</span>}
-  </RowButton>
-);
+const TypeRow = ({ type, onSelect, disabled, showCategory }) => {
+  const { t } = useTranslation('submit');
+  return (
+    <RowButton onClick={() => onSelect(type)} disabled={disabled}>
+      <span className="block font-semibold leading-snug text-ink">{type.name}</span>
+      <span className="mt-1 block text-sm leading-relaxed text-ink-muted">
+        {type.description || t('picker.defaultDescription')}
+      </span>
+      {showCategory && type.category && <span className="mt-1.5 block text-xs text-ink-subtle">{type.category}</span>}
+    </RowButton>
+  );
+};
 
 const BackLink = ({ onClick, children }) => (
   <button
@@ -93,11 +100,15 @@ const BackLink = ({ onClick, children }) => (
 const safeUrl = (url) => (typeof url === 'string' && /^(https?:|mailto:|tel:)/i.test(url.trim()) ? url.trim() : null);
 
 /** The exits on their own, for a page that shows them before the picker (the anonymous credentials step). */
-export const DeflectionExits = ({ exits }) => (
+export const DeflectionExits = ({ exits }) => {
+  const { t, i18n } = useTranslation('submit');
+  const lang = i18n.resolvedLanguage || 'en';
+  return (
   <ul className="space-y-2">
     {exits.map((exit) => {
-      const label = localized(exit.label) || exit.code;
-      const description = localized(exit.description);
+      // The built-in fallback exits carry translation keys; pack exits carry their own text.
+      const label = (exit.labelKey && t(exit.labelKey)) || pick(exit.label, lang) || exit.code;
+      const description = (exit.descriptionKey && t(exit.descriptionKey)) || pick(exit.description, lang);
       const url = safeUrl(exit.url);
       const body = (
         <>
@@ -118,7 +129,7 @@ export const DeflectionExits = ({ exits }) => (
               className="block rounded-lg border border-line px-4 py-3 transition-colors hover:border-line-strong hover:bg-hover"
             >
               {body}
-              <span className="sr-only"> (opens in a new tab)</span>
+              <span className="sr-only">{t('picker.opensInNewTab')}</span>
             </a>
           ) : (
             <div className="rounded-lg border border-line px-4 py-3">{body}</div>
@@ -127,9 +138,11 @@ export const DeflectionExits = ({ exits }) => (
       );
     })}
   </ul>
-);
+  );
+};
 
 const PickerBody = ({ types, loading = false, error = null, onSelect, disabled = false, onReopenDeflection = null, wide = true }) => {
+  const { t } = useTranslation('submit');
   const grid = `grid gap-3 sm:grid-cols-2 ${wide ? 'lg:grid-cols-3' : ''}`;
   const [step, setStep] = useState('categories');
   const [category, setCategory] = useState(null); // a category name, or 'other' / 'all'
@@ -177,8 +190,8 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
     return (
       <Card>
         <Alert variant="warning">
-          <p className="font-medium">No report types available</p>
-          <p className="mt-1 text-sm">Please check back later, or contact the organization if this persists.</p>
+          <p className="font-medium">{t('picker.noTypesTitle')}</p>
+          <p className="mt-1 text-sm">{t('picker.noTypesBody')}</p>
         </Alert>
       </Card>
     );
@@ -187,7 +200,7 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
   if (step === 'types') {
     const list =
       category === 'other' ? other : category === 'all' ? [...types].sort((a, b) => a.name.localeCompare(b.name)) : categories.find((c) => c.name === category)?.types || [];
-    const title = category === 'other' ? 'Other / not sure' : category === 'all' ? 'All report types' : category;
+    const title = category === 'other' ? t('picker.other') : category === 'all' ? t('picker.allTypes') : category;
     return (
       <div>
         <BackLink
@@ -196,10 +209,10 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
             setCategory(null);
           }}
         >
-          All categories
+          {t('picker.allCategories')}
         </BackLink>
         <h2 className="text-xl font-semibold text-ink">{title}</h2>
-        <p className="mt-1 mb-4 text-sm text-ink-muted">Choose the one that fits best. The team can re-classify it later if needed.</p>
+        <p className="mt-1 mb-4 text-sm text-ink-muted">{t('picker.chooseHint')}</p>
         <div className="grid gap-3 md:grid-cols-2">
           {list.map((type) => (
             <TypeRow key={type.id} type={type} onSelect={onSelect} disabled={disabled} showCategory={category === 'all'} />
@@ -211,29 +224,29 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-ink">What is your concern about?</h2>
+      <h2 className="text-xl font-semibold text-ink">{t('picker.heading')}</h2>
       <p className="mt-1 mb-4 text-sm text-ink-muted">
-        Pick a category, or search if you know what you’re looking for.
+        {t('picker.subheading')}
         {onReopenDeflection && (
           <>
             {' '}
             <button type="button" onClick={onReopenDeflection} className="font-medium text-link hover:underline">
-              Not sure this is the right place?
+              {t('picker.notSure')}
             </button>
           </>
         )}
       </p>
 
       <div className="relative mb-5" role="search">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
+        <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
         <input
           ref={searchRef}
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search, e.g. bribery, data leak, harassment"
-          aria-label="Search report types"
-          className="h-11 w-full rounded-xl border border-line-strong bg-surface pl-9 pr-10 text-sm text-ink placeholder:text-ink-subtle focus:border-line-accent focus:outline-none focus:ring-2 focus:ring-accent-ring [&::-webkit-search-cancel-button]:hidden"
+          placeholder={t('picker.searchPlaceholder')}
+          aria-label={t('picker.searchLabel')}
+          className="h-11 w-full rounded-xl border border-line-strong bg-surface ps-9 pe-10 text-sm text-ink placeholder:text-ink-subtle focus:border-line-accent focus:outline-none focus:ring-2 focus:ring-accent-ring [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
           <button
@@ -242,8 +255,8 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
               setQuery('');
               searchRef.current?.focus();
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-ink-subtle hover:bg-hover hover:text-ink"
-            aria-label="Clear search"
+            className="absolute end-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-ink-subtle hover:bg-hover hover:text-ink"
+            aria-label={t('picker.clearSearch')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -253,7 +266,7 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
       {words.length > 0 ? (
         <div aria-live="polite">
           <p className="mb-3 text-sm text-ink-muted">
-            {results.length ? `${results.length} matching report type${results.length === 1 ? '' : 's'}` : 'No report type matches that.'}
+            {results.length ? t('picker.matches', { count: results.length }) : t('picker.noMatches')}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             {results.map((type) => (
@@ -263,9 +276,9 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
           {!results.length && (
             <RowButton onClick={openOther} disabled={disabled} className="border-dashed">
               <span className="flex items-center gap-2 font-semibold text-ink">
-                <HelpCircle className="h-4 w-4 text-accent-fg" /> Other / not sure
+                <HelpCircle className="h-4 w-4 text-accent-fg" /> {t('picker.other')}
               </span>
-              <span className="mt-1 block text-sm text-ink-muted">Describe it in your own words. The team will classify it.</span>
+              <span className="mt-1 block text-sm text-ink-muted">{t('picker.otherSearchHint')}</span>
             </RowButton>
           )}
         </div>
@@ -277,18 +290,20 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
               <span className="mt-1 block text-sm text-ink-muted line-clamp-2">
                 {c.types.length === 1
                   ? c.types[0].description || c.types[0].name
-                  : `${c.types.slice(0, 2).map((t) => t.name).join(', ')}${c.types.length > 2 ? ` and ${c.types.length - 2} more` : ''}`}
+                  : c.types.length > 2
+                    ? t('picker.andMore', { names: c.types.slice(0, 2).map((type) => type.name).join(t('picker.listSeparator')), count: c.types.length - 2 })
+                    : c.types.map((type) => type.name).join(t('picker.listSeparator'))}
               </span>
             </RowButton>
           ))}
           <RowButton onClick={openOther} disabled={disabled} className="border-dashed bg-subtle-solid">
             <span className="flex items-center gap-2 font-semibold text-ink">
-              <HelpCircle className="h-4 w-4 text-accent-fg" /> Other / not sure
+              <HelpCircle className="h-4 w-4 text-accent-fg" /> {t('picker.other')}
             </span>
             <span className="mt-1 block text-sm text-ink-muted">
               {other.length === 1 && other[0].description
                 ? other[0].description
-                : 'Nothing fits, or you’re unsure? Describe it in your own words and the team will classify it.'}
+                : t('picker.otherHint')}
             </span>
           </RowButton>
         </div>
@@ -301,33 +316,34 @@ const PickerBody = ({ types, loading = false, error = null, onSelect, disabled =
  * "Is this the right place?" as a popup. Closing it, by the button, the X or
  * Escape, is how the reporter carries on.
  */
-export const DeflectionModal = ({ isOpen, onClose, exits }) => (
+export const DeflectionModal = ({ isOpen, onClose, exits }) => {
+  const { t } = useTranslation('submit');
+  return (
   <Modal
     isOpen={isOpen}
     onClose={onClose}
-    title="Is this the right place?"
+    title={t('deflection.title')}
     size="large"
     footer={
       <div className="flex justify-end">
         <Button startIcon={ShieldCheck} onClick={onClose} className="w-full sm:w-auto">
-          Continue to report a concern
+          {t('deflection.continue')}
         </Button>
       </div>
     }
   >
     <div className="space-y-4" data-tour="picker-deflection">
       <p className="text-sm leading-relaxed text-ink-muted">
-        This channel is for reporting misconduct: fraud, bribery, harassment, safety risks, data misuse, retaliation and
-        similar concerns. Some things have a better route:
+        {t('deflection.intro')}
       </p>
       <DeflectionExits exits={exits} />
       <Alert variant="info">
-        If your complaint or HR matter involves misconduct, such as harassment, discrimination or someone being punished for
-        speaking up, report it here.
+        {t('deflection.misconductNote')}
       </Alert>
     </div>
   </Modal>
-);
+  );
+};
 
 /** The picker, with the deflection popup open on arrival when `exits` are given (unless `openDeflection` is false). */
 const ReportTypePicker = ({ exits = null, openDeflection = true, ...props }) => {

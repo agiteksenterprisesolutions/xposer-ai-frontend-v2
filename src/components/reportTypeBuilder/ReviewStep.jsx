@@ -184,7 +184,7 @@ const ReviewStep = ({ draft, issues, isNew, onFix, problems = [], activationBloc
                     disabled={blocked}
                     title={blocked ? activationBlock[0].message : undefined}
                     onClick={() => setField('status', status.value)}
-                    className={`rounded-xl border px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                    className={`rounded-xl border px-3.5 py-3 text-start transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                       on ? 'border-accent bg-accent-soft/60 shadow-[0_0_0_1px_var(--color-accent)]' : 'border-line hover:border-line-strong'
                     }`}
                   >
@@ -219,7 +219,7 @@ const ReviewStep = ({ draft, issues, isNew, onFix, problems = [], activationBloc
                 </div>
               ))}
             </div>
-            <ol className="list-decimal space-y-1 border-t border-line-subtle pl-5 pt-3 text-sm text-ink-secondary">
+            <ol className="list-decimal space-y-1 border-t border-line-subtle ps-5 pt-3 text-sm text-ink-secondary">
               {form.sections.map((section) => (
                 <li key={section.id}>
                   {section.title || <span className="italic text-ink-muted">Untitled step</span>}

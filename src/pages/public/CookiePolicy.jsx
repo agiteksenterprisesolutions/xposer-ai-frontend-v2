@@ -80,7 +80,7 @@ const CookiePolicy = () => {
             <article id="what-are-cookies">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-link mr-3" />
+                  <Info className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">What are cookies?</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -93,7 +93,7 @@ const CookiePolicy = () => {
             <article id="why-we-use">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <FileText className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Why we use cookies</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -112,17 +112,17 @@ const CookiePolicy = () => {
             <article id="types">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Settings className="w-5 h-5 text-link mr-3" />
+                  <Settings className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Types of cookies we use</h2>
                 </div>
                 <div className="space-y-4 text-ink-secondary text-sm">
-                  <div className="border-l-4 border-green-500 pl-4 py-2">
+                  <div className="border-s-4 border-green-500 ps-4 py-2">
                     <h3 className="font-semibold text-ink mb-2 flex items-center">
-                      <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                      <CheckCircle className="w-4 h-4 me-2 text-green-500" />
                       Essential Cookies
                     </h3>
                     <p className="mb-2">These cookies are necessary for the website to function and cannot be disabled in our systems. They are usually only set in response to actions you take, such as setting privacy preferences, logging in, or filling in forms.</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
+                    <ul className="list-disc list-inside space-y-1 ms-2">
                       <li>Session authentication cookies</li>
                       <li>Security cookies</li>
                       <li>Load balancing cookies</li>
@@ -130,13 +130,13 @@ const CookiePolicy = () => {
                     </ul>
                   </div>
 
-                  <div className="border-l-4 border-line-accent pl-4 py-2">
+                  <div className="border-s-4 border-line-accent ps-4 py-2">
                     <h3 className="font-semibold text-ink mb-2 flex items-center">
-                      <BarChart className="w-4 h-4 mr-2 text-link" />
+                      <BarChart className="w-4 h-4 me-2 text-link" />
                       Performance & Analytics Cookies
                     </h3>
                     <p className="mb-2">These cookies help us understand how visitors interact with our platform by collecting and reporting information anonymously. This helps us improve the way our website works.</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
+                    <ul className="list-disc list-inside space-y-1 ms-2">
                       <li>Google Analytics cookies</li>
                       <li>Page view tracking</li>
                       <li>Click tracking and heatmaps</li>
@@ -144,13 +144,13 @@ const CookiePolicy = () => {
                     </ul>
                   </div>
 
-                  <div className="border-l-4 border-purple-500 pl-4 py-2">
+                  <div className="border-s-4 border-purple-500 ps-4 py-2">
                     <h3 className="font-semibold text-ink mb-2 flex items-center">
-                      <Settings className="w-4 h-4 mr-2 text-purple-500" />
+                      <Settings className="w-4 h-4 me-2 text-purple-500" />
                       Functional Cookies
                     </h3>
                     <p className="mb-2">These cookies enable enhanced functionality and personalization, such as remembering your preferences and settings. They may be set by us or by third-party providers.</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
+                    <ul className="list-disc list-inside space-y-1 ms-2">
                       <li>Language preference cookies</li>
                       <li>Theme and display preferences</li>
                       <li>Recently viewed reports</li>
@@ -158,9 +158,9 @@ const CookiePolicy = () => {
                     </ul>
                   </div>
 
-                  <div className="border-l-4 border-orange-500 pl-4 py-2">
+                  <div className="border-s-4 border-orange-500 ps-4 py-2">
                     <h3 className="font-semibold text-ink mb-2 flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-2 text-orange-500" />
+                      <AlertCircle className="w-4 h-4 me-2 text-orange-500" />
                       Targeting & Advertising Cookies
                     </h3>
                     <p className="mb-2">We currently do not use advertising cookies on our platform. If this changes in the future, we will update this policy and seek your consent where required.</p>
@@ -172,7 +172,7 @@ const CookiePolicy = () => {
             <article id="third-party">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Shield className="w-5 h-5 text-link mr-3" />
+                  <Shield className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Third-party cookies</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -190,7 +190,7 @@ const CookiePolicy = () => {
             <article id="manage">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Settings className="w-5 h-5 text-link mr-3" />
+                  <Settings className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">How to manage cookies</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -199,7 +199,7 @@ const CookiePolicy = () => {
                   <div className="bg-subtle border border-line rounded-lg p-4 mt-3">
                     <h4 className="font-semibold text-ink mb-2">Browser Settings</h4>
                     <p className="mb-2">Most web browsers allow you to control cookies through their settings. You can:</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
+                    <ul className="list-disc list-inside space-y-1 ms-2">
                       <li>View what cookies are stored and delete them individually</li>
                       <li>Block third-party cookies</li>
                       <li>Block cookies from particular sites</li>
@@ -242,7 +242,7 @@ const CookiePolicy = () => {
             <article id="updates">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <FileText className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Changes to this Cookie Policy</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -255,7 +255,7 @@ const CookiePolicy = () => {
             <article id="contact">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-link mr-3" />
+                  <Info className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Contact us</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -279,7 +279,7 @@ const CookiePolicy = () => {
                 <div className="hidden sm:block shrink-0">
                   <Button variant="secondary" size="medium" className="cursor-pointer" to="/submit-anonymous">
                       Submit a Report
-                      <ArrowRight className="ml-2 w-4 h-4" />
+                      <ArrowRight className="ms-2 w-4 h-4" />
                     </Button>
                 </div>
               </div>

@@ -6,6 +6,7 @@
 // field intact between the API, the builder and the save payload — a field the
 // builder doesn't edit must still survive a round trip, or saving a type
 // silently strips it (core-field flags, option labels, section keys).
+import { intlLocale } from './locale';
 
 /**
  * A report type's availability — the whole of it. There is no separate
@@ -97,7 +98,7 @@ export const formatCurrencyAnswer = (answer) => {
   if (answer.amount_minor === null || answer.amount_minor === undefined) return '';
   const amount = Number(answer.amount_minor) / 10 ** currencyDigits(currency);
   try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount);
+    return new Intl.NumberFormat(intlLocale(), { style: 'currency', currency }).format(amount);
   } catch {
     return `${amount.toFixed(currencyDigits(currency))} ${currency}`;
   }

@@ -22,13 +22,15 @@ import Tabs from '../../components/ui/Tabs';
 import SocialAuthButtons from '../../components/auth/SocialAuthButtons';
 import { reportsAPI } from '../../api/reports';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import useSEO from '../../hooks/useSEO';
 import { getHomePath, staffPath } from '../../utils/navigation';
 
 const Login = () => {
+  const { t } = useTranslation('public');
   useSEO({
-    title: 'Sign In',
-    description: 'Sign in to your Xposer AI portal to submit, track, and manage reports securely.',
+    title: t('login.seo.title'),
+    description: t('login.seo.description'),
     noIndex: true,
   });
   const [loginType, setLoginType] = useState('account'); // 'account' or 'track'
@@ -46,20 +48,20 @@ const Login = () => {
   // one-line uncomment — and the strip stays hidden while only one tab exists
   // rather than rendering a lone, pointless tab.
   const loginTabs = [
-    { value: 'account', label: 'Account Login', icon: User },
+    { value: 'account', label: t('login.tabs.account'), icon: User },
     // { value: 'track', label: 'Track Report', icon: Key },
   ];
 
   // Schema for user login
   const userLoginSchema = z.object({
-    username: z.string().min(1, 'Username is required'),
-    password: z.string().min(1, 'Password is required'),
+    username: z.string().min(1, t('login.errors.usernameRequired')),
+    password: z.string().min(1, t('login.errors.passwordRequired')),
   });
 
   // Schema for reporter login
   const reporterLoginSchema = z.object({
-    report_number: z.string().length(8, 'Report number must be 8 digits'),
-    password: z.string().min(1, 'Password is required'),
+    report_number: z.string().length(8, t('login.errors.reportNumberLength')),
+    password: z.string().min(1, t('login.errors.passwordRequired')),
   });
 
   const {
@@ -87,7 +89,7 @@ const Login = () => {
         if (result.success) {
           redirectForUser(result.user);
         } else {
-          setError(result.error || 'Login failed');
+          setError(result.error || t('login.errors.failed'));
         }
       } else {
         // ANONYMOUS REPORT TRACKING - FIXED
@@ -98,7 +100,7 @@ const Login = () => {
             password: data.password
           });
 
-          toast.success('Report found! Redirecting to report details...');
+          toast.success(t('login.track.found'));
 
           // Navigate to the report details page with the tracked report data
           navigate(`/${user?.organization_slug}/report-details/${reportData.id}`, {
@@ -110,12 +112,12 @@ const Login = () => {
           });
         } catch (trackError) {
           console.error('Track report error:', trackError);
-          setError(trackError.response?.data?.detail || 'Invalid report number or password.');
+          setError(trackError.response?.data?.detail || t('login.errors.invalidReport'));
         }
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError(error.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(error.response?.data?.detail || t('login.errors.checkCredentials'));
     } finally {
       setIsLoading(false);
     }
@@ -133,12 +135,9 @@ const Login = () => {
 
     if (isNoAccount) {
       return (
-        <Alert variant="warning" title="No account yet">
+        <Alert variant="warning" title={t('login.noAccount.title')}>
           <p>{error}</p>
-          <p className="mt-2 text-xs">
-            Access is invite-only — signing in with Google or Microsoft does not
-            create an account on its own.
-          </p>
+          <p className="mt-2 text-xs">{t('login.noAccount.inviteOnly')}</p>
         </Alert>
       );
     }
@@ -158,7 +157,7 @@ const Login = () => {
       onClick={() => setShowPassword(!showPassword)}
       className="text-ink-subtle transition-colors hover:text-ink"
       tabIndex={-1}
-      aria-label={showPassword ? 'Hide password' : 'Show password'}
+      aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
     >
       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
     </button>
@@ -170,13 +169,13 @@ const Login = () => {
         {/* Logo */}
         <div className="text-center mb-7">
           <div className="inline-flex items-center justify-center w-14 h-14  border border-line-accent rounded-xl mb-4">
-            <img src="/logo-mark.svg" alt="Logo" className="w-10 h-10" />
+            <img src="/logo-mark.svg" alt={t('login.logoAlt')} className="w-10 h-10" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-[-0.02em]">
-            Welcome Back
+            {t('login.title')}
           </h1>
           <p className="text-sm text-ink-muted mt-2">
-            Sign in to access your secure portal
+            {t('login.subtitle')}
           </p>
         </div>
 
@@ -202,17 +201,17 @@ const Login = () => {
                 {renderError()}
 
                 <Input
-                  label="Username or email"
+                  label={t('login.fields.username')}
                   startAdornment={<User className="w-4 h-4" />}
                   autoComplete="username"
-                  helperText="You can sign in with either your username or your email address."
+                  helperText={t('login.fields.usernameHelp')}
                   {...register('username')}
                   error={errors.username?.message}
                   autoFocus
                 />
 
                 <Input
-                  label="Password"
+                  label={t('login.fields.password')}
                   type={showPassword ? 'text' : 'password'}
                   startAdornment={<Key className="w-4 h-4" />}
                   endAdornment={passwordToggle}
@@ -239,7 +238,7 @@ const Login = () => {
                   variant="primary"
                   endIcon={ArrowRight}
                 >
-                  Sign In
+                  {t('login.submit')}
                 </Button>
               </form>
 
@@ -257,25 +256,25 @@ const Login = () => {
                 {renderError()}
 
                 <Input
-                  label="Report Number"
+                  label={t('login.track.reportNumber')}
                   startAdornment={<Key className="w-4 h-4" />}
                   {...register('report_number')}
                   error={errors.report_number?.message}
-                  helperText="Found in your report confirmation email"
+                  helperText={t('login.track.reportNumberHelp')}
                   maxLength={8}
                   pattern="[A-Z0-9]{8}"
-                  title="8-digit alphanumeric code"
+                  title={t('login.track.reportNumberTitle')}
                   className="font-mono tracking-wider"
                 />
 
                 <Input
-                  label="Report Password"
+                  label={t('login.track.password')}
                   type={showPassword ? 'text' : 'password'}
                   startAdornment={<Key className="w-4 h-4" />}
                   endAdornment={passwordToggle}
                   {...register('password')}
                   error={errors.password?.message}
-                  helperText="Provided when you submitted the report"
+                  helperText={t('login.track.passwordHelp')}
                 />
 
                 <Button
@@ -287,7 +286,7 @@ const Login = () => {
                   variant="primary"
                   endIcon={ArrowRight}
                 >
-                  Track Report
+                  {t('login.track.submit')}
                 </Button>
               </form>
             </Tabs.Content>

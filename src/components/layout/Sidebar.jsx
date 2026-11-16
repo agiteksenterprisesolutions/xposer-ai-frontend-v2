@@ -14,6 +14,7 @@ import { useUIStore } from '../../store/uiStore';
 import UserAvatar from '../ui/UserAvatar';
 import { isPasswordAccount } from '../../utils/authProviders';
 import { staffNavFor, staffPath } from '../../utils/navigation';
+import { useTranslation } from 'react-i18next';
 
 const slugify = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
@@ -24,6 +25,7 @@ const humanizeCode = (code) =>
 const Sidebar = ({ onClose }) => {
   const { user } = useAuthStore();
   const { sidebarOpen, mobileSidebarOpen, toggleMobileSidebar } = useUIStore();
+  const { t } = useTranslation('reporter');
 
   if (!user) return null;
   const basePath = user ? `${user?.organization_slug}` : '';
@@ -34,11 +36,13 @@ const Sidebar = ({ onClose }) => {
   // Google/Microsoft accounts have no password to change — the provider owns
   // the credential, and the backend rejects the endpoint with a 400.
   const reporterMenu = [
-    { section: 'Menu', name: 'Dashboard', icon: Home, path: `/${basePath}/reporter/dashboard` },
-    { section: 'Menu', name: 'Submit Report', icon: FileText, path: `/${basePath}/reporter/submit` },
-    { section: 'Menu', name: 'My Reports', icon: ClipboardList, path: `/${basePath}/reporter/reports` },
+    // `tour` keeps the data-tour ids the reporter tours point at, whatever the
+    // interface language.
+    { section: t('sidebar.sectionMenu'), name: t('sidebar.dashboard'), tour: 'dashboard', icon: Home, path: `/${basePath}/reporter/dashboard` },
+    { section: t('sidebar.sectionMenu'), name: t('sidebar.submitReport'), tour: 'submit-report', icon: FileText, path: `/${basePath}/reporter/submit` },
+    { section: t('sidebar.sectionMenu'), name: t('sidebar.myReports'), tour: 'my-reports', icon: ClipboardList, path: `/${basePath}/reporter/reports` },
     ...(isPasswordAccount(user)
-      ? [{ section: 'Account', name: 'Change Password', icon: Lock, path: `/${basePath}/reporter/change-password` }]
+      ? [{ section: t('sidebar.sectionAccount'), name: t('sidebar.changePassword'), tour: 'change-password', icon: Lock, path: `/${basePath}/reporter/change-password` }]
       : []),
   ];
 
@@ -79,7 +83,7 @@ const Sidebar = ({ onClose }) => {
       const base =
         'relative flex items-center gap-3 rounded-lg transition-colors duration-200 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
       const state = isActive
-        ? 'bg-accent-soft text-accent-fg font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-0.5 before:rounded-r-full before:bg-accent'
+        ? 'bg-accent-soft text-accent-fg font-semibold before:absolute before:start-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-0.5 before:rounded-e-full before:bg-accent'
         : 'text-ink-muted hover:text-ink hover:bg-hover';
 
       if (isMobile) {
@@ -139,7 +143,7 @@ const Sidebar = ({ onClose }) => {
                     onClick={handleLinkClick}
                     className={({ isActive }) => linkClass(isActive)}
                     title={!showLabels ? item.name : undefined}
-                    data-tour={`sidebar-${slugify(item.name)}`}
+                    data-tour={`sidebar-${item.tour || slugify(item.name)}`}
                   >
                     <item.icon className="h-4.5 w-4.5 shrink-0" />
                     {showLabels && <span className={labelClass}>{item.name}</span>}
@@ -182,7 +186,7 @@ const Sidebar = ({ onClose }) => {
   // If onClose is passed, we are rendered directly inside a mobile drawer parent layout
   if (onClose) {
     return (
-      <div className="h-full flex flex-col bg-surface border-r border-line">
+      <div className="h-full flex flex-col bg-surface border-e border-line">
         {renderContent(false, true)}
       </div>
     );
@@ -192,7 +196,7 @@ const Sidebar = ({ onClose }) => {
     <>
       {/* Desktop/Tablet inline sidebar */}
       <aside
-        className={`hidden md:flex flex-col bg-surface border-r border-line h-[calc(100vh-4rem)] sticky top-16 shrink-0 transition-[width] duration-300 ease-out-xp ${sidebarOpen ? 'w-20 lg:w-64' : 'w-20'
+        className={`hidden md:flex flex-col bg-surface border-e border-line h-[calc(100vh-4rem)] sticky top-16 shrink-0 transition-[width] duration-300 ease-out-xp ${sidebarOpen ? 'w-20 lg:w-64' : 'w-20'
           }`}
       >
         {renderContent(!sidebarOpen, false)}
@@ -208,7 +212,7 @@ const Sidebar = ({ onClose }) => {
             onClick={toggleMobileSidebar}
           />
           {/* Drawer container */}
-          <aside className="fixed top-16 bottom-0 left-0 z-50 w-72 max-w-[85vw] bg-surface flex flex-col border-r border-line shadow-xl lg:hidden animate-slide-down">
+          <aside className="fixed top-16 bottom-0 start-0 z-50 w-72 max-w-[85vw] bg-surface flex flex-col border-e border-line shadow-xl lg:hidden animate-slide-down">
             {renderContent(false, true)}
           </aside>
         </>
@@ -231,7 +235,7 @@ export const MiniSidebar = () => {
   ];
 
   return (
-    <aside className="w-16 bg-surface border-r border-line h-[calc(100vh-4rem)] sticky top-16 flex flex-col items-center py-4 gap-2">
+    <aside className="w-16 bg-surface border-e border-line h-[calc(100vh-4rem)] sticky top-16 flex flex-col items-center py-4 gap-2">
       {quickActions.map((action, index) => (
         <NavLink
           key={index}

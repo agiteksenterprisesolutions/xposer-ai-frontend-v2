@@ -1,0 +1,172 @@
+{
+  "shared": {
+    "loadTypesFailed": "Failed to load report types",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "noTypesNow": "No report types are available at this time. Please try again later.",
+    "steps_one": "{{count}} step",
+    "steps_other": "{{count}} steps",
+    "loadingDraft": "Loading your draft…"
+  },
+  "picker": {
+    "defaultDescription": "Report a concern of this kind.",
+    "opensInNewTab": " (opens in a new tab)",
+    "noTypesTitle": "No report types available",
+    "noTypesBody": "Please check back later, or contact the organization if this persists.",
+    "other": "Other / not sure",
+    "allTypes": "All report types",
+    "allCategories": "All categories",
+    "chooseHint": "Choose the one that fits best. The team can re-classify it later if needed.",
+    "heading": "What is your concern about?",
+    "subheading": "Pick a category, or search if you know what you’re looking for.",
+    "notSure": "Not sure this is the right place?",
+    "searchPlaceholder": "Search, e.g. bribery, data leak, harassment",
+    "searchLabel": "Search report types",
+    "clearSearch": "Clear search",
+    "matches_one": "{{count}} matching report type",
+    "matches_other": "{{count}} matching report types",
+    "noMatches": "No report type matches that.",
+    "otherSearchHint": "Describe it in your own words. The team will classify it.",
+    "otherHint": "Nothing fits, or you’re unsure? Describe it in your own words and the team will classify it.",
+    "listSeparator": ", ",
+    "andMore_one": "{{names}} and {{count}} more",
+    "andMore_other": "{{names}} and {{count}} more"
+  },
+  "deflection": {
+    "title": "Is this the right place?",
+    "continue": "Continue to report a concern",
+    "intro": "This channel is for reporting misconduct: fraud, bribery, harassment, safety risks, data misuse, retaliation and similar concerns. Some things have a better route:",
+    "misconductNote": "If your complaint or HR matter involves misconduct, such as harassment, discrimination or someone being punished for speaking up, report it here.",
+    "defaults": {
+      "customer_complaint": {
+        "label": "A complaint about a product or service you received",
+        "description": "Use the organization’s customer complaints channel. It is the route regulators expect for complaints, and it can resolve yours directly."
+      },
+      "hr_request": {
+        "label": "An HR request about your own job",
+        "description": "Leave, pay, contracts, performance reviews or a personal grievance about your own terms: please contact HR."
+      }
+    }
+  },
+  "anonymous": {
+    "seo": {
+      "form": "Submit report — {{name}}",
+      "selectType": "Select report type",
+      "init": "Submit an anonymous report",
+      "description": "File a report anonymously. No personal information is required — you receive credentials to track progress securely."
+    },
+    "toast": {
+      "staffSignedIn": "You are signed in to a staff account. Log out to file an anonymous report.",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "credentialsCreated": "Credentials created! Now select a report type.",
+      "initFailed": "Failed to start the report",
+      "selectTypeFailed": "Failed to select report type",
+      "copied": "Credentials copied to clipboard!",
+      "copyFailed": "Could not copy — please select the credentials and copy them manually."
+    },
+    "copyText": "Report number: {{number}}\nPassword: {{password}}",
+    "copyTextNoPassword": "Report number: {{number}}",
+    "file": {
+      "withPassword": "Xposer AI report credentials\n================================\n\nReport number: {{number}}\nPassword: {{password}}\n\nIMPORTANT:\n----------\n1. Save these credentials in a secure location\n2. You will need both credentials to track your report\n3. These credentials cannot be recovered if lost\n4. Do not share these credentials with anyone\n\nTrack your report at: {{trackUrl}}\nGenerated on: {{date}}\n\nSecurity notice:\n---------------\nThis report is submitted anonymously. No personal information is stored.\n",
+      "account": "Xposer AI report credentials\n================================\n\nReport number: {{number}}\n\nIMPORTANT:\n----------\n1. This report is filed under your account — sign in to open it\n2. No report password is needed, and none exists for this report\n3. Keep the report number somewhere you can find it again\n\nTrack your report at: {{trackUrl}}\nGenerated on: {{date}}\n"
+    },
+    "tour": {
+      "howTitle": "Four steps, no account",
+      "howBody": "You never enter a name or email. Credentials come first, and they are the only thing tying you to the report.",
+      "passwordTitle": "Choose your password",
+      "passwordBody": "Let us generate a strong one, or set your own if you would rather memorize it. Either way it is paired with a report number.",
+      "saveTitle": "Save them immediately",
+      "saveBody": "Nothing about you is stored, which also means lost credentials cannot be recovered or reset. Copy them somewhere safe.",
+      "startTitle": "Start when ready",
+      "startBody": "This creates your credentials and moves you on to picking a report type. Nothing is submitted yet.",
+      "credentialsTitle": "Your credentials",
+      "credentialsBody": "Copy or download these now — you will need both to finish this report later and to track it afterwards.",
+      "typesTitle": "Pick a category",
+      "typesBody": "Each category asks a different set of questions. Choose the closest fit — compliance can re-categorize it later if needed.",
+      "nextTitle": "What happens next",
+      "nextBody": "Fill in the form, submit, then follow progress and reply to questions using your credentials."
+    },
+    "init": {
+      "title": "Start an anonymous report",
+      "intro": "First, create secure credentials to protect your anonymity. You'll need these to continue and track your report.",
+      "howTitle": "How it works",
+      "howSteps": "1. Get credentials → 2. Select report type → 3. Fill in the form → 4. Submit",
+      "autoTitle": "Auto-generate a secure password (recommended)",
+      "autoDesc": "A strong random password will be generated for you",
+      "customTitle": "Create your own password",
+      "customDesc": "Minimum 6 characters, maximum 50 characters",
+      "passwordLabel": "Password",
+      "moreChars_one": "{{count}} more character needed",
+      "moreChars_other": "{{count}} more characters needed",
+      "minChars": "Minimum 6 characters",
+      "saveTitle": "Save your credentials!",
+      "saveBody": "You will receive a unique report number and password. <strong>Save these immediately</strong> — you'll need them to continue and track your report. They cannot be recovered if lost.",
+      "start": "Get secure credentials"
+    },
+    "select": {
+      "back": "Back to credentials",
+      "title": "Select report type",
+      "subtitle": "Choose the category that best fits your concern",
+      "credentialsTitle": "Your report credentials",
+      "reportNumber": "Report number",
+      "password": "Password",
+      "copy": "Copy",
+      "download": "Download",
+      "signInHint": "Some report types are only available after you <link>sign in</link>.",
+      "anonymityTitle": "Complete anonymity",
+      "anonymityBody": "No personal information is required. Your credentials are your only identifier.",
+      "secureTitle": "Secure & encrypted",
+      "secureBody": "All reports are encrypted end-to-end. We don't store IP addresses or metadata.",
+      "nextTitle": "What happens next?",
+      "next1": "Select a report type from the options",
+      "next2": "Fill out the multi-step form",
+      "next3": "Submit your report securely",
+      "next4": "Track progress using your credentials",
+      "next5": "Receive updates securely",
+      "warnTitlePassword": "Save your credentials first!",
+      "warnTitleNumber": "Save your report number",
+      "warnBodyPassword": "Make sure you've saved your report number and password before continuing. You cannot proceed without them.",
+      "warnBodyNumber": "This report is filed under your account, so no password is needed — but keep the report number to find it again."
+    }
+  },
+  "draft": {
+    "seoTitle": "Continue draft #{{number}}",
+    "invalidCredentials": "Invalid report number or password.",
+    "alreadySubmitted": "This report has already been submitted.",
+    "back": "Back to report tracking",
+    "title": "Continue draft #{{number}}",
+    "intro": "Enter the password you saved with this report to keep filling it in.",
+    "passwordLabel": "Report password",
+    "continue": "Continue draft",
+    "pickTitle": "Continue your report",
+    "pickIntro": "This report doesn't have a type yet. Choose one to keep going — your report number <number>{{number}}</number> and password stay the same.",
+    "noDescription": "No description available"
+  },
+  "reporterSubmit": {
+    "seoTitle": "Submit a report",
+    "seoDescription": "File a new report against your account so you can track and follow up on it.",
+    "redirecting": "Redirecting to login…",
+    "back": "Back to dashboard",
+    "title": "Submit a new report",
+    "intro": "Choose the type of concern you'd like to report. All submissions are handled with confidentiality and care.",
+    "secureTitle": "Secure & confidential",
+    "secureBody": "Your report is encrypted and protected",
+    "guidedTitle": "Guided process",
+    "guidedBody": "Step-by-step form to help you report",
+    "timelyTitle": "Timely review",
+    "timelyBody": "Reports are reviewed promptly by our team"
+  },
+  "reporterDraft": {
+    "seoTitle": "Edit draft #{{number}}",
+    "alreadySubmitted": "This report has already been submitted and can no longer be edited.",
+    "progressFailed": "Could not load your saved answers. You may need to fill them in again.",
+    "loadFailed": "Failed to load this draft.",
+    "unavailableTitle": "Draft unavailable",
+    "notFound": "Draft not found.",
+    "backToReports": "Back to my reports",
+    "backToReport": "Back to report",
+    "title": "Continue your draft",
+    "intro": "This draft doesn't have a report type yet. Choose one to keep going — your report number <number>{{number}}</number> stays the same.",
+    "noDescription": "Submit a report for this category"
+  }
+}

@@ -86,7 +86,7 @@ const Compliance = () => {
             <article id="overview">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-link mr-3" />
+                  <Info className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Compliance Overview</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -106,7 +106,7 @@ const Compliance = () => {
             <article id="gdpr">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Globe className="w-5 h-5 text-link mr-3" />
+                  <Globe className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">GDPR Compliance</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -115,7 +115,7 @@ const Compliance = () => {
                   <div className="grid md:grid-cols-2 gap-4 mt-4">
                     <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <Lock className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <Lock className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Data Protection by Design</h3>
                       </div>
                       <p className="text-sm">Privacy and data protection are embedded into our platform's architecture from the ground up.</p>
@@ -123,7 +123,7 @@ const Compliance = () => {
 
                     <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <Users className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <Users className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">User Rights</h3>
                       </div>
                       <p className="text-sm">We support all GDPR rights including access, rectification, erasure, and data portability.</p>
@@ -131,7 +131,7 @@ const Compliance = () => {
 
                     <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <FileText className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <FileText className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Legal Basis</h3>
                       </div>
                       <p className="text-sm">We process data only with lawful basis, including consent, legitimate interest, and legal obligation.</p>
@@ -139,7 +139,7 @@ const Compliance = () => {
 
                     <div className="bg-subtle border border-line rounded-lg p-4">
                       <div className="flex items-start mb-2">
-                        <AlertTriangle className="w-4 h-4 text-link mr-2 mt-0.5 skrink-0" />
+                        <AlertTriangle className="w-4 h-4 text-link me-2 mt-0.5 skrink-0" />
                         <h3 className="font-semibold text-ink">Breach Notification</h3>
                       </div>
                       <p className="text-sm">We have procedures in place to detect, report, and investigate personal data breaches.</p>
@@ -154,28 +154,28 @@ const Compliance = () => {
             <article id="eu-directive">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Scale className="w-5 h-5 text-link mr-3" />
+                  <Scale className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">EU Whistleblowing Directive</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
                   <p>Our platform is designed to comply with Directive (EU) 2019/1937 on the protection of persons who report breaches of Union law. Key compliance features include:</p>
 
-                  <div className="border-l-4 border-line-accent pl-4 py-2">
+                  <div className="border-s-4 border-line-accent ps-4 py-2">
                     <h3 className="font-semibold text-ink mb-2">Secure Reporting Channels</h3>
                     <p>We provide secure internal and external reporting channels that ensure confidentiality and protect the identity of whistleblowers.</p>
                   </div>
 
-                  <div className="border-l-4 border-line-accent pl-4 py-2">
+                  <div className="border-s-4 border-line-accent ps-4 py-2">
                     <h3 className="font-semibold text-ink mb-2">Whistleblower Protection</h3>
                     <p>Our system is designed to prevent retaliation and protect whistleblowers from adverse consequences related to their reports.</p>
                   </div>
 
-                  <div className="border-l-4 border-line-accent pl-4 py-2">
+                  <div className="border-s-4 border-line-accent ps-4 py-2">
                     <h3 className="font-semibold text-ink mb-2">Acknowledgment & Follow-up</h3>
                     <p>We provide acknowledgment of receipt within 7 days and ensure diligent follow-up on reports, with feedback provided within 3 months when reasonably expected.</p>
                   </div>
 
-                  <div className="border-l-4 border-line-accent pl-4 py-2">
+                  <div className="border-s-4 border-line-accent ps-4 py-2">
                     <h3 className="font-semibold text-ink mb-2">Record Keeping</h3>
                     <p>We maintain appropriate records of reports and actions taken while respecting data minimization principles and retention limits.</p>
                   </div>
@@ -188,7 +188,7 @@ const Compliance = () => {
             <article id="data-protection">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Lock className="w-5 h-5 text-link mr-3" />
+                  <Lock className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Data Protection & Security</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -196,7 +196,7 @@ const Compliance = () => {
 
                   <div className="space-y-3 mt-4">
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Encryption</h4>
                         <p className="text-sm">End-to-end encryption for data in transit (TLS 1.3) and at rest (AES-256), with encrypted database storage and secure key management.</p>
@@ -204,7 +204,7 @@ const Compliance = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Access Controls</h4>
                         <p className="text-sm">Role-based access control (RBAC), multi-factor authentication (MFA), and principle of least privilege enforcement.</p>
@@ -212,7 +212,7 @@ const Compliance = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Network Security</h4>
                         <p className="text-sm">Firewalls, intrusion detection systems (IDS), regular vulnerability scanning, and penetration testing.</p>
@@ -220,7 +220,7 @@ const Compliance = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Data Minimization</h4>
                         <p className="text-sm">We collect only the minimum data necessary for processing reports and delete data when no longer needed.</p>
@@ -228,7 +228,7 @@ const Compliance = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Secure Development</h4>
                         <p className="text-sm">Security-by-design approach, code reviews, automated security testing, and regular security updates.</p>
@@ -236,7 +236,7 @@ const Compliance = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-3 skrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-green-500 me-3 skrink-0 mt-0.5" />
                       <div>
                         <h4 className="font-semibold text-ink">Incident Response</h4>
                         <p className="text-sm">24/7 monitoring, incident response plan, and procedures for breach notification in compliance with applicable laws.</p>
@@ -250,7 +250,7 @@ const Compliance = () => {
             <article id="certifications">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Award className="w-5 h-5 text-link mr-3" />
+                  <Award className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Certifications & Standards</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -286,7 +286,7 @@ const Compliance = () => {
             <article id="transparency">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Eye className="w-5 h-5 text-link mr-3" />
+                  <Eye className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Transparency & Accountability</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -311,7 +311,7 @@ const Compliance = () => {
             <article id="audits">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <FileText className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Audits & Continuous Improvement</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -319,7 +319,7 @@ const Compliance = () => {
 
                   <div className="space-y-2 mt-3">
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">Internal Audits</h4>
                         <p className="text-sm">Quarterly internal security and compliance audits to identify and address potential issues.</p>
@@ -327,7 +327,7 @@ const Compliance = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">External Audits</h4>
                         <p className="text-sm">Annual third-party security audits and penetration testing by certified security professionals.</p>
@@ -335,7 +335,7 @@ const Compliance = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">Compliance Reviews</h4>
                         <p className="text-sm">Regular reviews of regulatory changes and updates to ensure ongoing compliance with evolving requirements.</p>
@@ -343,7 +343,7 @@ const Compliance = () => {
                     </div>
 
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 mr-3 skrink-0"></div>
+                      <div className="w-2 h-2 bg-primary-600 rounded-full mt-2 me-3 skrink-0"></div>
                       <div>
                         <h4 className="font-semibold text-ink">User Feedback</h4>
                         <p className="text-sm">We actively collect and incorporate user feedback to improve security, privacy, and usability.</p>
@@ -359,7 +359,7 @@ const Compliance = () => {
             <article id="contact">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-link mr-3" />
+                  <Info className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Compliance Contact</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -381,7 +381,7 @@ const Compliance = () => {
                 <div className="hidden sm:block skrink-0">
                   <Button variant="secondary" size="medium" className="cursor-pointer" to="/submit-anonymous">
                       Submit a Report
-                      <ArrowRight className="ml-2 w-4 h-4" />
+                      <ArrowRight className="ms-2 w-4 h-4" />
                     </Button>
                 </div>
               </div>

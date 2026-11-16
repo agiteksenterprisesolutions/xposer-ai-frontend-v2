@@ -139,7 +139,7 @@ const ReportDetails = ({
     if (is_anonymous) {
       return (
         <div className="flex items-center text-ink-muted">
-          <Lock className="w-4 h-4 mr-2" />
+          <Lock className="w-4 h-4 me-2" />
           <span>Anonymous Reporter</span>
         </div>
       );
@@ -149,14 +149,14 @@ const ReportDetails = ({
       return (
         <div>
           <div className="flex items-center">
-            <User className="w-4 h-4 mr-2 text-ink-muted" />
+            <User className="w-4 h-4 me-2 text-ink-muted" />
             <span className="font-medium">{reporter.full_name || reporter.username}</span>
             {reporter.role && (
-              <RoleBadge role={reporter.role} className="ml-2" />
+              <RoleBadge role={reporter.role} className="ms-2" />
             )}
           </div>
           {email && (
-            <div className="text-sm text-ink-muted ml-6 mt-1 wrap-break-word">
+            <div className="text-sm text-ink-muted ms-6 mt-1 wrap-break-word">
               {email}
             </div>
           )}
@@ -181,7 +181,7 @@ const ReportDetails = ({
               variant="link"
               size="small"
               onClick={handleAssign}
-              className="ml-2"
+              className="ms-2"
             >
               Assign to me
             </Button>
@@ -193,14 +193,14 @@ const ReportDetails = ({
     return (
       <div>
         <div className="flex items-center">
-          <User className="w-4 h-4 mr-2 text-ink-muted" />
+          <User className="w-4 h-4 me-2 text-ink-muted" />
           <span className="font-medium">
             {assigned_to.full_name || assigned_to.username}
           </span>
-          <RoleBadge role={assigned_to.role} className="ml-2" />
+          <RoleBadge role={assigned_to.role} className="ms-2" />
         </div>
         {assigned_at && (
-          <div className="text-sm text-ink-muted ml-6 mt-1">
+          <div className="text-sm text-ink-muted ms-6 mt-1">
             Assigned on {formatDate(assigned_at)}
             {assigned_by && ` by ${assigned_by.full_name || assigned_by.username}`}
           </div>
@@ -231,7 +231,7 @@ const ReportDetails = ({
             <div key={index} className="border-b border-line-subtle pb-4 last:border-0 min-w-0">
               <label className="block text-sm font-medium text-ink-secondary mb-1">
                 {question.label || question.name}
-                {question.required && <span className="text-danger-fg ml-1">*</span>}
+                {question.required && <span className="text-danger-fg ms-1">*</span>}
               </label>
 
               <div className="text-ink min-w-0">
@@ -246,9 +246,9 @@ const ReportDetails = ({
                 ) : typeof value === 'boolean' ? (
                   <div className="flex items-center">
                     {value ? (
-                      <CheckCircle className="w-4 h-4 text-success-fg mr-2" />
+                      <CheckCircle className="w-4 h-4 text-success-fg me-2" />
                     ) : (
-                      <XCircle className="w-4 h-4 text-danger-fg mr-2" />
+                      <XCircle className="w-4 h-4 text-danger-fg me-2" />
                     )}
                     {value ? 'Yes' : 'No'}
                   </div>
@@ -307,7 +307,7 @@ const ReportDetails = ({
                 <div className="relative pb-8">
                   {eventIdx !== events.length - 1 ? (
                     <span
-                      className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-active"
+                      className="absolute top-4 start-4 -ms-px h-full w-0.5 bg-active"
                       aria-hidden="true"
                     />
                   ) : null}
@@ -322,7 +322,7 @@ const ReportDetails = ({
                         <p className="text-sm text-ink">{event.title}</p>
                         <p className="text-sm text-ink-muted wrap-break-word">{event.description}</p>
                       </div>
-                      <div className="whitespace-nowrap text-right text-sm text-ink-muted">
+                      <div className="whitespace-nowrap text-end text-sm text-ink-muted">
                         {formatDateTime(event.date)}
                       </div>
                     </div>
@@ -350,7 +350,7 @@ const ReportDetails = ({
           </div>
 
           <div className="flex items-center text-ink-muted">
-            <Calendar className="w-4 h-4 mr-1" />
+            <Calendar className="w-4 h-4 me-1" />
             <span className="text-sm">
               Created {formatDate(created_at)} • Last updated {formatDate(updated_at)}
             </span>
@@ -517,7 +517,7 @@ const ReportDetails = ({
                           variant="link"
                           size="small"
                           onClick={() => setIsEditing(true)}
-                          className="ml-2"
+                          className="ms-2"
                         >
                           Change
                         </Button>
@@ -612,7 +612,7 @@ const ReportDetails = ({
                         <div className="shrink-0">
                           <FileText className="w-8 h-8 text-ink-subtle" />
                         </div>
-                        <div className="ml-3 flex-1">
+                        <div className="ms-3 flex-1">
                           <p className="text-sm font-medium text-ink truncate">
                             {file.name}
                           </p>
@@ -654,7 +654,7 @@ const ReportDetails = ({
                     {internal_notes.map((note, index) => (
                       <div
                         key={index}
-                        className="border-l-4 border-line-accent pl-4 py-2"
+                        className="border-s-4 border-line-accent ps-4 py-2"
                       >
                         <div className="flex justify-between items-start mb-1">
                           <span className="font-medium">

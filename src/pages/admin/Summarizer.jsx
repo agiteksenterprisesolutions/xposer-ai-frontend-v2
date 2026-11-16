@@ -161,9 +161,9 @@ const SummarizerSkeleton = () => (
         {['Runs before', 'Length', 'Evidence files', 'Readers'].map((label, index) => (
           <div
             key={label}
-            className={`px-5 py-3.5 sm:px-6 ${index % 2 ? 'border-l border-line-subtle' : ''} ${
+            className={`px-5 py-3.5 sm:px-6 ${index % 2 ? 'border-s border-line-subtle' : ''} ${
               index >= 2 ? 'border-t border-line-subtle lg:border-t-0' : ''
-            } ${index === 2 ? 'lg:border-l' : ''}`}
+            } ${index === 2 ? 'lg:border-s' : ''}`}
           >
             <dt className="text-xs text-ink-subtle">{label}</dt>
             <Skeleton.Text className="mt-0.5 w-24" />
@@ -504,7 +504,7 @@ const Summarizer = () => {
               <AlertTriangle className="h-4 w-4 shrink-0" />
               {status === 'stalled' ? 'Why nothing will run' : 'Worth knowing'}
             </p>
-            <ul className="mt-2 space-y-2 pl-6">
+            <ul className="mt-2 space-y-2 ps-6">
               {problems.map((problem, index) => (
                 <li
                   key={`${problem.code}-${index}`}
@@ -529,9 +529,9 @@ const Summarizer = () => {
           {facts.map((fact, index) => (
             <div
               key={fact.label}
-              className={`px-5 py-3.5 sm:px-6 ${index % 2 ? 'border-l border-line-subtle' : ''} ${
+              className={`px-5 py-3.5 sm:px-6 ${index % 2 ? 'border-s border-line-subtle' : ''} ${
                 index >= 2 ? 'border-t border-line-subtle lg:border-t-0' : ''
-              } ${index === 2 ? 'lg:border-l' : ''}`}
+              } ${index === 2 ? 'lg:border-s' : ''}`}
             >
               <dt className="text-xs text-ink-subtle">{fact.label}</dt>
               <dd className="mt-0.5 truncate text-sm font-semibold text-ink">{fact.value}</dd>
@@ -543,7 +543,7 @@ const Summarizer = () => {
       {saveError && (
         <Alert variant="error" title={saveError.summary}>
           {saveError.problems.length > 0 && (
-            <ul className="list-disc space-y-1 pl-4">
+            <ul className="list-disc space-y-1 ps-4">
               {saveError.problems.map((problem, index) => (
                 <li key={index}>{problem.message}</li>
               ))}
@@ -571,7 +571,7 @@ const Summarizer = () => {
                     aria-checked={on}
                     disabled={!canManage}
                     onClick={() => chooseLength(option.key)}
-                    className={`flex flex-col items-start gap-0.5 rounded-xl px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed ${
+                    className={`flex flex-col items-start gap-0.5 rounded-xl px-3.5 py-3 text-start transition-colors disabled:cursor-not-allowed ${
                       on ? 'border-[1.5px] border-accent bg-accent-soft' : 'border border-line hover:border-line-strong'
                     }`}
                   >
@@ -811,7 +811,7 @@ const Summarizer = () => {
                   <ScrollText className="h-3.5 w-3.5" />
                 </span>
                 <span className="text-sm font-semibold text-ink">AI summary</span>
-                <span className="ml-auto text-[11px] text-ink-subtle">When it was written</span>
+                <span className="ms-auto text-[11px] text-ink-subtle">When it was written</span>
               </div>
               {[92, 100, 74, 86].map((width) => (
                 <span key={width} className="block h-2 rounded bg-active" style={{ width: `${width}%` }} />
@@ -829,7 +829,7 @@ const Summarizer = () => {
 
       {/* Save bar */}
       {canManage && isDirty && (
-        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:pl-5">
+        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:ps-5">
           <p className="min-w-0 flex-1 text-sm">
             {wordsError ? (
               <>Fix the length before saving — {wordsError.toLowerCase()}</>

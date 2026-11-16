@@ -1,0 +1,386 @@
+{
+  "tour": {
+    "takeTour": "Take a tour",
+    "back": "Back",
+    "close": "Close",
+    "done": "Done",
+    "next": "Next",
+    "nextWithProgress": "Next ({{current}} of {{total}})",
+    "open": "Open the dialog",
+    "skip": "Skip"
+  },
+  "home": {
+    "seo": {
+      "title": "Xposer AI | Secure Whistleblowing & Anonymous Reporting",
+      "description": "Xposer AI is an autonomous, voice-first whistleblowing platform. From incident to audit-ready insight in under 60 seconds — 24/7, 100+ languages."
+    },
+    "hero": {
+      "line1": "Instant AI Triage.",
+      "line2": "Human Decisions.",
+      "line3": "Audit-Ready Whistleblowing Platform.",
+      "lead": "XPOSER.AI is an AI-Powered, voice-first whistleblowing platform. From incident to audit-ready insight in under 60 seconds — 24/7, 100+ languages, zero human bottleneck."
+    },
+    "cta": {
+      "submit": "Submit Anonymous Report",
+      "dashboard": "Open Dashboard",
+      "teamLogin": "Team Login"
+    },
+    "tour": {
+      "submit": {
+        "title": "Submit an anonymous report",
+        "content": "Start here. You get a report number and password up front — no name, no email, no account."
+      },
+      "dashboard": {
+        "title": "Open your dashboard",
+        "content": "Jump back to your dashboard to review and manage reports."
+      },
+      "team": {
+        "title": "Team access",
+        "content": "Compliance teams sign in here to triage, assign, and resolve incoming reports. Reporters can log in to check the status of submitted reports."
+      }
+    },
+    "triage": {
+      "avgTime": "Avg. triage time",
+      "active": "AI Triage Active",
+      "processing_one": "{{count}} report processing now",
+      "processing_other": "{{count}} reports processing now",
+      "aiProcessing": "AI processing…",
+      "items": {
+        "financial": "Financial Misconduct — Q3 Reporting",
+        "safety": "Workplace Safety Violation",
+        "hr": "HR Policy Concern — Anonymous"
+      },
+      "badges": {
+        "high": "HIGH",
+        "medium": "MED",
+        "triaged": "TRIAGED"
+      }
+    }
+  },
+  "login": {
+    "seo": {
+      "title": "Sign In",
+      "description": "Sign in to your Xposer AI portal to submit, track, and manage reports securely."
+    },
+    "title": "Welcome Back",
+    "subtitle": "Sign in to access your secure portal",
+    "logoAlt": "Xposer AI",
+    "tabs": {
+      "account": "Account Login"
+    },
+    "fields": {
+      "username": "Username or email",
+      "usernameHelp": "You can sign in with either your username or your email address.",
+      "password": "Password"
+    },
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "submit": "Sign In",
+    "noAccount": {
+      "title": "No account yet",
+      "inviteOnly": "Access is invite-only — signing in with Google or Microsoft does not create an account on its own."
+    },
+    "errors": {
+      "usernameRequired": "Username is required",
+      "passwordRequired": "Password is required",
+      "reportNumberLength": "Report number must be 8 digits",
+      "failed": "Login failed",
+      "checkCredentials": "Login failed. Please check your credentials.",
+      "invalidReport": "Invalid report number or password."
+    },
+    "track": {
+      "found": "Report found! Redirecting to report details…",
+      "reportNumber": "Report Number",
+      "reportNumberHelp": "Found in your report confirmation email",
+      "reportNumberTitle": "8-character alphanumeric code",
+      "password": "Report Password",
+      "passwordHelp": "Provided when you submitted the report",
+      "submit": "Track Report"
+    }
+  },
+  "forgot": {
+    "seo": {
+      "title": "Reset Password",
+      "description": "Reset the password for your Xposer AI account."
+    },
+    "title": "Reset Your Password",
+    "subtitleRequest": "Enter your email to receive a reset code.",
+    "subtitleReset": "Enter the reset code and choose a new password.",
+    "fields": {
+      "email": "Email Address",
+      "code": "Reset Code",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password"
+    },
+    "sendCode": "Send Reset Code",
+    "resettingFor": "Resetting password for",
+    "differentEmail": "Use different email",
+    "resend": "Resend code",
+    "checkSpam": "Check your spam folder if needed",
+    "submit": "Reset Password",
+    "remembered": "Remembered your password?",
+    "signIn": "Sign in",
+    "backHome": "Back to home",
+    "toast": {
+      "sent": "Password reset instructions sent to your email.",
+      "reset": "Password reset successfully! Please log in.",
+      "resent": "Reset instructions resent."
+    },
+    "errors": {
+      "email": "Please enter a valid email address",
+      "codeRequired": "Reset code is required",
+      "minLength": "Password must be at least 8 characters",
+      "uppercase": "Password must contain at least one uppercase letter",
+      "lowercase": "Password must contain at least one lowercase letter",
+      "number": "Password must contain at least one number",
+      "special": "Password must contain at least one special character",
+      "mismatch": "Passwords don't match",
+      "sendFailed": "Failed to send reset instructions.",
+      "resetFailed": "Failed to reset password.",
+      "resendFailed": "Failed to resend reset instructions."
+    }
+  },
+  "howTo": {
+    "seo": {
+      "title": "How to Use Xposer AI",
+      "description": "A step-by-step guide for reporters: signing in, submitting an anonymous report, using the AI assistant, and reporting from your account."
+    },
+    "title": "How to use Xposer AI",
+    "lead": "Everything a reporter needs: how to sign in, how to file a report without giving your name, how the AI assistant works, and how to follow a report through to its outcome.",
+    "navLabel": "Guide sections",
+    "stepN": "Step {{n}}",
+    "nav": {
+      "overview": "Overview",
+      "login": "Signing in",
+      "anonymous": "Anonymous reporting",
+      "tracking": "Tracking a report",
+      "ai-widget": "AI assistant",
+      "account": "Account reporting"
+    },
+    "overview": {
+      "eyebrow": "Start here",
+      "title": "Two ways to report",
+      "intro": "Every concern you raise reaches the same compliance team and is handled with the same care. The only decision you have to make up front is whether your name travels with the report.",
+      "anon": {
+        "title": "Anonymous report",
+        "body": "No name, no email, no account. You get a report number and password, and those credentials are the only link between you and the report.",
+        "best": "Best when you would rather not be identified at all."
+      },
+      "account": {
+        "title": "Account report",
+        "body": "Sign in with the account your organization gave you. Your reports are collected in one dashboard, and the team can reach you directly with follow-up questions.",
+        "best": "Best when you want easy tracking and faster follow-up."
+      },
+      "control": {
+        "title": "Either way, you stay in control",
+        "body": "Both routes are encrypted, both let you follow progress, and both let you exchange messages with the compliance team without revealing anything you have not chosen to share."
+      }
+    },
+    "login": {
+      "title": "Signing in to your account",
+      "intro": "Accounts are created by your organization — there is no public sign-up. If you have credentials, sign in from your organization's portal page.",
+      "slugExample": "your-organization",
+      "s1": {
+        "title": "Open your organization's portal",
+        "body": "Your portal lives at a web address that ends in your organization's name, for example <code>/{{slug}}</code>. Use the link your organization shared with you, then choose <b>Log in</b>."
+      },
+      "s2": {
+        "title": "Enter your username and password",
+        "body": "Type the username or email address your organization issued, then your password. Use the eye icon to reveal what you typed if you want to double-check it."
+      },
+      "s3": {
+        "title": "You land on the right dashboard",
+        "body": "Signing in takes you straight to your dashboard. As a reporter that is your reports overview."
+      },
+      "s4": {
+        "title": "No account? You can still report",
+        "body": "You do not need to sign in to raise a concern — skip ahead to <anon>anonymous reporting</anon>."
+      },
+      "shot": {
+        "alt": "The Xposer AI sign-in screen with username and password fields",
+        "caption": "The sign-in screen. Passwords are never stored in readable form, and all traffic is encrypted."
+      },
+      "forgot": {
+        "title": "Forgot your password?",
+        "body": "Password resets are handled by your organization's administrator."
+      }
+    },
+    "anon": {
+      "title": "Submitting an anonymous report",
+      "intro": "Anonymous reporting takes four steps: get credentials, choose a category, fill in the form, and submit. You are never asked for your name, email, or phone number.",
+      "stage1": {
+        "title": "Stage 1 — Create your secure credentials",
+        "s1": {
+          "title": "Open the anonymous report page",
+          "body": "Choose <b>Report now</b> in the top bar. You will land on <b>Start Anonymous Report</b>."
+        },
+        "s2": {
+          "title": "Pick how your password is created",
+          "body": "Leave <b>Auto-generate secure password</b> selected — it produces a strong random password. Choose <b>Create your own password</b> only if you need one you can remember."
+        },
+        "s3": {
+          "title": "Select “Get Secure Credentials”",
+          "body": "This creates an empty, unsubmitted report and issues your 8-digit report number plus its password."
+        },
+        "shot": {
+          "alt": "Start Anonymous Report page showing password options and the Get Secure Credentials button",
+          "caption": "Stage 1. The “Take a tour” button replays a short walkthrough of this screen at any time."
+        }
+      },
+      "save": {
+        "title": "Save your credentials before you go further",
+        "body": "Your report number and password cannot be recovered or reset. Use <strong>Copy</strong> or <strong>Download</strong> on the next screen and keep them somewhere only you can reach."
+      },
+      "stage2": {
+        "title": "Stage 2 — Choose a report type",
+        "s1": {
+          "title": "Save the credentials shown at the top",
+          "body": "<copy><copyIcon/> Copy</copy> puts both values on your clipboard; <download><downloadIcon/> Download</download> saves them as a text file."
+        },
+        "s2": {
+          "title": "Pick the closest category",
+          "body": "Each category asks a different set of questions. Pick the category that matches your concern."
+        },
+        "shot": {
+          "alt": "Select Report Type page showing report credentials and category cards",
+          "caption": "Stage 2. Your report number and password appear once, at the top of this screen."
+        }
+      },
+      "stage3": {
+        "title": "Stage 3 — Fill in the form and submit",
+        "s1": {
+          "title": "Work through the steps",
+          "body": "The progress bar shows where you are. Required questions are marked with a red asterisk; everything else is optional."
+        },
+        "s2": {
+          "title": "Attach evidence if you have it",
+          "body": "Documents, images, video and spreadsheets can be attached to the report."
+        },
+        "s3": {
+          "title": "Submit",
+          "body": "When you submit, the report reaches the compliance team."
+        },
+        "shot": {
+          "alt": "Multi-step anonymous report form showing step 1 of 3 with incident detail questions",
+          "caption": "Stage 3. Your report number stays visible at the top while you fill in the form."
+        }
+      }
+    },
+    "track": {
+      "title": "Tracking your report and replying",
+      "intro": "You can check your report's status and reply to the compliance team. All communication remains anonymous.",
+      "s1": {
+        "title": "Open “Track a report”",
+        "body": "It is reachable from the portal without signing in."
+      },
+      "s2": {
+        "title": "Enter your report number and password",
+        "body": "Enter the report number and password you saved when you created the report."
+      },
+      "s3": {
+        "title": "Read the status and any messages",
+        "body": "You will see the current status — <b>Pending</b>, <b>In progress</b>, <b>Resolved</b> — along with any questions from the investigator."
+      },
+      "s4": {
+        "title": "Reply or add more information",
+        "body": "Anything you remember later, or any new evidence, can be added to the existing report rather than filed as a new one."
+      },
+      "shot": {
+        "alt": "Anonymous Report Tracker page with report number and password fields",
+        "caption": "Tracking needs no account — only the credentials issued when you started the report."
+      }
+    },
+    "ai": {
+      "eyebrow": "Assistant",
+      "title": "Reporting with the AI assistant",
+      "intro": "Submit your report with an AI assistant built for ethics and compliance reporting. You can use voice or text.",
+      "s1": {
+        "title": "Open the chat bubble",
+        "body": "It sits in the bottom corner of the screen, on every portal page."
+      },
+      "s2": {
+        "title": "Choose how to report",
+        "body": "<b>Anonymous Report</b> keeps your identity out of it entirely. <b>Account Report</b> ties the report to your signed-in account — if you are not signed in, the assistant offers to take you to the login page."
+      },
+      "s3": {
+        "title": "Create a secure ID",
+        "body": "For an anonymous conversation the assistant asks for the same password choice as the form: auto-generated, or your own. Select <b>Create Secure ID</b> and save the credentials it shows you."
+      },
+      "s4": {
+        "title": "Describe what happened, in your own words",
+        "body": "Type into the message box and the assistant asks follow-up questions, filling in the report as you talk."
+      },
+      "shotHome": {
+        "alt": "AI assistant panel offering Anonymous Report or Account Report",
+        "caption": "The assistant's opening screen: choose anonymous or account reporting."
+      },
+      "shotPassword": {
+        "alt": "AI assistant Secure Credentials step with password options and Create Secure ID button",
+        "caption": "Anonymous conversations start with the same credential step as the form."
+      },
+      "voice": {
+        "title": "Speak instead of typing",
+        "body": "The microphone button turns on voice."
+      },
+      "attach": {
+        "title": "Attach evidence",
+        "body": "The paperclip attaches documents, images and video to the report, up to 50 MB per file."
+      },
+      "end": {
+        "title": "End the session",
+        "body": "<b>End Session</b> clears the credentials from this browser. Make sure you have saved them first."
+      },
+      "helper": {
+        "title": "The assistant is a helper, not the investigator",
+        "body": "It helps you get a complete report on the record. A human compliance officer reviews what you submit and decides what happens next."
+      }
+    },
+    "account": {
+      "eyebrow": "With an account",
+      "title": "Reporting from your account",
+      "intro": "Signed in, everything you have raised lives in one place: statuses, history, and messages from the compliance team.",
+      "dashboard": {
+        "title": "Your dashboard",
+        "counters": "Counters at the top show how many reports you have filed and how many are pending, in progress, or resolved.",
+        "myReports": "<b>My Reports</b> lists each report with its status; switch between grid and list, or filter by status.",
+        "activity": "<b>Recent Activity</b> shows the latest movement on your cases.",
+        "tour": "<b>Take a tour</b> replays a guided walkthrough of the dashboard whenever you want it.",
+        "shot": {
+          "alt": "Reporter dashboard showing report counters, report cards and recent activity",
+          "caption": "The reporter dashboard. The sidebar carries Submit Report, My Reports, and an Anonymous Report shortcut."
+        }
+      },
+      "file": {
+        "title": "Filing a new report",
+        "s1": {
+          "title": "Choose “Submit Report”",
+          "body": "From the sidebar, or the <b>Submit New Report</b> button on My Reports."
+        },
+        "s2": {
+          "title": "Select a report type",
+          "body": "Same categories as the anonymous route, with the number of steps shown on each card."
+        },
+        "s3": {
+          "title": "Complete the guided form",
+          "body": "Identical multi-step form, minus the credential handling — your account already identifies the report as yours."
+        },
+        "s4": {
+          "title": "Follow it from My Reports",
+          "body": "Status changes and messages from the compliance team appear against the report. No report number to keep safe."
+        },
+        "shotSubmit": {
+          "alt": "Submit a New Report page with report type cards",
+          "caption": "Choosing a category for an account report."
+        },
+        "shotReports": {
+          "alt": "My Reports page listing submitted reports with status badges",
+          "caption": "My Reports: search, filter by status or priority, and open any report."
+        }
+      },
+      "unnamed": {
+        "title": "Prefer to stay unnamed on one particular concern?",
+        "body": "Even with an account you can use <strong>Anonymous Report</strong> at the bottom of the sidebar. That report is credential-based like any other anonymous submission."
+      }
+    }
+  }
+}

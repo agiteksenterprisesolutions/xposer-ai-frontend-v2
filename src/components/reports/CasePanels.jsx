@@ -43,7 +43,7 @@ export const CaseNotices = ({ report }) => {
           <Mic className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <div>
             <p className="font-semibold">Check how this call was filed</p>
-            <ul className="mt-1 list-disc space-y-0.5 pl-4">
+            <ul className="mt-1 list-disc space-y-0.5 ps-4">
               {warnings.map((warning, i) => (
                 <li key={i}>{warning}</li>
               ))}
@@ -86,7 +86,7 @@ const ClockRow = ({ clock, label, note, length }) => {
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-ink">
           {label}
-          {length && <span className="ml-1.5 text-xs font-normal text-ink-muted">· {length}</span>}
+          {length && <span className="ms-1.5 text-xs font-normal text-ink-muted">· {length}</span>}
         </p>
         {set ? <SlaBadge clock={clock} size="medium" /> : <span className="text-xs text-ink-subtle">No deadline</span>}
       </div>
@@ -168,7 +168,7 @@ export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-ink">
                 Feedback to the reporter
-                {feedbackLength && <span className="ml-1.5 text-xs font-normal text-ink-muted">· {feedbackLength}</span>}
+                {feedbackLength && <span className="ms-1.5 text-xs font-normal text-ink-muted">· {feedbackLength}</span>}
               </p>
               {sla.feedback_due_at && <span className="text-xs text-ink-secondary">Due {formatWhen(sla.feedback_due_at)}</span>}
             </div>
@@ -311,7 +311,7 @@ export const DisposedCase = ({ report, typeName, onBack }) => {
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="small" onClick={onBack}>
-        <ArrowLeft className="mr-1 h-4 w-4" /> Back
+        <ArrowLeft className="me-1 h-4 w-4" /> Back
       </Button>
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-xl font-bold text-ink">Case #{report.report_number}</h2>

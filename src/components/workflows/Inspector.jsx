@@ -50,7 +50,7 @@ const Switch = ({ checked, onChange, disabled, label, description }) => (
       }`}
     >
       <span
-        className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-[left] ${checked ? 'left-[18px]' : 'left-0.5'}`}
+        className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-[left] ${checked ? 'start-[18px]' : 'start-0.5'}`}
       />
     </button>
   </div>
@@ -59,7 +59,7 @@ const Switch = ({ checked, onChange, disabled, label, description }) => (
 const Row = ({ label, children }) => (
   <div className="flex items-center justify-between gap-3 text-[13px]">
     <span className="text-ink-muted">{label}</span>
-    <span className="text-right font-medium text-ink">{children}</span>
+    <span className="text-end font-medium text-ink">{children}</span>
   </div>
 );
 
@@ -462,7 +462,7 @@ export const WorkflowInspector = ({
                     type="button"
                     disabled={!target}
                     onClick={() => target && onSelectStage(target._id)}
-                    className="flex w-full items-start gap-1.5 rounded-lg bg-danger-soft px-2.5 py-2 text-left text-xs text-danger-fg enabled:hover:brightness-95"
+                    className="flex w-full items-start gap-1.5 rounded-lg bg-danger-soft px-2.5 py-2 text-start text-xs text-danger-fg enabled:hover:brightness-95"
                   >
                     <XCircle className="mt-px h-3.5 w-3.5 shrink-0" />
                     <span>

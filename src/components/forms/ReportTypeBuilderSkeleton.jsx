@@ -28,7 +28,7 @@ const ReportTypeBuilderSkeleton = ({ mode = 'edit' }) => {
                 <Skeleton.Text size="xs" className="hidden w-48 sm:flex" />
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+            <div className="flex items-center gap-2 sm:gap-3 ms-auto">
               {view ? (
                 <>
                   <span className="px-3 sm:px-4 py-2 text-sm font-medium text-ink-secondary">Back</span>
@@ -77,9 +77,9 @@ const ReportTypeBuilderSkeleton = ({ mode = 'edit' }) => {
                         <Skeleton.Circle size="h-8 w-8" />
                         <Skeleton.Text size="lg" className="w-48" />
                       </div>
-                      <Skeleton.Text className="ml-11 w-56" />
+                      <Skeleton.Text className="ms-11 w-56" />
                     </div>
-                    <div className="space-y-5 ml-11">
+                    <div className="space-y-5 ms-11">
                       {Array.from({ length: count }).map((_, index) => (
                         <div key={index} className="space-y-2">
                           <Skeleton.Text className="w-44" />

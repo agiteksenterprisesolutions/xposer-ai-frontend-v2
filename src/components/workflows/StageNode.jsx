@@ -87,7 +87,7 @@ const StageNode = ({ data, selected }) => {
       {(ports.length > 0 || (isHuman && !readOnly)) && (
         <div className="border-t border-line-subtle py-1.5">
           {ports.map((port) => (
-            <div key={port.id} className="relative flex h-[30px] items-center justify-between gap-2 pl-3.5 pr-5 text-xs">
+            <div key={port.id} className="relative flex h-[30px] items-center justify-between gap-2 ps-3.5 pe-5 text-xs">
               <span className={`truncate font-mono ${port.declared ? 'text-ink-secondary' : 'text-danger-fg'}`}>
                 {port.decision || 'unnamed'}
               </span>
@@ -105,7 +105,7 @@ const StageNode = ({ data, selected }) => {
             </div>
           ))}
           {isHuman && !readOnly && (
-            <div className="relative flex h-[30px] items-center gap-1.5 pl-3.5 pr-5 text-xs text-ink-subtle">
+            <div className="relative flex h-[30px] items-center gap-1.5 ps-3.5 pe-5 text-xs text-ink-subtle">
               <Plus className="h-3 w-3" />
               Drag to add an outcome
               <Handle type="source" id={NEW_OUTCOME_PORT} position={Position.Right} style={dot('var(--color-line-strong)')} />

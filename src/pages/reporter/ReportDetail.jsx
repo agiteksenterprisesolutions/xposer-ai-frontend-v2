@@ -32,14 +32,17 @@ import VoiceAnswers from '../../components/reports/VoiceAnswers';
 import { toast } from "react-toastify";
 import { formatAnswer, orderedAnswers } from '../../utils/reportAnswers';
 import { useReportForm } from '../../hooks/useReportForm';
+import { useTranslation } from 'react-i18next';
 
 /** The report page while it loads: the same header, cards and sidebar. */
-const ReportDetailSkeleton = ({ backLabel, steps }) => (
+const ReportDetailSkeleton = ({ backLabel, steps }) => {
+  const { t } = useTranslation('reporter');
+  return (
   <div className="max-w-5xl mx-auto space-y-6 overflow-hidden" aria-busy="true">
     <div>
       <span className="inline-flex items-center text-sm text-ink-muted mb-4">
-        <ArrowLeft className="w-4 h-4 mr-1" />
-        Back to {backLabel}
+        <ArrowLeft className="w-4 h-4 me-1" />
+        {backLabel}
       </span>
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="min-w-0">
@@ -71,7 +74,7 @@ const ReportDetailSkeleton = ({ backLabel, steps }) => (
             ))}
           </div>
         </Card>
-        <Card title="Report Details">
+        <Card title={t('detail.reportDetails')}>
           <div>
             <Skeleton.Text className="mb-2 w-44" />
             <Skeleton className="h-11 w-full rounded-lg" />
@@ -80,8 +83,8 @@ const ReportDetailSkeleton = ({ backLabel, steps }) => (
         <Card>
           <Card.Header className="flex items-center justify-between border-b border-line-subtle">
             <Card.Title className="flex items-center">
-              <MessageSquare className="h-5 w-5 mr-2 text-accent-fg" />
-              Communication
+              <MessageSquare className="h-5 w-5 me-2 text-accent-fg" />
+              {t('detail.communication')}
             </Card.Title>
           </Card.Header>
           <Card.Content className="pt-6">
@@ -96,16 +99,16 @@ const ReportDetailSkeleton = ({ backLabel, steps }) => (
       <div className="space-y-6">
         <Card className="bg-accent-soft border-line-accent">
           <div className="flex items-start">
-            <Shield className="w-5 h-5 text-accent-fg mr-2 mt-0.5" />
+            <Shield className="w-5 h-5 text-accent-fg me-2 mt-0.5" />
             <div>
-              <h4 className="font-medium text-accent-fg">Secure Channel</h4>
+              <h4 className="font-medium text-accent-fg">{t('detail.secureChannelTitle')}</h4>
               <p className="text-sm text-accent-fg mt-1">
-                This conversation is end-to-end encrypted. Your identity remains protected.
+                {t('detail.secureChannelBody')}
               </p>
             </div>
           </div>
         </Card>
-        <Card title="Timeline">
+        <Card title={t('detail.timeline')}>
           <div className="space-y-4">
             {[0, 1].map((i) => (
               <div key={i} className="flex gap-3">
@@ -121,13 +124,15 @@ const ReportDetailSkeleton = ({ backLabel, steps }) => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const ReportDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { fetchReport } = useReports();
+  const { t } = useTranslation('reporter');
 
   const [report, setReport] = useState(null);
   // The form this report was filed against, for its answers' labels and order.
@@ -143,7 +148,7 @@ const ReportDetail = () => {
   useSEO({
     enabled: !loading && !!report,
     title: report
-      ? [`Report #${report.report_number}`, getReportTitle(report)].filter(Boolean).join(' — ')
+      ? [t('seo.reportTitle', { number: report.report_number }), getReportTitle(report)].filter(Boolean).join(' — ')
       : '',
     noIndex: true,
   });
@@ -170,7 +175,7 @@ const ReportDetail = () => {
           }
         }
       } catch (err) {
-        setError("Failed to load report details.");
+        setError(t('detail.loadFailed'));
         console.error(err);
       } finally {
         setLoading(false);
@@ -240,21 +245,21 @@ const ReportDetail = () => {
       if (result?.download_url) {
         window.open(result.download_url, "_blank", "noopener,noreferrer");
       } else {
-        toast.error("Download URL not available");
+        toast.error(t('detail.downloadUnavailable'));
       }
     } catch (err) {
       console.error("Failed to download attachment:", err);
-      toast.error("Failed to download file");
+      toast.error(t('detail.downloadFailed'));
     } finally {
       setDownloadingKey(null);
     }
   };
 
   const statusSteps = [
-    { key: "pending", label: "Submitted" },
-    { key: "in_progress", label: "In Progress" },
-    { key: "resolved", label: "Resolved" },
-    { key: "closed", label: "Closed" },
+    { key: "pending", label: t('detail.stepSubmitted') },
+    { key: "in_progress", label: t('detail.stepInProgress') },
+    { key: "resolved", label: t('detail.stepResolved') },
+    { key: "closed", label: t('detail.stepClosed') },
   ];
 
   const getCurrentStep = () => {
@@ -266,7 +271,7 @@ const ReportDetail = () => {
   if (loading) {
     return (
       <ReportDetailSkeleton
-        backLabel={user?.is_anonymous ? "Report Tracking" : "My Reports"}
+        backLabel={user?.is_anonymous ? t('detail.backToTracking') : t('detail.backToMyReports')}
         steps={statusSteps}
       />
     );
@@ -277,15 +282,15 @@ const ReportDetail = () => {
       <div className="max-w-4xl mx-auto text-center py-12">
         <AlertCircle className="w-16 h-16 text-danger-fg mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-ink mb-2">
-          Error Loading Report
+          {t('detail.errorTitle')}
         </h2>
-        <p className="text-ink-muted mb-6">{error || "Report not found."}</p>
+        <p className="text-ink-muted mb-6">{error || t('detail.notFound')}</p>
         <Button
           onClick={() =>
             navigate(user?.is_anonymous ? `/${user ? user.organization_slug : ''}/track-report` : `/${user ? user.organization_slug : ''}/reporter/reports`)
           }
         >
-          Back to {user?.is_anonymous ? "Tracking" : "Reports"}
+          {user?.is_anonymous ? t('detail.backToTracking') : t('detail.backToReports')}
         </Button>
       </div>
     );
@@ -305,8 +310,8 @@ const ReportDetail = () => {
           }
           className="inline-flex items-center text-sm text-ink-muted hover:text-ink mb-4"
         >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to {user?.is_anonymous ? "Report Tracking" : "My Reports"}
+          <ArrowLeft className="w-4 h-4 me-1" />
+          {user?.is_anonymous ? t('detail.backToTracking') : t('detail.backToMyReports')}
         </button>
 
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -315,7 +320,7 @@ const ReportDetail = () => {
               {/* Not every report has a title; the heading falls back to a
                   neutral one rather than rendering empty. */}
               <h1 className="text-2xl font-bold text-ink wrap-break-word">
-                {reportTitle || 'Report Details'}
+                {reportTitle || t('detail.reportDetails')}
               </h1>
               <span className="font-mono text-sm px-2 py-1 bg-active rounded text-ink-muted">
                 #{report.report_number}
@@ -323,12 +328,12 @@ const ReportDetail = () => {
             </div>
             <div className="flex items-center gap-4 text-sm text-ink-muted">
               <span className="flex items-center">
-                <Calendar className="w-4 h-4 mr-1.5" />
-                Submitted {formatDateTime(report.created_at)}
+                <Calendar className="w-4 h-4 me-1.5" />
+                {t('detail.submittedAt', { date: formatDateTime(report.created_at) })}
               </span>
               <span className="flex items-center">
-                <Clock className="w-4 h-4 mr-1.5" />
-                Last updated {formatDateTime(report.updated_at)}
+                <Clock className="w-4 h-4 me-1.5" />
+                {t('detail.lastUpdatedAt', { date: formatDateTime(report.updated_at) })}
               </span>
             </div>
           </div>
@@ -344,7 +349,7 @@ const ReportDetail = () => {
                   navigate(`/${user ? user.organization_slug : ''}/reporter/reports/${report.id}/edit`)
                 }
               >
-                Edit Draft
+                {t('detail.editDraft')}
               </Button>
             )}
           </div>
@@ -352,9 +357,8 @@ const ReportDetail = () => {
       </div>
 
       {isDraft && (
-        <Alert variant="warning" title="This report is still a draft">
-          It hasn't been sent to the compliance team yet. Continue editing to finish
-          and submit it.
+        <Alert variant="warning" title={t('detail.draftTitle')}>
+          {t('detail.draftBody')}
         </Alert>
       )}
 
@@ -364,7 +368,7 @@ const ReportDetail = () => {
           {/* Status Tracker */}
           <Card>
             <div className="relative">
-              <div className="absolute left-0 top-1/2 w-full h-0.5 bg-active -z-10 transform -translate-y-1/2 hidden md:block" />
+              <div className="absolute start-0 top-1/2 w-full h-0.5 bg-active -z-10 transform -translate-y-1/2 hidden md:block" />
               <div className="flex flex-col md:flex-row justify-between relative">
                 {statusSteps.map((step, index) => {
                   const currentStep = getCurrentStep();
@@ -404,12 +408,12 @@ const ReportDetail = () => {
           </Card>
 
           {/* Report Details */}
-          <Card title="Report Details">
+          <Card title={t('detail.reportDetails')}>
             <div className="space-y-6">
               {reportDescription && (
                 <div>
                   <h3 className="text-sm font-medium text-ink-muted uppercase tracking-wider mb-2">
-                    Description
+                    {t('detail.description')}
                   </h3>
                   <div className="bg-subtle text-sm py-3 px-3 rounded-lg text-ink-secondary whitespace-pre-wrap wrap-break-word overflow-hidden">
                     {reportDescription}
@@ -421,10 +425,10 @@ const ReportDetail = () => {
               {!report.form_data || Object.keys(report.form_data).length === 0 ? (
                 <div>
                   <h3 className="text-sm font-medium text-ink-muted uppercase tracking-wider mb-2">
-                    Additional Information
+                    {t('detail.additionalInfo')}
                   </h3>
                   <div className="bg-subtle text-sm py-3 px-3 rounded-lg text-ink-secondary whitespace-pre-wrap wrap-break-word overflow-hidden">
-                    No additional information provided.
+                    {t('detail.noAdditionalInfo')}
                   </div>
                 </div>
               ) : (
@@ -432,7 +436,7 @@ const ReportDetail = () => {
                   {report.form_data && (
                     <div>
                       <h3 className="text-sm font-medium text-ink-muted uppercase tracking-wider mb-2">
-                        Additional Information
+                        {t('detail.additionalInfo')}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {orderedAnswers(report.form_data, reportForm).map(({ key, value, label, question }) => (
@@ -458,8 +462,8 @@ const ReportDetail = () => {
           <Card>
             <Card.Header className="flex items-center justify-between border-b border-line-subtle">
               <Card.Title className="flex items-center">
-                <MessageSquare className="h-5 w-5 mr-2 text-accent-fg" />
-                Communication
+                <MessageSquare className="h-5 w-5 me-2 text-accent-fg" />
+                {t('detail.communication')}
               </Card.Title>
             </Card.Header>
             <Card.Content className="pt-6">
@@ -467,7 +471,7 @@ const ReportDetail = () => {
                 <ul className="-mb-8">
                   {messages.length === 0 ? (
                     <li className="text-center py-4 text-ink-muted text-sm italic">
-                      No messages yet. Start the conversation below.
+                      {t('detail.noMessages')}
                     </li>
                   ) : (
                     messages.map((msg, idx) => (
@@ -475,11 +479,11 @@ const ReportDetail = () => {
                         <div className="relative pb-8">
                           {idx !== messages.length - 1 && (
                             <span
-                              className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-active"
+                              className="absolute top-4 start-4 -ms-px h-full w-0.5 bg-active"
                               aria-hidden="true"
                             />
                           )}
-                          <div className="relative flex space-x-3">
+                          <div className="relative flex gap-3">
                             <div>
                               <span
                                 className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-surface ${msg.is_internal ? "bg-warning-soft" : "bg-accent-soft"
@@ -498,12 +502,12 @@ const ReportDetail = () => {
                                   <div className="text-sm">
                                     <span className="font-medium text-ink">
                                       {msg?.sender?.role === "reporter"
-                                        ? "You"
-                                        : msg?.sender?.name || "Compliance Team"}
+                                        ? t('detail.you')
+                                        : msg?.sender?.name || t('detail.complianceTeam')}
                                     </span>
                                     {msg.is_internal && (
-                                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-warning-soft text-warning-fg">
-                                        INTERNAL
+                                      <span className="ms-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-warning-soft text-warning-fg">
+                                        {t('detail.internal')}
                                       </span>
                                     )}
                                   </div>
@@ -514,7 +518,7 @@ const ReportDetail = () => {
                               </div>
                               <div className="mt-2 text-sm text-ink-secondary">
                                 <p className="whitespace-pre-wrap wrap-break-word">
-                                  {msg.content || msg.text || "No message content"}
+                                  {msg.content || msg.text || t('detail.noContent')}
                                 </p>
                               </div>
                             </div>
@@ -529,7 +533,7 @@ const ReportDetail = () => {
               <div className="mt-8 pt-6 border-t border-line-subtle">
                 <form onSubmit={handleSendMessage} className="relative">
                   <Textarea
-                    label="Message"
+                    label={t('detail.message')}
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     rows="3"
@@ -538,7 +542,8 @@ const ReportDetail = () => {
                     type="submit"
                     onKeyDown={handleSendMessage}
                     disabled={!newMessage.trim() || messagesLoading || sendingMessage}
-                    className="absolute right-3 bottom-3 p-2 bg-accent text-on-accent rounded-full hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label={t('detail.send')}
+                    className="absolute end-3 bottom-3 p-2 bg-accent text-on-accent rounded-full hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -553,12 +558,11 @@ const ReportDetail = () => {
           {/* Security Status */}
           <Card className="bg-accent-soft border-line-accent">
             <div className="flex items-start">
-              <Shield className="w-5 h-5 text-accent-fg mr-2 mt-0.5" />
+              <Shield className="w-5 h-5 text-accent-fg me-2 mt-0.5" />
               <div>
-                <h4 className="font-medium text-accent-fg">Secure Channel</h4>
+                <h4 className="font-medium text-accent-fg">{t('detail.secureChannelTitle')}</h4>
                 <p className="text-sm text-accent-fg mt-1">
-                  This conversation is end-to-end encrypted. Your identity
-                  remains protected.
+                  {t('detail.secureChannelBody')}
                 </p>
               </div>
             </div>
@@ -571,20 +575,20 @@ const ReportDetail = () => {
                 variant="outline"
                 className="w-full justify-start text-ink"
               >
-                <Download className="w-4 h-4 mr-2 text-ink" />
+                <Download className="w-4 h-4 me-2 text-ink" />
                 <p className="text-ink">Download Report</p>
               </Button>
             </div>
           </Card> */}
 
           {/* Timeline - Simplified */}
-          <Card title="Timeline">
+          <Card title={t('detail.timeline')}>
             <div className="space-y-4">
               <div className="flex gap-3">
                 <div className="w-2 h-2 mt-2 rounded-full bg-accent shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-ink">
-                    Report Submitted
+                    {t('detail.reportSubmitted')}
                   </p>
                   <p className="text-xs text-ink-muted">
                     {formatDateTime(report.created_at)}
@@ -595,7 +599,7 @@ const ReportDetail = () => {
                 <div className="w-2 h-2 mt-2 rounded-full bg-active shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-ink">
-                    Current Status: {report.status.replace("_", " ")}
+                    {t('detail.currentStatus', { status: t(`common:reportStatus.${report.status}`, { defaultValue: report.status.replace(/_/g, " ") }) })}
                   </p>
                   <p className="text-xs text-ink-muted">
                     {formatDateTime(report.updated_at)}
@@ -609,9 +613,9 @@ const ReportDetail = () => {
           {report.attachments && report.attachments.length > 0 && (
             <Card>
               <div className="flex items-center mb-4">
-                <FileText className="w-5 h-5 text-accent-fg mr-2" />
+                <FileText className="w-5 h-5 text-accent-fg me-2" />
                 <h3 className="text-base font-semibold text-ink">
-                  Evidence &amp; Files
+                  {t('detail.evidence')}
                 </h3>
               </div>
               <ul className="divide-y divide-line-subtle">
@@ -620,20 +624,20 @@ const ReportDetail = () => {
                     key={idx}
                     className="py-3 flex items-center justify-between"
                   >
-                    <div className="flex items-center space-x-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
                       <div className="p-2 bg-active rounded shrink-0">
                         <FileText className="h-4 w-4 text-ink-muted" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="text-sm font-medium text-ink-secondary truncate max-w-35">
-                          {file.filename || "Unnamed file"}
+                          {file.filename || t('detail.unnamedFile')}
                         </span>
                         <span className="text-xs text-ink-muted">
                           {formatFileSize(file.size || 0)}
                         </span>
                         {file.uploaded_at && (
                           <span className="text-xs text-ink-subtle">
-                            Uploaded {formatRelativeTime(file.uploaded_at)}
+                            {t('detail.uploaded', { time: formatRelativeTime(file.uploaded_at) })}
                           </span>
                         )}
                       </div>
@@ -643,7 +647,8 @@ const ReportDetail = () => {
                       size="small"
                       onClick={() => handleDownloadAttachment(file)}
                       disabled={downloadingKey === file.key}
-                      title="Download / View"
+                      title={t('detail.download', { name: file.filename || t('detail.unnamedFile') })}
+                      aria-label={t('detail.download', { name: file.filename || t('detail.unnamedFile') })}
                     >
                       {downloadingKey === file.key ? (
                         <Loader className="h-4 w-4 animate-spin" />

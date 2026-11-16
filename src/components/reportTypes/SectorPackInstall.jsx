@@ -153,7 +153,7 @@ const SectorPackInstall = ({ isOpen, onClose, onInstalled }) => {
                   role="radio"
                   aria-checked={on}
                   onClick={() => choose(p.code)}
-                  className={`rounded-xl border p-3 text-left transition-colors ${
+                  className={`rounded-xl border p-3 text-start transition-colors ${
                     on ? 'border-line-accent bg-accent-soft' : 'border-line hover:border-line-strong hover:bg-hover'
                   }`}
                 >
@@ -177,7 +177,7 @@ const SectorPackInstall = ({ isOpen, onClose, onInstalled }) => {
             render={(t) => (
               <>
                 <TypeLine type={t} />
-                {t.category && <span className="ml-2 text-xs text-ink-subtle">{t.category}</span>}
+                {t.category && <span className="ms-2 text-xs text-ink-subtle">{t.category}</span>}
               </>
             )}
           />

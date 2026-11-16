@@ -1,5 +1,7 @@
 // src/utils/formatters.js
 import { format, parseISO, parse, isValid } from 'date-fns';
+import { dateFnsLocale, intlLocale, localizeDatePattern } from './locale';
+import i18n from '../i18n';
 
 /**
  * The backend serializes timestamps in UTC but often omits the timezone
@@ -84,7 +86,7 @@ export const formatDate = (date, formatString = 'MMM dd, yyyy') => {
       return 'Invalid date';
     }
 
-    return format(dateObj, formatString);
+    return format(dateObj, localizeDatePattern(formatString), { locale: dateFnsLocale() });
   } catch (error) {
     console.error('Error formatting date:', error);
     return 'Invalid date';
@@ -124,36 +126,28 @@ export const formatDateTimeForAPI = (date) => {
  * @returns {string} Relative time string
  */
 export const formatRelativeTime = (date) => {
-  if (!date) return 'Unknown';
+  if (!date) return i18n.t('time.unknown', { ns: 'common' });
 
   const dateObj = parseServerDate(date);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now - dateObj) / 1000);
-  
-  if (diffInSeconds < 0) {
-    return 'Just now';
-  }
-  
+  const diffInSeconds = Math.floor((new Date() - dateObj) / 1000);
+  if (!(diffInSeconds >= 1)) return i18n.t('time.justNow', { ns: 'common' });
+
   const intervals = [
-    { label: 'year', seconds: 31536000 },
-    { label: 'month', seconds: 2592000 },
-    { label: 'week', seconds: 604800 },
-    { label: 'day', seconds: 86400 },
-    { label: 'hour', seconds: 3600 },
-    { label: 'minute', seconds: 60 },
-    { label: 'second', seconds: 1 }
+    ['year', 31536000],
+    ['month', 2592000],
+    ['week', 604800],
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60],
+    ['second', 1],
   ];
-  
-  for (const interval of intervals) {
-    const count = Math.floor(diffInSeconds / interval.seconds);
-    if (count >= 1) {
-      return count === 1 
-        ? `${count} ${interval.label} ago`
-        : `${count} ${interval.label}s ago`;
-    }
+  // Intl handles each language's plural forms ("2 hours ago", "منذ ساعتين").
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(), { numeric: 'always' });
+  for (const [unit, seconds] of intervals) {
+    const count = Math.floor(diffInSeconds / seconds);
+    if (count >= 1) return rtf.format(-count, unit);
   }
-  
-  return 'Just now';
+  return i18n.t('time.justNow', { ns: 'common' });
 };
 
 /**
@@ -201,7 +195,7 @@ export const formatPhoneNumber = (phone) => {
 export const formatCurrency = (amount, currency = 'USD') => {
   if (amount === null || amount === undefined) return 'N/A';
   
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat(intlLocale(), {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 2,

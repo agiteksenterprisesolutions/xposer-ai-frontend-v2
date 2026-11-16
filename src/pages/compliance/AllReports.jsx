@@ -408,7 +408,7 @@ const AllReports = () => {
           {loading ? (
             <Skeleton.Text className="w-20" />
           ) : (
-            <span className="ml-auto lg:ml-0 text-sm text-ink-muted whitespace-nowrap tabular-nums">
+            <span className="ms-auto lg:ms-0 text-sm text-ink-muted whitespace-nowrap tabular-nums">
               {totalReports} report{totalReports === 1 ? '' : 's'}
             </span>
           )}
@@ -515,7 +515,7 @@ const AllReports = () => {
                   </Table.Cell>
                   <Table.Cell className="text-ink-muted">
                     <div className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1.5" />
+                      <Calendar className="h-3 w-3 me-1.5" />
                       {parseServerDate(report.created_at)?.toLocaleDateString() || 'N/A'}
                     </div>
                   </Table.Cell>

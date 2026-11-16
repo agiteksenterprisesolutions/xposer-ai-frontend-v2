@@ -452,7 +452,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
         {saveError && (
           <Alert variant="error" title={saveError.summary}>
             {saveError.problems.length > 0 && (
-              <ul className="list-disc space-y-1 pl-4">
+              <ul className="list-disc space-y-1 ps-4">
                 {saveError.problems.map((problem, index) => (
                   <li key={index}>{problem.message}</li>
                 ))}
@@ -460,7 +460,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
             )}
             {conflicts.length > 0 && (
               <>
-                <ul className="list-disc space-y-1 pl-4">
+                <ul className="list-disc space-y-1 ps-4">
                   {conflicts.map((conflict, index) => (
                     <li key={index}>{conflict}</li>
                   ))}
@@ -549,7 +549,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
 
         {unplacedErrors.length > 0 && (
           <Alert variant="error" title="This set of permissions can't be saved">
-            <ul className="list-disc space-y-1 pl-4">
+            <ul className="list-disc space-y-1 ps-4">
               {unplacedErrors.map((error, index) => (
                 <li key={index}>{error.message}</li>
               ))}
@@ -562,7 +562,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
             <h4 className="text-sm font-semibold text-ink">Permissions</h4>
             {!readOnly && (
               <p className="text-xs text-ink-subtle">
-                <Lock className="-mt-0.5 mr-1 inline h-3 w-3" />
+                <Lock className="-mt-0.5 me-1 inline h-3 w-3" />
                 You can only grant permissions you hold yourself.
               </p>
             )}
@@ -581,7 +581,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
 
         {!readOnly && selected.size > 0 && serverResult?.not_grantable?.length > 0 && (
           <p className="text-xs text-ink-muted">
-            <Badge variant="warning" size="small" className="mr-1.5">
+            <Badge variant="warning" size="small" className="me-1.5">
               Not grantable
             </Badge>
             {permissionLabels(serverResult.not_grantable, ', ')} — you don't hold{' '}

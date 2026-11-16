@@ -163,7 +163,7 @@ const BuilderSkeleton = ({ onBack, panels }) => (
       </div>
       {panels && (
         <>
-          <div className="absolute bottom-3 left-3 top-3 z-10 flex w-64 flex-col gap-3 rounded-xl border border-line bg-surface p-3 shadow-lg">
+          <div className="absolute bottom-3 start-3 top-3 z-10 flex w-64 flex-col gap-3 rounded-xl border border-line bg-surface p-3 shadow-lg">
             <Skeleton.Text className="w-24" />
             <Skeleton className="h-9 w-full rounded-lg" />
             {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -176,7 +176,7 @@ const BuilderSkeleton = ({ onBack, panels }) => (
               </div>
             ))}
           </div>
-          <div className="absolute bottom-16 right-3 top-3 z-10 flex w-[22rem] max-w-[calc(100vw-1.5rem)] flex-col gap-4 rounded-xl border border-line bg-surface p-4 shadow-lg lg:bottom-3">
+          <div className="absolute bottom-16 end-3 top-3 z-10 flex w-[22rem] max-w-[calc(100vw-1.5rem)] flex-col gap-4 rounded-xl border border-line bg-surface p-4 shadow-lg lg:bottom-3">
             <Skeleton.Text size="xs" className="w-16" />
             <Skeleton.Text size="base" className="w-48" />
             {[0, 1, 2].map((i) => (
@@ -1078,7 +1078,7 @@ const Builder = () => {
 
         {/* Steps to add */}
         {!readOnly && (
-          <div className="pointer-events-none absolute bottom-3 left-3 top-3 z-10 flex flex-col items-start">
+          <div className="pointer-events-none absolute bottom-3 start-3 top-3 z-10 flex flex-col items-start">
             <div className="pointer-events-auto flex max-h-full">
               {paletteOpen ? (
                 <StepPalette
@@ -1098,7 +1098,7 @@ const Builder = () => {
 
         {/* Settings for the selection */}
         {inspectorOpen && (
-          <div className="pointer-events-none absolute bottom-16 right-3 top-3 z-10 flex flex-col items-end lg:bottom-3">
+          <div className="pointer-events-none absolute bottom-16 end-3 top-3 z-10 flex flex-col items-end lg:bottom-3">
             <div className="pointer-events-auto flex max-h-full">
               {selectedStage ? (
                 <StageInspector

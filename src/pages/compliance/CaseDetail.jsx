@@ -64,7 +64,7 @@ const STATUS_OPTIONS = [
 const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack }) => (
   <div className="space-y-6" aria-busy="true">
     <Button variant="ghost" size="small" onClick={onBack}>
-      <ArrowLeft className="h-4 w-4 mr-1" /> Back
+      <ArrowLeft className="h-4 w-4 me-1" /> Back
     </Button>
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div className="flex flex-col">
@@ -103,7 +103,7 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
         <Card>
           <Card.Header>
             <Card.Title className="flex items-center">
-              <FileText className="h-5 w-5 mr-2 text-accent-fg" />
+              <FileText className="h-5 w-5 me-2 text-accent-fg" />
               Evidence & Files
             </Card.Title>
           </Card.Header>
@@ -122,7 +122,7 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
         <Card>
           <Card.Header className="flex items-center justify-between border-b border-line-subtle">
             <Card.Title className="flex items-center">
-              <Clock className="h-5 w-5 mr-2 text-accent-fg" />
+              <Clock className="h-5 w-5 me-2 text-accent-fg" />
               Case Timeline
             </Card.Title>
           </Card.Header>
@@ -470,7 +470,7 @@ const CaseDetail = () => {
     <div className="space-y-6">
       {/* Header */}
       <Button variant="ghost" size="small" onClick={() => navigate(-1)}>
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back
+        <ArrowLeft className="h-4 w-4 me-1" /> Back
       </Button>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center space-x-4">
@@ -591,10 +591,10 @@ const CaseDetail = () => {
           <Card>
             <Card.Header>
               <Card.Title className="flex items-center">
-                <FileText className="h-5 w-5 mr-2 text-accent-fg" />
+                <FileText className="h-5 w-5 me-2 text-accent-fg" />
                 Evidence & Files
                 {report.attachments?.length > 0 && (
-                  <span className="ml-2 text-sm font-normal text-ink-muted">{report.attachments.length}</span>
+                  <span className="ms-2 text-sm font-normal text-ink-muted">{report.attachments.length}</span>
                 )}
               </Card.Title>
             </Card.Header>
@@ -657,7 +657,7 @@ const CaseDetail = () => {
           <Card>
             <Card.Header className="flex items-center justify-between border-b border-line-subtle">
               <Card.Title className="flex items-center">
-                <Clock className="h-5 w-5 mr-2 text-accent-fg" />
+                <Clock className="h-5 w-5 me-2 text-accent-fg" />
                 Case Timeline
               </Card.Title>
             </Card.Header>
@@ -671,7 +671,7 @@ const CaseDetail = () => {
                       <li key={msg.id || idx}>
                         <div className="relative pb-8">
                           {idx !== messages.length - 1 && (
-                            <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-active" aria-hidden="true" />
+                            <span className="absolute top-4 start-4 -ms-px h-full w-0.5 bg-active" aria-hidden="true" />
                           )}
                           <div className="relative flex space-x-3">
                             <div>
@@ -696,7 +696,7 @@ const CaseDetail = () => {
                                         "System"}
                                     </span>
                                     {msg.is_internal && (
-                                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-warning-soft text-warning-fg">
+                                      <span className="ms-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-warning-soft text-warning-fg">
                                         INTERNAL
                                       </span>
                                     )}
@@ -729,7 +729,7 @@ const CaseDetail = () => {
                         <label className="flex items-center text-xs font-medium text-ink-secondary cursor-pointer">
                           <input
                             type="radio"
-                            className="mr-1 text-accent-fg focus:ring-accent-ring"
+                            className="me-1 text-accent-fg focus:ring-accent-ring"
                             checked={isInternal}
                             onChange={() => setIsInternal(true)}
                           />
@@ -738,7 +738,7 @@ const CaseDetail = () => {
                         <label className="flex items-center text-xs font-medium text-ink-secondary cursor-pointer">
                           <input
                             type="radio"
-                            className="mr-1 text-accent-fg focus:ring-accent-ring"
+                            className="me-1 text-accent-fg focus:ring-accent-ring"
                             checked={!isInternal}
                             onChange={() => setIsInternal(false)}
                           />
@@ -843,7 +843,7 @@ const CaseDetail = () => {
             </Card.Content>
             {/* <Card.Footer>
               <Button variant="ghost" fullWidth className="text-danger-fg hover:bg-danger-soft">
-                <AlertTriangle className="h-4 w-4 mr-2" /> Report Conflict
+                <AlertTriangle className="h-4 w-4 me-2" /> Report Conflict
               </Button>
             </Card.Footer> */}
           </Card>
@@ -926,7 +926,7 @@ const CaseDetail = () => {
                         {user.full_name?.charAt(0) ||
                           user.username?.charAt(0)}
                       </div>
-                      <div className="text-left">
+                      <div className="text-start">
                         <p className="text-sm font-semibold text-ink group-hover:text-accent-fg transition-colors">
                           {user.full_name || user.username}
                         </p>

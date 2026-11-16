@@ -256,7 +256,7 @@ const PreviewResult = ({ label, result, roleName }) => {
             How this was decided ({steps.length} step{steps.length === 1 ? '' : 's'})
           </button>
           {open && (
-            <ol className="mt-2 list-decimal space-y-1 pl-6 text-sm text-ink-secondary">
+            <ol className="mt-2 list-decimal space-y-1 ps-6 text-sm text-ink-secondary">
               {steps.map((step, i) => (
                 <li key={i}>{step}</li>
               ))}
@@ -847,7 +847,7 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
           {saveError && (
             <Alert variant="error" title={saveError.summary}>
               {saveError.problems?.length > 0 && (
-                <ul className="list-disc space-y-1 pl-4">
+                <ul className="list-disc space-y-1 ps-4">
                   {saveError.problems.map((problem, index) => (
                     <li key={index}>{problem.message}</li>
                   ))}
@@ -855,7 +855,7 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
               )}
             </Alert>
           )}
-          <div className="flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:pl-5">
+          <div className="flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:ps-5">
             <p className="min-w-0 flex-1 text-sm">
               {missingRef ? `Choose a ${route.target} for senior cases before saving.` : 'Unsaved changes to the escalation policy.'}
             </p>

@@ -77,7 +77,7 @@ const ChangeRoleModal = ({ user, isSelf = false, onClose, onChanged }) => {
         {error && (
           <Alert variant="error" title={error.summary}>
             {error.problems.length > 0 && (
-              <ul className="list-disc space-y-1 pl-4">
+              <ul className="list-disc space-y-1 ps-4">
                 {error.problems.map((problem, index) => (
                   <li key={index}>{problem.message}</li>
                 ))}

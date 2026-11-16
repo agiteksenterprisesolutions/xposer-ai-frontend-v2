@@ -109,7 +109,7 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
             <ul className="space-y-3">
               <li className="flex items-center text-gray-400 text-sm">
-                <Mail className="h-4 w-4 mr-2" />
+                <Mail className="h-4 w-4 me-2" />
                 {SUPPORT_EMAIL || 'support@xposer.ai'}
               </li>
             </ul>
@@ -122,7 +122,7 @@ const Footer = () => {
               © {currentYear} Xposer AI Reporting System. All rights reserved.
             </p>
             <div className="flex items-center mt-4 md:mt-0">
-              <Heart className="h-4 w-4 text-red-400 mr-1" />
+              <Heart className="h-4 w-4 text-red-400 me-1" />
               <span className="text-gray-400 text-sm">
                 Made with care for a safer workplace
               </span>
@@ -161,7 +161,7 @@ export const MinimalFooter = () => {
             </Link>
           </div>
         </div>
-        <p className="mt-4 text-center md:text-left text-sm text-gray-500">
+        <p className="mt-4 text-center md:text-start text-sm text-gray-500">
           © {new Date().getFullYear()} Xposer AI Reporting System. Protecting voices that matter.
         </p>
       </div>

@@ -1,4 +1,5 @@
 import api from './axios';
+import i18n from '../i18n';
 
 // Staff-only fields on a report: notes, who holds it, escalation and owner
 // routing, and the records hold.
@@ -384,7 +385,7 @@ export const reportsAPI = {
       const response = await api.post('/reports/track', body);
       return { valid: true, report: toReporterView(response.data) };
     } catch (error) {
-      return { valid: false, error: error.response?.data?.detail || 'Invalid credentials' };
+      return { valid: false, error: (typeof error.response?.data?.detail === 'string' ? error.response.data.detail : i18n.t('errors.invalidCredentials', { ns: 'common' })) };
     }
   },
 

@@ -312,7 +312,7 @@ export const PendingSkeleton = () => (
     <div className="rounded-xl border border-line bg-surface">
       <div className="space-y-3 border-b border-line-subtle p-4">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
           <div className="h-10 w-full rounded-lg border border-line bg-subtle" />
         </div>
         <div className="inline-flex rounded-lg bg-active p-1">
@@ -499,14 +499,14 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
       <div className="rounded-xl border border-line bg-surface">
         <div className="space-y-3 border-b border-line-subtle p-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" aria-hidden="true" />
             <input
               type="search"
               value={search}
               onChange={(e) => onSearch(e.target.value)}
               placeholder="Search by name, email, employee ID, job title or department"
               aria-label="Search the queue"
-              className="h-10 w-full rounded-lg border border-line bg-subtle pl-9 pr-3 text-sm text-ink outline-none hover:border-line-strong focus:border-line-accent"
+              className="h-10 w-full rounded-lg border border-line bg-subtle ps-9 pe-3 text-sm text-ink outline-none hover:border-line-strong focus:border-line-accent"
             />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">

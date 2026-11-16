@@ -111,7 +111,7 @@ const PermissionGroup = ({ group, children, selectedCount }) => {
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-colors hover:bg-hover"
+        className="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-start transition-colors hover:bg-hover"
       >
         <span className="text-sm font-semibold text-ink">{group.label}</span>
         <span className="flex items-center gap-2">

@@ -1,4 +1,5 @@
 // src/components/ui/Alert.jsx
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { AlertCircle, CheckCircle, Info, XCircle, X } from 'lucide-react';
 
@@ -12,6 +13,7 @@ const Alert = ({
   className = '',
   ...props
 }) => {
+  const { t } = useTranslation('common');
   const variants = {
     info: {
       box: 'bg-info-soft border-info-line',
@@ -69,9 +71,9 @@ const Alert = ({
         {dismissible && (
           <button
             type="button"
-            className="shrink-0 -mt-1 -mr-1 p-1.5 rounded-md text-ink-subtle transition-colors hover:text-ink hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            className="shrink-0 -mt-1 -me-1 p-1.5 rounded-md text-ink-subtle transition-colors hover:text-ink hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             onClick={onDismiss}
-            aria-label="Dismiss"
+            aria-label={t('actions.dismiss')}
           >
             <X className="w-4 h-4" />
           </button>

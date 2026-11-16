@@ -216,13 +216,13 @@ const Help = () => {
         {/* Search Bar */}
         <Card className="mb-8">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-ink-subtle w-5 h-5" />
+            <Search className="absolute start-4 top-1/2 transform -translate-y-1/2 text-ink-subtle w-5 h-5" />
             <input
               type="text"
               placeholder="Search for help..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-transparent"
+              className="w-full ps-12 pe-4 py-3 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-transparent"
             />
           </div>
         </Card>
@@ -237,7 +237,7 @@ const Help = () => {
                     <MessageCircle className="w-5 h-5 text-link" />
                   </div>
                 </div>
-                <div className="ml-3">
+                <div className="ms-3">
                   <h3 className="text-sm font-semibold text-ink">Submit a Report</h3>
                   <p className="text-xs text-ink-muted mt-1">Report a concern securely</p>
                 </div>
@@ -253,7 +253,7 @@ const Help = () => {
                     <Eye className="w-5 h-5 text-green-600" />
                   </div>
                 </div>
-                <div className="ml-3">
+                <div className="ms-3">
                   <h3 className="text-sm font-semibold text-ink">Track a Report</h3>
                   <p className="text-xs text-ink-muted mt-1">Check your report status</p>
                 </div>
@@ -269,7 +269,7 @@ const Help = () => {
                     <Mail className="w-5 h-5 text-purple-600" />
                   </div>
                 </div>
-                <div className="ml-3">
+                <div className="ms-3">
                   <h3 className="text-sm font-semibold text-ink">Email Support</h3>
                   <p className="text-xs text-ink-muted mt-1">Get help via email</p>
                 </div>
@@ -285,7 +285,7 @@ const Help = () => {
                     <Shield className="w-5 h-5 text-orange-600" />
                   </div>
                 </div>
-                <div className="ml-3">
+                <div className="ms-3">
                   <h3 className="text-sm font-semibold text-ink">Security Info</h3>
                   <p className="text-xs text-ink-muted mt-1">Learn about our security</p>
                 </div>
@@ -312,7 +312,7 @@ const Help = () => {
                         : 'text-ink-muted hover:bg-hover'
                         }`}
                     >
-                      <Icon className="w-4 h-4 mr-2" />
+                      <Icon className="w-4 h-4 me-2" />
                       {category.name}
                     </button>
                   );
@@ -324,7 +324,7 @@ const Help = () => {
               <h3 className="text-sm font-semibold text-ink mb-3">Contact Support</h3>
               <div className="space-y-3 text-sm text-ink-muted">
                 <div className="flex items-start">
-                  <Mail className="w-4 h-4 mr-2 mt-0.5 text-link skrink-0" />
+                  <Mail className="w-4 h-4 me-2 mt-0.5 text-link skrink-0" />
                   <div>
                     <a href={`mailto:${SUPPORT_EMAIL}`} className="text-link hover:underline">
                       {SUPPORT_EMAIL}
@@ -332,13 +332,13 @@ const Help = () => {
                   </div>
                 </div>
                 <div className="flex items-start">
-                  <Phone className="w-4 h-4 mr-2 mt-0.5 text-link skrink-0" />
+                  <Phone className="w-4 h-4 me-2 mt-0.5 text-link skrink-0" />
                   <div>
                     <p>+1 (555) 123-4567</p>
                   </div>
                 </div>
                 <div className="flex items-start">
-                  <Clock className="w-4 h-4 mr-2 mt-0.5 text-link skrink-0" />
+                  <Clock className="w-4 h-4 me-2 mt-0.5 text-link skrink-0" />
                   <div>
                     <p>Mon-Fri: 9AM - 6PM EST</p>
                   </div>
@@ -367,7 +367,7 @@ const Help = () => {
             <article>
               <Card>
                 <div className="flex items-start mb-4">
-                  <HelpCircle className="w-5 h-5 text-link mr-3" />
+                  <HelpCircle className="w-5 h-5 text-link me-3" />
                   <div>
                     <h2 className="text-lg font-semibold text-ink">
                       Frequently Asked Questions
@@ -386,9 +386,9 @@ const Help = () => {
                     >
                       <button
                         onClick={() => toggleFaq(faq.id)}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-hover transition-colors text-left"
+                        className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-hover transition-colors text-start"
                       >
-                        <span className="font-medium text-ink text-sm pr-4">
+                        <span className="font-medium text-ink text-sm pe-4">
                           {faq.question}
                         </span>
                         {openFaqId === faq.id ? (

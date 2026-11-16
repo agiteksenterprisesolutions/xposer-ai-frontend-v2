@@ -91,7 +91,7 @@ const ComplianceTeam = () => {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-accent! text-on-accent border-none text-left">
+        <Card className="bg-accent! text-on-accent border-none text-start">
           <div className="flex items-center space-x-3 opacity-80">
             <TrendingUp className="h-5 w-5" />
             <span className="text-sm font-medium">Avg. Resolution Time</span>
@@ -101,7 +101,7 @@ const ComplianceTeam = () => {
           ) : (
             <Skeleton.Text size="3xl" className="mt-2 w-24" />
           )}
-          <p className="text-xs mt-4 opacity-70 text-left">↓ 12% from last month</p>
+          <p className="text-xs mt-4 opacity-70 text-start">↓ 12% from last month</p>
         </Card>
         <Card>
           <div className="flex items-center space-x-3 text-ink-muted">
@@ -113,7 +113,7 @@ const ComplianceTeam = () => {
           ) : (
             <Skeleton.Text size="3xl" className="mt-2 w-24" />
           )}
-          <p className="text-xs text-success-fg mt-4 font-medium text-left">Optimal Distribution</p>
+          <p className="text-xs text-success-fg mt-4 font-medium text-start">Optimal Distribution</p>
         </Card>
         <Card>
           <div className="flex items-center space-x-3 text-ink-muted">
@@ -125,14 +125,14 @@ const ComplianceTeam = () => {
           ) : (
             <Skeleton.Text size="3xl" className="mt-2 w-24" />
           )}
-          <p className="text-xs text-ink-muted mt-4 leading-relaxed text-left">System-wide resolution count</p>
+          <p className="text-xs text-ink-muted mt-4 leading-relaxed text-start">System-wide resolution count</p>
         </Card>
       </div>
 
       <Card padding="none">
         <Card.Header className="p-4 sm:p-6 border-b border-line-subtle flex flex-wrap items-center justify-between gap-3">
           <Card.Title className="flex items-center">
-            <Users className="h-5 w-5 mr-2 text-accent-fg" />
+            <Users className="h-5 w-5 me-2 text-accent-fg" />
             Compliance Personnel
           </Card.Title>
           <div className="flex flex-wrap items-center gap-2">
@@ -172,7 +172,7 @@ const ComplianceTeam = () => {
                   </div>,
                   <Skeleton.Text key="t" className="w-16" />,
                   <Skeleton.Text key="s" size="xs" className="w-14" />,
-                  <Skeleton key="a" className="ml-auto h-8 w-10 rounded-lg" />,
+                  <Skeleton key="a" className="ms-auto h-8 w-10 rounded-lg" />,
                 ]}
               />
             ) : sortedTeam.length === 0 ? (
@@ -181,14 +181,14 @@ const ComplianceTeam = () => {
               sortedTeam.map((member) => (
                 <Table.Row key={member.id}>
                   <Table.Cell>
-                    <div className="flex items-center space-x-3 text-left">
+                    <div className="flex items-center space-x-3 text-start">
                       <div className="h-10 w-10 rounded-full bg-active flex items-center justify-center text-ink-muted font-bold uppercase shrink-0">
                         {member.first_name?.charAt(0)}{member.last_name?.charAt(0)}
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="text-sm font-semibold text-ink truncate">{member.first_name} {member.last_name}</span>
                         <span className="text-xs text-ink-muted flex items-center truncate">
-                          <Mail className="h-3 w-3 mr-1 shrink-0" /> {member.email}
+                          <Mail className="h-3 w-3 me-1 shrink-0" /> {member.email}
                         </span>
                       </div>
                     </div>
@@ -212,11 +212,11 @@ const ComplianceTeam = () => {
                   </Table.Cell>
                   <Table.Cell>
                     <div className="flex items-center text-xs text-success-fg font-medium whitespace-nowrap">
-                      <span className="h-1.5 w-1.5 rounded-full bg-success-solid mr-2" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-success-solid me-2" />
                       Online
                     </div>
                   </Table.Cell>
-                  <Table.Cell className="text-right">
+                  <Table.Cell className="text-end">
                     <Button variant="ghost" size="small">
                       <ChevronRight className="h-4 w-4" />
                     </Button>

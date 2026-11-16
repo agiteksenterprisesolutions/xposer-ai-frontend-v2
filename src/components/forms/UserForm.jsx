@@ -146,7 +146,7 @@ const UserForm = ({
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-medium text-ink-secondary">
             Password strength: 
-            <span className={`ml-1 ${
+            <span className={`ms-1 ${
               passwordStrength.strength === 'strong' ? 'text-success-fg' :
               passwordStrength.strength === 'medium' ? 'text-warning-fg' : 'text-danger-fg'
             }`}>
@@ -169,7 +169,7 @@ const UserForm = ({
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
           {Object.entries(passwordStrength.checks).map(([key, value]) => (
             <div key={key} className="flex items-center">
-              <div className={`w-2 h-2 rounded-full mr-1 ${
+              <div className={`w-2 h-2 rounded-full me-1 ${
                 value ? 'bg-success-solid' : 'bg-active'
               }`}></div>
               <span className="text-xs text-ink-muted capitalize">
@@ -277,7 +277,7 @@ const UserForm = ({
                     {...register('is_active')}
                     className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
                   />
-                  <span className="ml-2 text-sm text-ink-secondary">
+                  <span className="ms-2 text-sm text-ink-secondary">
                     Active Account
                   </span>
                 </label>

@@ -374,7 +374,7 @@ const Users = () => {
         type="button"
         onClick={open}
         disabled={!open}
-        className="min-w-0 text-left disabled:cursor-default"
+        className="min-w-0 text-start disabled:cursor-default"
         title={open ? 'Change directory entry' : undefined}
       >
         <span className="block truncate text-sm font-medium text-ink">{member.name}</span>
@@ -481,7 +481,7 @@ const Users = () => {
             {user.is_active ? 'Active' : 'Inactive'}
           </Badge>
         </div>
-        <div className="flex items-center justify-between gap-2 pl-12">
+        <div className="flex items-center justify-between gap-2 ps-12">
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
             <RoleBadge role={user.role} label={roleLabel(user)} />
             <span>{authProviderLabel(user.auth_provider)}</span>
@@ -549,7 +549,7 @@ const Users = () => {
           dismissible
           onDismiss={() => setStranded(null)}
         >
-          <ul className="list-disc space-y-1 pl-4">
+          <ul className="list-disc space-y-1 ps-4">
             {stranded.warnings.map((warning, i) => (
               <li key={i}>{warning.message}</li>
             ))}
@@ -681,7 +681,7 @@ const Users = () => {
                   {column.label}
                 </Table.Head>
               ))}
-              <Table.Head className="text-right">Actions</Table.Head>
+              <Table.Head className="text-end">Actions</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -766,7 +766,7 @@ const Users = () => {
                     )}
                   </Table.Cell>
 
-                  <Table.Cell className="text-right">
+                  <Table.Cell className="text-end">
                     {renderActions(user)}
                   </Table.Cell>
                 </Table.Row>
@@ -899,7 +899,7 @@ const Users = () => {
               <button
                 type="button"
                 onClick={() => setShowResetPassword(!showResetPassword)}
-                className="absolute right-3 top-7.25 text-ink-muted hover:text-ink-secondary focus:outline-none z-10"
+                className="absolute end-3 top-7.25 text-ink-muted hover:text-ink-secondary focus:outline-none z-10"
               >
                 {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>

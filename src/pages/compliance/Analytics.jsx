@@ -223,7 +223,7 @@ const ComplianceAnalytics = () => {
                 </span>
               )}
             </div>
-            <div className="mt-4 text-left">
+            <div className="mt-4 text-start">
               {loading ? (
                 <Skeleton.Text size="2xl" className="w-12" />
               ) : (
@@ -242,12 +242,12 @@ const ComplianceAnalytics = () => {
         <Card className="min-w-0">
           <Card.Header>
             <Card.Title className="flex items-center">
-              <Layers className="h-5 w-5 mr-2 shrink-0 text-accent-fg" />
+              <Layers className="h-5 w-5 me-2 shrink-0 text-accent-fg" />
               Reports by Category
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pr-3">
+            <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pe-3">
               {loading || !typesLoaded ? (
                 <Skeleton.Bars />
               ) : reportTypeData.length > 0 ? (
@@ -259,7 +259,7 @@ const ComplianceAnalytics = () => {
                         <span className="font-medium text-ink-secondary truncate" title={type.name}>{type.name}</span>
                         <span className="text-ink-muted shrink-0 tabular-nums">{type.total} cases</span>
                       </div>
-                      <div className="w-full bg-active rounded-full h-2 text-left">
+                      <div className="w-full bg-active rounded-full h-2 text-start">
                         <div className="bg-accent h-2 rounded-full" style={{ width: `${percentage}%` }} />
                       </div>
                     </div>
@@ -275,7 +275,7 @@ const ComplianceAnalytics = () => {
         <Card className="min-w-0">
           <Card.Header>
             <Card.Title className="flex items-center">
-              <PieChartIcon className="h-5 w-5 mr-2 shrink-0 text-accent-fg" />
+              <PieChartIcon className="h-5 w-5 me-2 shrink-0 text-accent-fg" />
               Category Distribution
             </Card.Title>
           </Card.Header>
@@ -318,7 +318,7 @@ const ComplianceAnalytics = () => {
                 {/* Custom legend: recharts' own legend lays out in one un-scrollable
                     row and overflows once there are more than a handful of
                     categories. This one wraps, truncates, and scrolls. */}
-                <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 max-h-32 overflow-y-auto pr-2">
+                <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 max-h-32 overflow-y-auto pe-2">
                   {reportTypeData.map((entry, index) => (
                     <li key={`legend-${entry.name}-${index}`} className="flex items-center gap-2 min-w-0 text-xs">
                       <span
@@ -326,7 +326,7 @@ const ComplianceAnalytics = () => {
                         style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                       />
                       <span className="truncate text-ink-secondary" title={entry.name}>{entry.name}</span>
-                      <span className="ml-auto shrink-0 tabular-nums text-ink-muted">{entry.total}</span>
+                      <span className="ms-auto shrink-0 tabular-nums text-ink-muted">{entry.total}</span>
                     </li>
                   ))}
                 </ul>

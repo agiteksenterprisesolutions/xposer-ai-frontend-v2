@@ -60,7 +60,7 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
           value={value}
           checked={on}
           onChange={() => setMode(value)}
-          className="absolute right-4 top-4 h-4 w-4 accent-[var(--color-accent)]"
+          className="absolute end-4 top-4 h-4 w-4 accent-[var(--color-accent)]"
         />
         <Icon className={`h-5 w-5 ${on ? 'text-accent-fg' : 'text-ink-muted'}`} aria-hidden="true" />
         <span className="text-sm font-semibold text-ink">{title}</span>
@@ -88,7 +88,7 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
             type="button"
             onClick={onCancel}
             aria-label="Cancel"
-            className="-mr-2 flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink"
+            className="-me-2 flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink"
           >
             <X className="h-5 w-5" />
           </button>

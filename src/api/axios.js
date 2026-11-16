@@ -2,6 +2,9 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { apiErrorToast } from '../utils/toastGuard';
+import i18n from '../i18n';
+
+const te = (key) => i18n.t(`errors.${key}`, { ns: 'common' });
 import { normaliseError } from '../utils/errors';
 import { SET_PASSWORD_PATH } from '../utils/passwordPolicy';
 
@@ -30,6 +33,9 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // The interface language, so the API can answer in it once it supports
+    // translated messages. It does not change what data is returned.
+    config.headers['Accept-Language'] = i18n.resolvedLanguage || 'en';
     return config;
   },
   (error) => {
@@ -74,7 +80,7 @@ api.interceptors.response.use(
           if (hasAuthContext && !isSignInAttempt && !isReportCredentialCheck) {
             useAuthStore.getState().logout();
             if (!window.location.pathname.includes('/login')) {
-              apiErrorToast('Session expired. Please login again.');
+              apiErrorToast(te('sessionExpired'));
               window.location.href = '/login';
             }
           }
@@ -95,11 +101,11 @@ api.interceptors.response.use(
             // generic permission message would hide.
             const code = data?.detail?.code;
             if (typeof data?.detail === 'string') apiErrorToast(data.detail);
-            else if (code === 'admin_only') apiErrorToast('Only an admin can edit other users.');
-            else if (code === 'cannot_view_user') apiErrorToast("You don't have access to this user.");
+            else if (code === 'admin_only') apiErrorToast(te('adminOnly'));
+            else if (code === 'cannot_view_user') apiErrorToast(te('cannotViewUser'));
             // cannot_change_own, reporters_only and the rest carry a sentence for the reader.
             else if (typeof data?.detail?.message === 'string') apiErrorToast(data.detail.message);
-            else apiErrorToast('You do not have permission to perform this action.', { generic: true });
+            else apiErrorToast(te('forbidden'), { generic: true });
           }
           // Permissions resolve per request on the server, so a 403 usually
           // means ours are stale — a role was edited since we last asked.
@@ -111,17 +117,17 @@ api.interceptors.response.use(
         case 429:
           if (!quiet) {
             if (typeof data?.detail === 'string') apiErrorToast(data.detail);
-            else apiErrorToast('Too many requests. Please try again later.', { generic: true });
+            else apiErrorToast(te('tooManyRequests'), { generic: true });
           }
           break;
         case 404:
-          if (!quiet) apiErrorToast('Resource not found.', { generic: true });
+          if (!quiet) apiErrorToast(te('notFound'), { generic: true });
           break;
         case 422:
           // Validation errors handled by forms
           break;
         case 500:
-          if (!quiet) apiErrorToast('Server error. Please try again later.', { generic: true });
+          if (!quiet) apiErrorToast(te('server'), { generic: true });
           break;
         default:
           // 400 business rules, 409 guards, 502 upstream failures, … — the
@@ -134,7 +140,7 @@ api.interceptors.response.use(
       // Cancelled on purpose (a superseded search, a page left mid-load).
     } else if (error.request) {
       // Several requests failing together collapse into this one toast.
-      apiErrorToast('Network error. Please check your connection.', { generic: true });
+      apiErrorToast(te('network'), { generic: true });
     } else {
       console.error('Error:', error.message);
     }

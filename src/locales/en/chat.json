@@ -1,0 +1,159 @@
+{
+  "typing": {
+    "replying": "The assistant is replying"
+  },
+  "connecting": {
+    "preparingRoom": "Preparing a secure room",
+    "connectingIn": "Connecting in {{language}}",
+    "connecting": "Connecting",
+    "wakingAssistant": "Waking the assistant",
+    "title": "Setting up your conversation",
+    "body": "This takes a few seconds. The assistant will open the conversation.",
+    "slow": "Still working — a slow connection can make this take a little longer."
+  },
+  "attention": {
+    "here": "We're here!",
+    "report": "Got something to report?",
+    "anytime": "Chat with us anytime."
+  },
+  "actions": {
+    "back": "Back",
+    "cancel": "Cancel"
+  },
+  "home": {
+    "title": "Submit a report",
+    "subtitle": "Choose how you want to proceed with your submission.",
+    "anonymous": "Anonymous report",
+    "account": "Account report"
+  },
+  "password": {
+    "title": "Secure credentials",
+    "body": "Create a password to encrypt your report. You'll need it to check for updates.",
+    "auto": "Auto-generate password",
+    "autoHint": "Strongest security (recommended)",
+    "custom": "Create my own",
+    "customHint": "Minimum 6 characters",
+    "placeholder": "Enter password",
+    "show": "Show password",
+    "hide": "Hide password",
+    "warningStrong": "Save your credentials!",
+    "warningBody": "If you lose your password, your report cannot be recovered. We do not store passwords in plain text.",
+    "creating": "Creating…",
+    "create": "Create secure ID"
+  },
+  "credentials": {
+    "createdTitle": "Credentials created",
+    "createdBody": "Your secure ID has been generated. Download or copy these details now.",
+    "reportNumber": "Report number",
+    "password": "Password",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "download": "Download",
+    "continue": "Continue to chat",
+    "clipboardWithPassword": "Report number: {{number}}\nPassword: {{password}}",
+    "clipboardNumberOnly": "Report number: {{number}}",
+    "fileWithPassword": "Xposer AI report credentials\n================================\nReport number: {{number}}\nPassword: {{password}}\n\nIMPORTANT: Save these credentials. They cannot be recovered if lost.\nTrack your report at: {{url}}\nGenerated: {{date}}\n",
+    "fileAccount": "Xposer AI report credentials\n================================\nReport number: {{number}}\n\nThis report is filed under your account — sign in to open it. No report password is needed.\nTrack your report at: {{url}}\nGenerated: {{date}}\n"
+  },
+  "chat": {
+    "anonymous": "Anonymous",
+    "languageBadgeTitle": "Language for this conversation. End the session to change it.",
+    "replyModeGroup": "How the assistant replies",
+    "voice": "Voice",
+    "text": "Text",
+    "voiceTitle": "The assistant speaks its replies",
+    "textTitle": "The assistant replies silently, in text",
+    "endSession": "End session",
+    "close": "Close chat",
+    "greeting": "Hello! I'm your reporting assistant.",
+    "languageQuestion": "Which language should we talk in?",
+    "howCanIHelp": "How can I help you today?",
+    "voiceTag": "Voice",
+    "removeFile": "Remove {{name}}",
+    "sessionCleared": "Session cleared. How can I help you today?"
+  },
+  "filed": {
+    "title": "Report filed",
+    "writeDown": "Write down your report number and password now — the assistant is reading them out, and the password is never stored where it can be recovered."
+  },
+  "submitted": {
+    "title": "Report submitted",
+    "body": "Your report has been filed and is now with the compliance team. Nothing further is needed from you right now.",
+    "reportNumber": "Report number",
+    "copyNumber": "Copy report number",
+    "accountNote": "This report is filed under your account — sign in with this number to follow it. Keep the number somewhere safe.",
+    "anonymousNote": "You will need this number and the password the assistant read out. The password is never stored, so it cannot be sent to you again — keep the copy you wrote down somewhere safe.",
+    "opening": "Opening report…",
+    "viewReport": "View report",
+    "trackReport": "Track report",
+    "startNew": "Start new report"
+  },
+  "composer": {
+    "attach": "Attach evidence",
+    "attachTitle": "Attach evidence — {{hint}}",
+    "chooseLanguage": "Choose a language to begin…",
+    "waiting": "Waiting for the assistant…",
+    "typeMessage": "Type a message…",
+    "messageLabel": "Message",
+    "waitForAssistant": "Wait for the assistant to finish",
+    "stopRecording": "Stop recording",
+    "startRecording": "Start recording",
+    "pause": "Pause response",
+    "send": "Send message",
+    "disclaimer": "AI can make mistakes. Verify important details."
+  },
+  "account": {
+    "defaultName": "User",
+    "welcome": "Welcome back, {{name}}",
+    "signedInAs": "You are signed in as {{name}}",
+    "getCredentials": "Get credentials",
+    "fetchedTitle": "Credentials ready",
+    "fetchedBody": "Your report number is ready. Download or copy it now.",
+    "loginTitle": "Account login",
+    "loginBody": "Log in to your account to continue.",
+    "loginButton": "Log in to your account"
+  },
+  "handoff": {
+    "title": "Sign in to continue your report",
+    "bodyShort": "The assistant reopens once you're signed in.",
+    "bodyLong": "Use the form on this page. The assistant opens again as soon as you're signed in."
+  },
+  "launcher": {
+    "open": "Open the reporting assistant",
+    "close": "Close the reporting assistant"
+  },
+  "errors": {
+    "staffAccount": "You are signed in to a staff account. Log out to file a report.",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "initFailed": "Could not start the report. Please try again.",
+    "invalidAccessToken": "Your session is no longer valid. Please log in again.",
+    "invalidCredentials": "Invalid report credentials.",
+    "connectFailed": "Could not connect.",
+    "sessionExpired": "Session expired.",
+    "switchModeFailed": "Could not switch modes. Try again.",
+    "uploadFailed": "Upload failed",
+    "sendFailed": "Could not send.",
+    "micFailed": "Could not access the microphone.",
+    "loginFirst": "Please log in first.",
+    "noReport": "No report found.",
+    "createReportFirst": "Please create a report first.",
+    "copyFailed": "Could not copy — please write it down",
+    "reportNumberMissing": "Report number not found.",
+    "reportNotStarted": "No report number yet. Please start a report first.",
+    "anonymousCredentialsMissing": "Anonymous report credentials are missing.",
+    "authUnclear": "Could not confirm how you are signed in. Please reload the page.",
+    "tryAgainPickLanguage": "{{error}} Pick a language to try again."
+  },
+  "toast": {
+    "reportNumberCopied": "Report number copied",
+    "filesUploaded": "Files uploaded"
+  },
+  "visualizer": {
+    "listening": "Listening",
+    "noSoundDetected": "No sound detected",
+    "noSound": "No sound"
+  },
+  "languagePills": {
+    "auto": "Detect automatically"
+  }
+}

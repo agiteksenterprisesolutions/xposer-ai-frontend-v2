@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import Button from './Button';
 
@@ -15,6 +16,7 @@ const Pagination = ({
   siblingCount = 1,
   boundaryCount = 1,
 }) => {
+  const { t } = useTranslation('common');
   if (totalPages <= 1) return null;
 
   const handlePageChange = (page) => {
@@ -58,10 +60,10 @@ const Pagination = ({
 
   const getPageInfo = () => {
     const total = Number.isFinite(totalItems) ? totalItems : totalPages * pageSize;
-    if (total === 0) return 'No items';
+    if (total === 0) return t('pagination.noItems');
     const start = (currentPage - 1) * pageSize + 1;
     const end = Math.min(currentPage * pageSize, total);
-    return `Showing ${start}-${end} of ${total}`;
+    return t('pagination.showing', { start, end, total });
   };
 
   return (
@@ -80,7 +82,7 @@ const Pagination = ({
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="w-8 px-0"
-          aria-label="Previous page"
+          aria-label={t('pagination.previous')}
         >
           <ChevronLeft className="w-4 h-4" />
         </Button>
@@ -120,7 +122,7 @@ const Pagination = ({
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className="w-8 px-0"
-          aria-label="Next page"
+          aria-label={t('pagination.next')}
         >
           <ChevronRight className="w-4 h-4" />
         </Button>

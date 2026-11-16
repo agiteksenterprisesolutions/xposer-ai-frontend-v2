@@ -384,7 +384,7 @@ const ReportTypes = () => {
                 }`}
             >
               <div
-                className={`absolute top-1 w-3 h-3 rounded-full bg-surface shadow-sm transition-all ${showActiveOnly ? "left-6" : "left-1"
+                className={`absolute top-1 w-3 h-3 rounded-full bg-surface shadow-sm transition-all ${showActiveOnly ? "start-6" : "start-1"
                   }`}
               />
             </div>
@@ -471,7 +471,7 @@ const ReportTypes = () => {
                   {column.label}
                 </Table.Head>
               ))}
-              <Table.Head className="text-right">Actions</Table.Head>
+              <Table.Head className="text-end">Actions</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -568,7 +568,7 @@ const ReportTypes = () => {
                       {formatCreatedAt(type.created_at)}
                     </span>
                   </Table.Cell>
-                  <Table.Cell className="text-right">
+                  <Table.Cell className="text-end">
                     {/* Sits inside a clickable row, so these must not bubble.
                         The guard is on this wrapper rather than the cell: the
                         mobile card layout renders cell children without the
@@ -676,7 +676,7 @@ const ReportTypes = () => {
 
           {importResult?.warnings?.length > 0 && (
             <Alert variant="warning" title={`Warnings (${importResult.warnings.length})`}>
-              <ul className="list-disc space-y-1 pl-4">
+              <ul className="list-disc space-y-1 ps-4">
                 {importResult.warnings.map((warning, index) => (
                   <li key={index}>
                     {typeof warning === "string" ? warning : warning?.message || JSON.stringify(warning)}
@@ -712,7 +712,7 @@ const ReportTypes = () => {
                       <AlertTriangle className="h-4 w-4 text-warning-solid" />
                       About the whole file ({fileProblems.length})
                     </p>
-                    <ul className="list-disc space-y-1 pl-5 text-sm text-ink-secondary marker:text-ink-subtle">
+                    <ul className="list-disc space-y-1 ps-5 text-sm text-ink-secondary marker:text-ink-subtle">
                       {fileProblems.flatMap((problem, index) =>
                         errorsOf(problem).map((err, errIndex) => <li key={`${index}-${errIndex}`}>{err}</li>),
                       )}
@@ -735,7 +735,7 @@ const ReportTypes = () => {
                       {rowProblems.map((problem, index) => (
                         <li key={index} className="space-y-1">
                           <p className="font-semibold text-ink">Row {problem.row}</p>
-                          <ul className="list-disc space-y-1 pl-4 marker:text-ink-subtle">
+                          <ul className="list-disc space-y-1 ps-4 marker:text-ink-subtle">
                             {errorsOf(problem).map((err, errIndex) => (
                               <li key={errIndex}>{err}</li>
                             ))}

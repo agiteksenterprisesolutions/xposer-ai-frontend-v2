@@ -17,6 +17,9 @@ import { isStaffUser } from '../utils/roles';
 export const DEFAULT_DEFLECTION_EXITS = [
   {
     code: 'customer_complaint',
+    // Shown through the `submit` translations; `label`/`description` stay as the English record.
+    labelKey: 'deflection.defaults.customer_complaint.label',
+    descriptionKey: 'deflection.defaults.customer_complaint.description',
     label: { en: 'A complaint about a product or service you received' },
     description: {
       en: 'Use the organization’s customer complaints channel. It is the route regulators expect for complaints, and it can resolve yours directly.',
@@ -25,6 +28,8 @@ export const DEFAULT_DEFLECTION_EXITS = [
   },
   {
     code: 'hr_request',
+    labelKey: 'deflection.defaults.hr_request.label',
+    descriptionKey: 'deflection.defaults.hr_request.description',
     label: { en: 'An HR request about your own job' },
     description: {
       en: 'Leave, pay, contracts, performance reviews or a personal grievance about your own terms: please contact HR.',

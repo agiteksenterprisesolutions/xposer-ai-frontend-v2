@@ -314,7 +314,7 @@ const RunDrawer = ({ run, casePath, onClose }) => {
       <aside
         ref={panelRef}
         tabIndex={-1}
-        className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-surface shadow-2xl outline-none animate-slide-in-right"
+        className="absolute inset-y-0 end-0 flex w-full max-w-xl flex-col bg-surface shadow-2xl outline-none animate-slide-in-right"
       >
         <header className="flex items-start justify-between gap-3 border-b border-line-subtle px-5 py-5 sm:px-6">
           <div className="min-w-0 space-y-1.5">

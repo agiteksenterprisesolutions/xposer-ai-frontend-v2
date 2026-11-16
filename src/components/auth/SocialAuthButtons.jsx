@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { isFirebaseConfigured, authLog, authError } from '../../lib/firebase';
 import Button from '../ui/Button';
+import { useTranslation } from 'react-i18next';
 
 /** Google's brand mark. Inlined because a CDN round-trip isn't worth four paths. */
 const GoogleIcon = ({ className = '' }) => (
@@ -43,11 +44,13 @@ const SocialAuthButtons = ({
   onError,
   organizationSlug,
   disabled = false,
-  dividerLabel = 'or continue with',
-  /** "Continue with" on Login, "Sign up with" on Register. */
-  actionLabel = 'Continue with',
+  dividerLabel,
+  /** "Continue with" on Login, "Sign up with" on Register. Takes {{provider}}. */
+  actionLabel,
   providers = ['google', 'microsoft'],
 }) => {
+  const { t } = useTranslation('common');
+  dividerLabel ??= t('social.divider');
   const socialLogin = useAuthStore((state) => state.socialLogin);
   const resumeSocialLogin = useAuthStore((state) => state.resumeSocialLogin);
   // Which provider is mid-flight, so only that button spins. `__resume__`
@@ -81,7 +84,7 @@ const SocialAuthButtons = ({
         if (result.success) {
           onSuccess?.(result.user);
         } else if (!result.cancelled) {
-          onError?.(result.error || 'Sign-in failed. Please try again.');
+          onError?.(result.error || t('social.failed'));
         }
       })
       .catch((error) => {
@@ -124,11 +127,11 @@ const SocialAuthButtons = ({
       } else if (result?.cancelled) {
         authLog('click: user closed the popup, no error shown');
       } else {
-        onError?.(result?.error || 'Sign-in failed. Please try again.');
+        onError?.(result?.error || t('social.failed'));
       }
     } catch (error) {
       authError(`click: unexpected failure during ${providerId} sign-in`, error);
-      onError?.(error?.message || 'Sign-in failed. Please try again.');
+      onError?.(error?.message || t('social.failed'));
     } finally {
       setPendingProvider(null);
     }
@@ -167,7 +170,7 @@ const SocialAuthButtons = ({
               disabled={disabled || busy}
             >
               {!isPending && <Icon className="w-4 h-4 shrink-0" />}
-              {`${actionLabel} ${label}`}
+              {actionLabel ? `${actionLabel} ${label}` : t('social.continueWith', { provider: label })}
             </Button>
           );
         })}

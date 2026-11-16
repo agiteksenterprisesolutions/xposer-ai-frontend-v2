@@ -35,6 +35,7 @@ import { messagesAPI } from "../../api/messages";
 import { formatDate, formatFileSize, formatRelativeTime } from "../../utils/formatters";
 import { toast } from 'react-toastify';
 import { useAuthStore } from "../../store/authStore";
+import { Trans, useTranslation } from "react-i18next";
 import { SUPPORT_EMAIL } from "../../utils/constants";
 import useSEO from '../../hooks/useSEO';
 import { isDraftReport, getReportDescription, getReportTitle } from "../../utils/reports";
@@ -46,6 +47,7 @@ import { useReportForm } from '../../hooks/useReportForm';
 
 const TrackReport = () => {
   const { user, isAuthenticated } = useAuthStore();
+  const { t } = useTranslation("track");
   // Only a real reporter account can be served from its own report list.
   // Anonymous tracking sessions carry a token but own nothing, and staff
   // accounts have no `my reports` — both keep the password form.
@@ -68,11 +70,11 @@ const TrackReport = () => {
 
   // Title follows the view: the lookup form, or the report that was found.
   useSEO({
-    title: showDetails && report ? `Report #${report.report_number}` : 'Track Your Report',
+    title: showDetails && report ? t('seo.reportTitle', { number: report.report_number }) : t('seo.title'),
     description:
       showDetails && report
-        ? `Status and activity timeline for anonymous report #${report.report_number}.`
-        : 'Check the status of an anonymous report using your report number and password. No login or personal information required.',
+        ? t('seo.reportDescription', { number: report.report_number })
+        : t('seo.description'),
     // Once a real report is on screen the page must stay out of search results.
     noIndex: showDetails,
   });
@@ -122,9 +124,7 @@ const TrackReport = () => {
     );
 
     if (!found) {
-      setError(
-        "No report with that number was found on your account. If you filed it anonymously, sign out to track it with its password.",
-      );
+      setError(t("errors.notOnAccount"));
       return;
     }
 
@@ -132,14 +132,14 @@ const TrackReport = () => {
     const base = slug ? `/${slug}` : "";
 
     if (isDraftReport(found)) {
-      toast.success("Draft found! Continue where you left off.");
+      toast.success(t("toast.draftFound"));
       navigate(`${base}/reporter/reports/${found.id}/edit`, {
         state: { report: found },
       });
       return;
     }
 
-    toast.success("Report found! Redirecting...");
+    toast.success(t("toast.reportFound"));
     navigate(`${base}/reporter/reports/${found.id}`, { state: { report: found } });
   };
 
@@ -151,8 +151,8 @@ const TrackReport = () => {
     if (!reportNumber.trim() || (!usesAccount && !password.trim())) {
       setError(
         usesAccount
-          ? "Please enter your report number"
-          : "Please enter both report number and password",
+          ? t("errors.enterNumber")
+          : t("errors.enterBoth"),
       );
       return;
     }
@@ -179,7 +179,7 @@ const TrackReport = () => {
         // An unsubmitted report goes back to the form so it can be finished;
         // a submitted one is read-only.
         if (isDraftReport(result.report)) {
-          toast.success("Draft found! Continue where you left off.");
+          toast.success(t("toast.draftFound"));
           navigate(`/${slug ? slug : ""}/edit-draft/${result.report.report_number}`, {
             state: {
               report: result.report,
@@ -189,7 +189,7 @@ const TrackReport = () => {
           return;
         }
 
-        toast.success("Report found! Redirecting...");
+        toast.success(t("toast.reportFound"));
         navigate(`/${slug ? slug : ""}/report-details/${result.report.report_number || result.report.id}`, {
           state: {
             report: result.report,
@@ -206,10 +206,10 @@ const TrackReport = () => {
       console.error("Tracking error:", error);
       setError(
         usesAccount
-          ? "We could not open that report. Please try again."
-          : "Invalid report number or password.",
+          ? t("errors.couldNotOpen")
+          : t("errors.invalidCredentials"),
       );
-      toast.error("Failed to find report");
+      toast.error(t("toast.notFound"));
     } finally {
       setIsLoading(false);
     }
@@ -220,12 +220,12 @@ const TrackReport = () => {
 
     try {
       toast.error(
-        "You must be logged in to send messages. Please create an account.",
+        t("toast.loginToMessage"),
       );
       return;
     } catch (error) {
       console.error("Failed to send message:", error);
-      toast.error("Failed to send message");
+      toast.error(t("toast.sendFailed"));
     }
   };
 
@@ -241,11 +241,11 @@ const TrackReport = () => {
       if (result?.download_url) {
         window.open(result.download_url, "_blank", "noopener,noreferrer");
       } else {
-        toast.error("Download URL not available");
+        toast.error(t("toast.downloadUnavailable"));
       }
     } catch (error) {
       console.error("Failed to download attachment:", error);
-      toast.error("Failed to download file");
+      toast.error(t("toast.downloadFailed"));
     } finally {
       setDownloadingKey(null);
     }
@@ -254,12 +254,12 @@ const TrackReport = () => {
   const handleCopyCredentials = async () => {
     // Nothing to copy but the number when the account is what opens the report.
     const text = usesAccount
-      ? `Report Number: ${reportNumber}`
-      : `Report Number: ${reportNumber}\nPassword: ${password}`;
+      ? t("copy.numberOnly", { number: reportNumber })
+      : t("copy.numberAndPassword", { number: reportNumber, password });
     if (await copyToClipboard(text)) {
-      toast.success("Credentials copied to clipboard!");
+      toast.success(t("toast.copied"));
     } else {
-      toast.error("Could not copy — please select the credentials and copy them manually.");
+      toast.error(t("toast.copyFailed"));
     }
   };
 
@@ -283,23 +283,23 @@ const TrackReport = () => {
                 <Search className="h-7 w-7 text-accent-fg" />
               </div>
               <h2 className="text-2xl font-bold text-ink mb-2">
-                Track Your Report
+                {t("form.title")}
               </h2>
               <p className="text-ink-muted">
                 {usesAccount
-                  ? "Enter the report number to check its status. You are signed in, so no report password is needed."
-                  : "Enter your credentials to check the status of your anonymous report. No login required."}
+                  ? t("form.introAccount")
+                  : t("form.introAnonymous")}
               </p>
             </div>
 
             {justSubmitted && !error && (
               <Alert variant="success" className="mb-6">
                 <div>
-                  <p className="font-medium">Your report has been filed</p>
+                  <p className="font-medium">{t("form.filedTitle")}</p>
                   <p className="text-sm mt-1">
                     {usesAccount
-                      ? "We have filled in your report number — open it below."
-                      : "We have filled in your report number. Enter the password the assistant read out to you to open it."}
+                      ? t("form.filedAccount")
+                      : t("form.filedAnonymous")}
                   </p>
                 </div>
               </Alert>
@@ -309,7 +309,7 @@ const TrackReport = () => {
               <Alert variant="error" className="mb-6">
                 <div className="flex items-start">
                   <div>
-                    <p className="font-medium">Unable to find report</p>
+                    <p className="font-medium">{t("form.errorTitle")}</p>
                     <p className="text-sm mt-1 wrap-break-word">{error}</p>
                   </div>
                 </div>
@@ -320,7 +320,7 @@ const TrackReport = () => {
               <div>
                 <Input
  autoComplete="username"
-                  label="Report Number"
+                  label={t("form.reportNumber")}
                   value={reportNumber}
                   onChange={(e) => setReportNumber(e.target.value)}
                   maxLength={8}
@@ -328,7 +328,7 @@ const TrackReport = () => {
                   required
                 />
                 <p className="text-xs text-ink-subtle mt-1.5">
-                  The 8-digit number provided when you submitted your report
+                  {t("form.reportNumberHint")}
                 </p>
               </div>
 
@@ -339,18 +339,19 @@ const TrackReport = () => {
                 <div className="flex items-start gap-2.5 rounded-lg border border-line-subtle bg-subtle p-3">
                   <Lock className="mt-0.5 h-4 w-4 shrink-0 text-accent-fg" />
                   <p className="text-xs leading-relaxed text-ink-muted">
-                    Signed in as{" "}
-                    <span className="font-medium text-ink">
-                      {user?.username || user?.email || "your account"}
-                    </span>
-                    . Reports filed under this account open without a report password.
+                    <Trans
+                      t={t}
+                      i18nKey="form.signedInAs"
+                      values={{ account: user?.username || user?.email || t("form.yourAccount") }}
+                      components={{ strong: <span className="font-medium text-ink" /> }}
+                    />
                   </p>
                 </div>
               ) : (
                 <div className="relative">
                   <Input
  autoComplete="current-password"
-                    label="Report Password"
+                    label={t("form.reportPassword")}
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -360,8 +361,8 @@ const TrackReport = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded text-ink-subtle hover:text-ink transition-colors absolute right-2 top-1/2 -translate-y-1/2"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded text-ink-subtle hover:text-ink transition-colors absolute end-2 top-1/2 -translate-y-1/2"
+                    aria-label={showPassword ? t("form.hidePassword") : t("form.showPassword")}
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -370,7 +371,7 @@ const TrackReport = () => {
                     )}
                   </button>
                   <p className="text-xs text-ink-subtle mt-1.5">
-                    The password you created when submitting your report
+                    {t("form.reportPasswordHint")}
                   </p>
                 </div>
               )}
@@ -384,17 +385,17 @@ const TrackReport = () => {
                   variant="secondary"
                   size="large"
                 >
-                  {isLoading ? "Searching..." : "Track Report"}
-                  <ArrowRight className="ml-2 w-4 h-4" />
+                  {isLoading ? t("form.searching") : t("form.submit")}
+                  <ArrowRight className="ms-2 w-4 h-4" />
                 </Button>
                 <Button
                   type="button"
                   variant="secondary"
                   size="large"
                   onClick={handleCopyCredentials}
-                  title="Copy credentials to clipboard"
+                  title={t("form.copyTitle")}
                   disabled={!reportNumber && !password}
-                  aria-label="Copy report credentials"
+                  aria-label={t("form.copyLabel")}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
@@ -403,69 +404,69 @@ const TrackReport = () => {
 
             <div className="mt-8 pt-6 border-t border-line-subtle">
               <h3 className="text-sm font-semibold text-ink mb-4">
-                What you can do with tracking:
+                {t("features.title")}
               </h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="flex items-start">
-                  <div className="skrink-0">
+                  <div className="shrink-0">
                     <div className="w-8 h-8 bg-success-soft rounded-lg flex items-center justify-center">
                       <Activity className="w-4 h-4 text-success-fg" />
                     </div>
                   </div>
-                  <div className="ml-3">
+                  <div className="ms-3">
                     <h4 className="text-sm font-medium text-ink">
-                      Check Status
+                      {t("features.status")}
                     </h4>
                     <p className="text-xs text-ink-muted mt-0.5">
-                      View current investigation progress
+                      {t("features.statusText")}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
-                  <div className="skrink-0">
+                  <div className="shrink-0">
                     <div className="w-8 h-8 bg-info-soft rounded-lg flex items-center justify-center">
                       <MessageSquare className="w-4 h-4 text-info-fg" />
                     </div>
                   </div>
-                  <div className="ml-3">
+                  <div className="ms-3">
                     <h4 className="text-sm font-medium text-ink">
-                      View Messages
+                      {t("features.messages")}
                     </h4>
                     <p className="text-xs text-ink-muted mt-0.5">
-                      Read updates from investigators
+                      {t("features.messagesText")}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
-                  <div className="skrink-0">
+                  <div className="shrink-0">
                     <div className="w-8 h-8 bg-accent-soft rounded-lg flex items-center justify-center">
                       <Clock className="w-4 h-4 text-accent-fg" />
                     </div>
                   </div>
-                  <div className="ml-3">
+                  <div className="ms-3">
                     <h4 className="text-sm font-medium text-ink">
-                      Track Timeline
+                      {t("features.timeline")}
                     </h4>
                     <p className="text-xs text-ink-muted mt-0.5">
-                      See all activities and updates
+                      {t("features.timelineText")}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
-                  <div className="skrink-0">
+                  <div className="shrink-0">
                     <div className="w-8 h-8 bg-warning-soft rounded-lg flex items-center justify-center">
                       <Shield className="w-4 h-4 text-warning-fg" />
                     </div>
                   </div>
-                  <div className="ml-3">
+                  <div className="ms-3">
                     <h4 className="text-sm font-medium text-ink">
-                      Stay Anonymous
+                      {t("features.anonymous")}
                     </h4>
                     <p className="text-xs text-ink-muted mt-0.5">
-                      No personal information required
+                      {t("features.anonymousText")}
                     </p>
                   </div>
                 </div>
@@ -477,11 +478,9 @@ const TrackReport = () => {
           <Alert variant="warning" className="mt-6">
             <div className="flex items-start">
               <div>
-                <p className="font-medium">Important: Save Your Credentials</p>
+                <p className="font-medium">{t("notice.title")}</p>
                 <p className="text-sm mt-1">
-                  Lost credentials cannot be recovered for anonymous reports.
-                  Make sure to store your report number and password in a secure
-                  location.
+                  {t("notice.text")}
                 </p>
               </div>
             </div>
@@ -493,27 +492,27 @@ const TrackReport = () => {
           {/* Security Features */}
           <Card>
             <div className="flex items-start mb-4">
-              <Shield className="w-5 h-5 text-accent-fg mr-3" />
+              <Shield className="w-5 h-5 text-accent-fg me-3" />
               <h3 className="text-lg font-semibold text-ink">
-                Your Privacy is Protected
+                {t("privacy.title")}
               </h3>
             </div>
             <div className="space-y-3 text-sm text-ink-muted">
               <div className="flex items-start">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 skrink-0" />
-                <span>End-to-end encryption for all data</span>
+                <CheckCircle className="w-4 h-4 text-green-500 me-2 mt-0.5 shrink-0" />
+                <span>{t("privacy.encryption")}</span>
               </div>
               <div className="flex items-start">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 skrink-0" />
-                <span>No personal information collected</span>
+                <CheckCircle className="w-4 h-4 text-green-500 me-2 mt-0.5 shrink-0" />
+                <span>{t("privacy.noPersonal")}</span>
               </div>
               <div className="flex items-start">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 skrink-0" />
-                <span>Secure access with credentials only</span>
+                <CheckCircle className="w-4 h-4 text-green-500 me-2 mt-0.5 shrink-0" />
+                <span>{t("privacy.credentialsOnly")}</span>
               </div>
               <div className="flex items-start">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5 skrink-0" />
-                <span>GDPR and EU Directive compliant</span>
+                <CheckCircle className="w-4 h-4 text-green-500 me-2 mt-0.5 shrink-0" />
+                <span>{t("privacy.compliant")}</span>
               </div>
             </div>
 
@@ -550,15 +549,14 @@ const TrackReport = () => {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-ink">
-                  Report #{report_number}
+                  {t("details.title", { number: report_number })}
                 </h1>
                 <StatusBadge status={status} />
                 <PriorityBadge priority={priority} />
               </div>
               <div className="flex items-center text-sm text-ink-muted">
-                <Clock className="w-4 h-4 mr-1.5" />
-                Created {formatDate(created_at)} • Last updated{" "}
-                {formatDate(updated_at)}
+                <Clock className="w-4 h-4 me-1.5" />
+                {t("details.createdUpdated", { created: formatDate(created_at), updated: formatDate(updated_at) })}
               </div>
             </div>
             <div className="flex gap-3">
@@ -568,7 +566,7 @@ const TrackReport = () => {
                 onClick={() => window.print()}
                 startIcon={Printer}
               >
-                Print
+                {t("details.print")}
               </Button>
               <Button
                 variant="ghost"
@@ -576,7 +574,7 @@ const TrackReport = () => {
                 onClick={handleReset}
                 startIcon={RefreshCw}
               >
-                Track Another
+                {t("details.trackAnother")}
               </Button>
             </div>
           </div>
@@ -585,19 +583,17 @@ const TrackReport = () => {
         {/* Alert for anonymous tracking */}
         <Alert variant="info" className="mb-6">
           <div className="flex items-start">
-            <Info className="w-5 h-5 mr-3 skrink-0 mt-0.5" />
+            <Info className="w-5 h-5 me-3 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-medium">Tracking Anonymously</p>
+              <p className="font-medium">{t("details.anonymousTitle")}</p>
               <p className="text-sm mt-1">
-                You're viewing this report in read-only mode. To send messages
-                and receive notifications,{" "}
-                <Link
-                  to="/register"
-                  className="underline font-medium hover:text-link-hover"
-                >
-                  create a free account
-                </Link>
-                .
+                <Trans
+                  t={t}
+                  i18nKey="details.anonymousText"
+                  components={{
+                    link: <Link to="/register" className="underline font-medium hover:text-link-hover" />,
+                  }}
+                />
               </p>
             </div>
           </div>
@@ -628,7 +624,7 @@ const TrackReport = () => {
               {Object.keys(form_data).length > 0 && (
                 <div className="mb-5 min-w-0">
                   <h3 className="text-sm font-medium text-ink-muted mb-2">
-                    Submitted Form Data
+                    {t("details.formData")}
                   </h3>
                   <div className="bg-subtle rounded-lg p-4 min-w-0 overflow-hidden space-y-3">
                     {orderedAnswers(form_data, reportForm).map(({ key, value, label, question }) => (
@@ -648,9 +644,9 @@ const TrackReport = () => {
               {tags.length > 0 && (
                 <div className="mb-5 pb-5 border-b border-line-subtle">
                   <div className="flex items-center mb-2">
-                    <FileText className="w-4 h-4 text-ink-subtle mr-2" />
+                    <FileText className="w-4 h-4 text-ink-subtle me-2" />
                     <span className="text-sm font-medium text-ink-muted">
-                      Categories
+                      {t("details.categories")}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -668,9 +664,9 @@ const TrackReport = () => {
             {/* Activity Timeline */}
             <Card>
               <div className="flex items-center mb-5">
-                <Activity className="w-5 h-5 text-accent-fg mr-3" />
+                <Activity className="w-5 h-5 text-accent-fg me-3" />
                 <h3 className="text-lg font-semibold text-ink">
-                  Activity Timeline
+                  {t("details.timeline")}
                 </h3>
               </div>
               <ReportTimeline activities={report.activities || []} />
@@ -682,7 +678,7 @@ const TrackReport = () => {
                 messages={messages}
                 currentUser={{
                   id: "anonymous",
-                  full_name: "Anonymous Reporter",
+                  full_name: t("details.anonymousReporter"),
                   role: "reporter",
                 }}
                 onSendMessage={handleSendMessage}
@@ -692,18 +688,17 @@ const TrackReport = () => {
 
               <div className="mt-5 bg-info-soft border border-info-line rounded-lg p-4">
                 <div className="flex items-start">
-                  <Bell className="w-5 h-5 text-info-fg mr-3 skrink-0 mt-0.5" />
+                  <Bell className="w-5 h-5 text-info-fg me-3 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <h4 className="font-medium text-ink mb-1">
-                      Enable Two-Way Communication
+                      {t("details.twoWayTitle")}
                     </h4>
                     <p className="text-sm text-ink-muted mb-3">
-                      Create an account to send secure messages to investigators
-                      and receive instant notifications.
+                      {t("details.twoWayText")}
                     </p>
                     <Button variant="secondary" size="small" to="/register">
-                        Create Free Account
-                        <ArrowRight className="ml-2 w-4 h-4" />
+                        {t("details.createFreeAccount")}
+                        <ArrowRight className="ms-2 w-4 h-4" />
                       </Button>
                   </div>
                 </div>
@@ -716,35 +711,35 @@ const TrackReport = () => {
             {/* Status Overview */}
             <Card>
               <h3 className="text-lg font-semibold text-ink mb-4">
-                Report Information
+                {t("details.info")}
               </h3>
               <div className="space-y-4">
                 <div>
                   <div className="text-xs font-medium text-ink-subtle uppercase tracking-wide mb-1">
-                    Status
+                    {t("details.status")}
                   </div>
                   <StatusBadge status={status} />
                 </div>
                 <div>
                   <div className="text-xs font-medium text-ink-subtle uppercase tracking-wide mb-1">
-                    Priority
+                    {t("details.priority")}
                   </div>
                   <PriorityBadge priority={priority} />
                 </div>
                 <div className="pt-4 border-t border-line-subtle">
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-ink-muted">Report ID</span>
+                      <span className="text-ink-muted">{t("details.reportId")}</span>
                       <span className="font-mono text-ink break-all">{id}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-ink-muted">Created</span>
+                      <span className="text-ink-muted">{t("details.created")}</span>
                       <span className="font-medium text-ink">
                         {formatDate(created_at)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-ink-muted">Last Updated</span>
+                      <span className="text-ink-muted">{t("details.lastUpdated")}</span>
                       <span className="font-medium text-ink">
                         {formatDate(updated_at)}
                       </span>
@@ -757,7 +752,7 @@ const TrackReport = () => {
             {/* Quick Actions */}
             <Card>
               <h3 className="text-lg font-semibold text-ink mb-4">
-                Actions
+                {t("details.actions")}
               </h3>
               <div className="space-y-3">
                 <Button
@@ -765,16 +760,16 @@ const TrackReport = () => {
                   className="w-full justify-start"
                   onClick={() => window.print()}
                 >
-                  <Printer className="w-4 h-4 mr-3" />
-                  Print Report Details
+                  <Printer className="w-4 h-4 me-3" />
+                  {t("details.printDetails")}
                 </Button>
                 <Button variant="ghost" className="w-full justify-start" to="/submit-anonymous">
-                    <FileText className="w-4 h-4 mr-3" />
-                    Submit Another Report
+                    <FileText className="w-4 h-4 me-3" />
+                    {t("details.submitAnother")}
                   </Button>
                 <Button variant="ghost" className="w-full justify-start" to="/help">
-                    <Info className="w-4 h-4 mr-3" />
-                    Get Help
+                    <Info className="w-4 h-4 me-3" />
+                    {t("details.getHelp")}
                   </Button>
               </div>
             </Card>
@@ -786,23 +781,22 @@ const TrackReport = () => {
                   <Settings className="w-6 h-6 text-accent-fg" />
                 </div>
                 <h3 className="font-semibold text-ink mb-2">
-                  Unlock Full Features
+                  {t("details.unlockTitle")}
                 </h3>
                 <p className="text-sm text-ink-muted mb-4">
-                  Get advanced tracking, messaging, and notifications with a
-                  free account.
+                  {t("details.unlockText")}
                 </p>
                 <Button
                     variant="secondary"
                     size="small"
                     className="w-full mb-2" to="/register">
-                    Create Account
+                    {t("details.createAccount")}
                   </Button>
                 <Link
                   to="/login"
                   className="text-xs text-accent-fg hover:opacity-80 font-medium"
                 >
-                  Already have an account? Sign in
+                  {t("details.signIn")}
                 </Link>
               </div>
             </Card>
@@ -810,22 +804,20 @@ const TrackReport = () => {
             {/* Security Notice */}
             <Card className="border-success-line bg-success-soft">
               <div className="flex items-start">
-                <Shield className="w-5 h-5 text-success-fg mr-3 skrink-0 mt-0.5" />
+                <Shield className="w-5 h-5 text-success-fg me-3 shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-ink mb-1">
-                    Secure & Private
+                    {t("details.secureTitle")}
                   </h4>
                   <p className="text-xs text-ink-muted leading-relaxed">
-                    This report is encrypted and only accessible with your
-                    unique credentials. Never share your report number or
-                    password.
+                    {t("details.secureText")}
                   </p>
                   <Link
                     to="/security"
                     className="text-xs text-success-fg hover:opacity-80 font-medium mt-2 inline-flex items-center"
                   >
-                    Learn about our security
-                    <ExternalLink className="w-3 h-3 ml-1" />
+                    {t("details.learnSecurity")}
+                    <ExternalLink className="w-3 h-3 ms-1" />
                   </Link>
                 </div>
               </div>
@@ -835,9 +827,9 @@ const TrackReport = () => {
             {report.attachments && report.attachments.length > 0 && (
               <Card>
                 <div className="flex items-center mb-4">
-                  <FileText className="w-5 h-5 text-accent-fg mr-3" />
+                  <FileText className="w-5 h-5 text-accent-fg me-3" />
                   <h3 className="text-lg font-semibold text-ink">
-                    Evidence &amp; Files
+                    {t("details.evidence")}
                   </h3>
                 </div>
                 <ul className="divide-y divide-line-subtle">
@@ -846,20 +838,20 @@ const TrackReport = () => {
                       key={idx}
                       className="py-3 flex items-center justify-between"
                     >
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <div className="p-2 bg-subtle rounded">
                           <FileText className="h-4 w-4 text-ink-subtle" />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-sm font-medium text-ink-muted truncate max-w-35">
-                            {file.filename || "Unnamed file"}
+                            {file.filename || t("details.unnamedFile")}
                           </span>
                           <span className="text-xs text-ink-subtle">
                             {formatFileSize(file.size || 0)}
                           </span>
                           {file.uploaded_at && (
                             <span className="text-xs text-ink-subtle">
-                              Uploaded {formatRelativeTime(file.uploaded_at)}
+                              {t("details.uploaded", { when: formatRelativeTime(file.uploaded_at) })}
                             </span>
                           )}
                         </div>
@@ -869,7 +861,8 @@ const TrackReport = () => {
                         size="small"
                         onClick={() => handleDownloadAttachment(file)}
                         disabled={downloadingKey === file.key}
-                        title="Download / View"
+                        title={t("details.download")}
+                        aria-label={t("details.downloadFile", { name: file.filename || t("details.unnamedFile") })}
                       >
                         {downloadingKey === file.key ? (
                           <Loader className="h-4 w-4 animate-spin" />
@@ -888,16 +881,17 @@ const TrackReport = () => {
               <div className="text-center">
                 <Mail className="w-8 h-8 text-ink-subtle mx-auto mb-2" />
                 <h4 className="font-medium text-ink mb-1">
-                  Need Assistance?
+                  {t("details.supportTitle")}
                 </h4>
                 <p className="text-xs text-ink-muted mb-3">
-                  Our support team is here to help
+                  {t("details.supportText")}
                 </p>
-                <a href={`mailto:${SUPPORT_EMAIL}`}>
-                  <Button variant="secondary" size="small" className="w-full">
-                    <Mail className="w-4 h-4 mr-2" />
-                    Contact Support
-                  </Button>
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}`}
+                  className="inline-flex w-full items-center justify-center gap-2 h-8 px-3 text-xs font-semibold rounded-lg border bg-raised border-line text-ink no-underline hover:bg-hover hover:border-line-strong"
+                >
+                  <Mail className="w-4 h-4" aria-hidden="true" />
+                  {t("details.contactSupport")}
                 </a>
               </div>
             </Card>
@@ -916,12 +910,12 @@ const TrackReport = () => {
             <Search className="w-8 h-8 text-accent-fg" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-ink tracking-[-0.02em] mb-3">
-            {usesAccount ? "Track a Report" : "Anonymous Report Tracking"}
+            {usesAccount ? t("page.titleAccount") : t("page.titleAnonymous")}
           </h1>
           <p className="text-ink-muted max-w-2xl mx-auto">
             {usesAccount
-              ? "Open a report filed under your account with its report number."
-              : "Track your report securely using the credentials provided when you submitted. No login or personal information required."}
+              ? t("page.introAccount")
+              : t("page.introAnonymous")}
           </p>
         </div>
 

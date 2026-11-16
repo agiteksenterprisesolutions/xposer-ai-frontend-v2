@@ -31,7 +31,7 @@ const Card = ({ icon: Icon, title, children, className = '', tour }) => (
 const Label = ({ htmlFor, children, hint }) => (
   <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-ink-secondary">
     {children}
-    {hint && <span className="ml-1 font-normal text-ink-muted">{hint}</span>}
+    {hint && <span className="ms-1 font-normal text-ink-muted">{hint}</span>}
   </label>
 );
 
@@ -60,7 +60,7 @@ const NumberRow = ({ id, label, value, onChange, unit, hint, error, min = 0, max
           placeholder="–"
           aria-invalid={Boolean(error)}
           aria-describedby={hint || error ? `${id}-hint` : undefined}
-          className={`${inputClass.replace('w-full', 'w-20')} text-right ${error ? 'border-danger-line' : ''}`}
+          className={`${inputClass.replace('w-full', 'w-20')} text-end ${error ? 'border-danger-line' : ''}`}
         />
         <span className="w-9 text-sm text-ink-muted">{unit}</span>
       </span>
@@ -100,7 +100,7 @@ const Switch = ({ checked, onChange, label }) => (
     onClick={() => onChange(!checked)}
     className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-active'}`}
   >
-    <span className={`absolute top-1 h-4 w-4 rounded-full bg-surface shadow-sm transition-all ${checked ? 'left-6' : 'left-1'}`} />
+    <span className={`absolute top-1 h-4 w-4 rounded-full bg-surface shadow-sm transition-all ${checked ? 'start-6' : 'start-1'}`} />
   </button>
 );
 
@@ -314,7 +314,7 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
                   role="radio"
                   aria-checked={on}
                   onClick={() => setField('confidentiality_tier', option.value)}
-                  className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
+                  className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-start transition-colors ${
                     on ? 'border-accent bg-accent-soft/60 shadow-[0_0_0_1px_var(--color-accent)]' : 'border-line hover:border-line-strong'
                   }`}
                 >
@@ -404,9 +404,9 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
                 disabled={codeLocked}
                 placeholder="e.g. HR-CND-01"
                 aria-invalid={Boolean(serverErrors.code)}
-                className={`${inputClass} font-mono ${codeLocked ? 'pr-8' : ''} ${serverErrors.code ? 'border-danger-line' : ''}`}
+                className={`${inputClass} font-mono ${codeLocked ? 'pe-8' : ''} ${serverErrors.code ? 'border-danger-line' : ''}`}
               />
-              {codeLocked && <Lock className="absolute right-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
+              {codeLocked && <Lock className="absolute end-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
             </div>
             <FieldNote error={serverErrors.code}>A compliance code is permanent once set.</FieldNote>
           </div>

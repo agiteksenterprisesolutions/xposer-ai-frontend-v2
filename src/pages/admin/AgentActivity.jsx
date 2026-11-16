@@ -239,7 +239,7 @@ const AgentActivity = () => {
 
       <div className="overflow-hidden rounded-2xl border border-line bg-surface" data-tour="runs-table">
         <div className="overflow-x-auto scrollbar-thin">
-          <table className="w-full min-w-176 text-left">
+          <table className="w-full min-w-176 text-start">
             <thead>
               <tr className="border-b border-line-subtle bg-subtle text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
                 <th scope="col" className="px-5 py-3">Report</th>
@@ -247,7 +247,7 @@ const AgentActivity = () => {
                 <th scope="col" className="px-3 py-3">Priority</th>
                 <th scope="col" className="px-3 py-3">Agents</th>
                 <th scope="col" className="px-3 py-3">Report status</th>
-                <th scope="col" className="px-5 py-3 text-right">When</th>
+                <th scope="col" className="px-5 py-3 text-end">When</th>
               </tr>
             </thead>
             <tbody>
@@ -268,7 +268,7 @@ const AgentActivity = () => {
                     <td className="px-3 py-3.5">
                       <span className="flex">
                         {[0, 1, 2].map((j) => (
-                          <Skeleton.Circle key={j} size="h-6 w-6" className={`ring-2 ring-surface ${j ? '-ml-1.5' : ''}`} />
+                          <Skeleton.Circle key={j} size="h-6 w-6" className={`ring-2 ring-surface ${j ? '-ms-1.5' : ''}`} />
                         ))}
                       </span>
                     </td>
@@ -276,7 +276,7 @@ const AgentActivity = () => {
                       <Skeleton.Badge className="w-20" />
                     </td>
                     <td className="px-5 py-3.5">
-                      <Skeleton.Text size="xs" className="ml-auto w-24" />
+                      <Skeleton.Text size="xs" className="ms-auto w-24" />
                     </td>
                   </tr>
                 ))}
@@ -315,7 +315,7 @@ const AgentActivity = () => {
                           event.stopPropagation();
                           setOpen(run.report_id);
                         }}
-                        className="block max-w-sm text-left focus:outline-none focus-visible:underline"
+                        className="block max-w-sm text-start focus:outline-none focus-visible:underline"
                       >
                         <span className="block truncate text-sm font-semibold text-ink">{run.title || 'Untitled report'}</span>
                         <span className="block font-mono text-xs text-ink-subtle">#{run.report_number}</span>
@@ -330,7 +330,7 @@ const AgentActivity = () => {
                     <td className="px-3 py-3.5">
                       <span className="flex" title={agents.map((a) => AGENT_LABELS[a] || a).join(' → ')}>
                         {agents.map((agent, index) => (
-                          <span key={agent} className={`rounded-full ring-2 ring-surface ${index ? '-ml-1.5' : ''}`}>
+                          <span key={agent} className={`rounded-full ring-2 ring-surface ${index ? '-ms-1.5' : ''}`}>
                             <AgentMark type={agent} size="sm" />
                           </span>
                         ))}
@@ -340,7 +340,7 @@ const AgentActivity = () => {
                     <td className="px-3 py-3.5">
                       {run.report_status ? <StatusBadge status={run.report_status} /> : <span className="text-xs text-ink-subtle">—</span>}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-3.5 text-right text-xs text-ink-muted">
+                    <td className="whitespace-nowrap px-5 py-3.5 text-end text-xs text-ink-muted">
                       {formatRunTime(run.timestamp || run.created_at)}
                     </td>
                   </tr>

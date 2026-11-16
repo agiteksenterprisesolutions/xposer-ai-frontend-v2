@@ -1,4 +1,5 @@
 // src/components/ui/Select.jsx
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 
 const Select = ({
@@ -6,7 +7,7 @@ const Select = ({
   value,
   onChange,
   options = [],
-  placeholder = 'Select an option',
+  placeholder,
   error,
   helperText,
   required = false,
@@ -14,18 +15,20 @@ const Select = ({
   className = '',
   ...props
 }) => {
+  const { t } = useTranslation('common');
+  placeholder ??= t('select.placeholder');
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
         <label className="block text-sm font-medium text-ink-secondary">
           {label}
-          {required && <span className="text-danger-fg ml-0.5">*</span>}
+          {required && <span className="text-danger-fg ms-0.5">*</span>}
         </label>
       )}
 
       <div className="relative">
         {/* Custom chevron — the native arrow can't follow the theme */}
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle">
+        <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-ink-subtle">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />
           </svg>
@@ -37,7 +40,7 @@ const Select = ({
           disabled={disabled}
           aria-invalid={error ? 'true' : undefined}
           className={[
-            'block w-full appearance-none h-10 pl-3 pr-9 rounded-lg border',
+            'block w-full appearance-none h-10 ps-3 pe-9 rounded-lg border',
             'bg-subtle text-ink text-base sm:text-sm cursor-pointer',
             'transition-[border-color,box-shadow,background-color] duration-200 ease-out-xp outline-none',
             'focus:ring-2 focus:ring-accent-ring',
@@ -76,11 +79,11 @@ const Select = ({
       </div>
 
       {error && (
-        <p className="text-xs text-danger-fg pl-1">{error}</p>
+        <p className="text-xs text-danger-fg ps-1">{error}</p>
       )}
 
       {helperText && !error && (
-        <p className="text-xs text-ink-subtle pl-1">{helperText}</p>
+        <p className="text-xs text-ink-subtle ps-1">{helperText}</p>
       )}
     </div>
   );

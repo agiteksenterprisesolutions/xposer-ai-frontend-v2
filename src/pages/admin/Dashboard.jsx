@@ -386,14 +386,14 @@ const AdminDashboard = () => {
         <Card className="min-w-0" data-tour="admin-categories">
           <Card.Header>
             <Card.Title className="flex items-center">
-              <Layers className="h-5 w-5 mr-2 shrink-0 text-accent-fg" />
+              <Layers className="h-5 w-5 me-2 shrink-0 text-accent-fg" />
               Reports by Category
             </Card.Title>
           </Card.Header>
           <Card.Content>
             {/* Scrolls internally so the card height stays fixed no matter how
                 many categories come back. */}
-            <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pr-3">
+            <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pe-3">
               {loading || !typesLoaded ? (
                 <Skeleton.Bars className="block space-y-1.5 p-1 -m-1" />
               ) : reportTypeData.length > 0 ? (
@@ -405,13 +405,13 @@ const AdminDashboard = () => {
                       type="button"
                       onClick={() => openCategory(type)}
                       title={`View ${type.name} reports`}
-                      className="w-full space-y-1.5 min-w-0 text-left rounded-md p-1 -m-1 cursor-pointer transition-colors hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                      className="w-full space-y-1.5 min-w-0 text-start rounded-md p-1 -m-1 cursor-pointer transition-colors hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                     >
                       <div className="flex justify-between gap-2 text-sm">
                         <span className="font-medium text-ink-secondary truncate" title={type.name}>{type.name}</span>
                         <span className="text-ink-muted shrink-0 tabular-nums">{type.total} cases</span>
                       </div>
-                      <div className="w-full bg-active rounded-full h-2 text-left">
+                      <div className="w-full bg-active rounded-full h-2 text-start">
                         <div className="bg-accent h-2 rounded-full" style={{ width: `${percentage}%` }} />
                       </div>
                     </button>
@@ -427,7 +427,7 @@ const AdminDashboard = () => {
         <Card className="min-w-0" data-tour="admin-distribution">
           <Card.Header>
             <Card.Title className="flex items-center">
-              <PieChartIcon className="h-5 w-5 mr-2 shrink-0 text-accent-fg" />
+              <PieChartIcon className="h-5 w-5 me-2 shrink-0 text-accent-fg" />
               Category Distribution
             </Card.Title>
           </Card.Header>
@@ -474,21 +474,21 @@ const AdminDashboard = () => {
                 {/* Custom legend: recharts' own legend lays out in one un-scrollable
                     row and overflows once there are more than a handful of
                     categories. This one wraps, truncates, and scrolls. */}
-                <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 max-h-32 overflow-y-auto pr-2">
+                <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 max-h-32 overflow-y-auto pe-2">
                   {reportTypeData.map((entry, index) => (
                     <li key={`legend-${entry.name}-${index}`} className="min-w-0 text-xs">
                       <button
                         type="button"
                         onClick={() => openCategory(entry)}
                         title={`View ${entry.name} reports`}
-                        className="flex w-full items-center gap-2 min-w-0 rounded-md px-1 py-0.5 -mx-1 text-left cursor-pointer transition-colors hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        className="flex w-full items-center gap-2 min-w-0 rounded-md px-1 py-0.5 -mx-1 text-start cursor-pointer transition-colors hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                       >
                         <span
                           className="h-2.5 w-2.5 shrink-0 rounded-sm"
                           style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                         />
                         <span className="truncate text-ink-secondary" title={entry.name}>{entry.name}</span>
-                        <span className="ml-auto shrink-0 tabular-nums text-ink-muted">{entry.total}</span>
+                        <span className="ms-auto shrink-0 tabular-nums text-ink-muted">{entry.total}</span>
                       </button>
                     </li>
                   ))}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   Shield,
   Lock,
@@ -11,6 +12,7 @@ import {
   EyeOff,
   Copy,
   Download,
+  ArrowLeft,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -29,6 +31,7 @@ import { copyToClipboard } from '../../utils/clipboard';
 import { isStaffUser } from '../../utils/roles';
 import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
+import { intlLocale } from '../../utils/locale';
 
 // The two stages this page owns are separate screens with nothing in common,
 // so each is toured (and dismissed) on its own. The multi-step form stage is
@@ -67,6 +70,7 @@ const PasswordOption = ({ checked, onChange, title, description, children }) => 
 
 const SubmitAnonymous = () => {
   const { orgSlug } = useParams();
+  const { t } = useTranslation('submit');
   const { user } = useAuthStore();
   /** Prefer session org when logged in; otherwise use slug from /:orgSlug/... */
   const effectiveOrgSlug = user?.organization_slug ?? orgSlug;
@@ -94,12 +98,11 @@ const SubmitAnonymous = () => {
   useSEO({
     title:
       stage === 'form' && selectedType
-        ? `Submit Report — ${selectedType.name}`
+        ? t('anonymous.seo.form', { name: selectedType.name })
         : stage === 'selectType'
-          ? 'Select Report Type'
-          : 'Submit an Anonymous Report',
-    description:
-      'File a report anonymously. No personal information is required — you receive credentials to track progress securely.',
+          ? t('anonymous.seo.selectType')
+          : t('anonymous.seo.init'),
+    description: t('anonymous.seo.description'),
     keywords: ['anonymous report', 'whistleblower', 'confidential reporting'],
     // The wizard holds live report data once credentials exist.
     noIndex: stage !== 'init',
@@ -114,7 +117,7 @@ const SubmitAnonymous = () => {
         setReportTypes(types || []);
       } catch (error) {
         console.error('Failed to fetch report types:', error);
-        toast.error('Failed to load report types');
+        toast.error(t('shared.loadTypesFailed'));
       } finally {
         setIsLoadingTypes(false);
       }
@@ -126,11 +129,11 @@ const SubmitAnonymous = () => {
   // Step 1: Initialize and get credentials
   const handleInitialize = async () => {
     if (isStaffUser(user)) {
-      toast.error('You are signed in to a staff account. Log out to file an anonymous report.');
+      toast.error(t('anonymous.toast.staffSignedIn'));
       return null
     }
     if (useCustomPassword && password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(t('anonymous.toast.passwordTooShort'));
       return;
     }
 
@@ -154,10 +157,10 @@ const SubmitAnonymous = () => {
 
       setCredentials(newCredentials);
       setStage('selectType');
-      toast.success('Credentials created! Now select a report type.');
+      toast.success(t('anonymous.toast.credentialsCreated'));
     } catch (error) {
       console.error('Failed to initialize:', error);
-      toast.error(error.response?.data?.detail || 'Failed to initialize report');
+      toast.error(describeError(error).summary || t('anonymous.toast.initFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +190,7 @@ const SubmitAnonymous = () => {
       // toast.success(`Report type "${type.name}" selected.`);
     } catch (error) {
       // 403 anonymous_not_allowed carries { code, message }; older errors a string.
-      toast.error(describeError(error).summary || 'Failed to select report type');
+      toast.error(describeError(error).summary || t('anonymous.toast.selectTypeFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -201,56 +204,28 @@ const SubmitAnonymous = () => {
   const handleCopyCredentials = async () => {
     if (!credentials) return;
     const text = hasReportPassword
-      ? `Report Number: ${credentials.reportNumber}\nPassword: ${credentials.password}`
-      : `Report Number: ${credentials.reportNumber}`;
+      ? t('anonymous.copyText', { number: credentials.reportNumber, password: credentials.password })
+      : t('anonymous.copyTextNoPassword', { number: credentials.reportNumber });
     const copied = await copyToClipboard(text);
     if (copied) {
-      toast.success('Credentials copied to clipboard!');
+      toast.success(t('anonymous.toast.copied'));
     } else {
-      toast.error('Could not copy — please select the credentials and copy them manually.');
+      toast.error(t('anonymous.toast.copyFailed'));
     }
   };
 
   // Handle download credentials
   const handleDownloadCredentials = () => {
     if (!credentials) return;
+    const fileValues = {
+      number: credentials.reportNumber,
+      password: credentials.password,
+      trackUrl: `${window.location.origin}/track-report`,
+      date: new Date().toLocaleString(intlLocale()),
+    };
     const content = hasReportPassword
-      ? `
-Xposer AI Report Credentials
-================================
-
-Report Number: ${credentials.reportNumber}
-Password: ${credentials.password}
-
-IMPORTANT:
-----------
-1. Save these credentials in a secure location
-2. You will need both credentials to track your report
-3. These credentials cannot be recovered if lost
-4. Do not share these credentials with anyone
-
-Track your report at: ${window.location.origin}/track-report
-Generated on: ${new Date().toLocaleString()}
-
-Security Notice:
----------------
-This report is submitted anonymously. No personal information is stored.
-    `
-      : `
-Xposer AI Report Credentials
-================================
-
-Report Number: ${credentials.reportNumber}
-
-IMPORTANT:
-----------
-1. This report is filed under your account — sign in to open it
-2. No report password is needed, and none exists for this report
-3. Keep the report number somewhere you can find it again
-
-Track your report at: ${window.location.origin}/track-report
-Generated on: ${new Date().toLocaleString()}
-    `;
+      ? t('anonymous.file.withPassword', fileValues)
+      : t('anonymous.file.account', fileValues);
 
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -284,31 +259,28 @@ Generated on: ${new Date().toLocaleString()}
       return [
         {
           target: '[data-tour="anon-how-it-works"]',
-          title: 'Four steps, no account',
-          content:
-            'You never enter a name or email. Credentials come first, and they are the only thing tying you to the report.',
+          title: t('anonymous.tour.howTitle'),
+          content: t('anonymous.tour.howBody'),
           placement: 'bottom',
           skipBeacon: true,
         },
         {
           target: '[data-tour="anon-password-options"]',
-          title: 'Choose your password',
-          content:
-            'Let us generate a strong one, or set your own if you would rather memorize it. Either way it is paired with a report number.',
-          placement: isDesktop ? 'right' : 'bottom',
+          title: t('anonymous.tour.passwordTitle'),
+          content: t('anonymous.tour.passwordBody'),
+          // Beside the options, on the side away from the reading start.
+          placement: isDesktop ? (document.documentElement.dir === 'rtl' ? 'left' : 'right') : 'bottom',
         },
         {
           target: '[data-tour="anon-credentials-warning"]',
-          title: 'Save them immediately',
-          content:
-            'Nothing about you is stored, which also means lost credentials cannot be recovered or reset. Copy them somewhere safe.',
+          title: t('anonymous.tour.saveTitle'),
+          content: t('anonymous.tour.saveBody'),
           placement: 'top',
         },
         {
           target: '[data-tour="anon-start"]',
-          title: 'Start when ready',
-          content:
-            'This creates your credentials and moves you on to picking a report type. Nothing is submitted yet.',
+          title: t('anonymous.tour.startTitle'),
+          content: t('anonymous.tour.startBody'),
           placement: 'top',
         },
       ];
@@ -320,9 +292,8 @@ Generated on: ${new Date().toLocaleString()}
       if (credentials) {
         steps.push({
           target: '[data-tour="anon-credentials"]',
-          title: 'Your credentials',
-          content:
-            'Copy or download these now — you will need both to finish this report later and to track it afterwards.',
+          title: t('anonymous.tour.credentialsTitle'),
+          content: t('anonymous.tour.credentialsBody'),
           placement: 'bottom',
           skipBeacon: true,
         });
@@ -330,26 +301,24 @@ Generated on: ${new Date().toLocaleString()}
 
       steps.push({
         target: '[data-tour="anon-types"]',
-        title: 'Pick a category',
-        content:
-          'Each category asks a different set of questions. Choose the closest fit — compliance can re-categorize it later if needed.',
+        title: t('anonymous.tour.typesTitle'),
+        content: t('anonymous.tour.typesBody'),
         placement: 'top',
         skipBeacon: !credentials,
       });
 
       steps.push({
         target: '[data-tour="anon-info"]',
-        title: 'What happens next',
-        content:
-          'Fill in the form, submit, then follow progress and reply to questions using your credentials.',
-        placement: isDesktop ? 'left' : 'top',
+        title: t('anonymous.tour.nextTitle'),
+        content: t('anonymous.tour.nextBody'),
+        placement: isDesktop ? (document.documentElement.dir === 'rtl' ? 'right' : 'left') : 'top',
       });
 
       return steps;
     }
 
     return [];
-  }, [stage, credentials, isDesktop]);
+  }, [stage, credentials, isDesktop, t]);
 
   const renderInitStage = () => (
     <div className="max-w-2xl mx-auto">
@@ -358,11 +327,10 @@ Generated on: ${new Date().toLocaleString()}
           <Key className="h-7 w-7 sm:h-8 sm:w-8 text-accent-fg" />
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ink tracking-[-0.02em]">
-          Start Anonymous Report
+          {t('anonymous.init.title')}
         </h1>
         <p className="text-ink-muted mt-3 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
-          First, create secure credentials to protect your anonymity.
-          You'll need these to continue and track your report.
+          {t('anonymous.init.intro')}
         </p>
       </div>
 
@@ -376,9 +344,9 @@ Generated on: ${new Date().toLocaleString()}
             <Shield className="w-[18px] h-[18px]" />
           </span>
           <div className="min-w-0">
-            <h3 className="font-semibold text-ink text-sm">How It Works</h3>
+            <h3 className="font-semibold text-ink text-sm">{t('anonymous.init.howTitle')}</h3>
             <p className="text-sm text-ink-muted mt-1 leading-relaxed">
-              1. Get credentials → 2. Select report type → 3. Fill form → 4. Submit
+              {t('anonymous.init.howSteps')}
             </p>
           </div>
         </div>
@@ -391,29 +359,29 @@ Generated on: ${new Date().toLocaleString()}
                 setUseCustomPassword(false);
                 setPassword('');
               }}
-              title="Auto-generate secure password (recommended)"
-              description="A strong random password will be generated for you"
+              title={t('anonymous.init.autoTitle')}
+              description={t('anonymous.init.autoDesc')}
             />
 
             <PasswordOption
               checked={useCustomPassword}
               onChange={() => setUseCustomPassword(true)}
-              title="Create your own password"
-              description="Minimum 6 characters, maximum 50 characters"
+              title={t('anonymous.init.customTitle')}
+              description={t('anonymous.init.customDesc')}
             >
               {useCustomPassword && (
-                <div className="mt-3 pl-7">
+                <div className="mt-3 ps-7">
                   <Input
  autoComplete="new-password"
-                    label="Password"
+                    label={t('anonymous.init.passwordLabel')}
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     maxLength={50}
                     helperText={
                       password.length > 0 && password.length < 6
-                        ? `${6 - password.length} more character${6 - password.length === 1 ? '' : 's'} needed`
-                        : 'Minimum 6 characters'
+                        ? t('anonymous.init.moreChars', { count: 6 - password.length })
+                        : t('anonymous.init.minChars')
                     }
                     error={undefined}
                     endAdornment={
@@ -421,7 +389,7 @@ Generated on: ${new Date().toLocaleString()}
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="text-ink-subtle transition-colors hover:text-ink"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        aria-label={showPassword ? t('shared.hidePassword') : t('shared.showPassword')}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -433,10 +401,8 @@ Generated on: ${new Date().toLocaleString()}
           </div>
 
           <div data-tour="anon-credentials-warning">
-            <Alert variant="warning" title="Save Your Credentials!">
-              You will receive a unique report number and password.{' '}
-              <strong>Save these immediately</strong> — you'll need them to continue and
-              track your report. They cannot be recovered if lost.
+            <Alert variant="warning" title={t('anonymous.init.saveTitle')}>
+              <Trans t={t} i18nKey="anonymous.init.saveBody" components={{ strong: <strong /> }} />
             </Alert>
           </div>
 
@@ -449,7 +415,7 @@ Generated on: ${new Date().toLocaleString()}
             size="large"
             variant="primary"
           >
-            Get Secure Credentials
+            {t('anonymous.init.start')}
           </Button>
         </div>
       </Card>
@@ -464,7 +430,8 @@ Generated on: ${new Date().toLocaleString()}
           onClick={() => setStage('init')}
           className="inline-flex items-center gap-1 text-sm text-ink-muted transition-colors hover:text-ink mb-6"
         >
-          ← Back to Credentials
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          {t('anonymous.select.back')}
         </button>
 
         <div className="text-center mb-8">
@@ -472,10 +439,10 @@ Generated on: ${new Date().toLocaleString()}
             <CheckCircle className="h-7 w-7 sm:h-8 sm:w-8 text-success-fg" />
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-ink tracking-[-0.02em]">
-            Select Report Type
+            {t('anonymous.select.title')}
           </h1>
           <p className="text-ink-muted mt-3 text-sm sm:text-base">
-            Choose the category that best fits your concern
+            {t('anonymous.select.subtitle')}
           </p>
         </div>
 
@@ -486,11 +453,11 @@ Generated on: ${new Date().toLocaleString()}
               {/* flex-1 so the two credential columns spread across the card
                   rather than collapsing to their content width */}
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-ink mb-3 text-sm">Your Report Credentials</h3>
+                <h3 className="font-semibold text-ink mb-3 text-sm">{t('anonymous.select.credentialsTitle')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="min-w-0">
                     <span className="block text-[10px] font-semibold uppercase tracking-[0.05em] text-ink-subtle">
-                      Report Number
+                      {t('anonymous.select.reportNumber')}
                     </span>
                     <div className="text-base sm:text-lg font-bold text-accent-fg font-mono break-all mt-0.5">
                       {credentials.reportNumber}
@@ -499,7 +466,7 @@ Generated on: ${new Date().toLocaleString()}
                   {hasReportPassword && (
                     <div className="min-w-0">
                       <span className="block text-[10px] font-semibold uppercase tracking-[0.05em] text-ink-subtle">
-                        Password
+                        {t('anonymous.select.password')}
                       </span>
                       <div className="text-base sm:text-lg font-bold text-ink font-mono break-all mt-0.5">
                         {credentials.password}
@@ -515,7 +482,7 @@ Generated on: ${new Date().toLocaleString()}
                   onClick={handleCopyCredentials}
                   startIcon={Copy}
                 >
-                  Copy
+                  {t('anonymous.select.copy')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -523,7 +490,7 @@ Generated on: ${new Date().toLocaleString()}
                   onClick={handleDownloadCredentials}
                   startIcon={Download}
                 >
-                  Download
+                  {t('anonymous.select.download')}
                 </Button>
               </div>
             </div>
@@ -537,11 +504,13 @@ Generated on: ${new Date().toLocaleString()}
           {/* Types that refuse anonymous reports aren't listed to a signed-out reporter at all. */}
           {!user && !isLoadingTypes && (
             <p className="mb-3 text-sm text-ink-muted">
-              Some report types are only available after you{' '}
-              <Link to={effectiveOrgSlug ? `/${effectiveOrgSlug}/login` : '/login'} className="font-medium text-link hover:underline">
-                sign in
-              </Link>
-              .
+              <Trans
+                t={t}
+                i18nKey="anonymous.select.signInHint"
+                components={{
+                  link: <Link to={effectiveOrgSlug ? `/${effectiveOrgSlug}/login` : '/login'} className="font-medium text-link hover:underline" />,
+                }}
+              />
             </p>
           )}
           <ReportTypePicker
@@ -563,9 +532,9 @@ Generated on: ${new Date().toLocaleString()}
                 <Shield className="w-[18px] h-[18px]" />
               </span>
               <div className="min-w-0">
-                <h3 className="font-semibold text-ink text-sm">Complete Anonymity</h3>
+                <h3 className="font-semibold text-ink text-sm">{t('anonymous.select.anonymityTitle')}</h3>
                 <p className="text-sm text-ink-muted mt-1 leading-relaxed">
-                  No personal information is required. Your credentials are your only identifier.
+                  {t('anonymous.select.anonymityBody')}
                 </p>
               </div>
             </div>
@@ -577,9 +546,9 @@ Generated on: ${new Date().toLocaleString()}
                 <Lock className="w-[18px] h-[18px]" />
               </span>
               <div className="min-w-0">
-                <h3 className="font-semibold text-ink text-sm">Secure &amp; Encrypted</h3>
+                <h3 className="font-semibold text-ink text-sm">{t('anonymous.select.secureTitle')}</h3>
                 <p className="text-sm text-ink-muted mt-1 leading-relaxed">
-                  All reports are encrypted end-to-end. We don't store IP addresses or metadata.
+                  {t('anonymous.select.secureBody')}
                 </p>
               </div>
             </div>
@@ -591,13 +560,13 @@ Generated on: ${new Date().toLocaleString()}
                 <FileText className="w-[18px] h-[18px]" />
               </span>
               <div className="min-w-0">
-                <h3 className="font-semibold text-ink text-sm">What Happens Next?</h3>
+                <h3 className="font-semibold text-ink text-sm">{t('anonymous.select.nextTitle')}</h3>
                 <ul className="text-sm text-ink-muted mt-2 space-y-1.5">
-                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>Select a report type from the options</li>
-                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>Fill out the multi-step form</li>
-                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>Submit your report securely</li>
-                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>Track progress using your credentials</li>
-                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>Receive updates securely</li>
+                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>{t('anonymous.select.next1')}</li>
+                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>{t('anonymous.select.next2')}</li>
+                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>{t('anonymous.select.next3')}</li>
+                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>{t('anonymous.select.next4')}</li>
+                  <li className="flex gap-2"><span className="text-ink-subtle">•</span>{t('anonymous.select.next5')}</li>
                 </ul>
               </div>
             </div>
@@ -605,11 +574,11 @@ Generated on: ${new Date().toLocaleString()}
 
           <Alert
             variant="warning"
-            title={hasReportPassword ? 'Save Your Credentials First!' : 'Save Your Report Number'}
+            title={hasReportPassword ? t('anonymous.select.warnTitlePassword') : t('anonymous.select.warnTitleNumber')}
           >
             {hasReportPassword
-              ? "Make sure you've saved your report number and password before continuing. You cannot proceed without them."
-              : 'This report is filed under your account, so no password is needed — but keep the report number to find it again.'}
+              ? t('anonymous.select.warnBodyPassword')
+              : t('anonymous.select.warnBodyNumber')}
           </Alert>
         </div>
       </div>

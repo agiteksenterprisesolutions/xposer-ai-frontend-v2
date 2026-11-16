@@ -76,7 +76,7 @@ const edgeStyle = { stroke: 'var(--color-line-strong)', strokeWidth: 1.5 };
 const Detail = ({ label, children }) => (
   <div className="flex items-start justify-between gap-3 text-[13px]">
     <span className="shrink-0 text-ink-muted">{label}</span>
-    <span className="min-w-0 text-right font-medium text-ink">{children}</span>
+    <span className="min-w-0 text-end font-medium text-ink">{children}</span>
   </div>
 );
 
@@ -150,7 +150,7 @@ const PersonPanel = ({ member, manager, reports, levelTitle, flags, canManage, o
               {member.source === 'manual' ? 'Added by hand' : 'From HR'}
             </Badge>
             {member.has_manual_override && (
-              <Badge size="small" variant="info" className="ml-1">
+              <Badge size="small" variant="info" className="ms-1">
                 Corrected
               </Badge>
             )}
@@ -767,7 +767,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
         </OrgChartContext.Provider>
 
         {/* Find someone — anywhere in the directory, not only on screen */}
-        <div className="absolute left-3 top-3 z-10 w-72 max-w-[calc(100%-1.5rem)]">
+        <div className="absolute start-3 top-3 z-10 w-72 max-w-[calc(100%-1.5rem)]">
           <label className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 shadow-md focus-within:border-line-accent">
             {searching || revealing ? (
               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-ink-subtle" />
@@ -794,7 +794,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
                   <button
                     type="button"
                     onClick={() => pick(member)}
-                    className="flex w-full flex-col px-3 py-1.5 text-left transition-colors hover:bg-hover"
+                    className="flex w-full flex-col px-3 py-1.5 text-start transition-colors hover:bg-hover"
                   >
                     <span className="truncate text-sm text-ink">{member.name}</span>
                     <span className="truncate text-[11px] text-ink-subtle">
@@ -808,7 +808,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
         </div>
 
         {selected && (
-          <div className="pointer-events-none absolute bottom-16 right-3 top-3 z-10 flex flex-col items-end">
+          <div className="pointer-events-none absolute bottom-16 end-3 top-3 z-10 flex flex-col items-end">
             <div className="pointer-events-auto flex max-h-full">
               <PersonPanel
                 member={selected}

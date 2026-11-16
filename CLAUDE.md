@@ -87,3 +87,37 @@ pass. Keep it there:
 - **Page structure:** layouts render a skip link and `#main-content`;
   `RouteAnnouncer` adds a hidden `<h1>` when a page has none and moves focus to
   it on navigation.
+
+## Languages (English and Arabic)
+
+The interface is translated with react-i18next. Phase 1 covers the
+reporter-facing screens. Staff and admin screens are still English-only.
+
+- **Text:** `src/locales/<lang>/<namespace>.json`. Files are picked up
+  automatically (`src/i18n/index.js`). Namespaces: `common` (shared: nav,
+  buttons, statuses, errors), `public`, `submit`, `form`, `track`, `chat`,
+  `reporter`. Add a namespace by adding the same file under `en/` and `ar/`.
+- **In code:** `const { t } = useTranslation('submit')`, then `t('picker.title')`.
+  Outside components use `i18n.t(...)` at call time, never at module load (it
+  wouldn't follow a language change). Interpolate with `{{name}}`; don't glue
+  translated fragments together. Counts use i18next plurals (Arabic has
+  `_zero _one _two _few _many _other`). Inline links/bold use `<Trans>`.
+- **Don't translate content:** report types, questions, pack text and anything
+  people wrote comes from the API as written. Give such text `dir="auto"` when
+  it can be in either language.
+- **Check:** `node scripts/check-i18n.mjs` (English and Arabic have the same
+  keys, and every key the code uses exists).
+- **Right-to-left:** `<html dir>` follows the language. Use logical Tailwind
+  classes only: `ms-/me-`, `ps-/pe-`, `start-/end-`, `text-start/end`,
+  `border-s/e`, `rounded-s/e`. Never `ml-`, `pr-`, `left-`, `text-left` etc.
+  (exception: `left-1/2 -translate-x-1/2` centring, which is symmetric).
+  Arrow and chevron icons flip automatically (`App.css`).
+- **Formatting:** dates and money go through `src/utils/locale.js`
+  (`intlLocale()`, `dateFnsLocale()`) or the shared `formatDate` helpers.
+  Arabic uses Western digits (`ar-u-nu-latn`).
+- **Language choice:** stored as `xposer-lang` in localStorage; `index.html`
+  sets `lang`/`dir` before first paint. Requests send `Accept-Language`.
+- **The super-admin panel** stays English-only. The shared UI components here
+  now call `useTranslation`. When copying one across, strip that back out.
+- **Arabic copy is machine-drafted** until a human reviewer signs it off. Legal
+  and anonymity wording especially needs review.

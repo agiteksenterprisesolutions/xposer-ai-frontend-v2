@@ -7,6 +7,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Xposer AI</title>
 
+  <!-- Arabic interface font. unicode-range subsets mean it only downloads
+       when Arabic text is on the page. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" />
+
+  <!--
+    Interface language before first paint, so Arabic never flashes
+    left-to-right. src/i18n reads and writes the same key.
+  -->
+  <script>
+    (function () {
+      try {
+        var lang = localStorage.getItem('xposer-lang') || (navigator.language || 'en');
+        lang = lang.slice(0, 2).toLowerCase() === 'ar' ? 'ar' : 'en';
+        document.documentElement.setAttribute('lang', lang);
+        document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Ensure this line exists -->
   <link rel="stylesheet" href="/src/index.css">
 

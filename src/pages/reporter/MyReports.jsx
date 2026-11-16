@@ -29,24 +29,32 @@ import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
 import useSEO from '../../hooks/useSEO';
 import { isDraftReport } from '../../utils/reports';
+import { useTranslation } from 'react-i18next';
+import { isRtl } from '../../utils/locale';
+
+// Tour placements are written for left-to-right; Arabic mirrors the sidebar.
+const side = (placement) =>
+    isRtl() ? ({ left: 'right', right: 'left' }[placement] || placement) : placement;
 
 const MY_REPORTS_TOUR_KEY = 'xposer_my_reports_tour_seen';
 
 // Matches the `sortField` on each sortable column below, plus the dates the
-// table doesn't show a column for but are still useful to order by.
-const SORT_COLUMNS = {
-    created_at: { label: 'Newest', defaultOrder: 'desc', value: byDate('created_at') },
-    updated_at: { label: 'Last Updated', defaultOrder: 'desc', value: byDate('updated_at') },
-    report_number: { label: 'Report ID', defaultOrder: 'desc', value: byText('report_number') },
-    status: { label: 'Processing Status', defaultOrder: 'asc', value: byRank('status', STATUS_RANK) },
-    submission_status: { label: 'Submission Status', defaultOrder: 'asc', value: byText('submission_status') },
-    priority: { label: 'Priority', defaultOrder: 'desc', value: byRank('priority', PRIORITY_RANK) },
-};
+// table doesn't show a column for but are still useful to order by. Labels
+// are read when the page renders, so they follow the interface language.
+const sortColumns = (t) => ({
+    created_at: { label: t('myReports.sortNewest'), defaultOrder: 'desc', value: byDate('created_at') },
+    updated_at: { label: t('myReports.sortLastUpdated'), defaultOrder: 'desc', value: byDate('updated_at') },
+    report_number: { label: t('myReports.colReportId'), defaultOrder: 'desc', value: byText('report_number') },
+    status: { label: t('myReports.colProcessingStatus'), defaultOrder: 'asc', value: byRank('status', STATUS_RANK) },
+    submission_status: { label: t('myReports.colSubmissionStatus'), defaultOrder: 'asc', value: byText('submission_status') },
+    priority: { label: t('myReports.sortPriority'), defaultOrder: 'desc', value: byRank('priority', PRIORITY_RANK) },
+});
 
 const MyReports = () => {
+    const { t, i18n } = useTranslation('reporter');
     useSEO({
-        title: 'My Reports',
-        description: 'Every report you have submitted, with its current status and latest updates.',
+        title: t('seo.myReportsTitle'),
+        description: t('seo.myReportsDescription'),
         noIndex: true,
     });
     const { user } = useAuthStore();
@@ -145,21 +153,19 @@ const MyReports = () => {
     };
 
     const statusOptions = [
-        { value: '', label: 'All Status' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'in_progress', label: 'In Progress' },
-        { value: 'under_review', label: 'Under Review' },
-        { value: 'resolved', label: 'Resolved' },
-        { value: 'closed', label: 'Closed' },
-        { value: 'rejected', label: 'Rejected' },
+        { value: '', label: t('myReports.allStatuses') },
+        ...['pending', 'in_progress', 'under_review', 'resolved', 'closed', 'rejected'].map((value) => ({
+            value,
+            label: t(`common:reportStatus.${value}`),
+        })),
     ];
 
     const priorityOptions = [
-        { value: '', label: 'All Priority' },
-        { value: 'low', label: 'Low' },
-        { value: 'medium', label: 'Medium' },
-        { value: 'high', label: 'High' },
-        { value: 'critical', label: 'Critical' },
+        { value: '', label: t('myReports.allPriorities') },
+        ...['low', 'medium', 'high', 'critical'].map((value) => ({
+            value,
+            label: t(`common:priority.${value}`),
+        })),
     ];
 
 
@@ -197,13 +203,14 @@ const MyReports = () => {
         return result;
     }, [reports, filters]);
 
+    const SORT_COLUMNS = useMemo(() => sortColumns(t), [t, i18n.resolvedLanguage]);
     const sort = useTableSort(filteredReports, SORT_COLUMNS, { defaultSortBy: 'created_at' });
     const { sortedRows: visibleReports, getHeaderProps } = sort;
 
     // Table columns definition
     const columns = [
         {
-            header: 'Report ID',
+            header: t('myReports.colReportId'),
             accessor: 'report_number',
             sortable: true,
             cell: (value) => (
@@ -213,7 +220,7 @@ const MyReports = () => {
             ),
         },
         {
-            header: 'Report No.',
+            header: t('myReports.colReportNo'),
             accessor: 'report_number',
             sortable: true,
             className: 'w-1/3',
@@ -227,13 +234,13 @@ const MyReports = () => {
             ),
         },
         {
-            header: 'Processing Status',
+            header: t('myReports.colProcessingStatus'),
             accessor: 'status',
             sortable: true,
             cell: (value) => <StatusBadge status={value} />,
         },
         {
-            header: 'Submission Status',
+            header: t('myReports.colSubmissionStatus'),
             accessor: 'submission_status',
             sortable: true,
             cell: (value) => <StatusBadge status={value} />,
@@ -248,21 +255,22 @@ const MyReports = () => {
         //     accessor: 'messages_count',
         //     cell: (value) => (
         //         <div className="flex items-center text-ink-muted">
-        //             <MessageSquare className="w-4 h-4 mr-1.5" />
+        //             <MessageSquare className="w-4 h-4 me-1.5" />
         //             <span className="text-sm">{value || 0}</span>
         //         </div>
         //     ),
         // },
         {
-            header: 'Actions',
+            key: 'actions',
+            header: t('myReports.colActions'),
             cell: (_, row) => (
                 <div className="flex justify-start gap-1">
-                    <Button variant="ghost" size="small" aria-label="View Details" to={`/${user?.organization_slug}/reporter/reports/${row.id}`}>
+                    <Button variant="ghost" size="small" aria-label={t('myReports.viewDetails')} to={`/${user?.organization_slug}/reporter/reports/${row.id}`}>
                             <Eye className="w-4 h-4 text-ink-muted" />
                         </Button>
                     {isDraftReport(row) && (
                         // Row clicks open the detail page, so keep the click here.
-                        <Button variant="ghost" size="small" aria-label="Edit Draft" title="Edit draft" to={`/${user?.organization_slug}/reporter/reports/${row.id}/edit`} onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="small" aria-label={t('myReports.editDraft')} title={t('myReports.editDraft')} to={`/${user?.organization_slug}/reporter/reports/${row.id}/edit`} onClick={(e) => e.stopPropagation()}>
                                 <Pencil className="w-4 h-4 text-accent-fg" />
                             </Button>
                     )}
@@ -276,17 +284,17 @@ const MyReports = () => {
         if (isDesktop) {
             steps.push({
                 target: '[data-tour="sidebar-my-reports"]',
-                title: 'My Reports',
-                content: 'Every report you have submitted lives here, with its status and history.',
-                placement: 'right',
+                title: t('tour.reportsTitle'),
+                content: t('tour.myReportsNavContent'),
+                placement: side('right'),
                 skipBeacon: true,
             });
         }
 
         steps.push({
             target: '[data-tour="myreports-submit"]',
-            title: 'Submit a new report',
-            content: 'File a new report tied to your account at any time.',
+            title: t('tour.newReportTitle'),
+            content: t('tour.newReportContent'),
             placement: 'bottom',
             skipBeacon: !isDesktop,
         });
@@ -294,33 +302,33 @@ const MyReports = () => {
         steps.push(
             {
                 target: '[data-tour="myreports-filters"]',
-                title: 'Search & filter',
-                content: 'Search by ID, or narrow the list by status, priority, and sort order.',
+                title: t('tour.filtersTitle'),
+                content: t('tour.filtersContent'),
                 placement: 'bottom',
             },
             {
                 target: '[data-tour="myreports-view-toggle"]',
-                title: 'Switch views',
-                content: 'Toggle between a compact table and a card grid, whichever you prefer.',
-                placement: 'left',
+                title: t('tour.viewsTitle'),
+                content: t('tour.viewsContent'),
+                placement: side('left'),
             },
             {
                 target: '[data-tour="myreports-results"]',
-                title: 'Your reports',
-                content: 'Click any report to view its full details and message the compliance team.',
+                title: t('tour.resultsTitle'),
+                content: t('tour.resultsContent'),
                 placement: 'top',
             }
         );
 
         steps.push({
             target: '[data-tour="tour-user-menu"]',
-            title: 'Your account',
-            content: 'Manage your profile or log out from here.',
+            title: t('tour.accountTitle'),
+            content: t('tour.accountContent'),
             placement: 'bottom',
         });
 
         return steps;
-    }, [isDesktop]);
+    }, [isDesktop, t, i18n.resolvedLanguage]);
 
     // First load: the same table (or cards), with placeholder rows — never the
     // empty state, which would say there are no reports before we know.
@@ -333,7 +341,7 @@ const MyReports = () => {
     const skeletonColumns = columns.map((column, index) => ({
         ...column,
         cell: () =>
-            column.header === 'Actions' ? (
+            column.key === 'actions' ? (
                 <div className="flex gap-1">
                     <Skeleton className="h-8 w-8 rounded-lg" />
                     <Skeleton className="h-8 w-8 rounded-lg" />
@@ -352,14 +360,14 @@ const MyReports = () => {
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-ink">My Reports</h1>
+                    <h1 className="text-2xl font-bold text-ink">{t('myReports.title')}</h1>
                     <p className="text-ink-muted mt-1">
-                        Track status and communicate with the compliance team
+                        {t('myReports.subtitle')}
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
                     <Button variant="secondary" startIcon={Plus} to={`/${user?.organization_slug}/reporter/submit`} data-tour="myreports-submit">
-                            Submit New Report
+                            {t('myReports.submitNew')}
                         </Button>
                 </div>
             </div>
@@ -369,9 +377,10 @@ const MyReports = () => {
                 <div className="flex flex-col md:flex-row gap-4 mb-6" data-tour="myreports-filters">
                     <div className="flex-1">
                         <form onSubmit={handleSearch} className="relative">
-                            {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink-subtle h-5 w-5" /> */}
+                            {/* <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-ink-subtle h-5 w-5" /> */}
                             <Input
-                                placeholder="Search by ID or report number..."
+                                placeholder={t('myReports.searchPlaceholder')}
+                                aria-label={t('myReports.searchLabel')}
                                 className="w-full"
                                 value={searchQuery}
                                 onChange={handleSearchChange}
@@ -384,7 +393,8 @@ const MyReports = () => {
                                 options={statusOptions}
                                 value={filters.status || ''}
                                 onChange={(e) => handleFilterChange('status', e.target.value)}
-                                placeholder="Status"
+                                placeholder={t('myReports.statusPlaceholder')}
+                                aria-label={t('myReports.statusPlaceholder')}
                             />
                         </div>
                         <div className="w-32 md:w-40">
@@ -392,7 +402,8 @@ const MyReports = () => {
                                 options={priorityOptions}
                                 value={filters.priority || ''}
                                 onChange={(e) => handleFilterChange('priority', e.target.value)}
-                                placeholder="Priority"
+                                placeholder={t('myReports.priorityPlaceholder')}
+                                aria-label={t('myReports.priorityPlaceholder')}
                             />
                         </div>
                         <TableSortControl {...sort} id="my-reports" />
@@ -402,9 +413,9 @@ const MyReports = () => {
                                 onClick={handleClearFilters}
                                 className="text-ink-muted hover:text-danger-fg"
                                 startIcon={X}
-                                title="Clear Filters"
+                                title={t('myReports.clearFilters')}
                             >
-                                Clear
+                                {t('myReports.clear')}
                             </Button>
                         )}
                     </div>
@@ -412,14 +423,17 @@ const MyReports = () => {
 
                 {/* View Toggle */}
                 <div className="flex justify-end mb-4" data-tour="myreports-view-toggle">
-                    <div className="flex bg-active p-1 rounded-lg">
+                    <div className="flex bg-active p-1 rounded-lg" role="group" aria-label={t('myReports.viewToggle')}>
                         <button
+                            type="button"
                             onClick={() => setViewMode('table')}
+                            aria-pressed={viewMode === 'table'}
+                            aria-label={t('myReports.tableView')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'table'
                                 ? 'bg-surface shadow-sm text-ink'
                                 : 'text-ink-muted hover:text-ink-secondary'
                                 }`}
-                            title="Table View"
+                            title={t('myReports.tableView')}
                         >
                             <div className="w-5 h-5 flex flex-col justify-center gap-1">
                                 <div className="h-0.5 bg-current w-full" />
@@ -428,12 +442,15 @@ const MyReports = () => {
                             </div>
                         </button>
                         <button
+                            type="button"
                             onClick={() => setViewMode('card')}
+                            aria-pressed={viewMode === 'card'}
+                            aria-label={t('myReports.gridView')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'card'
                                 ? 'bg-surface shadow-sm text-ink'
                                 : 'text-ink-muted hover:text-ink-secondary'
                                 }`}
-                            title="Grid View"
+                            title={t('myReports.gridView')}
                         >
                             <div className="w-5 h-5 grid grid-cols-2 gap-0.5">
                                 <div className="bg-current rounded-sm" />
@@ -463,17 +480,17 @@ const MyReports = () => {
                             asRow={false}
                             message={
                                 filters.search || filters.status || filters.priority
-                                    ? "No reports found matching your filters."
-                                    : "You haven't submitted any reports yet."
+                                    ? t('myReports.emptyFiltered')
+                                    : t('myReports.emptyNone')
                             }
                             description={
                                 !(filters.search || filters.status || filters.priority) &&
-                                "Submit your first report to see it tracked here."
+                                t('myReports.emptyDescription')
                             }
                             action={
                                 !(filters.search || filters.status || filters.priority) && (
                                     <Button size="small" className="mt-4" variant="secondary" to={`/${user?.organization_slug}/reporter/submit`}>
-                                            Submit Report
+                                            {t('myReports.submitReport')}
                                         </Button>
                                 )
                             }

@@ -521,7 +521,7 @@ const KnowledgeBase = () => {
 
           {validationErrors.length > 0 && (
             <Alert variant="error" title="Nothing was uploaded">
-              <ul className="list-disc space-y-1 pl-4">
+              <ul className="list-disc space-y-1 ps-4">
                 {validationErrors.map((message) => (
                   <li key={message}>{message}</li>
                 ))}
@@ -606,7 +606,7 @@ const KnowledgeBase = () => {
               <Table.Head>Status</Table.Head>
               <Table.Head>Chunks</Table.Head>
               <Table.Head>Uploaded</Table.Head>
-              <Table.Head className="text-right">Actions</Table.Head>
+              <Table.Head className="text-end">Actions</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -625,7 +625,7 @@ const KnowledgeBase = () => {
                   <Skeleton.Badge key="st" className="w-16" />,
                   <Skeleton.Text key="c" className="w-6" />,
                   <Skeleton.Text key="u" size="xs" className="w-24" />,
-                  canManage ? <Skeleton key="x" className="ml-auto h-8 w-10 rounded-lg" /> : <span key="x" />,
+                  canManage ? <Skeleton key="x" className="ms-auto h-8 w-10 rounded-lg" /> : <span key="x" />,
                 ]}
               />
             ) : documents.length === 0 ? (
@@ -706,7 +706,7 @@ const KnowledgeBase = () => {
                       {formatUploadedAt(doc.created_at)}
                     </span>
                   </Table.Cell>
-                  <Table.Cell className="text-right">
+                  <Table.Cell className="text-end">
                     {canManage && (
                       <div className="flex justify-end">
                         <Button

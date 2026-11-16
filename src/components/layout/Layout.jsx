@@ -50,7 +50,7 @@ const Layout = ({ children }) => {
 
         {/* Global notification */}
         {notification && (
-          <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="fixed top-4 end-4 z-50 max-w-md">
             <Alert
               variant={notification.type}
               title={notification.message}
@@ -85,7 +85,7 @@ const Layout = ({ children }) => {
               className="fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden"
               onClick={() => setShowMobileSidebar(false)}
             />
-            <div className="fixed inset-y-0 left-0 z-50 w-64 lg:hidden">
+            <div className="fixed inset-y-0 start-0 z-50 w-64 lg:hidden">
               <Sidebar onClose={() => setShowMobileSidebar(false)} />
             </div>
           </>
@@ -145,7 +145,7 @@ const Layout = ({ children }) => {
 
       {/* Global notification */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
+        <div className="fixed top-4 end-4 z-50 max-w-md">
           <Alert
             variant={notification.type}
             title={notification.message}

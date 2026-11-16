@@ -242,7 +242,7 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
                 type="button"
                 onClick={() => write(rules.filter((_, i) => i !== index))}
                 aria-label="Remove condition"
-                className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-danger-soft hover:text-danger-fg"
+                className="ms-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-danger-soft hover:text-danger-fg"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

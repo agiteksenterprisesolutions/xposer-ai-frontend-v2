@@ -69,7 +69,7 @@ const Field = ({ id, label, hint, error, children }) => (
   <div className="space-y-1.5">
     <label htmlFor={id} className="block text-sm font-medium text-ink-secondary">
       {label}
-      {hint && <span className="ml-1 font-normal text-ink-muted">{hint}</span>}
+      {hint && <span className="ms-1 font-normal text-ink-muted">{hint}</span>}
     </label>
     {children}
     {error && <p className="text-xs text-danger-fg">{error}</p>}
@@ -318,7 +318,7 @@ const AddPersonModal = ({ isOpen, onClose, member = null, onAdded }) => {
         {serverError && (
           <Alert variant="error" title={serverError.summary}>
             {serverError.problems?.length > 0 && (
-              <ul className="list-disc space-y-1 pl-4">
+              <ul className="list-disc space-y-1 ps-4">
                 {serverError.problems.map((p, i) => (
                   <li key={i}>{p.message}</li>
                 ))}
@@ -423,7 +423,7 @@ const AddPersonModal = ({ isOpen, onClose, member = null, onAdded }) => {
               onClick={() => set('create_login')(!form.create_login)}
               className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors ${form.create_login ? 'bg-accent' : 'bg-active'}`}
             >
-              <span className={`absolute top-1 h-4 w-4 rounded-full bg-surface shadow-sm transition-all ${form.create_login ? 'left-6' : 'left-1'}`} />
+              <span className={`absolute top-1 h-4 w-4 rounded-full bg-surface shadow-sm transition-all ${form.create_login ? 'start-6' : 'start-1'}`} />
             </button>
           </label>
           )}

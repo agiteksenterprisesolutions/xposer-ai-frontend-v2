@@ -8,9 +8,15 @@
 // Laid out right-aligned like the caller's own messages — these are their
 // reply, not the assistant's.
 import { motion } from 'framer-motion';
-import { VOICE_LANGUAGE_OPTIONS } from '../../utils/languages';
+import { useTranslation } from 'react-i18next';
+import { VOICE_LANGUAGE_OPTIONS, AUTO_LANGUAGE_CODE } from '../../utils/languages';
 
-const LanguagePills = ({ onSelect, disabled = false }) => (
+const LanguagePills = ({ onSelect, disabled = false }) => {
+  const { t } = useTranslation('chat');
+  // "Detect automatically" is the one option in the interface language;
+  // every other option is shown in its own language.
+  const autoLabel = t('languagePills.auto');
+  return (
   <div className="flex flex-wrap justify-end gap-2">
     {VOICE_LANGUAGE_OPTIONS.map((option, index) => {
       return (
@@ -24,16 +30,17 @@ const LanguagePills = ({ onSelect, disabled = false }) => (
           transition={{ duration: 0.2, delay: Math.min(index * 0.035, 0.4) }}
           onClick={() => onSelect(option.code)}
           disabled={disabled}
-          title={option.native === option.english ? option.native : option.english}
-          lang={option.code === 'auto' ? undefined : option.code}
-          dir={option.rtl ? 'rtl' : 'auto'}
+          title={option.code === AUTO_LANGUAGE_CODE ? autoLabel : option.native === option.english ? option.native : option.english}
+          lang={option.code === AUTO_LANGUAGE_CODE ? undefined : option.code}
+          dir={option.code === AUTO_LANGUAGE_CODE ? undefined : option.rtl ? 'rtl' : 'auto'}
           className="rounded-full border border-line-accent bg-transparent px-3.5 py-2 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {option.native}
+          {option.code === AUTO_LANGUAGE_CODE ? autoLabel : option.native}
         </motion.button>
       );
     })}
   </div>
-);
+  );
+};
 
 export default LanguagePills;

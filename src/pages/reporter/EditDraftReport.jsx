@@ -1,6 +1,7 @@
 // src/pages/reporter/EditDraftReport.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { ArrowLeft, AlertCircle, ChevronRight, FileText } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { reportsAPI } from '../../api/reports';
@@ -17,6 +18,7 @@ import useSEO from '../../hooks/useSEO';
 const EditDraftReport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation('submit');
   const { user } = useAuthStore();
   const orgSlug = user?.organization_slug || '';
 
@@ -34,7 +36,7 @@ const EditDraftReport = () => {
 
   useSEO({
     enabled: !loading && !!report,
-    title: report ? `Edit Draft #${report.report_number}` : '',
+    title: report ? t('reporterDraft.seoTitle', { number: report.report_number }) : '',
     noIndex: true,
   });
 
@@ -45,7 +47,7 @@ const EditDraftReport = () => {
         const data = await reportsAPI.getReport(id);
         console.log(data)
         if (!isDraftReport(data)) {
-          toast.error('This report has already been submitted and can no longer be edited.');
+          toast.error(t('reporterDraft.alreadySubmitted'));
           navigate(`/${orgSlug}/reporter/reports/${id}`, { replace: true });
           return;
         }
@@ -57,7 +59,7 @@ const EditDraftReport = () => {
           } catch (err) {
             // Without progress the form still opens, just without saved answers.
             console.error('Failed to load draft progress:', err);
-            toast.warn('Could not load your saved answers. You may need to fill them in again.');
+            toast.warn(t('reporterDraft.progressFailed'));
           }
         }
 
@@ -68,14 +70,14 @@ const EditDraftReport = () => {
             setReportTypes(types || []);
           } catch (err) {
             console.error('Failed to fetch report types:', err);
-            toast.error('Failed to load report types');
+            toast.error(t('shared.loadTypesFailed'));
           } finally {
             setIsLoadingTypes(false);
           }
         }
       } catch (err) {
         console.error(err);
-        setError('Failed to load this draft.');
+        setError(t('reporterDraft.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -88,7 +90,7 @@ const EditDraftReport = () => {
     return (
       <div className="py-8 sm:py-12">
         <ReportFormSkeleton
-          message="Loading your draft…"
+          message={t('shared.loadingDraft')}
           onBack={() => navigate(`/${orgSlug}/reporter/reports/${id}`)}
         />
       </div>
@@ -99,10 +101,10 @@ const EditDraftReport = () => {
     return (
       <div className="max-w-4xl mx-auto text-center py-12">
         <AlertCircle className="w-16 h-16 text-danger-fg mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-ink mb-2">Draft Unavailable</h2>
-        <p className="text-ink-muted mb-6">{error || 'Draft not found.'}</p>
+        <h2 className="text-2xl font-bold text-ink mb-2">{t('reporterDraft.unavailableTitle')}</h2>
+        <p className="text-ink-muted mb-6">{error || t('reporterDraft.notFound')}</p>
         <Button onClick={() => navigate(`/${orgSlug}/reporter/reports`)}>
-          Back to My Reports
+          {t('reporterDraft.backToReports')}
         </Button>
       </div>
     );
@@ -115,8 +117,8 @@ const EditDraftReport = () => {
       onClick={() => navigate(`/${orgSlug}/reporter/reports/${id}`)}
       className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors mb-6"
     >
-      <ArrowLeft className="w-4 h-4 mr-2" />
-      Back to Report
+      <ArrowLeft className="w-4 h-4 me-2" />
+      {t('reporterDraft.backToReport')}
     </button>
   );
 
@@ -125,12 +127,14 @@ const EditDraftReport = () => {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {backLink}
-        <h1 className="text-2xl font-bold text-ink mb-2">Continue Your Draft</h1>
+        <h1 className="text-2xl font-bold text-ink mb-2">{t('reporterDraft.title')}</h1>
         <p className="text-ink-muted mb-6">
-          This draft doesn't have a report type yet. Choose one to keep going —
-          your report number{' '}
-          <span className="font-mono font-semibold text-ink">{report.report_number}</span>{' '}
-          stays the same.
+          <Trans
+            t={t}
+            i18nKey="reporterDraft.intro"
+            values={{ number: report.report_number }}
+            components={{ number: <span className="font-mono font-semibold text-ink" dir="ltr" /> }}
+          />
         </p>
 
         {isLoadingTypes ? (
@@ -145,7 +149,7 @@ const EditDraftReport = () => {
         ) : reportTypes.length === 0 ? (
           <Card>
             <Alert variant="warning">
-              <p>No report types available at this time. Please try again later.</p>
+              <p>{t('shared.noTypesNow')}</p>
             </Alert>
           </Card>
         ) : (
@@ -154,7 +158,7 @@ const EditDraftReport = () => {
               <button
                 key={type.id}
                 onClick={() => setChosenTypeId(type.id)}
-                className="text-left group"
+                className="text-start group"
               >
                 <div className="bg-surface rounded-xl border-2 border-line hover:border-line-accent transition-all duration-200 h-full p-6 hover:shadow-lg group-hover:-translate-y-1">
                   <div className="flex items-start justify-between mb-4">
@@ -163,16 +167,16 @@ const EditDraftReport = () => {
                         {type.name}
                       </h3>
                       <p className="text-sm text-ink-muted line-clamp-3">
-                        {type.description || 'Submit a report for this category'}
+                        {type.description || t('reporterDraft.noDescription')}
                       </p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-ink-subtle group-hover:text-accent-fg group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                    <ChevronRight className="w-5 h-5 text-ink-subtle group-hover:text-accent-fg group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-all shrink-0 ms-2" />
                   </div>
                   {type.sections?.length > 0 && (
                     <div className="flex items-center pt-4 border-t border-line-subtle">
                       <span className="inline-flex items-center text-xs font-medium text-ink-muted">
-                        <FileText className="w-3.5 h-3.5 mr-1.5" />
-                        {type.sections.length} step{type.sections.length !== 1 ? 's' : ''}
+                        <FileText className="w-3.5 h-3.5 me-1.5" />
+                        {t('shared.steps', { count: type.sections.length })}
                       </span>
                     </div>
                   )}

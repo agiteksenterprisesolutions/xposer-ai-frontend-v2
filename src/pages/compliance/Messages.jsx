@@ -88,10 +88,10 @@ const ComplianceMessages = () => {
                     <Card padding="none">
                         <div className="p-4 border-b border-line-subtle bg-subtle">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink-subtle h-4 w-4" />
+                                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 text-ink-subtle h-4 w-4" />
                                 <Input
                                     placeholder="Search by report ID or keywords..."
-                                    className="pl-10 h-10"
+                                    className="ps-10 h-10"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -136,7 +136,7 @@ const ComplianceMessages = () => {
                                                     <StatusBadge status={thread.status} size="small" />
                                                 </div>
                                                 <span className="text-xs text-ink-subtle flex items-center">
-                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    <Clock className="h-3 w-3 me-1" />
                                                     {formatRelativeTime(thread.updated_at)}
                                                 </span>
                                             </div>
@@ -151,11 +151,11 @@ const ComplianceMessages = () => {
                                             <div className="flex items-center justify-between mt-2">
                                                 <div className="flex items-center space-x-4 text-xs text-ink-muted">
                                                     <span className="flex items-center">
-                                                        <User className="h-3 w-3 mr-1" />
+                                                        <User className="h-3 w-3 me-1" />
                                                         {thread.assignee_name || 'Unassigned'}
                                                     </span>
                                                     <span className="flex items-center text-accent-fg font-medium">
-                                                        <MessageSquare className="h-3 w-3 mr-1" />
+                                                        <MessageSquare className="h-3 w-3 me-1" />
                                                         {thread.messages_count || 0} messages
                                                     </span>
                                                 </div>

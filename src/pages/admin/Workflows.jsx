@@ -87,7 +87,7 @@ const PreviewStep = ({ stage }) => {
           <Icon className="h-4 w-4" />
           {branches > 0 && (
             <span
-              className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-surface bg-surface px-1 text-[9px] font-semibold text-accent-fg shadow-sm"
+              className="absolute -end-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-surface bg-surface px-1 text-[9px] font-semibold text-accent-fg shadow-sm"
               title={plural(branches, 'branch rule')}
             >
               {branches}
@@ -178,7 +178,7 @@ const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => 
             <button
               type="button"
               onClick={onOpen}
-              className="truncate text-left text-[15px] font-semibold text-ink after:absolute after:inset-0 after:rounded-xl focus:outline-none focus-visible:underline"
+              className="truncate text-start text-[15px] font-semibold text-ink after:absolute after:inset-0 after:rounded-xl focus:outline-none focus-visible:underline"
             >
               {workflow.name}
             </button>

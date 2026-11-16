@@ -113,24 +113,24 @@ const ReportCard = ({
           
           <div className="flex flex-wrap items-center gap-4 text-sm text-ink-muted">
             <div className="flex items-center">
-              <Calendar className="w-4 h-4 mr-1" />
+              <Calendar className="w-4 h-4 me-1" />
               {formatDate(created_at)}
             </div>
             
             <div className="flex items-center">
-              <User className="w-4 h-4 mr-1" />
+              <User className="w-4 h-4 me-1" />
               {getAssigneeName()}
             </div>
             
             <div className="flex items-center">
-              <MessageSquare className="w-4 h-4 mr-1" />
+              <MessageSquare className="w-4 h-4 me-1" />
               {messages_count} messages
             </div>
           </div>
         </div>
         
         {showActions && (
-          <div className="mt-4 sm:mt-0 sm:ml-4 flex flex-col space-y-2">
+          <div className="mt-4 sm:mt-0 sm:ms-4 flex flex-col space-y-2">
             <Button
               variant="secondary"
               size="small"
@@ -204,7 +204,7 @@ export const ReportGridCard = ({ report, onClick }) => {
         
         <div className="mt-auto pt-4 border-t border-line-subtle">
           <div className="flex items-center text-xs text-ink-muted">
-            <Clock className="w-3 h-3 mr-1" />
+            <Clock className="w-3 h-3 me-1" />
             {formatDate(created_at, 'MMM dd')}
           </div>
         </div>

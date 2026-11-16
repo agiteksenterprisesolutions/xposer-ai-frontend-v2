@@ -17,6 +17,8 @@ import { useUIStore } from '../../store/uiStore';
 import { useTourStore } from '../../store/tourStore';
 import Dropdown from '../ui/Dropdown';
 import ThemeToggle from '../ui/ThemeToggle';
+import LanguageToggle from '../ui/LanguageToggle';
+import { useTranslation } from 'react-i18next';
 import XposerLogo from '../brand/XposerLogo';
 import UserAvatar from '../ui/UserAvatar';
 import TourTriggerButton from '../tour/TourTriggerButton';
@@ -39,6 +41,7 @@ const Navbar = ({ onMenuClick }) => {
   const location = useLocation();
   const isHome = location.pathname === "/" || (orgSlug && (location.pathname === `/${orgSlug}` || location.pathname === `/${orgSlug}/`));
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -86,11 +89,11 @@ const Navbar = ({ onMenuClick }) => {
       <Dropdown.Divider />
       <Dropdown.Item onClick={() => navigate(dashboardLink)}>
         <User className="w-4 h-4 shrink-0" />
-        Dashboard
+        {t('nav.dashboard')}
       </Dropdown.Item>
       <Dropdown.Item onClick={() => navigate(howToUseLink)}>
         <BookOpen className="w-4 h-4 shrink-0" />
-        How to use
+        {t('nav.howToUse')}
       </Dropdown.Item>
       <Dropdown.Divider />
       <Dropdown.Item
@@ -98,14 +101,14 @@ const Navbar = ({ onMenuClick }) => {
         onClick={handleLogout}
       >
         <LogOut className="w-4 h-4 shrink-0" />
-        Logout
+        {t('nav.logout')}
       </Dropdown.Item>
     </>
   );
 
   return (
     <>
-      <nav className={`${isHome ? 'fixed' : 'sticky'} top-0 left-0 right-0 z-100 h-16 px-4 sm:px-5 flex items-center justify-between bg-canvas border-b border-line font-sans box-border`}>
+      <nav className={`${isHome ? 'fixed' : 'sticky'} top-0 start-0 end-0 z-100 h-16 px-4 sm:px-5 flex items-center justify-between bg-canvas border-b border-line font-sans box-border`}>
         {/* Left Side */}
         <div className="flex items-center gap-2 min-w-0">
           {/* Mobile sidebar toggle (only for authenticated dashboard users) */}
@@ -114,7 +117,7 @@ const Navbar = ({ onMenuClick }) => {
               type="button"
               className={`${iconBtnClass} lg:hidden`}
               onClick={onMenuClick || toggleMobileSidebar}
-              aria-label="Open navigation menu"
+              aria-label={t('nav.openNavigation')}
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -127,8 +130,8 @@ const Navbar = ({ onMenuClick }) => {
               type="button"
               className={`${iconBtnClass} hidden lg:inline-flex`}
               onClick={toggleSidebar}
-              aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-              title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              aria-label={sidebarOpen ? t('nav.collapseSidebar') : t('nav.expandSidebar')}
+              title={sidebarOpen ? t('nav.collapseSidebar') : t('nav.expandSidebar')}
             >
               {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
             </button>
@@ -143,10 +146,11 @@ const Navbar = ({ onMenuClick }) => {
         {/* Right Side - Desktop */}
         <div className="hidden md:flex items-center gap-2">
           {startTour && <TourTriggerButton onClick={startTour} />}
+          <LanguageToggle />
           <ThemeToggle variant="surface" className="border-transparent" />
           {orgSlug && !user && (
             <Link to={howToUseLink} className={"border border-line px-2.5 py-1.5 rounded-lg transition-colors hover:bg-hover hover:border-line-strong"}>
-              How to use
+              {t('nav.howToUse')}
             </Link>
           )}
 
@@ -160,7 +164,7 @@ const Navbar = ({ onMenuClick }) => {
                   data-tour="tour-user-menu"
                 >
                   <UserAvatar user={user} size="xs" />
-                  <div className="hidden lg:block text-left max-w-36">
+                  <div className="hidden lg:block text-start max-w-36">
                     <p className="text-[13px] font-medium text-ink leading-tight m-0 truncate">
                       {user?.full_name || user?.username}
                     </p>
@@ -186,7 +190,7 @@ const Navbar = ({ onMenuClick }) => {
                   className={"border border-line px-2.5 py-1.5 rounded-lg transition-colors hover:bg-hover hover:border-line-strong"}
                   data-tour="tour-report-cta"
                 >
-                  Track Report
+                  {t('nav.trackReport')}
                 </Link>
               )}
               {canReportAnonymously && (
@@ -195,7 +199,7 @@ const Navbar = ({ onMenuClick }) => {
                   className={navCtaClass}
                   data-tour="tour-report-cta"
                 >
-                  Report now
+                  {t('nav.reportNow')}
                 </Link>
               )}
             </>
@@ -209,18 +213,19 @@ const Navbar = ({ onMenuClick }) => {
               type="button"
               className={`${iconBtnClass} text-accent-fg`}
               onClick={startTour}
-              aria-label="Take a tour"
-              title="Take a tour"
+              aria-label={t('nav.takeTour')}
+              title={t('nav.takeTour')}
             >
               <Compass className="h-5 w-5" />
             </button>
           )}
+          <LanguageToggle compact />
           <ThemeToggle variant="surface" className="border-transparent" />
 
           {isAuthenticated && (
             <Dropdown
               trigger={
-                <button className="flex items-center gap-1 bg-subtle border border-line rounded-lg transition-colors p-1 hover:bg-hover hover:border-line-strong" type="button" aria-label="Account menu" aria-haspopup="menu">
+                <button className="flex items-center gap-1 bg-subtle border border-line rounded-lg transition-colors p-1 hover:bg-hover hover:border-line-strong" type="button" aria-label={t('nav.accountMenu')} aria-haspopup="menu">
                   <UserAvatar user={user} size="xs" />
                   <ChevronDown className="w-4 h-4 text-ink-subtle" />
                 </button>
@@ -237,7 +242,7 @@ const Navbar = ({ onMenuClick }) => {
               type="button"
               className={iconBtnClass}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={mobileMenuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
               aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -248,15 +253,15 @@ const Navbar = ({ onMenuClick }) => {
 
       {/* Mobile Links Dropdown Menu */}
       {mobileMenuOpen && (!isAuthenticated || user?.is_anonymous) && (
-        <div className="fixed top-16 left-0 right-0 max-h-[calc(100dvh-4rem)] overflow-y-auto bg-canvas border-b border-line px-4 py-4 flex flex-col gap-2 z-99 md:hidden animate-slide-down">
+        <div className="fixed top-16 start-0 end-0 max-h-[calc(100dvh-4rem)] overflow-y-auto bg-canvas border-b border-line px-4 py-4 flex flex-col gap-2 z-99 md:hidden animate-slide-down">
           <Link to={howToUseLink} className={navLinkClass} onClick={handleLinkClick}>
-            How to use
+            {t('nav.howToUse')}
           </Link>
 
           {!isAuthenticated || !orgSlug ? (
             <>
               <Link to={orgSlug ? `/${orgSlug}/login` : `/login`} className={navLinkClass} onClick={handleLinkClick}>
-                Login
+                {t('nav.login')}
               </Link>
               {/* <Link to={orgSlug ? `/${orgSlug}/track-report` : `/track-report`} className={`${navLinkClass} border border-line-strong text-center`} onClick={handleLinkClick}>
                 Track a report
@@ -264,7 +269,7 @@ const Navbar = ({ onMenuClick }) => {
             </>
           ) : (
             <Link to={dashboardLink} className={navLinkClass} onClick={handleLinkClick}>
-              Dashboard
+              {t('nav.dashboard')}
             </Link>
           )}
 
@@ -272,7 +277,7 @@ const Navbar = ({ onMenuClick }) => {
             <>
               {!isAuthenticated && (
                 <Link to={`/${orgSlug}/track-report`} className={`${navLinkClass} border border-line-strong text-center`} onClick={handleLinkClick}>
-                  Track a report
+                  {t('nav.trackAReport')}
                 </Link>
               )}
               {canReportAnonymously && (
@@ -281,7 +286,7 @@ const Navbar = ({ onMenuClick }) => {
                   className={`${navCtaClass} justify-center`}
                   onClick={handleLinkClick}
                 >
-                  Report now
+                  {t('nav.reportNow')}
                 </Link>
               )}
 

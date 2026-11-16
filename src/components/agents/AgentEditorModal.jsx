@@ -71,7 +71,7 @@ const ChoiceCard = ({ selected, disabled, onSelect, title, description }) => (
     aria-checked={selected}
     disabled={disabled}
     onClick={onSelect}
-    className={`rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed ${
+    className={`rounded-xl border p-3 text-start transition-colors disabled:cursor-not-allowed ${
       selected ? 'border-line-accent bg-accent-soft' : 'border-line bg-surface hover:border-line-strong'
     } ${disabled && !selected ? 'opacity-50' : ''}`}
   >
@@ -336,7 +336,7 @@ const AgentEditorModal = ({
         {saveError && (
           <Alert variant="error" title={saveError.summary}>
             {saveError.problems.length > 0 && (
-              <ul className="list-disc space-y-1 pl-4">
+              <ul className="list-disc space-y-1 ps-4">
                 {saveError.problems.map((problem, index) => (
                   <li key={index}>{problem.message}</li>
                 ))}
@@ -560,7 +560,7 @@ const AgentEditorModal = ({
                                   <button
                                     type="button"
                                     onClick={() => setPermissions((prev) => new Set(prev).add(requires))}
-                                    className="ml-1.5 font-medium underline"
+                                    className="ms-1.5 font-medium underline"
                                   >
                                     Add it
                                   </button>
@@ -639,7 +639,7 @@ const AgentEditorModal = ({
             type="button"
             onClick={() => setShowAdvanced((value) => !value)}
             aria-expanded={showAdvanced}
-            className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-semibold text-ink hover:bg-hover"
+            className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-start text-sm font-semibold text-ink hover:bg-hover"
           >
             Advanced
             <ChevronDown className={`h-4 w-4 text-ink-subtle transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />

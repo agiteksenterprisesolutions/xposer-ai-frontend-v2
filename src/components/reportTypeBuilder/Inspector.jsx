@@ -25,7 +25,7 @@ const Field = ({ label, hint, htmlFor, children, error }) => (
   <div className="space-y-1.5">
     <label htmlFor={htmlFor} className="block text-sm font-medium text-ink-secondary">
       {label}
-      {hint && <span className="ml-1 font-normal text-ink-muted">{hint}</span>}
+      {hint && <span className="ms-1 font-normal text-ink-muted">{hint}</span>}
     </label>
     {children}
     {error && <p className="text-xs text-danger-fg">{error}</p>}
@@ -50,7 +50,7 @@ const Disclosure = ({ title, summary, children, defaultOpen = false }) => {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left hover:bg-hover"
+        className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-start hover:bg-hover"
       >
         <span className="text-sm font-semibold text-ink">{title}</span>
         <span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-muted">
@@ -72,7 +72,7 @@ const Switch = ({ checked, onChange, label }) => (
     onClick={() => onChange(!checked)}
     className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-active'}`}
   >
-    <span className={`absolute top-1 h-4 w-4 rounded-full bg-surface shadow-sm transition-all ${checked ? 'left-6' : 'left-1'}`} />
+    <span className={`absolute top-1 h-4 w-4 rounded-full bg-surface shadow-sm transition-all ${checked ? 'start-6' : 'start-1'}`} />
   </button>
 );
 
@@ -218,7 +218,7 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
             value={question.type}
             disabled={typeLocked}
             onChange={(e) => set({ type: e.target.value })}
-            className="-ml-1 mt-0.5 max-w-full rounded border-0 bg-transparent px-1 py-0 text-xs text-ink-muted outline-none hover:bg-hover focus-visible:outline-2 focus-visible:outline-focus disabled:hover:bg-transparent"
+            className="-ms-1 mt-0.5 max-w-full rounded border-0 bg-transparent px-1 py-0 text-xs text-ink-muted outline-none hover:bg-hover focus-visible:outline-2 focus-visible:outline-focus disabled:hover:bg-transparent"
           >
             {QUESTION_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
@@ -282,9 +282,9 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
               readOnly={labelLocked}
               onChange={(e) => set({ label: e.target.value })}
               placeholder="What do you want to ask?"
-              className={`${inputClass} resize-none ${labelLocked ? 'bg-subtle pr-8 text-ink-secondary' : ''}`}
+              className={`${inputClass} resize-none ${labelLocked ? 'bg-subtle pe-8 text-ink-secondary' : ''}`}
             />
-            {labelLocked && <Lock className="absolute right-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
+            {labelLocked && <Lock className="absolute end-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
           </div>
         </Field>
         <Field label="Hint for reporters" hint="optional" htmlFor={`${question.id}-help`}>
@@ -357,7 +357,7 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
                 role="radio"
                 aria-checked={on}
                 onClick={() => set({ sensitive_data_class: option.value })}
-                className={`rounded-lg border px-2.5 py-2 text-left text-xs transition-colors ${
+                className={`rounded-lg border px-2.5 py-2 text-start text-xs transition-colors ${
                   on
                     ? 'border-line-accent bg-accent-soft font-semibold text-accent-fg'
                     : 'border-line text-ink-secondary hover:border-line-strong'
@@ -398,9 +398,9 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
               readOnly={core || Boolean(entry)}
               onChange={(e) => set({ name: e.target.value })}
               placeholder="e.g. incident_location"
-              className={`${inputClass} font-mono ${core || entry ? 'pr-8' : ''}`}
+              className={`${inputClass} font-mono ${core || entry ? 'pe-8' : ''}`}
             />
-            {(core || entry) && <Lock className="absolute right-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
+            {(core || entry) && <Lock className="absolute end-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
           </div>
           <p className="text-xs text-ink-muted">How the answer is stored and exported. Conditions refer to it.</p>
         </Field>

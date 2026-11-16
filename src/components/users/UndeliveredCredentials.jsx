@@ -112,7 +112,7 @@ const UndeliveredCredentials = ({ items }) => {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-ink">
                 {person.full_name || person.username}
-                {person.row != null && <span className="ml-1.5 text-xs font-normal text-ink-muted">row {person.row}</span>}
+                {person.row != null && <span className="ms-1.5 text-xs font-normal text-ink-muted">row {person.row}</span>}
               </p>
               <p className="text-xs text-ink-muted">
                 {person.email}

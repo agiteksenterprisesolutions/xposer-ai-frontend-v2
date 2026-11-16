@@ -1,6 +1,7 @@
 // src/components/tour/DashboardTour.jsx
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Joyride, STATUS } from 'react-joyride';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { useTourStore } from '../../store/tourStore';
 
@@ -33,7 +34,15 @@ const resolve = (className, prop, fallback) => {
  * demand from the navbar's "Take a tour" button, which it registers with
  * while mounted (or via a ref: `tourRef.current.start()`).
  */
+// Joyride places tooltips on physical sides. In right-to-left pages a step
+// that sits to the "left" of its target in English belongs on the right.
+const mirrorPlacement = (placement) => {
+  if (typeof placement !== 'string' || document.documentElement.dir !== 'rtl') return placement;
+  return placement.replace(/^(left|right)/, (side) => (side === 'left' ? 'right' : 'left'));
+};
+
 const DashboardTour = forwardRef(({ steps, storageKey }, ref) => {
+  const { t, i18n } = useTranslation('public');
   const [run, setRun] = useState(false);
   const [liveSteps, setLiveSteps] = useState([]);
   const theme = useThemeStore((s) => s.theme);
@@ -46,7 +55,7 @@ const DashboardTour = forwardRef(({ steps, storageKey }, ref) => {
       (step) => typeof step.target !== 'string' || step.target === 'body' || document.querySelector(step.target),
     );
     if (!present.length) return;
-    setLiveSteps(present);
+    setLiveSteps(present.map((step) => (step.placement ? { ...step, placement: mirrorPlacement(step.placement) } : step)));
     setRun(true);
   };
 
@@ -106,12 +115,25 @@ const DashboardTour = forwardRef(({ steps, storageKey }, ref) => {
       borderRadius: 12,
       padding: 20,
     },
-    tooltipTitle: { fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em' },
-    tooltipContent: { fontSize: 14, lineHeight: 1.6, padding: '8px 0 0' },
+    tooltipTitle: { fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em', textAlign: 'start' },
+    tooltipContent: { fontSize: 14, lineHeight: 1.6, padding: '8px 0 0', textAlign: 'start' },
     buttonPrimary: { borderRadius: 8, fontSize: 13.5, fontWeight: 600, padding: '8px 16px' },
     buttonBack: { fontSize: 13.5, fontWeight: 500 },
     buttonSkip: { fontSize: 13.5, fontWeight: 500 },
   }), [theme]);
+
+  // Joyride's own button text. `{current}`/`{total}` are Joyride's
+  // placeholders, filled in by it, so they pass through untouched.
+  const locale = useMemo(() => ({
+    back: t('tour.back'),
+    close: t('tour.close'),
+    last: t('tour.done'),
+    next: t('tour.next'),
+    nextWithProgress: t('tour.nextWithProgress', { current: '{current}', total: '{total}' }),
+    open: t('tour.open'),
+    skip: t('tour.skip'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [t, i18n.resolvedLanguage]);
 
   if (!steps.length) return null;
 
@@ -122,7 +144,7 @@ const DashboardTour = forwardRef(({ steps, storageKey }, ref) => {
       continuous
       scrollToFirstStep
       onEvent={handleEvent}
-      locale={{ last: 'Done' }}
+      locale={locale}
       options={options}
       styles={styles}
     />

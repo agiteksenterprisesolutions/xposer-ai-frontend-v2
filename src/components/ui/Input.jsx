@@ -1,4 +1,5 @@
 // src/components/ui/Input.jsx
+import { useTranslation } from 'react-i18next';
 import { forwardRef, useId } from 'react';
 
 // ─── Shared style tokens ────────────────────────────────────────────────────
@@ -20,7 +21,7 @@ const tokens = {
   ].join(' '),
   // Floating label — rides up when the control is focused or filled
   label: [
-    'absolute left-3 top-1/2 -translate-y-1/2',
+    'absolute start-3 top-1/2 -translate-y-1/2',
     'text-ink-subtle font-medium pointer-events-none select-none',
     'transition-all duration-200 ease-out-xp origin-left',
     'peer-focus:top-[9px] peer-focus:text-[10px] peer-focus:tracking-[0.03em] peer-focus:text-accent-fg peer-focus:translate-y-0',
@@ -30,13 +31,13 @@ const tokens = {
   // would sit on the same line. The label stays raised and the placeholder
   // shows beneath it.
   labelRaised: [
-    'absolute left-3 top-[9px] text-[10px] tracking-[0.03em]',
+    'absolute start-3 top-[9px] text-[10px] tracking-[0.03em]',
     'text-ink-subtle font-medium pointer-events-none select-none',
     'transition-colors duration-200 ease-out-xp',
     'peer-focus:text-accent-fg',
   ].join(' '),
-  asterisk: 'text-danger-fg ml-0.5',
-  hint: 'mt-1.5 text-xs pl-1',
+  asterisk: 'text-danger-fg ms-0.5',
+  hint: 'mt-1.5 text-xs ps-1',
 };
 
 // Padding accounts for the floating label. text-base on mobile stops iOS
@@ -109,7 +110,7 @@ const Input = forwardRef(({
     <div className={`${fullWidth ? 'w-full' : 'inline-block'} ${containerClassName}`}>
       <div className={tokens.fieldWrap}>
         {startAdornment && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle pointer-events-none z-10 text-sm">
+          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-subtle pointer-events-none z-10 text-sm">
             {startAdornment}
           </span>
         )}
@@ -130,8 +131,8 @@ const Input = forwardRef(({
             tokens.control,
             sizePadding[size] || sizePadding.medium,
             errorRing,
-            startAdornment ? 'pl-9' : '',
-            endAdornment ? 'pr-9' : '',
+            startAdornment ? 'ps-9' : '',
+            endAdornment ? 'pe-9' : '',
             className,
           ].filter(Boolean).join(' ')}
           {...props}
@@ -144,7 +145,7 @@ const Input = forwardRef(({
               raiseLabel ? tokens.labelRaised : tokens.label,
               raiseLabel ? '' : labelSize[size] || labelSize.medium,
               errorLabel,
-              startAdornment ? 'left-9' : '',
+              startAdornment ? 'start-9' : '',
             ].filter(Boolean).join(' ')}
           >
             {label}
@@ -153,7 +154,7 @@ const Input = forwardRef(({
         )}
 
         {endAdornment && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle z-10 text-sm">
+          <span className="absolute end-3 top-1/2 -translate-y-1/2 text-ink-subtle z-10 text-sm">
             {endAdornment}
           </span>
         )}
@@ -225,11 +226,11 @@ export const Textarea = forwardRef(({
             htmlFor={id}
             className={[
               ...(raiseLabel
-                ? ['absolute left-3 top-2.5 text-[10px] tracking-[0.03em]',
+                ? ['absolute start-3 top-2.5 text-[10px] tracking-[0.03em]',
                   'text-ink-subtle font-medium pointer-events-none select-none',
                   'transition-colors duration-200 ease-out-xp',
                   'peer-focus:text-accent-fg']
-                : ['absolute left-3 top-4',
+                : ['absolute start-3 top-4',
                   'text-base sm:text-sm text-ink-subtle font-medium pointer-events-none select-none',
                   'transition-all duration-200 ease-out-xp origin-left',
                   'peer-focus:top-2.5 peer-focus:text-[10px] peer-focus:tracking-[0.03em] peer-focus:text-accent-fg',
@@ -262,7 +263,7 @@ export const Select = forwardRef(({
   required = false,
   disabled = false,
   options = [],
-  placeholder = 'Select an option',
+  placeholder,
   className = '',
   containerClassName = '',
   fullWidth = true,
@@ -270,6 +271,8 @@ export const Select = forwardRef(({
   ...props
 }, ref) => {
   const id = useId();
+  const { t } = useTranslation('common');
+  placeholder ??= t('select.placeholder');
   const errorRing = error
     ? 'border-danger-line focus:border-danger-solid focus:ring-danger-soft hover:border-danger-solid'
     : '';
@@ -278,7 +281,7 @@ export const Select = forwardRef(({
     <div className={`${fullWidth ? 'w-full' : 'inline-block'} ${containerClassName}`}>
       <div className="relative group">
         {/* Custom chevron — the native one can't be themed */}
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle z-10">
+        <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-ink-subtle z-10">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />
           </svg>
@@ -300,7 +303,7 @@ export const Select = forwardRef(({
             'hover:border-line-strong',
             'focus:border-line-accent focus:ring-2 focus:ring-accent-ring',
             'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-sunken',
-            'pr-9 cursor-pointer',
+            'pe-9 cursor-pointer',
             errorRing,
             className,
           ].filter(Boolean).join(' ')}
@@ -329,7 +332,7 @@ export const Select = forwardRef(({
         {label && (
           <label
             htmlFor={id}
-            className="absolute left-3 top-2 text-[10px] tracking-[0.03em] text-ink-subtle font-medium pointer-events-none"
+            className="absolute start-3 top-2 text-[10px] tracking-[0.03em] text-ink-subtle font-medium pointer-events-none"
           >
             {label}
             {required && <span className={tokens.asterisk}>*</span>}

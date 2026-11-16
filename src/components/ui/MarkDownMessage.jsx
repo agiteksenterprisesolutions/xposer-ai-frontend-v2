@@ -20,17 +20,17 @@ const MarkdownMessage = ({ content }) => {
           </a>
         ),
         ul: ({ children }) => (
-          <ul className="list-disc ml-5 space-y-1">{children}</ul>
+          <ul className="list-disc ms-5 space-y-1">{children}</ul>
         ),
         ol: ({ children }) => (
-          <ol className="list-decimal ml-5 space-y-1">{children}</ol>
+          <ol className="list-decimal ms-5 space-y-1">{children}</ol>
         ),
         li: ({ children }) => <li className="leading-relaxed">{children}</li>,
         strong: ({ children }) => (
           <strong className="font-semibold text-ink">{children}</strong>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="border-l-2 border-line-accent pl-3 my-2 text-ink-muted italic">
+          <blockquote className="border-s-2 border-line-accent ps-3 my-2 text-ink-muted italic">
             {children}
           </blockquote>
         ),
@@ -42,7 +42,7 @@ const MarkdownMessage = ({ content }) => {
           </div>
         ),
         th: ({ children }) => (
-          <th className="bg-subtle border-b border-line px-2.5 py-1.5 text-left text-xs font-semibold text-ink-muted">
+          <th className="bg-subtle border-b border-line px-2.5 py-1.5 text-start text-xs font-semibold text-ink-muted">
             {children}
           </th>
         ),

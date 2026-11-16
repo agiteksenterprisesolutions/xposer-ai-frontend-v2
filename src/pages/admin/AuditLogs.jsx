@@ -134,7 +134,7 @@ const AuditLogs = () => {
                 <Table.Row key={log.id || idx}>
                   <Table.Cell className="whitespace-nowrap">
                     <div className="flex items-center text-xs text-ink-muted">
-                      <Calendar className="h-3 w-3 mr-1.5" />
+                      <Calendar className="h-3 w-3 me-1.5" />
                       {parseServerDate(log.created_at)?.toLocaleString() || 'N/A'}
                     </div>
                   </Table.Cell>

@@ -102,7 +102,7 @@ const ErrorAlert = ({ error }) => {
   return (
     <Alert variant="error" title={error.summary}>
       {error.problems.length > 0 && (
-        <ul className="list-disc space-y-1 pl-4">
+        <ul className="list-disc space-y-1 ps-4">
           {error.problems.map((problem, index) => (
             <li key={index}>
               {problem.field ? `${problem.field}: ` : ''}
@@ -180,7 +180,7 @@ const PreviewResult = ({ preview }) => {
 
       {sample.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-line">
-          <table className="min-w-full text-left text-xs">
+          <table className="min-w-full text-start text-xs">
             <thead className="bg-subtle text-ink-subtle">
               <tr>
                 {MAPPED_FIELDS.map((f) => (
@@ -239,7 +239,7 @@ const SyncResult = ({ result, onGoTo }) => {
       {unmatched.length > 0 && (
         <Alert variant="warning" title="Next: map these job titles">
           <p>People with these titles were synced with no level, so they can't be escalated from yet.</p>
-          <ul className="mt-2 list-disc space-y-0.5 pl-4">
+          <ul className="mt-2 list-disc space-y-0.5 ps-4">
             {unmatched.map((entry, index) => (
               <li key={index}>{titleOf(entry)}</li>
             ))}
@@ -490,7 +490,7 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
 
           {/graph\.microsoft\.com/i.test(form.api_base_url) && (
             <Alert variant="warning" title="Microsoft Graph: check these before syncing">
-              <ul className="list-disc space-y-1 pl-4">
+              <ul className="list-disc space-y-1 ps-4">
                 <li>
                   Set <span className="font-mono">Results path</span> to <span className="font-mono">value</span> — Graph wraps
                   the list in it.

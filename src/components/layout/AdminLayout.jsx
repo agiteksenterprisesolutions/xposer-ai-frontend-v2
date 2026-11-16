@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 import RouteAnnouncer from "./RouteAnnouncer";
@@ -7,9 +8,10 @@ import { useUIStore } from "../../store/uiStore";
 const AdminLayout = () => {
   // Set by a page that fills the content area itself (the workflow builder).
   const fullBleed = useUIStore((state) => state.fullBleed);
+  const { t } = useTranslation("common");
   return (
   <div className="min-h-screen flex flex-col bg-canvas text-ink">
-    <a href="#main-content" className="skip-link">Skip to main content</a>
+    <a href="#main-content" className="skip-link">{t("layout.skipToMain")}</a>
     <Navbar />
     <div className="flex flex-1 min-w-0">
       <Sidebar />

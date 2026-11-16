@@ -96,14 +96,14 @@ const MemberPicker = ({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex w-full items-center justify-between gap-2 text-left ${className}`}
+        className={`flex w-full items-center justify-between gap-2 text-start ${className}`}
       >
         <span className={`truncate ${value ? '' : 'text-ink-muted'}`}>{label}</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-ink-subtle" />
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-line bg-surface shadow-lg">
+        <div className="absolute start-0 end-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-line bg-surface shadow-lg">
           <label className="flex items-center gap-2 border-b border-line-subtle px-3 py-2">
             <Search className="h-4 w-4 shrink-0 text-ink-subtle" />
             <input
@@ -124,7 +124,7 @@ const MemberPicker = ({
                 <button
                   type="button"
                   onClick={() => choose(null)}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-muted transition-colors hover:bg-hover"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-start text-sm text-ink-muted transition-colors hover:bg-hover"
                 >
                   <X className="h-3.5 w-3.5" />
                   {emptyLabel}
@@ -141,7 +141,7 @@ const MemberPicker = ({
                   type="button"
                   onClick={() => choose(member)}
                   onMouseEnter={() => setCursor(i)}
-                  className={`flex w-full flex-col px-3 py-1.5 text-left transition-colors ${
+                  className={`flex w-full flex-col px-3 py-1.5 text-start transition-colors ${
                     i === cursor ? 'bg-hover' : ''
                   } ${member.external_id === value ? 'font-semibold' : ''}`}
                 >

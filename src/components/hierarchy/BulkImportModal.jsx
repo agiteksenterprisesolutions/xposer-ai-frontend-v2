@@ -173,7 +173,7 @@ const BulkImportModal = ({ onClose, onImported }) => {
           <Alert variant="error" title={current.summary || 'Nothing was imported'}>
             <p>Nobody was imported — the directory is exactly as it was. Fix the highlighted rows and check again.</p>
             {unplacedProblems.length > 0 && (
-              <ul className="mt-2 list-disc space-y-1 pl-4">
+              <ul className="mt-2 list-disc space-y-1 ps-4">
                 {unplacedProblems.map((problem, index) => (
                   <li key={index}>{problem.message}</li>
                 ))}
@@ -184,7 +184,7 @@ const BulkImportModal = ({ onClose, onImported }) => {
 
         {parsed.members.length > 0 && !parsed.error && (
           <div className="overflow-x-auto rounded-xl border border-line">
-            <table className="min-w-full text-left text-xs">
+            <table className="min-w-full text-start text-xs">
               <thead className="bg-subtle text-ink-subtle">
                 <tr>
                   <th className="px-3 py-2 font-semibold">Row</th>

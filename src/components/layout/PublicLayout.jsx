@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import React, { useState, useEffect } from "react"
 import { Navigate, Outlet, useParams, useLocation } from "react-router-dom"
 import Footer from "./Footer"
@@ -26,6 +27,7 @@ const PublicLayout = ({ requireOrg = false }) => {
   // Called before any early return: a hook after a conditional return changes
   // the hook order between renders.
   const location = useLocation();
+  const { t } = useTranslation("common");
 
   // Signed in to one organization but on another's URL. Applies to every
   // /:orgSlug page, not only requireOrg ones.
@@ -84,7 +86,7 @@ const PublicLayout = ({ requireOrg = false }) => {
       <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-4 font-sans">
         <div className="w-12 h-12 border-4 border-line border-t-accent rounded-full animate-spin mb-4" />
         <p className="text-ink-muted text-sm font-medium tracking-wide animate-pulse">
-          Validating organization access...
+          {t("layout.validatingOrg")}
         </p>
       </div>
     );
@@ -111,7 +113,7 @@ const PublicLayout = ({ requireOrg = false }) => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <a href="#main-content" className="skip-link">{t("layout.skipToMain")}</a>
       <Navbar />
       <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
         <RouteAnnouncer />

@@ -74,7 +74,7 @@ const TermsConditions = () => {
             <article id="acceptance">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <FileText className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Acceptance of Terms</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -86,7 +86,7 @@ const TermsConditions = () => {
             <article id="accounts">
               <Card>
                 <div className="flex items-start mb-4">
-                  <CheckCircle className="w-5 h-5 text-link mr-3" />
+                  <CheckCircle className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Accounts & Registration</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -99,7 +99,7 @@ const TermsConditions = () => {
             <article id="content">
               <Card>
                 <div className="flex items-start mb-4">
-                  <AlertTriangle className="w-5 h-5 text-link mr-3" />
+                  <AlertTriangle className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Report Content</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -112,7 +112,7 @@ const TermsConditions = () => {
             <article id="conduct">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Info className="w-5 h-5 text-link mr-3" />
+                  <Info className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">User Conduct</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -128,7 +128,7 @@ const TermsConditions = () => {
             <article id="disclaimer">
               <Card>
                 <div className="flex items-start mb-4">
-                  <Shield className="w-5 h-5 text-link mr-3" />
+                  <Shield className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Disclaimers & Limitation of Liability</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -141,7 +141,7 @@ const TermsConditions = () => {
             <article id="termination">
               <Card>
                 <div className="flex items-start mb-4">
-                  <CheckCircle className="w-5 h-5 text-link mr-3" />
+                  <CheckCircle className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Termination</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -154,7 +154,7 @@ const TermsConditions = () => {
             <article id="contact">
               <Card>
                 <div className="flex items-start mb-4">
-                  <FileText className="w-5 h-5 text-link mr-3" />
+                  <FileText className="w-5 h-5 text-link me-3" />
                   <h2 className="text-lg font-semibold text-ink">Contact</h2>
                 </div>
                 <div className="space-y-3 text-ink-secondary text-sm">
@@ -175,9 +175,9 @@ const TermsConditions = () => {
                 </div>
 
                 <div className="hidden sm:block">
-                  <Button variant="secondary" size="medium" className="ml-4 cursor-pointer" to="/submit-anonymous">
+                  <Button variant="secondary" size="medium" className="ms-4 cursor-pointer" to="/submit-anonymous">
                       Submit a Report
-                      <ArrowRight className="ml-2 w-4 h-4" />
+                      <ArrowRight className="ms-2 w-4 h-4" />
                     </Button>
                 </div>
               </div>

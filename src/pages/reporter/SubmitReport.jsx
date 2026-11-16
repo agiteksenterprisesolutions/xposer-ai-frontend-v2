@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   FileText,
@@ -18,9 +19,10 @@ import ReportTypePicker from '../../components/forms/ReportTypePicker';
 import { useDeflectionExits } from '../../hooks/useDeflectionExits';
 
 const SubmitReport = () => {
+  const { t } = useTranslation('submit');
   useSEO({
-    title: 'Submit a Report',
-    description: 'File a new report against your account so you can track and follow up on it.',
+    title: t('reporterSubmit.seoTitle'),
+    description: t('reporterSubmit.seoDescription'),
     noIndex: true,
   });
   const { user, isAuthenticated } = useAuthStore();
@@ -46,7 +48,7 @@ const SubmitReport = () => {
           setReportTypes(normalizeListResponse(response).items);
         } catch (error) {
           console.error('Failed to fetch report types:', error);
-          toast.error('Failed to load report types');
+          toast.error(t('shared.loadTypesFailed'));
         } finally {
           setIsLoadingTypes(false);
         }
@@ -72,7 +74,7 @@ const SubmitReport = () => {
   };
 
   if (!isAuthenticated) {
-    return <LoadingSpinner message="Redirecting to login..." />;
+    return <LoadingSpinner message={t('reporterSubmit.redirecting')} />;
   }
 
   const renderTypeSelection = () => (
@@ -83,16 +85,16 @@ const SubmitReport = () => {
           onClick={() => navigate(`/${user ? user?.organization_slug : ''}/reporter/dashboard`)}
           className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors mb-6 group"
         >
-          <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          Back to Dashboard
+          <ArrowLeft className="w-4 h-4 me-2 group-hover:-translate-x-1 rtl:group-hover:translate-x-1 transition-transform" />
+          {t('reporterSubmit.back')}
         </button>
 
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-ink mb-3">
-            Submit a New Report
+            {t('reporterSubmit.title')}
           </h1>
           <p className="text-lg text-ink-muted max-w-3xl">
-            Choose the type of concern you'd like to report. All submissions are handled with confidentiality and care.
+            {t('reporterSubmit.intro')}
           </p>
         </div>
 
@@ -100,30 +102,30 @@ const SubmitReport = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-accent-soft rounded-lg p-4 border border-line-accent">
             <div className="flex items-start">
-              <Shield className="w-5 h-5 text-accent-fg mt-0.5 mr-3 shrink-0" />
+              <Shield className="w-5 h-5 text-accent-fg mt-0.5 me-3 shrink-0" />
               <div>
-                <h3 className="font-semibold text-accent-fg text-sm mb-1">Secure & Confidential</h3>
-                <p className="text-xs text-accent-fg">Your report is encrypted and protected</p>
+                <h3 className="font-semibold text-accent-fg text-sm mb-1">{t('reporterSubmit.secureTitle')}</h3>
+                <p className="text-xs text-accent-fg">{t('reporterSubmit.secureBody')}</p>
               </div>
             </div>
           </div>
 
           <div className="bg-success-soft rounded-lg p-4 border border-success-line">
             <div className="flex items-start">
-              <FileText className="w-5 h-5 text-success-fg mt-0.5 mr-3 shrink-0" />
+              <FileText className="w-5 h-5 text-success-fg mt-0.5 me-3 shrink-0" />
               <div>
-                <h3 className="font-semibold text-success-fg text-sm mb-1">Guided Process</h3>
-                <p className="text-xs text-success-fg">Step-by-step form to help you report</p>
+                <h3 className="font-semibold text-success-fg text-sm mb-1">{t('reporterSubmit.guidedTitle')}</h3>
+                <p className="text-xs text-success-fg">{t('reporterSubmit.guidedBody')}</p>
               </div>
             </div>
           </div>
 
           <div className="bg-accent-soft rounded-lg p-4 border border-line-accent">
             <div className="flex items-start">
-              <Clock className="w-5 h-5 text-accent-fg mt-0.5 mr-3 shrink-0" />
+              <Clock className="w-5 h-5 text-accent-fg mt-0.5 me-3 shrink-0" />
               <div>
-                <h3 className="font-semibold text-accent-fg text-sm mb-1">Timely Review</h3>
-                <p className="text-xs text-accent-fg">Reports are reviewed promptly by our team</p>
+                <h3 className="font-semibold text-accent-fg text-sm mb-1">{t('reporterSubmit.timelyTitle')}</h3>
+                <p className="text-xs text-accent-fg">{t('reporterSubmit.timelyBody')}</p>
               </div>
             </div>
           </div>

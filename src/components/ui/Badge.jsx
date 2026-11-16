@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 const Badge = ({
   children,
   variant = 'default',
@@ -71,8 +72,10 @@ const Badge = ({
 
 // Status badges for reports
 export const StatusBadge = ({ status }) => {
+  const { t } = useTranslation('common');
   const statusConfig = {
     draft: { variant: 'default', label: 'Draft' },
+    incomplete: { variant: 'warning', label: 'Incomplete' },
     submitted: { variant: 'success', label: 'Submitted' },
     pending: { variant: 'warning', label: 'Pending' },
     in_progress: { variant: 'primary', label: 'In Progress' },
@@ -83,12 +86,14 @@ export const StatusBadge = ({ status }) => {
   };
 
   const config = statusConfig[status] || { variant: 'default', label: status };
+  const label = statusConfig[status] ? t(`reportStatus.${status}`, { defaultValue: config.label }) : config.label;
 
-  return <Badge variant={config.variant} size="small" dot>{config.label}</Badge>;
+  return <Badge variant={config.variant} size="small" dot>{label}</Badge>;
 };
 
 // Priority badges for reports
 export const PriorityBadge = ({ priority }) => {
+  const { t } = useTranslation('common');
   const priorityConfig = {
     low: { variant: 'default', label: 'Low' },
     medium: { variant: 'secondary', label: 'Medium' },
@@ -97,8 +102,9 @@ export const PriorityBadge = ({ priority }) => {
   };
 
   const config = priorityConfig[priority] || { variant: 'default', label: priority };
+  const label = priorityConfig[priority] ? t(`priority.${priority}`, { defaultValue: config.label }) : config.label;
 
-  return <Badge variant={config.variant} size="small">{config.label}</Badge>;
+  return <Badge variant={config.variant} size="small">{label}</Badge>;
 };
 
 // Role badges for users

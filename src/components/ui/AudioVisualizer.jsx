@@ -15,6 +15,7 @@
 // phone, and a canvas costs one composite.
 import { useEffect, useRef, useState } from 'react';
 import { Mic } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Bar geometry in CSS pixels. Thick bars, generously spaced, and few of them:
 // that is what separates the LiveKit look from a spectrum analyser. The gap is
@@ -81,10 +82,12 @@ const formatElapsed = (seconds) => {
 const AudioVisualizer = ({
   stream,
   active = true,
-  label = 'Listening',
+  label,
   showTimer = true,
   className = '',
 }) => {
+  const { t } = useTranslation('chat');
+  label ??= t('visualizer.listening');
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   // The pill. Its width is independent of what is rendered inside it, which
@@ -433,7 +436,7 @@ const AudioVisualizer = ({
         <span
           className={`shrink-0 text-xs font-medium ${isSilent ? 'text-warning-fg' : 'text-ink-secondary'}`}
         >
-          {isSilent ? 'No sound detected' : label}
+          {isSilent ? t('visualizer.noSoundDetected') : label}
         </span>
       )}
 
@@ -446,7 +449,7 @@ const AudioVisualizer = ({
         {isSilent && !showLabel && (
           <span className="absolute inset-0 flex items-center justify-center gap-1 rounded-full bg-canvas text-[10px] font-medium text-warning-fg">
             <Mic className="h-3 w-3" />
-            No sound
+            {t('visualizer.noSound')}
           </span>
         )}
       </div>

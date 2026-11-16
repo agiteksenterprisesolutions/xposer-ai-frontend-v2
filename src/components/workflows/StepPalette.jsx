@@ -21,7 +21,7 @@ const Entry = ({ icon: Icon, tone, title, detail, step, onAdd }) => (
     }}
     onClick={() => onAdd(step)}
     title="Click to add, or drag onto the canvas"
-    className="group flex w-full cursor-grab items-center gap-2.5 rounded-lg border border-line bg-surface px-2.5 py-2 text-left transition-colors hover:border-line-accent hover:bg-hover active:cursor-grabbing"
+    className="group flex w-full cursor-grab items-center gap-2.5 rounded-lg border border-line bg-surface px-2.5 py-2 text-start transition-colors hover:border-line-accent hover:bg-hover active:cursor-grabbing"
   >
     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${tone}`}>
       <Icon className="h-4 w-4" />

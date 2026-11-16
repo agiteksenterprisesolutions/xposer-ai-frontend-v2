@@ -293,7 +293,7 @@ const DynamicForm = ({
           <div key={field.name} className="space-y-2">
             <label className="block text-sm font-medium text-ink-secondary">
               {field.label}
-              {field.required && <span className="text-danger-fg ml-1">*</span>}
+              {field.required && <span className="text-danger-fg ms-1">*</span>}
             </label>
             <div className="space-y-2">
               {field.options?.map((option, index) => (
@@ -318,7 +318,7 @@ const DynamicForm = ({
                     className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
                     disabled={field.readonly}
                   />
-                  <span className="ml-2 text-sm text-ink-secondary">
+                  <span className="ms-2 text-sm text-ink-secondary">
                     {option.label || option}
                   </span>
                 </label>
@@ -338,7 +338,7 @@ const DynamicForm = ({
           <div key={field.name} className="space-y-2">
             <label className="block text-sm font-medium text-ink-secondary">
               {field.label}
-              {field.required && <span className="text-danger-fg ml-1">*</span>}
+              {field.required && <span className="text-danger-fg ms-1">*</span>}
             </label>
             <div className="space-y-2">
               {field.options?.map((option, index) => (
@@ -352,7 +352,7 @@ const DynamicForm = ({
                     className="h-4 w-4 border-line-strong text-accent-fg focus:ring-accent-ring"
                     disabled={field.readonly}
                   />
-                  <span className="ml-2 text-sm text-ink-secondary">
+                  <span className="ms-2 text-sm text-ink-secondary">
                     {option.label || option}
                   </span>
                 </label>
@@ -378,9 +378,9 @@ const DynamicForm = ({
                 className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
                 disabled={field.readonly}
               />
-              <span className="ml-2 text-sm font-medium text-ink-secondary">
+              <span className="ms-2 text-sm font-medium text-ink-secondary">
                 {field.label}
-                {field.required && <span className="text-danger-fg ml-1">*</span>}
+                {field.required && <span className="text-danger-fg ms-1">*</span>}
               </span>
             </label>
             {error && (
@@ -397,12 +397,12 @@ const DynamicForm = ({
           <div key={field.name} className="space-y-2">
             <label className="block text-sm font-medium text-ink-secondary">
               {field.label}
-              {field.required && <span className="text-danger-fg ml-1">*</span>}
+              {field.required && <span className="text-danger-fg ms-1">*</span>}
             </label>
             <input
               type="file"
               onChange={(e) => handleFieldChange(field.name, e.target.files[0])}
-              className="block w-full text-sm text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent-soft file:text-accent-fg hover:file:bg-accent-soft"
+              className="block w-full text-sm text-ink-muted file:me-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent-soft file:text-accent-fg hover:file:bg-accent-soft"
               accept={field.accept || ATTACHMENT_ACCEPT}
               multiple={field.multiple}
               disabled={field.readonly}
@@ -421,7 +421,7 @@ const DynamicForm = ({
           <div key={field.name} className="space-y-2">
             <label className="block text-sm font-medium text-ink-secondary">
               {field.label}: {value}
-              {field.required && <span className="text-danger-fg ml-1">*</span>}
+              {field.required && <span className="text-danger-fg ms-1">*</span>}
             </label>
             <input
               type="range"
@@ -628,7 +628,7 @@ const DynamicForm = ({
       {/* Help text */}
       <div className="mt-6 pt-6 border-t border-line">
         <div className="flex items-start">
-          <HelpCircle className="w-5 h-5 text-ink-subtle mt-0.5 mr-2" />
+          <HelpCircle className="w-5 h-5 text-ink-subtle mt-0.5 me-2" />
           <div>
             <p className="text-sm text-ink-muted">
               All fields marked with <span className="text-danger-fg">*</span> are required.

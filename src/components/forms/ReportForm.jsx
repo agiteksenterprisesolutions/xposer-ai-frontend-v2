@@ -260,7 +260,7 @@ const ReportForm = ({
                 <div key={index} className="space-y-2">
                   <label className="block text-sm font-medium text-ink-secondary">
                     {question.label}
-                    {question.required && <span className="text-danger-fg ml-1">*</span>}
+                    {question.required && <span className="text-danger-fg ms-1">*</span>}
                   </label>
                   <div className="space-y-2">
                     {question.options?.map((option, optIndex) => (
@@ -282,7 +282,7 @@ const ReportForm = ({
                           }}
                           className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
                         />
-                        <span className="ml-2 text-sm text-ink-secondary">{option}</span>
+                        <span className="ms-2 text-sm text-ink-secondary">{option}</span>
                       </label>
                     ))}
                   </div>
@@ -316,7 +316,7 @@ const ReportForm = ({
                 <div key={index} className="space-y-2">
                   <label className="block text-sm font-medium text-ink-secondary">
                     {question.label}
-                    {question.required && <span className="text-danger-fg ml-1">*</span>}
+                    {question.required && <span className="text-danger-fg ms-1">*</span>}
                   </label>
                   <div className="flex items-center space-x-4">
                     <label className="flex items-center">
@@ -327,7 +327,7 @@ const ReportForm = ({
                         onChange={() => handleFieldChange(question.name, true)}
                         className="h-4 w-4 border-line-strong text-accent-fg focus:ring-accent-ring"
                       />
-                      <span className="ml-2 text-sm text-ink-secondary">Yes</span>
+                      <span className="ms-2 text-sm text-ink-secondary">Yes</span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -337,7 +337,7 @@ const ReportForm = ({
                         onChange={() => handleFieldChange(question.name, false)}
                         className="h-4 w-4 border-line-strong text-accent-fg focus:ring-accent-ring"
                       />
-                      <span className="ml-2 text-sm text-ink-secondary">No</span>
+                      <span className="ms-2 text-sm text-ink-secondary">No</span>
                     </label>
                   </div>
                   {error && (
@@ -396,7 +396,7 @@ const ReportForm = ({
               key={type.id}
               type="button"
               onClick={() => handleTypeSelect(type.id)}
-              className={`p-4 text-left rounded-lg border-2 transition-all ${watchBasic('report_type_id') === type.id
+              className={`p-4 text-start rounded-lg border-2 transition-all ${watchBasic('report_type_id') === type.id
                 ? 'border-line-accent bg-accent-soft'
                 : 'border-line hover:border-line-strong hover:bg-subtle'
                 }`}
@@ -425,14 +425,14 @@ const ReportForm = ({
               onChange={(e) => setShowAnonymousFields(e.target.checked)}
               className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
             />
-            <span className="ml-2 text-sm text-ink-secondary">
+            <span className="ms-2 text-sm text-ink-secondary">
               Submit anonymously (no account required)
             </span>
           </label>
           {showAnonymousFields && (
             <div className="mt-3 p-3 bg-warning-soft rounded-lg border border-warning-line">
               <div className="flex items-start">
-                <Lock className="w-5 h-5 text-warning-fg mt-0.5 mr-2" />
+                <Lock className="w-5 h-5 text-warning-fg mt-0.5 me-2" />
                 <div>
                   <p className="text-sm font-medium text-warning-fg">
                     Anonymous Reporting
@@ -510,7 +510,7 @@ const ReportForm = ({
                   accept={ATTACHMENT_ACCEPT}
                 />
               </label>
-              <p className="pl-1">or drag and drop</p>
+              <p className="ps-1">or drag and drop</p>
             </div>
             <p className="text-xs text-ink-muted">
               {ATTACHMENT_HINT}
@@ -536,7 +536,7 @@ const ReportForm = ({
                   ) : (
                     <FileText className="w-10 h-10 text-ink-subtle" />
                   )}
-                  <div className="ml-3">
+                  <div className="ms-3">
                     <p className="text-sm font-medium text-ink truncate max-w-xs">
                       {attachment.name}
                     </p>
@@ -571,7 +571,7 @@ const ReportForm = ({
                 onChange={(e) => setShowAnonymousFields(!e.target.checked)}
                 className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
               />
-              <div className="ml-2">
+              <div className="ms-2">
                 <p className="text-sm font-medium text-ink">
                   Submit with my account
                 </p>
@@ -588,7 +588,7 @@ const ReportForm = ({
                 onChange={(e) => setShowAnonymousFields(e.target.checked)}
                 className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
               />
-              <div className="ml-2">
+              <div className="ms-2">
                 <p className="text-sm font-medium text-ink">
                   Submit anonymously
                 </p>
@@ -701,7 +701,7 @@ const ReportForm = ({
       {/* Security notice */}
       <div className="mt-8 p-4 bg-success-soft rounded-lg border border-success-line">
         <div className="flex">
-          <Lock className="w-5 h-5 text-success-fg mt-0.5 mr-3 shrink-0" />
+          <Lock className="w-5 h-5 text-success-fg mt-0.5 me-3 shrink-0" />
           <div>
             <p className="text-sm font-medium text-success-fg">
               Your Information is Secure

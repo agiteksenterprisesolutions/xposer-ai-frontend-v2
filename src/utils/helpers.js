@@ -1,6 +1,7 @@
 // src/utils/helpers.js
 import { format } from 'date-fns';
 import { parseServerDate } from './formatters';
+import { dateFnsLocale, localizeDatePattern } from './locale';
 
 // Format date for display. Naive (timezone-less) timestamps from the
 // backend are treated as UTC and converted to the user's local timezone.
@@ -8,7 +9,7 @@ export const formatDate = (dateString, formatString = 'MMM dd, yyyy') => {
   if (!dateString) return 'N/A';
   try {
     const date = parseServerDate(dateString);
-    return format(date, formatString);
+    return format(date, localizeDatePattern(formatString), { locale: dateFnsLocale() });
   } catch (error) {
     return 'Invalid date';
   }

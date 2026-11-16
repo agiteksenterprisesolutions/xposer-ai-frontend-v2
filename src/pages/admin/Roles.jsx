@@ -74,7 +74,7 @@ const SavedWarnings = ({ warnings, orgSlug, onDismiss }) => {
   const linkTypes = warnings.some((w) => OWNER_WARNINGS.has(w.code));
   return (
     <Alert variant="warning" title="Saved — but check this" dismissible onDismiss={onDismiss}>
-      <ul className="list-disc space-y-1 pl-4">
+      <ul className="list-disc space-y-1 ps-4">
         {warnings.map((warning, i) => (
           <li key={i}>
             {warning.role && <span className="font-semibold">{warning.role}: </span>}
@@ -139,18 +139,18 @@ const RolesSkeleton = () => (
 
     <div className="flex items-center gap-x-5 text-xs">
       <Skeleton.Text size="xs" className="w-64" />
-      <Skeleton.Text size="xs" className="ml-auto w-32" />
+      <Skeleton.Text size="xs" className="ms-auto w-32" />
     </div>
 
     <div className="overflow-hidden rounded-2xl border border-line bg-surface">
       <table className="w-full min-w-176 border-separate border-spacing-0 [&_td]:border-b [&_td]:border-line-subtle [&_th]:border-b [&_th]:border-line-subtle">
         <thead>
           <tr className="bg-subtle">
-            <th className="w-72 min-w-52 bg-subtle px-4 py-3 text-left align-bottom text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
+            <th className="w-72 min-w-52 bg-subtle px-4 py-3 text-start align-bottom text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
               Permission
             </th>
             {Array.from({ length: SKELETON_ROLES }).map((_, i) => (
-              <th key={i} className="min-w-30 border-l border-line-subtle px-2 py-3">
+              <th key={i} className="min-w-30 border-s border-line-subtle px-2 py-3">
                 <span className="flex flex-col items-center gap-0.5">
                   <Skeleton.Text className="w-20" />
                   <Skeleton.Text size="xs" className="w-12" />
@@ -161,22 +161,22 @@ const RolesSkeleton = () => (
         </thead>
         <tbody>
           <tr className="bg-subtle/60">
-            <th className="bg-subtle px-4 py-2.5 text-left">
+            <th className="bg-subtle px-4 py-2.5 text-start">
               <Skeleton.Text size="xs" className="w-24" />
             </th>
             {Array.from({ length: SKELETON_ROLES }).map((_, i) => (
-              <td key={i} className="border-l border-line-subtle">
+              <td key={i} className="border-s border-line-subtle">
                 <Skeleton.Text size="xs" className="mx-auto w-6" />
               </td>
             ))}
           </tr>
           {Array.from({ length: 8 }).map((_, row) => (
             <tr key={row}>
-              <th className="px-4 py-3 text-left font-normal">
+              <th className="px-4 py-3 text-start font-normal">
                 <Skeleton.Text className={row % 3 === 0 ? 'w-48' : 'w-36'} />
               </th>
               {Array.from({ length: SKELETON_ROLES }).map((_, i) => (
-                <td key={i} className="border-l border-line-subtle text-center">
+                <td key={i} className="border-s border-line-subtle text-center">
                   <Skeleton.Circle size="h-5 w-5" className="mx-auto" />
                 </td>
               ))}
@@ -283,7 +283,7 @@ const RoleSummary = ({
           <Stat label="Permissions">
             {draft.size} of {total}
             {changed && (
-              <span className="ml-1.5 text-xs font-medium text-accent-fg">
+              <span className="ms-1.5 text-xs font-medium text-accent-fg">
                 {added > 0 && `+${added}`}
                 {added > 0 && removed > 0 && ' '}
                 {removed > 0 && `−${removed}`} unsaved
@@ -374,7 +374,7 @@ const Cell = ({ role, permission, label, held, was, locked, fixed, error, select
   const note = error || (changed ? (held ? 'will be allowed when saved' : 'will be removed when saved') : '');
 
   return (
-    <td className={`border-l border-line-subtle p-0 text-center ${selected ? 'bg-accent-soft/40' : ''}`}>
+    <td className={`border-s border-line-subtle p-0 text-center ${selected ? 'bg-accent-soft/40' : ''}`}>
       <button
         type="button"
         role="checkbox"
@@ -425,7 +425,7 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-start justify-between gap-3 px-4 py-3.5 text-left sm:px-5"
+        className="flex w-full items-start justify-between gap-3 px-4 py-3.5 text-start sm:px-5"
       >
         <span>
           <span className="block text-[15px] font-semibold text-ink">Who can see whom</span>
@@ -438,24 +438,24 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
       </button>
       {open && (
         <div className="overflow-x-auto border-t border-line-subtle scrollbar-thin">
-          <table className="w-full min-w-140 border-separate border-spacing-0 text-left text-sm [&_td]:border-b [&_td]:border-line-subtle [&_th]:border-b [&_th]:border-line-subtle">
+          <table className="w-full min-w-140 border-separate border-spacing-0 text-start text-sm [&_td]:border-b [&_td]:border-line-subtle [&_th]:border-b [&_th]:border-line-subtle">
             <thead>
               <tr className="bg-subtle">
-                <th scope="col" className="sticky left-0 z-10 bg-subtle-solid px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
+                <th scope="col" className="sticky start-0 z-10 bg-subtle-solid px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
                   People with… <span className="normal-case tracking-normal">can see…</span>
                 </th>
                 {columns.map((target) => (
-                  <th key={target.role} scope="col" className="border-l border-line-subtle px-3 py-2.5 text-center text-xs font-semibold text-ink">
+                  <th key={target.role} scope="col" className="border-s border-line-subtle px-3 py-2.5 text-center text-xs font-semibold text-ink">
                     {target.name}
                   </th>
                 ))}
-                {canManage && <th scope="col" className="border-l border-line-subtle px-3 py-2.5" aria-label="Edit" />}
+                {canManage && <th scope="col" className="border-s border-line-subtle px-3 py-2.5" aria-label="Edit" />}
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr key={row.role} className="hover:bg-hover/50">
-                  <th scope="row" className="sticky left-0 z-10 bg-surface px-4 py-2.5 font-medium text-ink">
+                  <th scope="row" className="sticky start-0 z-10 bg-surface px-4 py-2.5 font-medium text-ink">
                     <span className="flex items-center gap-1.5">
                       {row.is_fixed && <Lock className="h-3 w-3 text-ink-subtle" aria-label="Fixed role" />}
                       {row.name}
@@ -467,7 +467,7 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
                     </span>
                   </th>
                   {(row.targets || []).map((target) => (
-                    <td key={target.role} className="border-l border-line-subtle px-3 py-2.5 text-center">
+                    <td key={target.role} className="border-s border-line-subtle px-3 py-2.5 text-center">
                       {target.can_view ? (
                         <span
                           className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-on-accent"
@@ -488,7 +488,7 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
                     </td>
                   ))}
                   {canManage && (
-                    <td className="border-l border-line-subtle px-3 py-2.5 text-right">
+                    <td className="border-s border-line-subtle px-3 py-2.5 text-end">
                       {!row.is_fixed && (
                         <button type="button" onClick={() => onEdit(row.role)} className="text-xs font-medium text-link hover:underline">
                           Change
@@ -900,7 +900,7 @@ const Roles = () => {
               </span>
             )}
             <span className="hidden sm:inline">Select a role's name to see its summary.</span>
-            <label className="ml-auto flex cursor-pointer items-center gap-2 text-ink-secondary">
+            <label className="ms-auto flex cursor-pointer items-center gap-2 text-ink-secondary">
               <input
                 type="checkbox"
                 checked={showInactive}
@@ -914,12 +914,12 @@ const Roles = () => {
           <div className="overflow-x-auto rounded-2xl border border-line bg-surface scrollbar-thin">
             {/* Separated borders, drawn on the cells: collapsed borders spill a
                 pixel past the table and made the box scroll sideways. */}
-            <table className="w-full min-w-176 border-separate border-spacing-0 text-left [&_td]:border-b [&_td]:border-line-subtle [&_th]:border-b [&_th]:border-line-subtle [&>tbody:last-child>tr:last-child>*]:border-b-0">
+            <table className="w-full min-w-176 border-separate border-spacing-0 text-start [&_td]:border-b [&_td]:border-line-subtle [&_th]:border-b [&_th]:border-line-subtle [&>tbody:last-child>tr:last-child>*]:border-b-0">
               <thead>
                 <tr className="border-b border-line bg-subtle">
                   <th
                     scope="col"
-                    className="sticky left-0 z-10 w-40 min-w-40 sm:w-72 sm:min-w-52 bg-subtle-solid px-3 sm:px-4 py-3 align-bottom text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle"
+                    className="sticky start-0 z-10 w-40 min-w-40 sm:w-72 sm:min-w-52 bg-subtle-solid px-3 sm:px-4 py-3 align-bottom text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle"
                   >
                     Permission
                   </th>
@@ -930,7 +930,7 @@ const Roles = () => {
                       <th
                         key={role.code}
                         scope="col"
-                        className={`min-w-30 border-l border-line-subtle p-0 align-bottom ${
+                        className={`min-w-30 border-s border-line-subtle p-0 align-bottom ${
                           on ? 'bg-accent-soft shadow-[inset_0_-2px_0_var(--color-accent)]' : ''
                         } ${role.is_active === false ? 'opacity-60' : ''}`}
                       >
@@ -974,12 +974,12 @@ const Roles = () => {
                 return (
                   <tbody key={group.key}>
                     <tr className="border-b border-line-subtle bg-subtle/60">
-                      <th scope="rowgroup" className="sticky left-0 z-10 bg-subtle-solid p-0">
+                      <th scope="rowgroup" className="sticky start-0 z-10 bg-subtle-solid p-0">
                         <button
                           type="button"
                           onClick={() => toggleGroup(group.key)}
                           aria-expanded={open}
-                          className="flex w-full items-center gap-2 px-3 sm:px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-ink-secondary"
+                          className="flex w-full items-center gap-2 px-3 sm:px-4 py-2.5 text-start text-xs font-bold uppercase tracking-wider text-ink-secondary"
                         >
                           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? '' : '-rotate-90'}`} />
                           {group.label}
@@ -994,7 +994,7 @@ const Roles = () => {
                         return (
                           <td
                             key={role.code}
-                            className={`border-l border-line-subtle text-center text-[11px] font-semibold text-ink-subtle ${
+                            className={`border-s border-line-subtle text-center text-[11px] font-semibold text-ink-subtle ${
                               selected?.code === role.code ? 'bg-accent-soft/40' : ''
                             }`}
                           >
@@ -1008,7 +1008,7 @@ const Roles = () => {
                         const label = permissionLabel(entry.permission);
                         return (
                           <tr key={entry.permission} className="border-b border-line-subtle last:border-b-0 hover:bg-hover/50">
-                            <th scope="row" className="sticky left-0 z-10 bg-surface px-3 sm:px-4 py-3 font-normal">
+                            <th scope="row" className="sticky start-0 z-10 bg-surface px-3 sm:px-4 py-3 font-normal">
                               <span className="block text-sm text-ink">{label}</span>
                               {PERMISSION_HINTS[entry.permission] && (
                                 <span className="mt-0.5 block max-w-80 text-xs text-ink-muted">{PERMISSION_HINTS[entry.permission]}</span>
@@ -1068,7 +1068,7 @@ const Roles = () => {
 
       {/* Save bar */}
       {changedCodes.length > 0 && (
-        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:pl-5">
+        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:ps-5">
           <div className="min-w-0 flex-1 text-sm">
             {confirmEscalation ? (
               <p>

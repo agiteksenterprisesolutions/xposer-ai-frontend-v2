@@ -171,7 +171,7 @@ const ReportTimeline = ({ activities = [] }) => {
               <div className="relative pb-8">
                 {activityIdx !== activities.length - 1 ? (
                   <span
-                    className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-active"
+                    className="absolute top-4 start-4 -ms-px h-full w-0.5 bg-active"
                     aria-hidden="true"
                   />
                 ) : null}
@@ -211,7 +211,7 @@ const ReportTimeline = ({ activities = [] }) => {
                       {activity.data?.is_internal && activity.data?.message && (
                         <div className="mt-2 p-2 bg-warning-soft rounded-md border border-warning-line">
                           <div className="flex items-center text-warning-fg mb-1">
-                            <Shield className="w-3 h-3 mr-1" />
+                            <Shield className="w-3 h-3 me-1" />
                             <span className="text-xs font-medium">Internal Note</span>
                           </div>
                           <p className="text-sm text-warning-fg whitespace-pre-wrap">
@@ -221,7 +221,7 @@ const ReportTimeline = ({ activities = [] }) => {
                       )}
                     </div>
 
-                    <div className="whitespace-nowrap text-right text-sm text-ink-muted">
+                    <div className="whitespace-nowrap text-end text-sm text-ink-muted">
                       <div>{formatDateTime(activity.created_at)}</div>
                       <div className="text-xs mt-1">
                         {formatRelativeTime(activity.created_at)}
@@ -255,7 +255,7 @@ export const TimelineItem = ({ activity }) => {
 
   return (
     <div className="relative flex items-start mb-6 last:mb-0">
-      <div className="relative mr-3">
+      <div className="relative me-3">
         <div className={`flex items-center justify-center w-8 h-8 rounded-full ${colorClasses[color]}`}>
           <Icon className="w-4 h-4" />
         </div>
@@ -265,7 +265,7 @@ export const TimelineItem = ({ activity }) => {
           <span className="font-medium text-ink">
             {getActivityTitle(activity)}
           </span>
-          <span className="text-ink-muted ml-2">
+          <span className="text-ink-muted ms-2">
             {formatRelativeTime(activity.created_at)}
           </span>
         </div>

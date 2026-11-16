@@ -13,7 +13,7 @@ const fieldClass =
 const Label = ({ htmlFor, children, hint }) => (
   <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium text-ink-secondary">
     {children}
-    {hint && <span className="ml-1 font-normal text-ink-subtle">{hint}</span>}
+    {hint && <span className="ms-1 font-normal text-ink-subtle">{hint}</span>}
   </label>
 );
 
@@ -83,10 +83,10 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
               value={value.code || ''}
               onChange={(event) => onChange('code', event.target.value.toUpperCase())}
               disabled={readOnly || codeLocked}
-              className={`${fieldClass} font-mono ${codeLocked ? 'pr-8' : ''}`}
+              className={`${fieldClass} font-mono ${codeLocked ? 'pe-8' : ''}`}
               placeholder="Optional"
             />
-            {codeLocked && <Lock className="absolute right-3 top-2.5 h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />}
+            {codeLocked && <Lock className="absolute end-3 top-2.5 h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />}
           </div>
           {codeLocked ? (
             <p className="mt-1 text-[11px] text-ink-subtle">A code is permanent once set.</p>

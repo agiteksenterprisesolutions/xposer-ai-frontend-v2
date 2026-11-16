@@ -11,7 +11,9 @@
 // the screen. Render them verbatim — rewording them to "Invalid input" throws
 // away the part that tells the user what to do.
 
-const FALLBACK = 'Something went wrong.';
+import i18n from '../i18n';
+
+const fallbackText = () => i18n.t('errors.fallback', { ns: 'common' });
 
 /**
  * Normalise an error body into `{ summary, problems }`.
@@ -35,7 +37,7 @@ export function normaliseError(body) {
   // 422 from Pydantic.
   if (Array.isArray(d)) {
     return {
-      summary: 'Some fields need fixing.',
+      summary: i18n.t('errors.fieldsNeedFixing', { ns: 'common' }),
       problems: d.map((e) => ({
         field: Array.isArray(e?.loc) ? e.loc.filter((x) => x !== 'body').join('.') : undefined,
         message: e?.msg ?? String(e),
@@ -48,7 +50,7 @@ export function normaliseError(body) {
   // 403 / 409 / anything else with a string detail.
   if (typeof d === 'string') return { summary: d, problems: [], warnings: [] };
   if (typeof body?.message === 'string') return { summary: body.message, problems: [], warnings: [] };
-  return { summary: FALLBACK, problems: [], warnings: [] };
+  return { summary: fallbackText(), problems: [], warnings: [], fallback: true };
 }
 
 /**
@@ -61,10 +63,11 @@ export function describeError(error) {
   const body = error?.response ? error.response.data : error;
   const normalised = normaliseError(body);
 
-  if (normalised.summary === FALLBACK && !error?.response && error?.message && !error?.detail) {
+  if (normalised.fallback && !error?.response && error?.message && !error?.detail) {
     normalised.summary = error.message;
   }
-  return { status, ...normalised };
+  const { fallback, ...rest } = normalised;
+  return { status, ...rest };
 }
 
 /** Just the sentence to show, for places that only have room for one line. */

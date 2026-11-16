@@ -28,18 +28,24 @@ import axios from "axios";
 import { Room, RoomEvent, Track } from "livekit-client";
 import MarkdownMessage from "../ui/MarkDownMessage";
 import AudioVisualizer from "../ui/AudioVisualizer";
+import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
+import { intlLocale } from "../../utils/locale";
 import LanguagePills from "../ui/LanguagePills";
 import { useAuthStore } from "../../store/authStore";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { isStaffUser, isIdentifiedUser } from "../../utils/roles";
 import {
   ATTACHMENT_ACCEPT,
-  ATTACHMENT_HINT,
+  attachmentHint,
   validateAttachments,
 } from "../../utils/attachments";
 import {
+  AUTO_LANGUAGE_CODE,
+  VOICE_LANGUAGE_STORAGE_KEY,
   getInitialLanguage,
   getLanguageName,
+  normalizeLanguageCode,
   getModeCopy,
   isRtlLanguage,
   rememberLanguage,
@@ -83,7 +89,9 @@ const Button = ({
 // It can be several seconds — the model runs, and in voice mode speech has to
 // be synthesised before anything is sent — and an empty panel in that gap
 // reads as a dropped call rather than as thinking.
-const TypingIndicator = () => (
+const TypingIndicator = () => {
+  const { t } = useTranslation("chat");
+  return (
   <motion.div
     initial={{ opacity: 0, y: 6 }}
     animate={{ opacity: 1, y: 0 }}
@@ -91,7 +99,7 @@ const TypingIndicator = () => (
     transition={{ duration: 0.18 }}
     className="flex justify-start"
     role="status"
-    aria-label="The assistant is replying"
+    aria-label={t("typing.replying")}
   >
     <div className="flex items-center gap-1.5 rounded-lg bg-active px-3.5 py-3 sm:px-4">
       {[0, 0.15, 0.3].map((delay) => (
@@ -104,7 +112,8 @@ const TypingIndicator = () => (
       ))}
     </div>
   </motion.div>
-);
+  );
+};
 
 // --- Toast Notification Component (Simple implementation) ---
 //
@@ -121,7 +130,7 @@ const Toast = ({ message, type, inPanel = false }) => (
     exit={{ opacity: 0, y: inPanel ? -12 : 50 }}
     className={`${inPanel
       ? "absolute top-3 left-1/2 z-90 w-max max-w-[calc(100%-2rem)] -translate-x-1/2 sm:top-4"
-      : "fixed bottom-24 right-6 z-90"
+      : "fixed bottom-24 end-6 z-90"
       } px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${type === "error"
         ? "bg-danger-solid text-white"
         : "bg-success-solid text-white"
@@ -199,6 +208,7 @@ const AGENT_GREETING_TIMEOUT_MS = 30000;
 const CONNECTING_SLOW_MS = 9000;
 
 const ConnectingState = ({ hasToken, isConnected, agentReady, languageName }) => {
+  const { t } = useTranslation("chat");
   const [isSlow, setIsSlow] = useState(false);
 
   useEffect(() => {
@@ -208,15 +218,18 @@ const ConnectingState = ({ hasToken, isConnected, agentReady, languageName }) =>
 
   const steps = [
     {
-      label: "Preparing a secure room",
+      key: "room",
+      label: t("connecting.preparingRoom"),
       done: hasToken,
     },
     {
-      label: languageName ? `Connecting in ${languageName}` : "Connecting",
+      key: "connect",
+      label: languageName ? t("connecting.connectingIn", { language: languageName }) : t("connecting.connecting"),
       done: isConnected,
     },
     {
-      label: "Waking the assistant",
+      key: "agent",
+      label: t("connecting.wakingAssistant"),
       done: agentReady,
     },
   ];
@@ -246,18 +259,18 @@ const ConnectingState = ({ hasToken, isConnected, agentReady, languageName }) =>
       </div>
 
       <h3 className="mt-5 text-sm font-semibold text-ink">
-        Setting up your conversation
+        {t("connecting.title")}
       </h3>
       <p className="mt-1 max-w-[16rem] text-xs leading-relaxed text-ink-muted">
-        This takes a few seconds. The assistant will open the conversation.
+        {t("connecting.body")}
       </p>
 
-      <ul className="mt-5 w-full max-w-60 space-y-2 text-left">
+      <ul className="mt-5 w-full max-w-60 space-y-2 text-start">
         {steps.map((step, index) => {
           const isActive = index === activeIndex;
           return (
             <motion.li
-              key={step.label}
+              key={step.key}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: index * 0.08 }}
@@ -293,7 +306,7 @@ const ConnectingState = ({ hasToken, isConnected, agentReady, languageName }) =>
             exit={{ opacity: 0 }}
             className="mt-5 max-w-[16rem] text-[11px] leading-relaxed text-ink-subtle"
           >
-            Still working — a slow connection can make this take a little longer.
+            {t("connecting.slow")}
           </motion.p>
         )}
       </AnimatePresence>
@@ -323,10 +336,27 @@ const writeLoginHandoff = (on) => {
   }
 };
 
+// The agent's language when the reporter hasn't picked one before: their
+// remembered choice, else the interface language (when the agent speaks it),
+// else the browser's language. Separate from the interface language itself.
+const getInitialAgentLanguage = () => {
+  try {
+    const stored = normalizeLanguageCode(localStorage.getItem(VOICE_LANGUAGE_STORAGE_KEY));
+    if (stored) return stored;
+  } catch {
+    /* storage blocked: fall through */
+  }
+  const ui = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
+  if (ui && ui !== AUTO_LANGUAGE_CODE) return ui;
+  return getInitialLanguage();
+};
+
 // --- Main Application ---
 
 export default function AIChatWidget() {
   const { isAuthenticated, token: authToken, user } = useAuthStore();
+  const { t } = useTranslation("chat");
+  const isRtlUi = i18n.dir() === "rtl";
 
   // The widget is a reporting channel, so it is only for people who file
   // reports: logged-out visitors, anonymous tracking sessions and reporter
@@ -380,7 +410,7 @@ export default function AIChatWidget() {
   // before the token request: the backend writes it into the room name and the
   // agent builds its speech-to-text engine from that before anyone joins, so it
   // cannot be changed once the call is running.
-  const [language, setLanguage] = useState(getInitialLanguage);
+  const [language, setLanguage] = useState(getInitialAgentLanguage);
   // The room is not opened until this is true. The language has to travel on
   // the token, so picking it is the gate on connecting at all.
   const [languagePicked, setLanguagePicked] = useState(false);
@@ -424,9 +454,9 @@ export default function AIChatWidget() {
 
   // Attention seeker (bubble hint near the launcher button)
   const attentionMessages = [
-    "We're here!",
-    "Got something to report?",
-    "Chat with us anytime.",
+    t("attention.here"),
+    t("attention.report"),
+    t("attention.anytime"),
   ];
   const [attentionIndex, setAttentionIndex] = useState(0);
   const [showAttention, setShowAttention] = useState(false);
@@ -550,11 +580,11 @@ export default function AIChatWidget() {
   // --- NEW: Updated handleInitialize function ---
   const handleInitialize = async () => {
     if (isStaff) {
-      showToast("You are signed in to a staff account. Log out to file a report.", "error");
+      showToast(t("errors.staffAccount"), "error");
       return null;
     }
     if (useCustomPassword && password.length < 6) {
-      showToast("Password must be at least 6 characters", "error");
+      showToast(t("errors.passwordTooShort"), "error");
       return;
     }
 
@@ -585,7 +615,7 @@ export default function AIChatWidget() {
     } catch (error) {
       console.error("Failed to initialize:", error);
       showToast(
-        error.response?.data?.detail || "Failed to initialize report",
+        error.response?.data?.detail || t("errors.initFailed"),
         "error",
       );
     } finally {
@@ -595,7 +625,7 @@ export default function AIChatWidget() {
 
   const handleAuthInitialize = async () => {
     if (isStaff) {
-      showToast("You are signed in to a staff account. Log out to file a report.", "error");
+      showToast(t("errors.staffAccount"), "error");
       return null;
     }
     setIsLoading(true);
@@ -630,14 +660,15 @@ export default function AIChatWidget() {
     // A report filed from an account has no report password — the account is
     // what opens it. Only an anonymous report has one to copy.
     const text = credentials.password
-      ? `Report Number: ${credentials.reportNumber}\nPassword: ${credentials.password}`
-      : `Report Number: ${credentials.reportNumber}`;
+      ? t("credentials.clipboardWithPassword", { number: credentials.reportNumber, password: credentials.password })
+      : t("credentials.clipboardNumberOnly", { number: credentials.reportNumber });
     navigator.clipboard.writeText(text);
 
     const btn = document.getElementById("copyBtn");
     if (btn) {
       const original = btn.innerHTML;
-      btn.innerHTML = '<span class="text-success-fg">Copied!</span>';
+      btn.innerHTML = '<span class="text-success-fg"></span>';
+      btn.firstChild.textContent = t("credentials.copied");
       setTimeout(() => (btn.innerHTML = original), 2000);
     }
   };
@@ -646,35 +677,23 @@ export default function AIChatWidget() {
     if (!submittedReportNumber) return;
     navigator.clipboard
       ?.writeText(submittedReportNumber)
-      .then(() => showToast("Report number copied"))
-      .catch(() => showToast("Could not copy — please write it down", "error"));
+      .then(() => showToast(t("toast.reportNumberCopied")))
+      .catch(() => showToast(t("errors.copyFailed"), "error"));
   };
 
   const handleDownloadCredentials = () => {
     if (!credentials) return;
     // Same as the copy above: no password line at all for an account report,
     // rather than a line reading "Password: undefined".
+    const fileValues = {
+      number: credentials.reportNumber,
+      password: credentials.password,
+      url: window.location.origin,
+      date: new Date().toLocaleString(intlLocale()),
+    };
     const content = credentials.password
-      ? `
-XposerAI Report Credentials
-================================
-Report Number: ${credentials.reportNumber}
-Password: ${credentials.password}
-
-IMPORTANT: Save these credentials. They cannot be recovered if lost.
-Track your report at: ${window.location.origin}
-Generated: ${new Date().toLocaleString()}
-    `
-      : `
-XposerAI Report Credentials
-================================
-Report Number: ${credentials.reportNumber}
-
-This report is filed under your account — sign in to open it. No report
-password is needed.
-Track your report at: ${window.location.origin}
-Generated: ${new Date().toLocaleString()}
-    `;
+      ? t("credentials.fileWithPassword", fileValues)
+      : t("credentials.fileAccount", fileValues);
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -716,9 +735,7 @@ Generated: ${new Date().toLocaleString()}
 
       if (isAuthenticated && authToken) {
         if (!freshCredentials?.reportNumber) {
-          throw new Error(
-            "Report number not available. Please ensure you have started a report.",
-          );
+          throw new Error(t("errors.reportNotStarted"));
         }
 
         requestBody = {
@@ -732,7 +749,7 @@ Generated: ${new Date().toLocaleString()}
         if (tenant) requestBody.organization_slug = tenant;
       } else if (!isAuthenticated) {
         if (!freshCredentials?.reportNumber || !freshCredentials?.password) {
-          throw new Error("Anonymous credentials not available.");
+          throw new Error(t("errors.anonymousCredentialsMissing"));
         }
 
         requestBody = {
@@ -743,7 +760,7 @@ Generated: ${new Date().toLocaleString()}
           freshCredentials?.organization_slug ?? orgSlug;
         if (tenant) requestBody.organization_slug = tenant;
       } else {
-        throw new Error("Authentication state unclear.");
+        throw new Error(t("errors.authUnclear"));
       }
 
       // The whole language integration: one optional field. The backend puts it
@@ -779,7 +796,7 @@ Generated: ${new Date().toLocaleString()}
           roomName: data.data.room_name,
         });
       } else {
-        throw new Error(data.message || "Invalid token response");
+        throw new Error(data.message || t("errors.connectFailed"));
       }
     } catch (error) {
       console.error("❌ AIChatWidget - Error:", {
@@ -791,15 +808,15 @@ Generated: ${new Date().toLocaleString()}
       if (error.response?.status === 401) {
         setTokenError(
           isAuthenticated
-            ? "Invalid access token. Please log in again."
-            : "Invalid report credentials.",
+            ? t("errors.invalidAccessToken")
+            : t("errors.invalidCredentials"),
         );
       } else {
         setTokenError(
           error.response?.data?.message ||
           error.response?.data?.error ||
           error.message ||
-          "Failed to connect.",
+          t("errors.connectFailed"),
         );
       }
 
@@ -811,7 +828,7 @@ Generated: ${new Date().toLocaleString()}
     } finally {
       setIsLoadingToken(false);
     }
-  }, [isAuthenticated, authToken, user?.organization_slug, orgSlug, language, voiceOutput]);
+  }, [isAuthenticated, authToken, user?.organization_slug, orgSlug, language, voiceOutput, t]);
 
   // The language question is the first of two: it is remembered here, and the
   // reply-mode answer below is what actually opens the room. Both have to be
@@ -938,7 +955,7 @@ Generated: ${new Date().toLocaleString()}
 
       if (reason === "token_expired") {
         setToken(null);
-        setTokenError("Session expired.");
+        setTokenError(t("errors.sessionExpired"));
       }
     });
 
@@ -1305,7 +1322,7 @@ Generated: ${new Date().toLocaleString()}
     } catch (error) {
       console.error("AIChatWidget - could not switch reply mode:", error);
       setVoicePending(false);
-      showToast("Could not switch modes. Try again.", "error");
+      showToast(t("errors.switchModeFailed"), "error");
     }
   };
 
@@ -1348,7 +1365,7 @@ Generated: ${new Date().toLocaleString()}
       await room.connect(livekitUrl, token);
     } catch (error) {
       console.error("Connection error:", error);
-      setTokenError("Failed to connect.");
+      setTokenError(t("errors.connectFailed"));
       setToken(null);
     }
   };
@@ -1428,7 +1445,7 @@ Generated: ${new Date().toLocaleString()}
         const organizationSlug = orgSlug;
 
         if (!reportNumber) {
-          throw new Error("Report number not found.");
+          throw new Error(t("errors.reportNumberMissing"));
         }
 
         const result = await reportsAPI.uploadAttachments(
@@ -1451,10 +1468,10 @@ Generated: ${new Date().toLocaleString()}
           topic: "lk.chat",
         });
 
-        showToast(result.message || "Files uploaded successfully");
+        showToast(result.message || t("toast.filesUploaded"));
       } catch (error) {
         console.error("Upload failed:", error);
-        showToast(error.response?.data?.detail || "Upload failed", "error");
+        showToast(error.response?.data?.detail || error.message || t("errors.uploadFailed"), "error");
         setIsUploading(false);
         return; // Stop if upload failed
       } finally {
@@ -1481,7 +1498,7 @@ Generated: ${new Date().toLocaleString()}
       startTypingIndicator();
     } catch (error) {
       stopTypingIndicator();
-      addMessage("Failed to send.", "assistant", "text");
+      addMessage(t("errors.sendFailed"), "assistant", "text");
     }
   };
 
@@ -1566,7 +1583,7 @@ Generated: ${new Date().toLocaleString()}
         setIsRecording(true);
       }
     } catch (error) {
-      addMessage("Could not access microphone.", "assistant", "text");
+      addMessage(t("errors.micFailed"), "assistant", "text");
       setIsMicEnabled(false);
       setIsRecording(false);
     }
@@ -1589,16 +1606,16 @@ Generated: ${new Date().toLocaleString()}
 
       if (isAuthenticated) {
         if (!authToken) {
-          setTokenError("Please log in first");
+          setTokenError(t("errors.loginFirst"));
           return;
         }
         if (!freshCredentials?.reportNumber) {
-          setTokenError("No report found.");
+          setTokenError(t("errors.noReport"));
           return;
         }
       } else {
         if (!freshCredentials?.reportNumber || !freshCredentials?.password) {
-          alert("Please create a report first.");
+          alert(t("errors.createReportFirst"));
           return;
         }
       }
@@ -1615,7 +1632,7 @@ Generated: ${new Date().toLocaleString()}
         clearFiles();
       }, 300);
     }
-  }, [isOpen, isAuthenticated, authToken]);
+  }, [isOpen, isAuthenticated, authToken, t]);
 
   // const handleSendMessage = (e) => {
   //   e.preventDefault();
@@ -1660,7 +1677,7 @@ Generated: ${new Date().toLocaleString()}
     setMessages([
       {
         id: 1,
-        text: "Session cleared. How can I help you today?",
+        text: t("chat.sessionCleared"),
         sender: "bot",
         time: new Date(),
       },
@@ -1677,38 +1694,38 @@ Generated: ${new Date().toLocaleString()}
       className="flex flex-col gap-4"
     >
       <div className="space-y-2">
-        <h3 className="text-xl font-semibold text-ink">Submit a Report</h3>
+        <h3 className="text-xl font-semibold text-ink">{t("home.title")}</h3>
         <p className="text-sm text-ink-muted">
-          Choose how you want to proceed with your submission.
+          {t("home.subtitle")}
         </p>
       </div>
 
       <div className="grid gap-3">
         <button
           onClick={handleAnonymousSelect}
-          className="group flex items-center gap-4 p-4 rounded-xl bg-surface border border-line hover:border-line-strong hover:bg-hover transition-all text-left"
+          className="group flex items-center gap-4 p-4 rounded-xl bg-surface border border-line hover:border-line-strong hover:bg-hover transition-all text-start"
         >
           <div className="p-2.5 bg-canvas rounded-lg border border-line group-hover:border-line-strong text-ink-muted group-hover:text-ink transition-colors">
             <Ghost size={22} />
           </div>
           <div>
-            <h4 className="font-medium text-ink text-sm">Anonymous Report</h4>
+            <h4 className="font-medium text-ink text-sm">{t("home.anonymous")}</h4>
           </div>
           <ArrowLeft
-            className="ml-auto -rotate-180 opacity-0 group-hover:opacity-100 transition-opacity text-ink-muted"
+            className="ms-auto -rotate-180 opacity-0 group-hover:opacity-100 transition-opacity text-ink-muted"
             size={16}
           />
         </button>
 
         <button
           onClick={() => setStep("loggedin-submission")}
-          className="group flex items-center gap-4 p-4 rounded-xl bg-surface border border-line hover:border-line-strong hover:bg-hover transition-all text-left opacity-75 hover:opacity-100"
+          className="group flex items-center gap-4 p-4 rounded-xl bg-surface border border-line hover:border-line-strong hover:bg-hover transition-all text-start opacity-75 hover:opacity-100"
         >
           <div className="p-2.5 bg-canvas rounded-lg border border-line group-hover:border-line-strong text-ink-muted group-hover:text-ink transition-colors">
             <Fingerprint size={22} />
           </div>
           <div>
-            <h4 className="font-medium text-ink text-sm">Account Report</h4>
+            <h4 className="font-medium text-ink text-sm">{t("home.account")}</h4>
           </div>
         </button>
       </div>
@@ -1717,25 +1734,24 @@ Generated: ${new Date().toLocaleString()}
 
   const renderPasswordSetup = () => (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
+      initial={{ opacity: 0, x: isRtlUi ? -20 : 20 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
+      exit={{ opacity: 0, x: isRtlUi ? 20 : -20 }}
       className="flex flex-col gap-4"
     >
       <button
         onClick={() => setStep("home")}
         className="flex items-center gap-1 text-xs text-ink-muted hover:text-ink transition-colors w-fit"
       >
-        <ArrowLeft size={12} /> Back
+        <ArrowLeft size={12} /> {t("actions.back")}
       </button>
 
       <div className="space-y-1">
         <h3 className="text-lg font-medium text-ink flex items-center gap-2">
-          <Key size={16} className="text-ink-muted" /> Secure Credentials
+          <Key size={16} className="text-ink-muted" /> {t("password.title")}
         </h3>
         <p className="text-xs text-ink-muted">
-          Create a password to encrypt your report. You'll need this to check
-          updates.
+          {t("password.body")}
         </p>
       </div>
 
@@ -1753,10 +1769,10 @@ Generated: ${new Date().toLocaleString()}
           </div>
           <div>
             <div className="text-sm font-medium text-ink">
-              Auto-generate password
+              {t("password.auto")}
             </div>
             <div className="text-xs text-ink-muted">
-              Strongest security (recommended)
+              {t("password.autoHint")}
             </div>
           </div>
         </label>
@@ -1773,8 +1789,8 @@ Generated: ${new Date().toLocaleString()}
             )}
           </div>
           <div className="flex-1">
-            <div className="text-sm font-medium text-ink">Create my own</div>
-            <div className="text-xs text-ink-muted">Minimum 6 characters</div>
+            <div className="text-sm font-medium text-ink">{t("password.custom")}</div>
+            <div className="text-xs text-ink-muted">{t("password.customHint")}</div>
 
             {useCustomPassword && (
               <motion.div
@@ -1786,7 +1802,9 @@ Generated: ${new Date().toLocaleString()}
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
+                  placeholder={t("password.placeholder")}
+                  aria-label={t("password.placeholder")}
+                  autoComplete="new-password"
                   className="w-full bg-canvas border border-line rounded px-3 py-2 text-sm text-ink focus:border-line-accent outline-none"
                 />
                 <button
@@ -1795,7 +1813,8 @@ Generated: ${new Date().toLocaleString()}
                     e.stopPropagation();
                     setShowPassword(!showPassword);
                   }}
-                  className="absolute right-3 top-2.5 text-ink-muted hover:text-ink"
+                  aria-label={showPassword ? t("password.hide") : t("password.show")}
+                  className="absolute end-3 top-2.5 text-ink-muted hover:text-ink"
                 >
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -1808,9 +1827,7 @@ Generated: ${new Date().toLocaleString()}
       <div className="p-3 bg-warning-soft border border-warning-line rounded-lg flex gap-2 items-start">
         <AlertTriangle size={14} className="text-warning-fg mt-0.5 shrink-0" />
         <p className="text-[10px] text-warning-fg leading-relaxed">
-          <strong>Save your credentials!</strong> If you lose your password,
-          your report cannot be recovered. We do not store passwords in plain
-          text.
+          <strong>{t("password.warningStrong")}</strong> {t("password.warningBody")}
         </p>
       </div>
 
@@ -1820,7 +1837,7 @@ Generated: ${new Date().toLocaleString()}
         icon={isLoading ? Loader2 : null}
         className="w-full mt-2"
       >
-        {isLoading ? "Creating..." : "Create Secure ID"}
+        {isLoading ? t("password.creating") : t("password.create")}
       </Button>
     </motion.div>
   );
@@ -1836,24 +1853,23 @@ Generated: ${new Date().toLocaleString()}
           onClick={() => setStep("home")}
           className="flex items-center gap-1 text-xs text-ink-muted hover:text-ink transition-colors w-fit"
         >
-          <ArrowLeft size={12} /> Back
+          <ArrowLeft size={12} /> {t("actions.back")}
         </button>
         <div className="w-12 h-12 bg-success-soft text-success-fg rounded-full flex items-center justify-center mx-auto border border-success-line">
           <CheckCircle2 size={24} />
         </div>
-        <h3 className="text-lg font-medium text-ink">Credentials Created</h3>
+        <h3 className="text-lg font-medium text-ink">{t("credentials.createdTitle")}</h3>
         <p className="text-xs text-ink-muted px-4">
-          Your secure ID has been generated. Download or copy these details
-          immediately.
+          {t("credentials.createdBody")}
         </p>
       </div>
 
       <div className="bg-canvas border border-line rounded-lg p-4 space-y-3 font-mono text-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-line-strong to-transparent" />
+        <div className="absolute top-0 start-0 w-full h-1 bg-linear-to-r from-transparent via-line-strong to-transparent" />
 
         <div>
           <div className="text-xs text-ink-muted mb-1 uppercase tracking-wider">
-            Report Number
+            {t("credentials.reportNumber")}
           </div>
           <div className="text-ink text-base sm:text-lg tracking-wider break-all">
             {credentials?.reportNumber}
@@ -1862,7 +1878,7 @@ Generated: ${new Date().toLocaleString()}
 
         <div>
           <div className="text-xs text-ink-muted mb-1 uppercase tracking-wider">
-            Password
+            {t("credentials.password")}
           </div>
           <div className="text-ink text-base sm:text-lg tracking-wider break-all">
             {credentials?.password}
@@ -1877,20 +1893,20 @@ Generated: ${new Date().toLocaleString()}
             onClick={handleCopyCredentials}
             className="flex-1 flex items-center justify-center gap-2 py-2 bg-surface hover:bg-raised border border-line rounded text-xs text-ink-secondary transition-colors"
           >
-            <Copy size={12} /> Copy
+            <Copy size={12} /> {t("credentials.copy")}
           </button>
           <button
             onClick={handleDownloadCredentials}
             className="flex-1 flex items-center justify-center gap-2 py-2 bg-surface hover:bg-raised border border-line rounded text-xs text-ink-secondary transition-colors"
           >
-            <Download size={12} /> Download
+            <Download size={12} /> {t("credentials.download")}
           </button>
         </div>
       </div>
 
       {/* Opens the chat, which asks for a language before connecting. */}
       <Button onClick={() => setStep("chat")} className="w-full">
-        Continue to Chat
+        {t("credentials.continue")}
       </Button>
     </motion.div>
   );
@@ -1922,12 +1938,12 @@ Generated: ${new Date().toLocaleString()}
       <div className="flex items-center justify-between gap-2 pb-4 md:pb-3 border-b border-line mb-4">
         <div className="flex items-center gap-2 min-w-0">
           <div className="relative shrink-0">
-            <div className="w-2 h-2 bg-success-solid rounded-full absolute -top-0.5 -right-0.5 border border-line" />
+            <div className="w-2 h-2 bg-success-solid rounded-full absolute -top-0.5 -end-0.5 border border-line" />
             <Ghost size={16} className="text-ink-muted" />
           </div>
           <div className="min-w-0">
             <div className="text-xs font-medium text-ink truncate">
-              {credentials?.organization_slug ? credentials.organization_slug.toUpperCase() : "Anonymous"}
+              {credentials?.organization_slug ? credentials.organization_slug.toUpperCase() : t("chat.anonymous")}
             </div>
             <div className="text-[10px] text-ink-muted font-mono truncate">
               {credentials?.reportNumber}
@@ -1938,7 +1954,7 @@ Generated: ${new Date().toLocaleString()}
           {activeLanguage && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line bg-subtle px-2 py-0.5 text-[10px] text-ink-muted"
-              title="Language for this conversation. End the session to change it."
+              title={t("chat.languageBadgeTitle")}
             >
               <Globe size={10} />
               {getLanguageName(activeLanguage)}
@@ -1956,27 +1972,29 @@ Generated: ${new Date().toLocaleString()}
           {isConnected && !callEnded && (
             <div
               role="group"
-              aria-label="How the assistant replies"
+              aria-label={t("chat.replyModeGroup")}
               className="flex shrink-0 items-center gap-0.5 rounded-full border border-line bg-subtle p-0.5"
             >
               {[
                 {
                   enabled: true,
-                  label: "Voice",
+                  key: "voice",
+                  label: t("chat.voice"),
                   Icon: Volume2,
-                  title: "The assistant speaks its replies",
+                  title: t("chat.voiceTitle"),
                 },
                 {
                   enabled: false,
-                  label: "Text",
+                  key: "text",
+                  label: t("chat.text"),
                   Icon: MessageSquareText,
-                  title: "The assistant replies silently, in text",
+                  title: t("chat.textTitle"),
                 },
-              ].map(({ enabled, label, Icon, title }) => {
+              ].map(({ enabled, key, label, Icon, title }) => {
                 const active = voiceEnabled === enabled;
                 return (
                   <button
-                    key={label}
+                    key={key}
                     type="button"
                     onClick={() => setVoiceMode(enabled)}
                     disabled={voicePending}
@@ -2024,7 +2042,7 @@ Generated: ${new Date().toLocaleString()}
               }}
               className="text-[10px] px-2 py-1 bg-danger-solid text-white rounded hover:text-danger-fg"
             >
-              End Session
+              {t("chat.endSession")}
             </button>
           )}
           <button
@@ -2033,7 +2051,8 @@ Generated: ${new Date().toLocaleString()}
               setIsOpen(false);
             }}
             className="md:hidden p-1 rounded text-ink-muted hover:text-ink hover:bg-raised transition-colors"
-            title="Close chat"
+            title={t("chat.close")}
+            aria-label={t("chat.close")}
           >
             <X size={16} />
           </button>
@@ -2041,13 +2060,13 @@ Generated: ${new Date().toLocaleString()}
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2 custom-scrollbar scrollbar-thin">
+      <div className="flex-1 overflow-y-auto space-y-3 mb-4 pe-2 custom-scrollbar scrollbar-thin">
         {/* The language question. Not a message from the agent — nothing is
             connected yet — but it reads as the opening turn, because the answer
             is what the room is built from. */}
         {!languagePicked && !callEnded && (
           <div className="space-y-3">
-            {["Hey there! I'm your reporting assistant.", "Which language should we talk in?"].map(
+            {[t("chat.greeting"), t("chat.languageQuestion")].map(
               (line, index) => (
                 <motion.div
                   key={line}
@@ -2143,7 +2162,7 @@ Generated: ${new Date().toLocaleString()}
 
             {tokenError && (
               <p className="pt-1 text-center text-xs text-danger-fg">
-                {tokenError} Pick a language to try again.
+                {t("errors.tryAgainPickLanguage", { error: tokenError })}
               </p>
             )}
           </div>
@@ -2172,7 +2191,7 @@ Generated: ${new Date().toLocaleString()}
             />
           ) : (
             <div className="mt-8 text-center text-ink-subtle">
-              How can I help you today?
+              {t("chat.howCanIHelp")}
             </div>
           )
         )}
@@ -2201,7 +2220,7 @@ Generated: ${new Date().toLocaleString()}
                 {isTranscription && isUser && (
                   <div className="text-xs opacity-60 mb-1 flex items-center gap-1">
                     <Mic size={10} />
-                    <span>Voice</span>
+                    <span>{t("chat.voiceTag")}</span>
                   </div>
                 )}
 
@@ -2250,10 +2269,11 @@ Generated: ${new Date().toLocaleString()}
                 ) : (
                   <FileText size={12} className="text-ink-muted" />
                 )}
-                <span className="truncate max-w-30">{file.name}</span>
+                <span className="truncate max-w-30" dir="auto">{file.name}</span>
                 <button
                   onClick={() => removeFile(index)}
-                  className="text-ink-muted hover:text-danger-fg transition-colors ml-1"
+                  aria-label={t("chat.removeFile", { name: file.name })}
+                  className="text-ink-muted hover:text-danger-fg transition-colors ms-1"
                 >
                   <X size={12} />
                 </button>
@@ -2274,7 +2294,7 @@ Generated: ${new Date().toLocaleString()}
             <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-success-fg" />
             <div className="min-w-0">
               <p className="text-xs font-semibold text-ink">
-                Report filed
+                {t("filed.title")}
                 {submittedReportNumber && (
                   <span className="font-mono font-normal text-ink-muted">
                     {" "}
@@ -2283,8 +2303,7 @@ Generated: ${new Date().toLocaleString()}
                 )}
               </p>
               <p className="mt-0.5 text-[11px] leading-snug text-ink-muted">
-                Write down your report number and password now — the assistant is reading
-                them out, and the password is never stored where it can be recovered.
+                {t("filed.writeDown")}
               </p>
             </div>
           </motion.div>
@@ -2306,10 +2325,9 @@ Generated: ${new Date().toLocaleString()}
                 <CheckCircle2 size={18} />
               </span>
               <div className="min-w-0">
-                <h4 className="text-sm font-semibold text-ink">Report submitted</h4>
+                <h4 className="text-sm font-semibold text-ink">{t("submitted.title")}</h4>
                 <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
-                  Your report has been filed and is now with the compliance team. Nothing
-                  further is needed from you right now.
+                  {t("submitted.body")}
                 </p>
               </div>
             </div>
@@ -2318,7 +2336,7 @@ Generated: ${new Date().toLocaleString()}
               <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-line-subtle bg-subtle px-3 py-2">
                 <div className="min-w-0">
                   <p className="text-[10px] font-medium uppercase tracking-wider text-ink-subtle">
-                    Report number
+                    {t("submitted.reportNumber")}
                   </p>
                   <p className="truncate font-mono text-sm font-semibold tracking-wider text-ink">
                     {submittedReportNumber}
@@ -2329,8 +2347,8 @@ Generated: ${new Date().toLocaleString()}
                 <button
                   onClick={handleCopyReportNumber}
                   className="shrink-0 rounded-lg border border-line p-2 text-ink-muted transition-colors hover:bg-hover hover:text-ink"
-                  title="Copy report number"
-                  aria-label="Copy report number"
+                  title={t("submitted.copyNumber")}
+                  aria-label={t("submitted.copyNumber")}
                 >
                   <Copy size={14} />
                 </button>
@@ -2341,8 +2359,8 @@ Generated: ${new Date().toLocaleString()}
               <Key size={12} className="mt-0.5 shrink-0" />
               <span>
                 {isReporterAccount
-                  ? "This report is filed under your account — sign in with this number to follow it. Keep the number somewhere safe."
-                  : "You will need this number and the password the assistant read out. The password is never stored, so it cannot be sent to you again — keep the copy you wrote down somewhere safe."}
+                  ? t("submitted.accountNote")
+                  : t("submitted.anonymousNote")}
               </span>
             </p>
 
@@ -2352,14 +2370,14 @@ Generated: ${new Date().toLocaleString()}
                 disabled={isOpeningReport}
                 className="flex-1"
               >
-                {isOpeningReport ? "Opening report..." : isReporterAccount ? "View report" : "Track report"}
+                {isOpeningReport ? t("submitted.opening") : isReporterAccount ? t("submitted.viewReport") : t("submitted.trackReport")}
               </Button>
               <Button
                 variant="outline"
                 onClick={handleStartNewReport}
                 className="flex-1"
               >
-                Start new report
+                {t("submitted.startNew")}
               </Button>
             </div>
           </motion.div>
@@ -2388,14 +2406,15 @@ Generated: ${new Date().toLocaleString()}
               onClick={handlePaperclipClick}
               disabled={composerLocked}
               className="p-2 sm:p-2.5 rounded-full transition-colors bg-active text-ink-secondary hover:bg-active disabled:opacity-50"
-              title={`Attach evidence — ${ATTACHMENT_HINT}`}
+              title={t("composer.attachTitle", { hint: attachmentHint() })}
+              aria-label={t("composer.attach")}
             >
               <Paperclip size={18} className="sm:w-5 sm:h-5" />
             </button>
 
             {/* File Count Badge */}
             {selectedFiles.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-danger-solid text-white text-xs font-bold rounded-full min-w-4.5 h-4.5 flex items-center justify-center px-1 border-2 border-line">
+              <span className="absolute -top-1 -end-1 bg-danger-solid text-white text-xs font-bold rounded-full min-w-4.5 h-4.5 flex items-center justify-center px-1 border-2 border-line">
                 {selectedFiles.length}
               </span>
             )}
@@ -2431,11 +2450,13 @@ Generated: ${new Date().toLocaleString()}
                   onKeyDown={handleKeyPress}
                   placeholder={
                     !languagePicked
-                      ? 'Choose a language to begin...'
+                      ? t("composer.chooseLanguage")
                       : composerLocked
-                        ? 'Waiting for the assistant...'
-                        : 'Type a message...'
+                        ? t("composer.waiting")
+                        : t("composer.typeMessage")
                   }
+                  aria-label={t("composer.messageLabel")}
+                  dir="auto"
                   disabled={composerLocked}
                   // Enter sends and Shift+Enter breaks the line, so the box
                   // must never take a scroll wheel away from the transcript
@@ -2453,12 +2474,12 @@ Generated: ${new Date().toLocaleString()}
             disabled={composerLocked}
             title={
               composerLocked
-                ? "Wait for the assistant to finish"
+                ? t("composer.waitForAssistant")
                 : isMicEnabled
-                  ? "Stop recording"
-                  : "Start recording"
+                  ? t("composer.stopRecording")
+                  : t("composer.startRecording")
             }
-            aria-label={isMicEnabled ? "Stop recording" : "Start recording"}
+            aria-label={isMicEnabled ? t("composer.stopRecording") : t("composer.startRecording")}
             aria-pressed={isMicEnabled}
             className={`shrink-0 p-2 sm:p-2.5 rounded-full transition-colors ${isMicEnabled ? "bg-danger-solid text-white" : "bg-active text-ink-secondary hover:bg-active"} disabled:opacity-50`}
           >
@@ -2475,7 +2496,8 @@ Generated: ${new Date().toLocaleString()}
                 (!inputValue.trim() && selectedFiles.length === 0) ||
                 isUploading
             }
-            title={isAgentResponding ? "Pause response" : "Send message"}
+            title={isAgentResponding ? t("composer.pause") : t("composer.send")}
+            aria-label={isAgentResponding ? t("composer.pause") : t("composer.send")}
             className="shrink-0 bg-accent text-on-accent p-2 sm:p-2.5 rounded-full hover:bg-accent disabled:opacity-50 transition-colors flex items-center justify-center min-w-10 sm:min-w-11"
           >
             {isUploading ? (
@@ -2491,7 +2513,7 @@ Generated: ${new Date().toLocaleString()}
 
       {showComposer && (
         <p className="mt-2 px-2 text-center text-[10px] leading-snug text-ink-subtle sm:text-[11px]">
-          AI can make mistakes. Verify important details.
+          {t("composer.disclaimer")}
         </p>
       )}
     </motion.div>
@@ -2516,10 +2538,10 @@ Generated: ${new Date().toLocaleString()}
                   <User size={24} />
                 </div>
                 <h3 className="text-lg font-medium text-ink">
-                  Welcome back, {user?.username || "User"}
+                  {t("account.welcome", { name: user?.username || t("account.defaultName") })}
                 </h3>
                 <p className="text-xs text-ink-muted px-4">
-                  You are now logged in as {user?.username || "User"}
+                  {t("account.signedInAs", { name: user?.username || t("account.defaultName") })}
                 </p>
               </div>
 
@@ -2527,7 +2549,7 @@ Generated: ${new Date().toLocaleString()}
                 onClick={handleAuthInitialize}
                 className="w-full flex items-center justify-center gap-2"
               >
-                <Key size={16} /> Get Credentials
+                <Key size={16} /> {t("account.getCredentials")}
               </Button>
             </motion.div>
           ) : (
@@ -2537,20 +2559,19 @@ Generated: ${new Date().toLocaleString()}
                   <CheckCircle2 size={24} />
                 </div>
                 <h3 className="text-lg font-medium text-ink">
-                  Credentials fetched
+                  {t("account.fetchedTitle")}
                 </h3>
                 <p className="text-xs text-ink-muted px-4">
-                  Your report number has been fetched. Download or copy these
-                  details
+                  {t("account.fetchedBody")}
                 </p>
               </div>
 
               <div className="bg-canvas border border-line rounded-lg p-4 space-y-3 font-mono text-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-line-strong to-transparent" />
+                <div className="absolute top-0 start-0 w-full h-1 bg-linear-to-r from-transparent via-line-strong to-transparent" />
 
                 <div>
                   <div className="text-xs text-ink-muted mb-1 uppercase tracking-wider">
-                    Report Number
+                    {t("credentials.reportNumber")}
                   </div>
                   <div className="text-ink text-base sm:text-lg tracking-wider break-all">
                     {credentials?.reportNumber}
@@ -2565,19 +2586,19 @@ Generated: ${new Date().toLocaleString()}
                     onClick={handleCopyCredentials}
                     className="flex-1 flex items-center justify-center gap-2 py-2 bg-surface hover:bg-raised border border-line rounded text-xs text-ink-secondary transition-colors"
                   >
-                    <Copy size={12} /> Copy
+                    <Copy size={12} /> {t("credentials.copy")}
                   </button>
                   <button
                     onClick={handleDownloadCredentials}
                     className="flex-1 flex items-center justify-center gap-2 py-2 bg-surface hover:bg-raised border border-line rounded text-xs text-ink-secondary transition-colors"
                   >
-                    <Download size={12} /> Download
+                    <Download size={12} /> {t("credentials.download")}
                   </button>
                 </div>
               </div>
 
               <Button onClick={() => setStep("chat")} className="w-full">
-                Continue to Chat
+                {t("credentials.continue")}
               </Button>
             </>
           )}
@@ -2588,17 +2609,17 @@ Generated: ${new Date().toLocaleString()}
             onClick={() => setStep("home")}
             className="flex items-center gap-1 text-xs text-ink-muted hover:text-ink transition-colors w-fit"
           >
-            <ArrowLeft size={12} /> Back
+            <ArrowLeft size={12} /> {t("actions.back")}
           </button>
           <div>
             <Fingerprint size={48} className="mx-auto text-ink-secondary mb-4" />
             <div className="flex flex-col gap-4">
-              <h3 className="text-ink font-medium mb-2">Account Login</h3>
+              <h3 className="text-ink font-medium mb-2">{t("account.loginTitle")}</h3>
               <p className="text-sm text-ink-muted mb-4">
-                Login to your account to continue.
+                {t("account.loginBody")}
               </p>
               <Button variant="outline" onClick={startLoginHandoff}>
-                Login to your account
+                {t("account.loginButton")}
               </Button>
             </div>
           </div>
@@ -2621,7 +2642,7 @@ Generated: ${new Date().toLocaleString()}
         }}
       />
 
-      <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-6 z-80 flex flex-col items-end pointer-events-none">
+      <div className="fixed bottom-3 end-3 sm:bottom-4 sm:end-6 z-80 flex flex-col items-end pointer-events-none">
         <AnimatePresence>
           {isOpen && awaitingLogin && (
             <motion.div
@@ -2629,7 +2650,7 @@ Generated: ${new Date().toLocaleString()}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="mb-3 w-[min(20rem,calc(100vw-5.5rem))] max-sm:mr-16 max-sm:-mb-14 rounded-lg border border-line bg-surface p-3 shadow-2xl pointer-events-auto sm:p-4"
+              className="mb-3 w-[min(20rem,calc(100vw-5.5rem))] max-sm:me-16 max-sm:-mb-14 rounded-lg border border-line bg-surface p-3 shadow-2xl pointer-events-auto sm:p-4"
               role="status"
             >
               {/* Kept short on phones, where it sits beside the toggle button
@@ -2639,11 +2660,11 @@ Generated: ${new Date().toLocaleString()}
                   <Fingerprint size={20} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-ink">Sign in to continue your report</p>
+                  <p className="text-sm font-medium text-ink">{t("handoff.title")}</p>
                   <p className="mt-1 text-xs leading-relaxed text-ink-muted">
-                    <span className="sm:hidden">The assistant reopens once you're signed in.</span>
+                    <span className="sm:hidden">{t("handoff.bodyShort")}</span>
                     <span className="hidden sm:inline">
-                      Use the form on this page. The assistant opens again as soon as you're signed in.
+                      {t("handoff.bodyLong")}
                     </span>
                   </p>
                 </div>
@@ -2654,7 +2675,7 @@ Generated: ${new Date().toLocaleString()}
                   onClick={cancelLoginHandoff}
                   className="text-xs text-ink-muted transition-colors hover:text-ink"
                 >
-                  Cancel
+                  {t("actions.cancel")}
                 </button>
               </div>
             </motion.div>
@@ -2665,7 +2686,7 @@ Generated: ${new Date().toLocaleString()}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className="fixed inset-0 z-60 bg-canvas flex flex-col md:inset-auto md:bottom-20 md:right-6 md:w-lg md:max-w-[calc(100vw-2rem)] md:h-150 md:max-h-[80vh] md:rounded-lg md:border md:border-line md:shadow-2xl md:mb-2 overflow-hidden pointer-events-auto"
+              className="fixed inset-0 z-60 bg-canvas flex flex-col md:inset-auto md:bottom-20 md:end-6 md:w-lg md:max-w-[calc(100vw-2rem)] md:h-150 md:max-h-[80vh] md:rounded-lg md:border md:border-line md:shadow-2xl md:mb-2 overflow-hidden pointer-events-auto"
             >
               {/* Content Container - Fixed padding */}
               {/* Full screen below md, under the 62px site bar. The chat's own
@@ -2750,10 +2771,10 @@ Generated: ${new Date().toLocaleString()}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.9 }}
                 transition={{ duration: 0.25 }}
-                className="absolute bottom-[calc(100%+10px)] right-0 max-w-[70vw] sm:max-w-xs lg:max-w-lg whitespace-nowrap sm:whitespace-normal bg-surface text-ink text-xs sm:text-sm lg:text-base font-medium px-3.5 py-2 sm:px-4 sm:py-2.5 lg:px-5 lg:py-3 rounded-2xl rounded-br-sm shadow-xl border border-line"
+                className="absolute bottom-[calc(100%+10px)] end-0 w-max max-w-[70vw] sm:max-w-xs lg:max-w-lg whitespace-nowrap sm:whitespace-normal bg-surface text-ink text-xs sm:text-sm lg:text-base font-medium px-3.5 py-2 sm:px-4 sm:py-2.5 lg:px-5 lg:py-3 rounded-2xl rounded-ee-sm shadow-xl border border-line"
               >
                 {attentionMessages[attentionIndex]}
-                <div className="absolute -bottom-1.5 right-4 w-3 h-3 bg-surface border-r border-b border-line rotate-45" />
+                <div className="absolute -bottom-1.5 end-4 w-3 h-3 bg-surface border-e border-b border-line rotate-45" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -2766,7 +2787,7 @@ Generated: ${new Date().toLocaleString()}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 1.1 }}
             onClick={() => (awaitingLogin ? cancelLoginHandoff() : setIsOpen(!isOpen))}
-            aria-label={isOpen ? 'Close the reporting assistant' : 'Open the reporting assistant'}
+            aria-label={isOpen ? t("launcher.close") : t("launcher.open")}
             aria-expanded={isOpen}
             className={`
               ${isOpen && step === "chat" ? "hidden sm:flex" : "flex"} items-center justify-center w-14 h-14 rounded-full shadow-glow
@@ -2777,7 +2798,7 @@ Generated: ${new Date().toLocaleString()}
             {isOpen ? <X onClick={disconnectFromRoom} size={24} aria-hidden="true" /> : <MessageCircle size={24} aria-hidden="true" />}
 
             {!isOpen && !credentials && (
-              <span className="absolute top-3 right-3.5 w-3 h-3 bg-danger-solid rounded-full border-2 border-line"></span>
+              <span className="absolute top-3 end-3.5 w-3 h-3 bg-danger-solid rounded-full border-2 border-line"></span>
             )}
           </motion.button>
         </div>

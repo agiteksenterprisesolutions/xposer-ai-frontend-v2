@@ -206,7 +206,7 @@ const Hierarchy = () => {
                   {!initialLoad && value === 'levels' && ` (${activeLevels.length})`}
                   {!initialLoad && value === 'directory' && memberTotal != null && ` (${memberTotal})`}
                   {value === 'approvals' && pendingCount > 0 && (
-                    <span className="ml-1.5 rounded-full bg-warning-soft px-1.5 text-[11px] font-semibold text-warning-fg">
+                    <span className="ms-1.5 rounded-full bg-warning-soft px-1.5 text-[11px] font-semibold text-warning-fg">
                       {pendingCount}
                     </span>
                   )}

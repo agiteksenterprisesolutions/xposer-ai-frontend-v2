@@ -1,0 +1,137 @@
+{
+  "language": {
+    "switchTo": "Switch to {{language}}"
+  },
+  "layout": {
+    "skipToMain": "Skip to main content",
+    "validatingOrg": "Checking the organization…"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "howToUse": "How to use",
+    "logout": "Log out",
+    "login": "Log in",
+    "trackReport": "Track report",
+    "trackAReport": "Track a report",
+    "reportNow": "Report now",
+    "takeTour": "Take a tour",
+    "accountMenu": "Account menu",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "openNavigation": "Open navigation menu",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
+  },
+  "theme": {
+    "toLight": "Switch to light theme",
+    "toDark": "Switch to dark theme"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "closeDialog": "Close dialog",
+    "dismiss": "Dismiss",
+    "back": "Back",
+    "next": "Next",
+    "continue": "Continue",
+    "save": "Save",
+    "submit": "Submit",
+    "retry": "Try again",
+    "copy": "Copy",
+    "copied": "Copied",
+    "download": "Download",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View",
+    "search": "Search",
+    "clear": "Clear"
+  },
+  "status": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "submitting": "Submitting…"
+  },
+  "confirm": {
+    "title": "Confirm action",
+    "message": "Are you sure you want to proceed?",
+    "confirm": "Confirm"
+  },
+  "pagination": {
+    "noItems": "No items",
+    "showing": "Showing {{start}}–{{end}} of {{total}}",
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "table": {
+    "emptyTitle": "No data available",
+    "emptyDescription": "There are no items to display."
+  },
+  "sort": {
+    "orderBy": "Order by",
+    "ascTitle": "Ascending — switch to descending",
+    "descTitle": "Descending — switch to ascending",
+    "ascLabel": "Sorted ascending. Switch to descending.",
+    "descLabel": "Sorted descending. Switch to ascending."
+  },
+  "select": {
+    "placeholder": "Select an option"
+  },
+  "form": {
+    "required": "Required",
+    "optional": "Optional"
+  },
+  "reportStatus": {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "pending": "Pending",
+    "in_progress": "In progress",
+    "under_review": "Under review",
+    "resolved": "Resolved",
+    "closed": "Closed",
+    "rejected": "Rejected",
+    "incomplete": "Incomplete"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "errors": {
+    "fallback": "Something went wrong.",
+    "fieldsNeedFixing": "Some fields need fixing.",
+    "sessionExpired": "Your session has expired. Please log in again.",
+    "adminOnly": "Only an admin can edit other users.",
+    "cannotViewUser": "You don't have access to this user.",
+    "forbidden": "You don't have permission to do this.",
+    "tooManyRequests": "Too many requests. Please try again later.",
+    "notFound": "Not found.",
+    "server": "Server error. Please try again later.",
+    "network": "Network error. Please check your connection.",
+    "invalidCredentials": "The report number or password is incorrect."
+  },
+  "time": {
+    "justNow": "Just now",
+    "unknown": "Unknown"
+  },
+  "password": {
+    "rules": {
+      "length": "At least 8 characters",
+      "upper": "An uppercase letter",
+      "lower": "A lowercase letter",
+      "number": "A number",
+      "symbol": "A symbol, like ! or #"
+    },
+    "errors": {
+      "currentRequired": "Enter your current password",
+      "policy": "The new password doesn't meet every rule below",
+      "mismatch": "The passwords don’t match",
+      "sameAsCurrent": "Choose a password different from the current one"
+    }
+  },
+  "social": {
+    "divider": "or continue with",
+    "continueWith": "Continue with {{provider}}",
+    "failed": "Sign-in failed. Please try again."
+  }
+}

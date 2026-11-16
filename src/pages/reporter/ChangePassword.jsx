@@ -12,11 +12,30 @@ import { useAuthStore } from '../../store/authStore';
 import useSEO from '../../hooks/useSEO';
 import { isSSOAccount, authProviderLabel } from '../../utils/authProviders';
 import { changePasswordSchema } from '../../utils/passwordPolicy';
+import { useTranslation } from 'react-i18next';
+
+/** Show/hide toggle over a password field: a real button with a name. */
+const RevealButton = ({ shown, onToggle }) => {
+  const { t } = useTranslation('reporter');
+  const Icon = shown ? EyeOff : Eye;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={shown ? t('changePassword.hide') : t('changePassword.show')}
+      aria-pressed={shown}
+      className="absolute top-1/2 end-3 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:text-ink-secondary"
+    >
+      <Icon size={18} aria-hidden="true" />
+    </button>
+  );
+};
 
 const ChangePassword = () => {
+  const { t } = useTranslation('reporter');
   useSEO({
-    title: 'Change Password',
-    description: 'Update the password for your Xposer AI account.',
+    title: t('seo.changePasswordTitle'),
+    description: t('seo.changePasswordDescription'),
     noIndex: true,
   });
     const { user, logout } = useAuthStore();
@@ -65,7 +84,7 @@ const ChangePassword = () => {
                 error?.message ||
                 error?.response?.data?.detail ||
                 error?.response?.data?.message ||
-                'Failed to update password. Please try again.';
+                t('changePassword.failed');
             setErrorMessage(message);
         } finally {
             setIsLoading(false);
@@ -80,10 +99,8 @@ const ChangePassword = () => {
             <div className="min-h-screen bg-subtle py-12">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
                     <Card className="shadow-lg">
-                        <Alert variant="info" title="Password managed by your sign-in provider">
-                            Your account signs in with {authProviderLabel(user?.auth_provider)}, so
-                            there is no password to change here. Manage your credentials in your{' '}
-                            {authProviderLabel(user?.auth_provider)} account settings.
+                        <Alert variant="info" title={t('changePassword.ssoTitle')}>
+                            {t('changePassword.ssoBody', { provider: authProviderLabel(user?.auth_provider) })}
                         </Alert>
                         <div className="mt-6">
                             <Button
@@ -91,7 +108,7 @@ const ChangePassword = () => {
                                 onClick={() => navigate(`${getOrgPath()}/reporter/dashboard`)}
                                 startIcon={ArrowLeft}
                             >
-                                Back to dashboard
+                                {t('changePassword.back')}
                             </Button>
                         </div>
                     </Card>
@@ -109,8 +126,8 @@ const ChangePassword = () => {
                         onClick={() => navigate(`${getOrgPath()}/reporter/dashboard`)}
                         className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors"
                     >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to dashboard
+                        <ArrowLeft className="w-4 h-4 me-2" />
+                        {t('changePassword.back')}
                     </button>
                 </div>
 
@@ -119,9 +136,9 @@ const ChangePassword = () => {
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent-soft text-accent-fg mb-4">
                             <Shield className="w-6 h-6" />
                         </div>
-                        <h1 className="text-3xl font-semibold text-ink">Change Password</h1>
+                        <h1 className="text-3xl font-semibold text-ink">{t('changePassword.title')}</h1>
                         <p className="text-sm text-ink-muted mt-2">
-                            Securely update your current reporter account password.
+                            {t('changePassword.subtitle')}
                         </p>
                     </div>
 
@@ -137,47 +154,50 @@ const ChangePassword = () => {
                         <div className="grid gap-6">
                             <div className="relative">
                                 <Input
-                                    label="Current Password"
+                                    label={t('changePassword.current')}
+                                    autoComplete="current-password"
                                     type={showCurrentPassword ? 'text' : 'password'}
                                     startAdornment={<Lock className="w-4 h-4" />}
                                     {...register('current_password')}
                                     error={errors.current_password?.message}
                                     required
                                 />
-                                {showCurrentPassword ? <EyeOff className='absolute top-1/2 right-4 transform -translate-y-1/2 cursor-pointer text-ink-muted hover:text-ink-secondary' size={18} onClick={() => setShowCurrentPassword(!showCurrentPassword)} /> : <Eye className='absolute top-1/2 right-4 transform -translate-y-1/2 cursor-pointer text-ink-muted hover:text-ink-secondary' size={18} onClick={() => setShowCurrentPassword(!showCurrentPassword)} />}
+                                <RevealButton shown={showCurrentPassword} onToggle={() => setShowCurrentPassword(!showCurrentPassword)} />
                             </div>
 
                             <div className="relative">
                                 <Input
-                                    label="New Password"
+                                    label={t('changePassword.new')}
+                                    autoComplete="new-password"
                                     type={showNewPassword ? 'text' : 'password'}
                                     startAdornment={<Lock className="w-4 h-4" />}
                                     {...register('new_password')}
                                     error={errors.new_password?.message}
                                     required
                                 />
-                                {showNewPassword ? <EyeOff className='absolute top-1/2 right-4 transform -translate-y-1/2 cursor-pointer text-ink-muted hover:text-ink-secondary' size={18} onClick={() => setShowNewPassword(!showNewPassword)} /> : <Eye className='absolute top-1/2 right-4 transform -translate-y-1/2 cursor-pointer text-ink-muted hover:text-ink-secondary' size={18} onClick={() => setShowNewPassword(!showNewPassword)} />}
+                                <RevealButton shown={showNewPassword} onToggle={() => setShowNewPassword(!showNewPassword)} />
                             </div>
 
                             <div className="relative">
                                 <Input
-                                    label="Confirm New Password"
+                                    label={t('changePassword.confirm')}
+                                    autoComplete="new-password"
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     startAdornment={<Lock className="w-4 h-4" />}
                                     {...register('confirm_password')}
                                     error={errors.confirm_password?.message}
                                     required
                                 />
-                                {showConfirmPassword ? <EyeOff className='absolute top-1/2 right-4 transform -translate-y-1/2 cursor-pointer text-ink-muted hover:text-ink-secondary' size={18} onClick={() => setShowConfirmPassword(!showConfirmPassword)} /> : <Eye className='absolute top-1/2 right-4 transform -translate-y-1/2 cursor-pointer text-ink-muted hover:text-ink-secondary' size={18} onClick={() => setShowConfirmPassword(!showConfirmPassword)} />}
+                                <RevealButton shown={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} />
                             </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <p className="text-sm text-ink-muted">
-                                Your current password is required to confirm the change.
+                                {t('changePassword.hint')}
                             </p>
                             <Button type="submit" variant="secondary" fullWidth={false} isLoading={isLoading} className="w-full sm:w-auto">
-                                Update Password
+                                {t('changePassword.update')}
                             </Button>
                         </div>
                     </form>

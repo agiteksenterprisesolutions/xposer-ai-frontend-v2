@@ -208,7 +208,7 @@ const ReportTypeEditor = ({
                 value={form.name}
                 onChange={(e) => draft.setField('name', e.target.value)}
                 placeholder="Untitled report type"
-                className="-ml-1 min-w-[12ch] max-w-full truncate rounded-md border border-transparent bg-transparent px-1 text-base font-semibold text-ink outline-none [field-sizing:content] placeholder:text-ink-muted hover:border-line focus:border-line-accent"
+                className="-ms-1 min-w-[12ch] max-w-full truncate rounded-md border border-transparent bg-transparent px-1 text-base font-semibold text-ink outline-none [field-sizing:content] placeholder:text-ink-muted hover:border-line focus:border-line-accent"
               />
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${pillClass}`}>{pillLabel}</span>
             </div>

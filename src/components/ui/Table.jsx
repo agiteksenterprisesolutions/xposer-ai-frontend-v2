@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Children, Fragment, isValidElement } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import Skeleton from './Skeleton';
@@ -123,7 +124,7 @@ const Table = ({ children, columns, data, onRowClick, getSortProps, className = 
                       <span className="text-[10px] font-semibold text-ink-subtle uppercase tracking-[0.04em] mt-0.5 shrink-0">
                         {col.header}
                       </span>
-                      <div className={`text-sm text-ink text-right min-w-0 ${col.cellClassName || col.className || ''}`}>
+                      <div className={`text-sm text-ink text-end min-w-0 ${col.cellClassName || col.className || ''}`}>
                         {col.cell ? col.cell(row[col.accessor], row) : row[col.accessor]}
                       </div>
                     </div>
@@ -199,7 +200,7 @@ const Table = ({ children, columns, data, onRowClick, getSortProps, className = 
                             </span>
                           )}
                           <div
-                            className={`text-sm text-ink min-w-0 ${isEmptyCell(label) ? 'w-full' : 'text-right ml-auto'} ${cell.props.className || ''}`}
+                            className={`text-sm text-ink min-w-0 ${isEmptyCell(label) ? 'w-full' : 'text-end ms-auto'} ${cell.props.className || ''}`}
                           >
                             {cell.props.children}
                           </div>
@@ -270,7 +271,7 @@ const TableHead = ({
   ...props
 }) => (
   <th
-    className={`px-4 py-3 sm:px-5 text-left text-[10px] font-semibold text-ink-subtle uppercase tracking-wider whitespace-nowrap ${className}`}
+    className={`px-4 py-3 sm:px-5 text-start text-[10px] font-semibold text-ink-subtle uppercase tracking-wider whitespace-nowrap ${className}`}
     aria-sort={sortable ? (sortDirection === 'asc' ? 'ascending' : sortDirection === 'desc' ? 'descending' : 'none') : undefined}
     {...props}
   >
@@ -304,19 +305,22 @@ const TableCell = ({ children, className = '', ...props }) => (
 
 // Special table cell for actions
 const TableActions = ({ children, className = '', ...props }) => (
-  <td className={`px-4 py-3 sm:px-5 sm:py-3.5 whitespace-nowrap text-right text-sm font-medium ${className}`} {...props}>
+  <td className={`px-4 py-3 sm:px-5 sm:py-3.5 whitespace-nowrap text-end text-sm font-medium ${className}`} {...props}>
     <div className="flex justify-end items-center gap-2">{children}</div>
   </td>
 );
 
 // Empty state for tables
 const TableEmpty = ({
-  message = 'No data available',
-  description = 'There are no items to display.',
+  message,
+  description,
   icon: Icon,
   action,
   asRow = true,
 }) => {
+  const { t } = useTranslation('common');
+  message ??= t('table.emptyTitle');
+  description ??= t('table.emptyDescription');
   const content = (
     <div className="flex flex-col items-center justify-center">
       {Icon && (

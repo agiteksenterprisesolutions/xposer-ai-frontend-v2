@@ -34,7 +34,7 @@ const PasswordField = ({ id, label, value, onChange, error, autoComplete, descri
           autoComplete={autoComplete}
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
-          className={`h-11 w-full rounded-lg border bg-surface px-3.5 pr-11 text-[0.9375rem] text-ink outline-none transition-colors focus:border-line-accent focus:ring-3 focus:ring-accent-ring ${
+          className={`h-11 w-full rounded-lg border bg-surface px-3.5 pe-11 text-[0.9375rem] text-ink outline-none transition-colors focus:border-line-accent focus:ring-3 focus:ring-accent-ring ${
             error ? 'border-danger-line' : 'border-line-strong'
           }`}
         />
@@ -42,7 +42,7 @@ const PasswordField = ({ id, label, value, onChange, error, autoComplete, descri
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
-          className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
+          className="absolute end-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>

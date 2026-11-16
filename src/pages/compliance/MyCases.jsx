@@ -128,7 +128,7 @@ const MyCases = () => {
                   <Skeleton.Text key="u" className="w-20" />,
                   <Skeleton.Badge key="sla" className="w-16" />,
                   <Skeleton.Badge key="s" className="w-20" />,
-                  <Skeleton key="a" className="ml-auto h-8 w-10 rounded-lg" />,
+                  <Skeleton key="a" className="ms-auto h-8 w-10 rounded-lg" />,
                 ]}
               />
             ) : sortedReports.length === 0 ? (
@@ -161,7 +161,7 @@ const MyCases = () => {
                   <Table.Cell>
                     <StatusBadge status={report.status} />
                   </Table.Cell>
-                  <Table.Cell className="text-right">
+                  <Table.Cell className="text-end">
                     <Button
                       variant="ghost"
                       size="small"
