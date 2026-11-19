@@ -6,7 +6,7 @@
   "newTitle": "New poster",
   "editTitle": "Edit “{{name}}”",
   "backToList": "All posters",
-  "formIntro": "Write everything the poster says; nothing is added for you. Save to see the preview, which is exactly what the PDF will look like.",
+  "formIntro": "Write everything the poster says; nothing is added for you. Save to see the preview, which is exactly what the PDF will look like. You can then download or print it here.",
   "emptyTitle": "No posters yet",
   "emptyBody": "Create a poster for your organization's portal or for one of your entities, then download it as a PDF.",
   "noAddress": "This poster has no address to encode yet. Give the entity a portal address first.",
@@ -22,6 +22,8 @@
     "noAddress": "No address yet",
     "notDownloadable": "This poster can't be downloaded yet.",
     "downloadAria": "Download {{size}} PDF of {{name}}",
+    "print": "Print",
+    "printAria": "Print {{name}}",
     "downloadFailed": "The PDF couldn't be created. Try again.",
     "editAria": "Edit {{name}}",
     "deleteAria": "Delete {{name}}"
@@ -80,5 +82,17 @@
     "failed": "The preview couldn't be drawn.",
     "note": "A4 and A3 use the same layout. The preview is exactly what the PDF prints.",
     "altQr": "QR code opening {{url}}"
+  },
+  "lang": {
+    "label": "Poster language",
+    "en": "English",
+    "ar": "Arabic",
+    "both": "English and Arabic"
+  },
+  "choose": {
+    "downloadTitle": "Download {{size}} PDF",
+    "printTitle": "Print poster",
+    "download": "Download",
+    "cancel": "Cancel"
   }
 }

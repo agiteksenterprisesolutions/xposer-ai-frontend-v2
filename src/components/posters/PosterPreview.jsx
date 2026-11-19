@@ -2,12 +2,16 @@
 //
 // Live preview of a saved poster, drawn by the same renderer as the PDF
 // (utils/posterRender), from GET /posters/{id}/render. `version` changes after
-// each save, so the preview redraws with what was saved.
+// each save, so the preview redraws with what was saved. `actions(render)`,
+// when given, is drawn under a ready preview (download and print buttons), so
+// they reuse the data the preview already fetched. `lang` ('en' | 'ar' |
+// 'both') is the language the poster is shown in (utils/posterLang).
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Image as ImageIcon } from 'lucide-react';
 import { portalAPI } from '../../api/portal';
 import Skeleton from '../ui/Skeleton';
+import { renderForLang } from '../../utils/posterLang';
 
 const PREVIEW_WIDTH = 520;
 
@@ -27,7 +31,7 @@ const describe = (render, t) => {
   return parts.filter((x) => typeof x === 'string' && x.trim()).join('. ');
 };
 
-const PosterPreview = ({ posterId, version = 0 }) => {
+const PosterPreview = ({ posterId, version = 0, lang = 'both', actions = null }) => {
   const { t } = useTranslation('posters');
   const canvasRef = useRef(null);
   const [state, setState] = useState({ status: posterId ? 'loading' : 'unsaved', render: null });
@@ -60,12 +64,12 @@ const PosterPreview = ({ posterId, version = 0 }) => {
     import('../../utils/posterRender').then(({ drawPoster }) => {
       if (cancelled || !canvasRef.current) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      drawPoster(canvasRef.current, state.render, { width: PREVIEW_WIDTH * dpr });
+      drawPoster(canvasRef.current, renderForLang(state.render, lang), { width: PREVIEW_WIDTH * dpr });
     });
     return () => {
       cancelled = true;
     };
-  }, [state]);
+  }, [state, lang]);
 
   const box = 'flex aspect-[1/1.414] w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong bg-subtle p-6 text-center text-sm text-ink-muted';
 
@@ -95,11 +99,12 @@ const PosterPreview = ({ posterId, version = 0 }) => {
         <canvas
           ref={canvasRef}
           role="img"
-          aria-label={describe(state.render, t)}
+          aria-label={describe(renderForLang(state.render, lang), t)}
           className="h-auto w-full rounded-xl border border-line bg-white shadow-sm"
           style={{ aspectRatio: '1 / 1.414' }}
         />
       )}
+      {actions && state.status === 'ready' && state.render && actions(state.render)}
       <p className="text-xs text-ink-muted">{t('preview.note')}</p>
     </figure>
   );
