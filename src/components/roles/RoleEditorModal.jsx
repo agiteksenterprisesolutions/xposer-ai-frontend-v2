@@ -20,6 +20,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Lock } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -32,7 +33,7 @@ import { sortLevels } from '../../utils/roleLevels';
 import { invalidateOrgRoles, useOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import { PERM, permissionLabels, togglePermissionIn } from '../../utils/permissions';
-import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
+import { codeHint, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import PermissionPicker, { Checkbox, catalogEntries, localPrerequisiteErrors } from './PermissionPicker';
 import { describeError } from '../../utils/errors';
 
@@ -46,19 +47,19 @@ const setKey = (permissions) => [...permissions].sort().join(',');
 
 /** Which level the role sits at — and so where everyone holding it sits. */
 const LevelField = ({ levels, value, onChange, disabled, missing, currentTitle }) => {
+  const { t } = useTranslation('people');
   if (levels === null) return null;
   if (levels.length === 0) {
     return (
       <p className="rounded-lg bg-subtle px-3 py-2.5 text-xs text-ink-muted">
-        No hierarchy levels yet. Once you add levels under Reporting Hierarchy, give this role one — it decides where its
-        holders sit in the org chart.
+        {t('roleEditor.level.none')}
       </p>
     );
   }
   return (
     <div className="space-y-1.5">
       <label htmlFor="role-level" className="block text-sm font-medium text-ink-secondary">
-        Level
+        {t('roleEditor.level.label')}
       </label>
       <select
         id="role-level"
@@ -70,7 +71,7 @@ const LevelField = ({ levels, value, onChange, disabled, missing, currentTitle }
           missing ? 'border-warning-line' : 'border-line-strong'
         }`}
       >
-        <option value="">Choose a level…</option>
+        <option value="">{t('roleEditor.level.choose')}</option>
         {levels.map((level) => (
           <option key={level.code} value={level.code}>
             {level.title}
@@ -80,8 +81,8 @@ const LevelField = ({ levels, value, onChange, disabled, missing, currentTitle }
       </select>
       <p className={`text-xs ${missing ? 'text-warning-fg' : 'text-ink-muted'}`}>
         {missing
-          ? 'Not placed yet — nobody holding this role can appear in the org chart until it has a level.'
-          : 'Everyone holding this role sits at this level in the org chart. Several roles can share a level.'}
+          ? t('roleEditor.level.missing')
+          : t('roleEditor.level.help')}
       </p>
     </div>
   );
@@ -93,13 +94,14 @@ const LevelField = ({ levels, value, onChange, disabled, missing, currentTitle }
  * their own account. `admin` is never offered — admin accounts are visible to
  * admins only — and a role created later isn't added by itself.
  */
-const ViewableRolesField = ({ roles, selfCode, value, onChange, fixedText, readOnly }) => (
+const ViewableRolesField = ({ roles, selfCode, value, onChange, fixedText, readOnly }) => {
+  const { t } = useTranslation('people');
+  return (
   <div className="space-y-2">
     <div>
-      <h4 className="text-sm font-semibold text-ink">Can see users with these roles</h4>
+      <h4 className="text-sm font-semibold text-ink">{t('roleEditor.viewable.title')}</h4>
       <p className="text-xs text-ink-muted">
-        Whose accounts people with this role see under User Management. Everyone always sees their own account. Admin
-        accounts are visible to admins only, and a role added later has to be ticked here before it shows up.
+        {t('roleEditor.viewable.help')}
       </p>
     </div>
     {fixedText ? (
@@ -108,11 +110,11 @@ const ViewableRolesField = ({ roles, selfCode, value, onChange, fixedText, readO
         {fixedText}
       </p>
     ) : (
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Can see users with these roles">
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t('roleEditor.viewable.title')}>
         {selfCode && (
           <span
             className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-subtle px-3 py-1.5 text-sm text-ink-muted"
-            title="Holders of a role can see each other only if it's ticked; their own account is always visible."
+            title={t('roleEditor.viewable.sameRoleTitle')}
           >
             <input
               type="checkbox"
@@ -126,7 +128,7 @@ const ViewableRolesField = ({ roles, selfCode, value, onChange, fixedText, readO
               }}
               className="h-4 w-4 rounded border-line-strong"
             />
-            Same role
+            {t('roleEditor.viewable.sameRole')}
           </span>
         )}
         {roles.map((r) => {
@@ -150,15 +152,16 @@ const ViewableRolesField = ({ roles, selfCode, value, onChange, fixedText, readO
                 }}
                 className="h-4 w-4 rounded border-line-strong"
               />
-              {r.code === 'reporter' ? 'Reporter' : r.name}
+              {r.code === 'reporter' ? t('roleEditor.viewable.reporter') : r.name}
             </label>
           );
         })}
-        {!readOnly && roles.length === 0 && <p className="text-xs text-ink-muted">No other roles yet.</p>}
+        {!readOnly && roles.length === 0 && <p className="text-xs text-ink-muted">{t('roleEditor.viewable.noOther')}</p>}
       </div>
     )}
   </div>
-);
+  );
+};
 
 /**
  * Props:
@@ -169,6 +172,7 @@ const ViewableRolesField = ({ roles, selfCode, value, onChange, fixedText, readO
  *   onSaved  – called with the saved role
  */
 const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onClose, onSaved }) => {
+  const { t } = useTranslation('people');
   const isCreate = !role;
   const isFixed = Boolean(role?.is_fixed);
   // Name, permissions and active state. A fixed role's level stays editable.
@@ -265,9 +269,9 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
 
   const codeError = (() => {
     if (!isCreate) return null;
-    if (!code) return 'A code is required.';
-    if (!CODE_PATTERN.test(code)) return CODE_HINT;
-    if (RESERVED_CODES.includes(code)) return `"${code}" is reserved.`;
+    if (!code) return t('roleEditor.codeRequired');
+    if (!CODE_PATTERN.test(code)) return codeHint();
+    if (RESERVED_CODES.includes(code)) return t('roleEditor.codeReserved', { code });
     return null;
   })();
 
@@ -337,7 +341,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
               ...(levelChanged ? { level_code: levelCode || null } : {}),
             });
 
-      toast.success(isCreate ? `Role "${name.trim()}" created.` : `Role "${name.trim()}" saved.`);
+      toast.success(isCreate ? t('roleEditor.created', { name: name.trim() }) : t('roleEditor.saved', { name: name.trim() }));
 
       // saved.warnings are shown on the roles page, which stays open after this closes.
       invalidateOrgRoles();
@@ -353,9 +357,9 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
       }
       if (detail?.code === 'level_move_inverts_chain') setConflicts(Array.isArray(detail.conflicts) ? detail.conflicts : []);
       const described = describeError(error);
-      if (detail?.code === 'admin_not_viewable') described.summary = 'Admin accounts can only be seen by admins.';
+      if (detail?.code === 'admin_not_viewable') described.summary = t('roleEditor.adminNotViewable');
       if (detail?.code === 'invalid_viewable_roles' && Array.isArray(detail.available)) {
-        described.problems = [...described.problems, { message: `Roles that exist: ${detail.available.join(', ')}.` }];
+        described.problems = [...described.problems, { message: t('roleEditor.rolesThatExist', { roles: detail.available.join(t('permJoin.list')) }) }];
       }
       setSaveError(described);
       setConfirmingEscalation(false);
@@ -365,12 +369,12 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
     }
   };
 
-  const title = isCreate ? 'New role' : readOnly ? role.name : `Edit ${role.name}`;
+  const title = isCreate ? t('roleEditor.newTitle') : readOnly ? role.name : t('roleEditor.editTitle', { name: role.name });
 
   const footer = viewOnly ? (
     <div className="flex justify-end">
       <Button variant="secondary" onClick={onClose}>
-        Close
+        {t('common:actions.close')}
       </Button>
     </div>
   ) : (
@@ -387,22 +391,19 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
       )}
 
       {confirmingMove && (
-        <Alert variant="warning" title="Move everyone who holds this role?">
-          Moving {role.name} from {confirmingMove.from ? levelTitle(confirmingMove.from) : 'no level'} to{' '}
-          {confirmingMove.to ? levelTitle(confirmingMove.to) : 'no level'} will move{' '}
-          {confirmingMove.holders == null
-            ? 'everyone who holds it'
-            : confirmingMove.holders === 1
-              ? 'the 1 person who holds it'
-              : `all ${confirmingMove.holders} people who hold it`}{' '}
-          in the org chart.
+        <Alert variant="warning" title={t('roleEditor.move.title')}>
+          {t(confirmingMove.holders == null ? 'roleEditor.move.bodyUnknown' : 'roleEditor.move.body', {
+            name: role.name,
+            from: confirmingMove.from ? levelTitle(confirmingMove.from) : t('roleEditor.move.noLevel'),
+            to: confirmingMove.to ? levelTitle(confirmingMove.to) : t('roleEditor.move.noLevel'),
+            count: confirmingMove.holders ?? 0,
+          })}
         </Alert>
       )}
 
       {confirmingEscalation && (
-        <Alert variant="warning" title="This role will be able to manage roles">
-          Anyone holding it can rewrite every role's permissions — including their own. Only give it to people you
-          would trust with your own access.
+        <Alert variant="warning" title={t('roleEditor.escalation.title')}>
+          {t('roleEditor.escalation.body')}
         </Alert>
       )}
 
@@ -410,8 +411,8 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
         <p className="text-xs text-ink-subtle">
           {!isFixed && (
             <>
-              {selected.size} permission{selected.size === 1 ? '' : 's'} selected
-              {!serverResult && selected.size > 0 && ' · checking…'}
+              {t('roleEditor.selectedCount', { count: selected.size })}
+              {!serverResult && selected.size > 0 && ` · ${t('roleEditor.checking')}`}
             </>
           )}
         </p>
@@ -427,10 +428,10 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
             }
             disabled={saving}
           >
-            {confirmingEscalation || confirmingMove ? 'Back' : 'Cancel'}
+            {confirmingEscalation || confirmingMove ? t('common:actions.back') : t('common:actions.cancel')}
           </Button>
           <Button onClick={save} isLoading={saving} disabled={blocked || !isDirty}>
-            {confirmingMove ? 'Move them' : confirmingEscalation ? 'Save anyway' : isCreate ? 'Create role' : 'Save changes'}
+            {confirmingMove ? t('roleEditor.moveThem') : confirmingEscalation ? t('roleEditor.saveAnyway') : isCreate ? t('roleEditor.create') : t('roleEditor.saveChanges')}
           </Button>
         </div>
       </div>
@@ -441,11 +442,11 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
     <Modal isOpen onClose={saving ? () => {} : onClose} title={title} size="xl" footer={footer} closeOnOverlayClick={false}>
       <div className="space-y-5">
         {role?.is_fixed && (
-          <Alert variant="dark" title="Fixed role">
+          <Alert variant="dark" title={t('roleEditor.fixed.title')}>
             {role.code === 'reporter'
-              ? `${role.name} is the public self-service role: it files and tracks its own reports. Its permissions are fixed and it can't be deleted.`
-              : `${role.name} is the organization's root role. It always holds every permission this organization can grant, and can't be deleted.`}{' '}
-            {!viewOnly && 'Only its level in the hierarchy can be changed.'}
+              ? t('roleEditor.fixed.reporter', { name: role.name })
+              : t('roleEditor.fixed.admin', { name: role.name })}{' '}
+            {!viewOnly && t('roleEditor.fixed.levelOnly')}
           </Alert>
         )}
 
@@ -465,7 +466,7 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
                     <li key={index}>{conflict}</li>
                   ))}
                 </ul>
-                <p className="mt-2 text-xs">Choose another level, or change those reporting lines in the hierarchy first.</p>
+                <p className="mt-2 text-xs">{t('roleEditor.conflictsHelp')}</p>
               </>
             )}
           </Alert>
@@ -474,15 +475,15 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
         {!readOnly && (
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="Name"
+              label={t('roleEditor.name')}
               value={name}
               onChange={(event) => setName(event.target.value)}
               required
               maxLength={100}
-              placeholder="e.g. Finance lead"
+              placeholder={t('roleEditor.namePlaceholder')}
             />
             <Input
-              label="Code"
+              label={t('roleEditor.code')}
               value={code}
               onChange={(event) => {
                 setCodeTouched(true);
@@ -494,8 +495,8 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
               className="font-mono"
               helperText={
                 isCreate
-                  ? 'Users, agents and workflows refer to the role by this. It cannot be changed later.'
-                  : 'Codes cannot change — users, agents and workflows refer to the role by it.'
+                  ? t('roleEditor.codeHelpNew')
+                  : t('roleEditor.codeHelpExisting')
               }
             />
           </div>
@@ -519,10 +520,10 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
             <Checkbox checked={isActive} onChange={() => setIsActive((value) => !value)} labelledBy="role-active-label" />
             <span>
               <span id="role-active-label" className="block text-sm font-medium text-ink">
-                Active
+                {t('roleEditor.active')}
               </span>
               <span className="block text-xs text-ink-muted">
-                An inactive role cannot be given to anyone. Users who already hold it keep it until reassigned.
+                {t('roleEditor.activeHelp')}
               </span>
             </span>
           </label>
@@ -539,16 +540,16 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
           }}
           fixedText={
             role?.code === 'admin'
-              ? 'Admins see every account. This can’t be changed.'
+              ? t('roleEditor.viewable.fixedAdmin')
               : role?.code === 'reporter'
-                ? 'Reporters see only their own account. This can’t be changed.'
+                ? t('roleEditor.viewable.fixedReporter')
                 : null
           }
           readOnly={readOnly}
         />}
 
         {unplacedErrors.length > 0 && (
-          <Alert variant="error" title="This set of permissions can't be saved">
+          <Alert variant="error" title={t('roleEditor.cantSave')}>
             <ul className="list-disc space-y-1 ps-4">
               {unplacedErrors.map((error, index) => (
                 <li key={index}>{error.message}</li>
@@ -559,11 +560,11 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
 
         <div className="space-y-3">
           <div className="flex items-baseline justify-between gap-3">
-            <h4 className="text-sm font-semibold text-ink">Permissions</h4>
+            <h4 className="text-sm font-semibold text-ink">{t('roleEditor.permissions')}</h4>
             {!readOnly && (
               <p className="text-xs text-ink-subtle">
-                <Lock className="-mt-0.5 me-1 inline h-3 w-3" />
-                You can only grant permissions you hold yourself.
+                <Lock className="-mt-0.5 me-1 inline h-3 w-3" aria-hidden="true" />
+                {t('roleEditor.grantOnlyOwn')}
               </p>
             )}
           </div>
@@ -582,11 +583,12 @@ const RoleEditorModal = ({ role = null, catalog, readOnly: viewOnly = false, onC
         {!readOnly && selected.size > 0 && serverResult?.not_grantable?.length > 0 && (
           <p className="text-xs text-ink-muted">
             <Badge variant="warning" size="small" className="me-1.5">
-              Not grantable
+              {t('roleEditor.notGrantableBadge')}
             </Badge>
-            {permissionLabels(serverResult.not_grantable, ', ')} — you don't hold{' '}
-            {serverResult.not_grantable.length === 1 ? 'it' : 'them'},
-            so saving will be refused.
+            {t('roleEditor.notGrantable', {
+              labels: permissionLabels(serverResult.not_grantable, t('permJoin.list')),
+              count: serverResult.not_grantable.length,
+            })}
           </p>
         )}
       </div>

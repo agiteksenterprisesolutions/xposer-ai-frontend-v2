@@ -10,6 +10,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { AlertTriangle, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PERSON_HEIGHT, PERSON_WIDTH } from '../../utils/orgChart';
 import { useOrgChart } from './orgChartContext';
 
@@ -24,6 +25,7 @@ const initials = (name = '') =>
     .join('') || '?';
 
 const PersonNode = ({ id, data, selected }) => {
+  const { t } = useTranslation('hierarchy');
   const { toggle } = useOrgChart();
   const { member, levelTitle, flags, reports, expanded, loading, drop, dimmed } = data;
 
@@ -52,10 +54,10 @@ const PersonNode = ({ id, data, selected }) => {
           {initials(member.name)}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-ink" title={member.name}>
+          <p className="truncate text-sm font-semibold text-ink" title={member.name} dir="auto">
             {member.name}
           </p>
-          <p className="truncate text-xs text-ink-muted" title={member.designation || ''}>
+          <p className="truncate text-xs text-ink-muted" title={member.designation || ''} dir="auto">
             {[member.designation, member.department].filter(Boolean).join(' · ') || '—'}
           </p>
         </div>
@@ -67,15 +69,15 @@ const PersonNode = ({ id, data, selected }) => {
             className={`truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
               flags.includes('legacy_level') ? 'bg-warning-soft text-warning-fg' : 'bg-active text-ink-secondary'
             }`}
-            title={flags.includes('legacy_level') ? 'Left over from an old sync — they have no role' : undefined}
+            title={flags.includes('legacy_level') ? t('node.legacyHint') : undefined}
           >
             {levelTitle}
           </span>
         ) : (
-          <span className="rounded-md bg-warning-soft px-1.5 py-0.5 text-[11px] font-medium text-warning-fg">No level</span>
+          <span className="rounded-md bg-warning-soft px-1.5 py-0.5 text-[11px] font-medium text-warning-fg">{t('node.noLevel')}</span>
         )}
         {flags.filter((f) => f !== 'no_level' && f !== 'legacy_level').length > 0 && (
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning-fg" aria-label="Needs attention" />
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning-fg" aria-label={t('node.needsAttention')} />
         )}
       </div>
 
@@ -87,8 +89,8 @@ const PersonNode = ({ id, data, selected }) => {
             toggle(id);
           }}
           disabled={loading}
-          title={expanded ? 'Fold this team away' : `Show the ${reports} ${reports === 1 ? 'person' : 'people'} reporting to ${member.name}`}
-          aria-label={expanded ? `Hide ${member.name}'s team` : `Show ${member.name}'s team`}
+          title={expanded ? t('node.foldTeam') : t('node.showReports', { count: reports, name: member.name })}
+          aria-label={expanded ? t('node.hideTeam', { name: member.name }) : t('node.showTeam', { name: member.name })}
           aria-expanded={expanded}
           className="nodrag absolute -bottom-3 left-1/2 flex h-6 -translate-x-1/2 items-center gap-0.5 rounded-full border border-line-strong bg-surface px-2 text-[11px] font-semibold text-ink-muted shadow-sm transition-colors hover:border-line-accent hover:text-accent-fg disabled:cursor-wait"
         >
@@ -112,6 +114,7 @@ export default memo(PersonNode);
 
 /** The end of a list of reports with more to load. */
 export const MoreNode = memo(({ data }) => {
+  const { t } = useTranslation('hierarchy');
   const { loadMore } = useOrgChart();
   const { parentKey, remaining, loading } = data;
   return (
@@ -127,7 +130,7 @@ export const MoreNode = memo(({ data }) => {
         className="nodrag flex items-center gap-1.5 rounded-full border border-dashed border-line-strong bg-surface px-3 py-1.5 text-xs font-medium text-ink-secondary shadow-sm transition-colors hover:border-line-accent hover:text-accent-fg disabled:cursor-wait"
       >
         {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        Show more reports{remaining > 0 ? ` (${remaining} more)` : ''}
+        {remaining > 0 ? t('node.showMoreCount', { count: remaining }) : t('node.showMore')}
       </button>
     </div>
   );

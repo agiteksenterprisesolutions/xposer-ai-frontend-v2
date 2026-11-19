@@ -1,0 +1,560 @@
+{
+  "perm": {
+    "report": {
+      "create": "Submit reports",
+      "read_own": "Read reports they filed themselves",
+      "read_all": "Read every report in the organization",
+      "read_assigned": "Read reports assigned to them",
+      "read_subordinates": "Read their team's reports — everyone below them in the hierarchy",
+      "update_all": "Edit any report's details",
+      "manage": "Change status and priority, and assign reports",
+      "read_confidential": "See confidential cases",
+      "read_restricted": "See restricted cases",
+      "read_sensitive": "View sensitive answers"
+    },
+    "message": {
+      "create": "Send messages on reports",
+      "read_own": "Read messages on their own reports",
+      "read_internal": "Read and write internal notes"
+    },
+    "user": {
+      "read_me": "Read their own profile",
+      "read_all": "See every account in the organization",
+      "create": "Add users",
+      "update": "Edit users and their sign-in method",
+      "delete": "Deactivate users",
+      "manage_roles": "Change which role a user has",
+      "reset_password": "Reset other people's passwords"
+    },
+    "report_type": {
+      "read": "View report types",
+      "manage": "Create and edit report types and voice questions"
+    },
+    "organization": {
+      "read": "View organization settings"
+    },
+    "org_hierarchy": {
+      "read": "View the reporting hierarchy",
+      "manage": "Edit hierarchy levels, the directory and the HR sync"
+    },
+    "agent": {
+      "read": "View AI agents, workflows, runs and the knowledge base",
+      "manage": "Configure AI agents, workflows and the knowledge base",
+      "kb_read": "Consult policy documents (used by AI agents)",
+      "summary_read": "Read the AI summary on a report"
+    },
+    "voice_profile": {
+      "read": "View the voice profile",
+      "manage": "Edit the voice profile"
+    },
+    "entity": {
+      "read": "View the legal entities",
+      "manage": "Add and edit legal entities"
+    },
+    "role": {
+      "manage": "Create and edit roles — including their own"
+    },
+    "system": {
+      "stats": "View organization statistics and analytics"
+    }
+  },
+  "permHint": {
+    "report": {
+      "read_confidential": "Cases marked Confidential are hidden without this.",
+      "read_restricted": "Cases marked Restricted are hidden without this.",
+      "read_sensitive": "Without this, answers marked PII, special category, financial or government ID show as ••••. Every unmasked view is logged."
+    }
+  },
+  "permJoin": {
+    "or": " or ",
+    "and": " and ",
+    "list": ", ",
+    "quoted": "“{{label}}”"
+  },
+  "changeRole": {
+    "done": "{{name}} is now {{role}}.",
+    "title": "Change role for {{name}}",
+    "submit": "Change role",
+    "current": "Currently <b>{{role}}</b>. The new role's permissions apply from their next action — no sign-out needed.",
+    "roleLabel": "Role",
+    "selfTitle": "This is your own account",
+    "selfBody": "If the new role lacks a permission you are using now, you will lose access to it immediately."
+  },
+  "deleteRole": {
+    "done": "Role \"{{name}}\" deleted.",
+    "title": "Delete {{name}}?",
+    "submit": "Delete role",
+    "body": "The <code>{{code}}</code> role will be removed from your organization. This cannot be undone.",
+    "blockedTitle": "This role can't be deleted yet",
+    "seeUsers": "See who has this role →",
+    "chooseOwner": "Choose another owner on those report types →",
+    "changeEscalation": "Change the escalation policy →"
+  },
+  "permPicker": {
+    "needsAlso": "Needs {{labels}} as well.",
+    "lockedTitle": "You can't grant a permission you don't hold yourself.",
+    "lockedLabel": "Not grantable by you",
+    "selectedOf_one": "{{count}} of {{total}}",
+    "selectedOf_other": "{{count}} of {{total}}"
+  },
+  "roleSelect": {
+    "reporter": "Reporter (self-service)",
+    "orgRoles": "Organization roles",
+    "inactive": "{{name}} (inactive)",
+    "loading": "Loading roles…",
+    "error": "Couldn't load roles"
+  },
+  "roleEditor": {
+    "level": {
+      "none": "No hierarchy levels yet. Once you add levels under Reporting Hierarchy, give this role one — it decides where its holders sit in the org chart.",
+      "label": "Level",
+      "choose": "Choose a level…",
+      "missing": "Not placed yet — nobody holding this role can appear in the org chart until it has a level.",
+      "help": "Everyone holding this role sits at this level in the org chart. Several roles can share a level."
+    },
+    "viewable": {
+      "title": "Can see users with these roles",
+      "help": "Whose accounts people with this role see under User Management. Everyone always sees their own account. Admin accounts are visible to admins only, and a role added later has to be ticked here before it shows up.",
+      "sameRoleTitle": "Holders of a role can see each other only if it's ticked; their own account is always visible.",
+      "sameRole": "Same role",
+      "reporter": "Reporter",
+      "noOther": "No other roles yet.",
+      "fixedAdmin": "Admins see every account. This can’t be changed.",
+      "fixedReporter": "Reporters see only their own account. This can’t be changed."
+    },
+    "codeRequired": "A code is required.",
+    "codeReserved": "\"{{code}}\" is reserved.",
+    "created": "Role \"{{name}}\" created.",
+    "saved": "Role \"{{name}}\" saved.",
+    "adminNotViewable": "Admin accounts can only be seen by admins.",
+    "rolesThatExist": "Roles that exist: {{roles}}.",
+    "newTitle": "New role",
+    "editTitle": "Edit {{name}}",
+    "move": {
+      "title": "Move everyone who holds this role?",
+      "noLevel": "no level",
+      "bodyUnknown": "Moving {{name}} from {{from}} to {{to}} will move everyone who holds it in the org chart.",
+      "body_one": "Moving {{name}} from {{from}} to {{to}} will move the 1 person who holds it in the org chart.",
+      "body_other": "Moving {{name}} from {{from}} to {{to}} will move all {{count}} people who hold it in the org chart."
+    },
+    "escalation": {
+      "title": "This role will be able to manage roles",
+      "body": "Anyone holding it can rewrite every role's permissions — including their own. Only give it to people you would trust with your own access."
+    },
+    "selectedCount_one": "{{count}} permission selected",
+    "selectedCount_other": "{{count}} permissions selected",
+    "checking": "checking…",
+    "moveThem": "Move them",
+    "saveAnyway": "Save anyway",
+    "create": "Create role",
+    "saveChanges": "Save changes",
+    "fixed": {
+      "title": "Fixed role",
+      "reporter": "{{name}} is the public self-service role: it files and tracks its own reports. Its permissions are fixed and it can't be deleted.",
+      "admin": "{{name}} is the organization's root role. It always holds every permission this organization can grant, and can't be deleted.",
+      "levelOnly": "Only its level in the hierarchy can be changed."
+    },
+    "conflictsHelp": "Choose another level, or change those reporting lines in the hierarchy first.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Finance lead",
+    "code": "Code",
+    "codeHelpNew": "Users, agents and workflows refer to the role by this. It cannot be changed later.",
+    "codeHelpExisting": "Codes cannot change — users, agents and workflows refer to the role by it.",
+    "active": "Active",
+    "activeHelp": "An inactive role cannot be given to anyone. Users who already hold it keep it until reassigned.",
+    "cantSave": "This set of permissions can't be saved",
+    "permissions": "Permissions",
+    "grantOnlyOwn": "You can only grant permissions you hold yourself.",
+    "notGrantableBadge": "Not grantable",
+    "notGrantable_one": "{{labels}} — you don't hold it, so saving will be refused.",
+    "notGrantable_other": "{{labels}} — you don't hold them, so saving will be refused."
+  },
+  "addPerson": {
+    "method": {
+      "password": {
+        "label": "Password",
+        "hint": "We'll email them a one-time password they must change at first sign-in."
+      },
+      "google": {
+        "label": "Google",
+        "hint": "No password is created. They sign in with their Google account."
+      },
+      "microsoft": {
+        "label": "Microsoft",
+        "hint": "No password is created. They sign in with their Microsoft account."
+      }
+    },
+    "errors": {
+      "name": "Enter their full name — escalation matches report text against it.",
+      "email": "Enter their email.",
+      "emailInvalid": "Enter a valid email address.",
+      "role": "Pick a role — it places them in the org chart."
+    },
+    "alreadyHasLogin": "{{name}} already has a login.",
+    "alreadyHasLoginAnon": "This person already has a login.",
+    "role": "Role",
+    "reporter": "Reporter",
+    "roleHelp": {
+      "noLevel": "This role has no level yet, so they can’t be placed in the org chart until it gets one.",
+      "member": "Prefilled from their entry. Changing it also moves them in the org chart, because their level is their role’s level.",
+      "login": "What they can do once signed in, and where they sit in the org chart.",
+      "directory": "Places them in the org chart. Reporter fits most people who never sign in."
+    },
+    "result": {
+      "loginCreated": "Login created",
+      "personAdded": "Person added",
+      "addAnother": "Add another",
+      "done": "Done",
+      "addedAs": "Added as",
+      "notPlaced": " — not placed yet: the role has no level",
+      "managerInferred": " — from the hierarchy, as the only person one level above",
+      "signsInAs": "Signs in as",
+      "signIn": "Sign-in",
+      "withProvider": "With their {{provider}} account. No password was created.",
+      "passwordEmailed": "Password emailed to them.",
+      "temporary": "A temporary one they must replace when they first sign in."
+    },
+    "employeeId": "Employee ID",
+    "reportsTo": "Reports to",
+    "titleMember": "Create a login for {{name}}",
+    "title": "Add person",
+    "submit": {
+      "member": "Create login",
+      "withLogin": "Add person and create login",
+      "directory": "Add to directory"
+    },
+    "introMember": "They stay the same person in the directory; the login is linked to their entry.",
+    "intro": "Everyone goes in the directory, so escalation can route a report above the person it names. Only people who need to sign in get a login.",
+    "giveRoleLevel": "Give that role a level",
+    "email": "Email",
+    "job": "Job",
+    "memberNoEmail": "Their directory entry has no email, and a login needs one.",
+    "fullName": "Full name",
+    "jobTitle": "Job title",
+    "department": "Department",
+    "manager": "Manager",
+    "optional": "optional",
+    "managerAuto": "Work it out from the hierarchy",
+    "managerHelp": "Leave blank and we'll work it out from the hierarchy where there's only one possible answer.",
+    "employeeIdHint": "optional — made from the name if blank",
+    "createLogin": "Create a login",
+    "createLoginHelp": "Leave off for people who only need to be in the directory.",
+    "signInMethod": "Sign-in method",
+    "username": "Username",
+    "usernamePlaceholder": "from their email",
+    "signsInAs": "They’ll sign in as <u>{{username}}</u>",
+    "usernameWarning": " — capitals and symbols are kept exactly and must be typed the same at sign-in. Set a plain lowercase username to avoid that."
+  },
+  "dirLink": {
+    "linked": "{{name}} is linked to {{entry}}.",
+    "unlinked": "{{name}} is unlinked.",
+    "title": "Directory entry for {{name}}",
+    "intro": "The directory entry decides <b>which</b> reports this person can see — their own team's, through the reporting tree. Their role decides what they can do with them.",
+    "entry": "Directory entry",
+    "notLinked": "Not linked",
+    "useMatch": "Use {{name}} — same email",
+    "level": "Level",
+    "notPlaced": "Not placed yet",
+    "levelHelp": "Comes from {{name}}'s role. To move them, change their role; to move everyone in a role, change the role's level in Roles & Permissions.",
+    "unlinkedWarning": "Unlinked, anyone allowed to see their team's reports sees only their own cases instead."
+  },
+  "undelivered": {
+    "resendTitle": "Resend sign-in details to {{name}}",
+    "setAndEmail": "Set and email it",
+    "resendBody": "A new temporary password is set and emailed to <b>{{email}}</b>. They must replace it when they sign in.",
+    "tempPassword": "Temporary password",
+    "generate": "Generate another",
+    "policy": "Use 8+ characters with upper and lower case, a number and a symbol.",
+    "testDomain": "This address is at a reserved test domain, so the email can't arrive here either.",
+    "title_one": "1 person didn’t get their password",
+    "title_other": "{{count}} people didn’t get their password",
+    "body": "Their welcome email wasn’t delivered, so they can’t sign in. Resend to set a new password and email it.",
+    "row": "row {{row}}",
+    "signsInAs": "signs in as <u>{{username}}</u>",
+    "sent": "Sent",
+    "stillNot": "Still not delivered",
+    "resend": "Resend"
+  },
+  "importUsers": {
+    "hints": {
+      "row": {
+        "unknown_manager": "Their manager needs an Employee ID on another row.",
+        "role_escalates": "You can't grant a role carrying permissions you don't hold.",
+        "unknown_role": "Use the code or name of a role your organization has.",
+        "role_has_no_level": "The role exists but has no level, so the person can’t be placed. Give it one in Roles & Permissions.",
+        "manager_not_above": "A manager has to sit above the people who report to them. Check this row’s role or its manager.",
+        "unknown_sign_in_method": "Use Password, Google or Microsoft — or leave it blank for Password.",
+        "ambiguous_sign_in_method": "“SSO” could be Google or Microsoft. Say which.",
+        "sign_in_method_without_login": "This row creates no login, so a sign-in method doesn’t apply. Clear it, or set Create Login.",
+        "email_exists": "Someone already has this email.",
+        "undeliverable_domain": "Fine for a test import; a real person needs a real address."
+      },
+      "import": {
+        "failed": "If two rows share an email name before the @ (a.khan@eng… and a.khan@fin…), they get the same username — give one of them a Username."
+      }
+    },
+    "where": "Where",
+    "problem": "Problem",
+    "row": "Row {{row}}",
+    "file": "File",
+    "inferred": {
+      "title_one": "1 manager was filled in from the hierarchy",
+      "title_other": "{{count}} managers were filled in from the hierarchy",
+      "body": "These rows named no manager, and exactly one person sat one level above them in the same department. Reporting lines decide who hears about an allegation, so check they're right.",
+      "reportsTo": "reports to <m>{{manager}}</m>"
+    },
+    "warnings_one": "1 thing to check — these won't stop the import",
+    "warnings_other": "{{count}} things to check — these won't stop the import",
+    "title": "Import people",
+    "import": "Import",
+    "imported": "Imported",
+    "doneHelp": "New password accounts start on a temporary password and must set their own when they first sign in. Google and Microsoft accounts have no password; they sign in with that account.",
+    "step1": "<b>1. Fill in the template.</b> It comes with a working example — read it before replacing it. The template changed: download a fresh copy rather than reusing an old one. The Role column now places each person (there's no level column), and Sign-in Method chooses Password, Google or Microsoft.",
+    "template": "Template",
+    "step2": "<b>2. Upload it.</b> It's checked first; nothing is created until every row is valid.",
+    "choose": "Choose an .xlsx file",
+    "chooseAnother": "Choose another to replace it",
+    "checking": "Checking the file…",
+    "valid": "The file is valid",
+    "ready": "Ready to import.",
+    "fix": "Fix these in the file and upload it again — nothing was imported.",
+    "openRoles": "Open Roles & Permissions →"
+  },
+  "setPassword": {
+    "hide": "Hide {{field}}",
+    "show": "Show {{field}}",
+    "seoTitle": "Set your password",
+    "failed": "Your password wasn't changed. Try again.",
+    "title": "Set your own password",
+    "titleNamed": "Set your own password, {{name}}",
+    "intro": "Your account was created with a temporary password. Choose your own to continue — you can't use the app until you do.",
+    "current": "Temporary password",
+    "new": "New password",
+    "rules": "Password rules",
+    "met": "(met)",
+    "notMet": "(not met)",
+    "confirm": "Confirm new password",
+    "submit": "Set password and continue",
+    "sessions": "Signing in elsewhere? Those sessions end when you set it.",
+    "signOut": "Sign out"
+  },
+  "provider": {
+    "password": "Password"
+  },
+  "account": {
+    "details": "Your details",
+    "fullName": "Full name",
+    "email": "Email",
+    "askAdmin": "To change your name or email, ask an admin.",
+    "saved": "Saved.",
+    "enterName": "Enter your name",
+    "enterEmail": "Enter your email",
+    "password": "Password",
+    "ssoNoPassword": "You sign in with {{provider}}, so there's no password to change here. Manage it with {{provider}}.",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "switched": "You now sign in with {{provider}}.",
+    "signInMethod": "Sign-in method",
+    "signsInWith": "You sign in with <b>{{provider}}</b>.",
+    "switchTo": "Switch to",
+    "switch": "Switch",
+    "passwordRemoved": "Your password is removed when you switch.",
+    "goBack": "To go back to a password, ask another admin. A password can't be set on your own account.",
+    "confirmTitle": "Sign in with {{provider}}?",
+    "confirmBody": "From now on you sign in with the {{provider}} account for {{email}}.",
+    "passwordStops": "Your password stops working.",
+    "onlyAdminBack": "Only another admin can move you back onto a password.",
+    "title": "My account",
+    "subtitleAdmin": "Your name, email and password.",
+    "subtitle": "Your details, and your password.",
+    "setByAdmin": "Set by an admin",
+    "username": "Username",
+    "role": "Role",
+    "footAdmin": "Your directory link is on User Management. Your own role and active state can only be changed by another admin.",
+    "foot": "Your role, sign-in method and place in the directory can only be changed by an admin."
+  },
+  "users": {
+    "seoTitle": "User Management",
+    "seoDescription": "Create, edit, and deactivate accounts across your organization.",
+    "columns": {
+      "full_name": "User",
+      "username": "Username",
+      "role": "Role",
+      "auth_provider": "Sign-in",
+      "created_at": "Created on",
+      "is_active": "Status",
+      "actions": "Actions"
+    },
+    "roleGone": "The {{role}} role no longer exists. Give {{name}} a role first.",
+    "reset": {
+      "required": "Password is required.",
+      "tooShort": "Password must be at least 8 characters.",
+      "title": "Manage sign-in",
+      "current": "{{name}} currently signs in with <b>{{provider}}</b>.",
+      "newPassword": "New password",
+      "newPasswordReset": "New password (reset)",
+      "requiredForSwitch": "Required — switching away from SSO needs a password to sign in with.",
+      "ssoWarning": "This account will sign in with {{provider}}. Any existing password is removed, and the email address above must match their {{provider}} account."
+    },
+    "placement": {
+      "change": "Change directory entry",
+      "noLevel": "No level",
+      "missingTitle": "Linked to employee ID {{id}}, which is no longer in the directory — the entry was probably removed. Re-link them to an existing entry, or unlink them.",
+      "unlinkedTitle": "Not linked to anyone in the directory, so they aren’t placed in the org chart. Link them to their directory entry, or add them to the directory.",
+      "seesOwn": "Until then they see only their own cases, not their team's.",
+      "clickToFix": "Click to fix.",
+      "missing": "Entry missing",
+      "unlinked": "Unlinked"
+    },
+    "self": {
+      "editTitle": "Edit your name and email, or change your password",
+      "passwordTitle": "Change your password",
+      "myAccount": "My account",
+      "changePassword": "Change my password"
+    },
+    "actions": {
+      "changeRole": "Change role",
+      "manageSignIn": "Manage sign-in",
+      "manageSignInFor": "Manage sign-in for {{name}}",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "deactivateFor": "Deactivate {{name}}",
+      "activateFor": "Activate {{name}}"
+    },
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "statusFilter": "Filter by status",
+    "noPasswordYet": "Hasn’t set a password",
+    "noPasswordYetTitle": "They must replace the temporary password at their next sign-in.",
+    "tour": {
+      "sidebarTitle": "User Management",
+      "sidebarBody": "Create, edit, and deactivate accounts for everyone in your organization.",
+      "searchTitle": "Search users",
+      "searchBody": "Find anyone by name, email, or username.",
+      "addTitle": "Add a new user",
+      "addBody": "Create a new account and give it one of your organization's roles.",
+      "tableTitle": "Manage users",
+      "tableBody": "Reset a password, or activate/deactivate an account, right from this table.",
+      "accountTitle": "Your account",
+      "accountBody": "Manage your profile or log out from here."
+    },
+    "stranded": {
+      "title": "Saved — {{name}} has cases to hand over",
+      "seeCases": "See their cases"
+    },
+    "readOnlyNotice": "You see your own account and the people whose roles your role is allowed to see. Only an admin can add, change or deactivate accounts.",
+    "searchPlaceholder": "Search by name, email, or username…",
+    "searchLabel": "Search users",
+    "roleFilter": "Filter by role",
+    "allRoles": "All roles",
+    "import": "Import",
+    "filters": {
+      "showing": "Showing",
+      "role": "Role: {{name}}",
+      "level": "Level: {{name}}",
+      "unlinked": "Not linked to the directory",
+      "clear": "Clear the filter {{label}}",
+      "unlinkedNote": "— these accounts see only their own cases until linked."
+    },
+    "empty": {
+      "noMatch": "No matching users",
+      "none": "No users found",
+      "noMatchHelp": "Try a different name, email, or username.",
+      "noneHelp": "Try adjusting your search criteria"
+    },
+    "confirm": {
+      "deactivateTitle": "Deactivate user",
+      "activateTitle": "Activate user",
+      "roleGone": "{{name}}'s role, {{role}}, no longer exists, so they would return with no permissions. You'll be asked to choose a new role.",
+      "deactivateBody": "Are you sure you want to deactivate {{name}}?",
+      "activateBody": "Are you sure you want to activate {{name}}?"
+    }
+  },
+  "roles": {
+    "savedWarnings": {
+      "title": "Saved — but check this",
+      "goCases": "Go to cases",
+      "goTypes": "Go to report types"
+    },
+    "permission": "Permission",
+    "fixed": "Fixed",
+    "noLevel": "No level — its holders can’t be placed in the org chart",
+    "stat": {
+      "people": "People with this role",
+      "peopleCount_one": "{{count}} person",
+      "peopleCount_other": "{{count}} people",
+      "agents": "AI agents acting as it",
+      "none": "None"
+    },
+    "unsaved": "unsaved",
+    "changeLevelTitle": "Only the level of a fixed role can change",
+    "changeLevel": "Change level",
+    "editBlocked": "Save or discard the changes in the grid first.",
+    "editTitle": "Rename, change its level, deactivate or edit in a list",
+    "editDetails": "Edit details",
+    "canSee": "Can see accounts of:",
+    "canSeeEveryone": "everyone",
+    "canSeeRoles": "{{roles}} — and their own",
+    "canSeeOwn": "only their own account",
+    "fixedReporter": "The identity people use to file and follow their own reports. Its permissions are fixed and it cannot be deleted; only its level can change.",
+    "fixedAdmin": "The organization's root role. It always holds every permission this organization can grant and cannot be deleted; only its level can change.",
+    "cell": {
+      "allowed": "allowed",
+      "notAllowed": "not allowed",
+      "willAllow": "will be allowed when saved",
+      "willRemove": "will be removed when saved",
+      "label": "{{role}}: {{permission}}, {{state}}",
+      "labelNote": "{{role}}: {{permission}}, {{state}} — {{note}}",
+      "fixed": "{{role}} is fixed"
+    },
+    "matrix": {
+      "title": "Who can see whom",
+      "help": "Whose accounts each role sees under User Management. Everyone sees their own account; admin accounts are visible to admins only, and only admins can change accounts.",
+      "corner": "People with… <s>can see…</s>",
+      "managesAccounts": "Manages accounts",
+      "canSee": "{{role}} can see {{target}} accounts",
+      "canSeeChange": "{{role}} can see {{target}} accounts and change them",
+      "adminOnly": "Admin accounts are visible to admins only",
+      "cantSee": "{{role}} can't see {{target}} accounts",
+      "change": "Change"
+    },
+    "seoTitle": "Roles",
+    "seoDescription": "Build your organization's roles from permissions.",
+    "notGrantable_one": "You don't hold {{labels}} yourself, so you can't grant it.",
+    "notGrantable_other": "You don't hold {{labels}} yourself, so you can't grant them.",
+    "savedCount_one": "{{count}} role saved.",
+    "savedCount_other": "{{count}} roles saved.",
+    "title": "Roles & Permissions",
+    "intro": "What each role can see and do. Pages, buttons and AI agents all follow from these ticks.",
+    "find": "Find a permission",
+    "refresh": "Refresh",
+    "catalogError": "Couldn't load the permission catalog",
+    "unplaced": {
+      "title_one": "1 role has no level",
+      "title_other": "{{count}} roles have no level",
+      "body": "Nobody holding {{roles}} can be placed in the org chart, so escalation can’t route a report around them. Select the role and give it a level."
+    },
+    "legend": {
+      "allowed": "Allowed",
+      "notAllowed": "Not allowed",
+      "unsaved": "Unsaved change",
+      "selectHint": "Select a role's name to see its summary."
+    },
+    "showInactive": "Show inactive roles",
+    "noLevelTitle": "Nobody holding this role can be placed in the org chart until it has a level.",
+    "unsavedBadge": "Unsaved",
+    "noMatch": "No permission matches \"{{query}}\".",
+    "footnote": "Locked columns are fixed roles: admin's and reporter's permissions can't change, only their level. Columns run most senior level first.",
+    "footnoteManage": "Greyed-out ticks are permissions you don't hold yourself, so you can't grant them.",
+    "saveBar": {
+      "escalation": "<b>A role will be able to manage roles.</b> Anyone holding it can rewrite every role's permissions, including their own.",
+      "couldNotSave": "Couldn't save:",
+      "unsaved": "Unsaved changes to <b>{{roles}}</b>",
+      "fixFirst": " — fix the marked ticks before saving",
+      "discard": "Discard"
+    }
+  }
+}

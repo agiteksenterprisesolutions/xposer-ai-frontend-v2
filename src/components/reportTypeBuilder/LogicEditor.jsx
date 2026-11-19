@@ -8,6 +8,7 @@
 // once for all rules. Yes/No answers are stored as booleans, and a rule on one
 // compares against true/false, not the strings "true"/"false".
 import { GitBranch, Plus, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { normalizeOptions } from '../../utils/reportTypes';
 import { hasOptions, isListOperator, isValuelessOperator, operatorsFor } from './model';
 
@@ -21,18 +22,19 @@ const defaultValueFor = (question) => {
 };
 
 const RuleValue = ({ rule, question, onChange }) => {
+  const { t } = useTranslation('builder');
   if (isValuelessOperator(rule.operator)) return null;
 
   if (question?.type === 'boolean') {
     return (
       <select
-        aria-label="Answer"
+        aria-label={t('logicEditor.answer')}
         value={String(rule.value === true || rule.value === 'true' || rule.value === 1 || rule.value === '1')}
         onChange={(e) => onChange({ value: e.target.value === 'true' })}
         className={control}
       >
-        <option value="true">Yes</option>
-        <option value="false">No</option>
+        <option value="true">{t('logic.yes')}</option>
+        <option value="false">{t('logic.no')}</option>
       </select>
     );
   }
@@ -42,7 +44,7 @@ const RuleValue = ({ rule, question, onChange }) => {
     if (isListOperator(rule.operator)) {
       const values = rule.values || [];
       return (
-        <div className="flex basis-full flex-wrap gap-1.5" role="group" aria-label="Answers">
+        <div className="flex basis-full flex-wrap gap-1.5" role="group" aria-label={t('logicEditor.answers')}>
           {options.map((option) => {
             const on = values.includes(option.value);
             return (
@@ -63,9 +65,9 @@ const RuleValue = ({ rule, question, onChange }) => {
       );
     }
     return (
-      <select aria-label="Answer" value={rule.value ?? ''} onChange={(e) => onChange({ value: e.target.value })} className={`${control} max-w-full`}>
+      <select aria-label={t('logicEditor.answer')} value={rule.value ?? ''} onChange={(e) => onChange({ value: e.target.value })} className={`${control} max-w-full`}>
         <option value="" disabled>
-          Pick an answer
+          {t('logicEditor.pickAnswer')}
         </option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -79,10 +81,10 @@ const RuleValue = ({ rule, question, onChange }) => {
   if (isListOperator(rule.operator)) {
     return (
       <input
-        aria-label="Answers, separated by commas"
+        aria-label={t('logicEditor.answersCommas')}
         value={(rule.values || []).join(', ')}
         onChange={(e) => onChange({ values: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) })}
-        placeholder="answer one, answer two"
+        placeholder={t('logicEditor.answersPlaceholder')}
         className={`${control} min-w-0 flex-1`}
       />
     );
@@ -90,11 +92,11 @@ const RuleValue = ({ rule, question, onChange }) => {
 
   return (
     <input
-      aria-label="Answer"
+      aria-label={t('logicEditor.answer')}
       type={['number', 'currency'].includes(question?.type) ? 'number' : 'text'}
       value={rule.value ?? ''}
       onChange={(e) => onChange({ value: e.target.value })}
-      placeholder="an answer"
+      placeholder={t('logicEditor.answerPlaceholder')}
       className={`${control} min-w-0 flex-1`}
     />
   );
@@ -108,6 +110,7 @@ const RuleValue = ({ rule, question, onChange }) => {
  *   onChange – (logic | null) => void
  */
 const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
+  const { t } = useTranslation('builder');
   const rules = logic?.rules || [];
   const mode = rules[0]?.condition_type === 'skip' || rules[0]?.condition_type === 'hide' ? 'skip' : 'show';
   const byName = new Map(earlier.map((q) => [q.name, q]));
@@ -163,9 +166,7 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
   if (earlier.length === 0) {
     return (
       <p className="text-xs leading-relaxed text-ink-muted">
-        {subject === 'step'
-          ? 'The first step is always shown. Later steps can be shown or skipped based on earlier answers.'
-          : 'This is the first question, so it is always shown. Later questions can depend on its answer.'}
+        {subject === 'step' ? t('logicEditor.firstStep') : t('logicEditor.firstQuestion')}
       </p>
     );
   }
@@ -173,39 +174,39 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
   if (rules.length === 0) {
     return (
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-ink-muted">Always shown</p>
+        <p className="text-sm text-ink-muted">{t('logicEditor.alwaysShown')}</p>
         <button
           type="button"
           onClick={addRule}
           className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-link hover:bg-accent-soft"
         >
           <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
-          Add a condition
+          {t('logicEditor.addCondition')}
         </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-1.5 text-sm text-ink-secondary">
-        <select aria-label="Show or skip" value={mode} onChange={(e) => setMode(e.target.value)} className={control}>
-          <option value="show">Show</option>
-          <option value="skip">Skip</option>
+        <select aria-label={t('logicEditor.showOrSkip')} value={mode} onChange={(e) => setMode(e.target.value)} className={control}>
+          <option value="show">{t('logicEditor.show')}</option>
+          <option value="skip">{t('logicEditor.skip')}</option>
         </select>
-        <span>this {subject} if</span>
+        <span>{subject === 'step' ? t('logicEditor.thisStepIf') : t('logicEditor.thisQuestionIf')}</span>
         {rules.length > 1 && (
           <>
             <select
-              aria-label="Match"
+              aria-label={t('logicEditor.match')}
               value={logic?.logic_type || 'and'}
               onChange={(e) => write(rules, { logic_type: e.target.value })}
               className={control}
             >
-              <option value="and">all</option>
-              <option value="or">any</option>
+              <option value="and">{t('logicEditor.all')}</option>
+              <option value="or">{t('logicEditor.any')}</option>
             </select>
-            <span>of these are true</span>
+            <span>{t('logicEditor.ofTheseAreTrue')}</span>
           </>
         )}
       </div>
@@ -218,30 +219,30 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
             <div className="flex flex-wrap items-center gap-1.5">
               {index > 0 && (
                 <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  {logic?.logic_type === 'or' ? 'or' : 'and'}
+                  {logic?.logic_type === 'or' ? t('logicEditor.or') : t('logicEditor.and')}
                 </span>
               )}
               <select
-                aria-label="Question"
+                aria-label={t('logicEditor.question')}
                 value={rule.when_question || ''}
                 onChange={(e) => updateRule(index, { when_question: e.target.value })}
                 className={`${control} min-w-0 max-w-full flex-1 font-medium`}
               >
                 {!question && (
                   <option value="" disabled>
-                    {rule.when_question ? 'A question that comes later' : 'Pick a question'}
+                    {rule.when_question ? t('logicEditor.laterQuestion') : t('logicEditor.pickQuestion')}
                   </option>
                 )}
                 {earlier.map((q) => (
                   <option key={q.id} value={q.name}>
-                    {q.label || q.name || 'Untitled question'}
+                    {q.label || q.name || t('preview.untitledQuestion')}
                   </option>
                 ))}
               </select>
               <button
                 type="button"
                 onClick={() => write(rules.filter((_, i) => i !== index))}
-                aria-label="Remove condition"
+                aria-label={t('logicEditor.removeCondition')}
                 className="ms-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-danger-soft hover:text-danger-fg"
               >
                 <X className="h-3.5 w-3.5" />
@@ -249,7 +250,7 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               <select
-                aria-label="Comparison"
+                aria-label={t('logicEditor.comparison')}
                 value={rule.operator}
                 onChange={(e) => updateRule(index, { operator: e.target.value })}
                 className={control}
@@ -273,7 +274,7 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
         className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-link hover:bg-accent-soft"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-        Add another condition
+        {t('logicEditor.addAnother')}
       </button>
     </div>
   );

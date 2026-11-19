@@ -2,6 +2,7 @@
 //
 // The first thing "New report type" shows: a name, a category, and a starting
 // point — a blank form, or a copy of an existing type.
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { ArrowRight, Copy, FilePlus2, Info, X } from 'lucide-react';
 import Button from '../ui/Button';
@@ -9,6 +10,7 @@ import { reportTypesAPI } from '../../api';
 import { useUIStore } from '../../store/uiStore';
 
 const StartScreen = ({ onStart, onCancel, starting = false }) => {
+  const { t } = useTranslation('builder');
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [mode, setMode] = useState('scratch');
@@ -33,14 +35,14 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
 
   const pickCopy = (id) => {
     setCopyId(id);
-    const source = types?.find((t) => (t.id || t._id) === id);
-    if (source && !name.trim()) setName(`${source.name} (copy)`);
+    const source = types?.find((type) => (type.id || type._id) === id);
+    if (source && !name.trim()) setName(t('start.copyName', { name: source.name }));
     if (source?.category && !category.trim()) setCategory(source.category);
   };
 
   const ready = name.trim() && (mode === 'scratch' || copyId);
   // Categories already in use, so types are grouped consistently.
-  const categories = [...new Set((types || []).map((t) => t.category?.trim()).filter(Boolean))].sort();
+  const categories = [...new Set((types || []).map((type) => type.category?.trim()).filter(Boolean))].sort();
   const submit = (e) => {
     e.preventDefault();
     if (ready) onStart({ name: name.trim(), category: category.trim(), mode, copyId });
@@ -80,46 +82,46 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
         <div className="flex items-start gap-4 px-6 pb-1 pt-6 sm:px-7">
           <div className="flex-1">
             <h1 id="rt-start-title" className="text-xl font-bold tracking-[-0.01em] text-ink">
-              New report type
+              {t('editor.newType')}
             </h1>
-            <p className="mt-1 text-sm text-ink-muted">Name it and pick a starting point. You can change everything afterwards.</p>
+            <p className="mt-1 text-sm text-ink-muted">{t('start.intro')}</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            aria-label="Cancel"
+            aria-label={t('common:actions.cancel')}
             className="-me-2 flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-hover hover:text-ink"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="space-y-5 px-6 py-5 sm:px-7">
-          <div className="space-y-1.5">
+        <div className="flex flex-col gap-5 px-6 py-5 sm:px-7">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="rt-start-name" className="block text-sm font-medium text-ink-secondary">
-              Name
+              {t('start.name')}
             </label>
             <input
               id="rt-start-name"
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Workplace harassment"
+              placeholder={t('start.namePlaceholder')}
               className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3.5 text-[0.9375rem] text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-line-accent focus:ring-3 focus:ring-accent-ring"
             />
-            <p className="text-xs text-ink-muted">Reporters see this when they choose what to report.</p>
+            <p className="text-xs text-ink-muted">{t('start.nameHint')}</p>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="rt-start-category" className="block text-sm font-medium text-ink-secondary">
-              Category <span className="font-normal text-ink-muted">optional</span>
+              {t('start.category')} <span className="font-normal text-ink-muted">{t('common:form.optional')}</span>
             </label>
             <input
               id="rt-start-category"
               list="rt-start-categories"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="e.g. Fraud, Conduct, Health & safety"
+              placeholder={t('start.categoryPlaceholder')}
               className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3.5 text-[0.9375rem] text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-line-accent focus:ring-3 focus:ring-accent-ring"
             />
             <datalist id="rt-start-categories">
@@ -127,21 +129,21 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
                 <option key={c} value={c} />
               ))}
             </datalist>
-            <p className="text-xs text-ink-muted">Groups related report types. Pick an existing one or type a new one.</p>
+            <p className="text-xs text-ink-muted">{t('start.categoryHint')}</p>
           </div>
 
-          <fieldset className="space-y-2.5">
-            <legend className="mb-2.5 text-sm font-medium text-ink-secondary">Start from</legend>
+          <fieldset>
+            <legend className="mb-2.5 text-sm font-medium text-ink-secondary">{t('start.startFrom')}</legend>
             <div className="grid gap-2.5 sm:grid-cols-2">
-              {choice('scratch', FilePlus2, 'Start from the standard questions', 'The questions every type asks, ready for your own.')}
-              {choice('copy', Copy, 'A copy of an existing type', 'Its questions and handling rules, under the new name.')}
+              {choice('scratch', FilePlus2, t('start.scratchTitle'), t('start.scratchText'))}
+              {choice('copy', Copy, t('start.copyTitle'), t('start.copyText'))}
             </div>
           </fieldset>
 
           {mode === 'copy' && (
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <label htmlFor="rt-start-copy" className="block text-sm font-medium text-ink-secondary">
-                Type to copy
+                {t('start.typeToCopy')}
               </label>
               <select
                 id="rt-start-copy"
@@ -151,7 +153,7 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
                 className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink outline-none focus:border-line-accent disabled:opacity-60"
               >
                 <option value="" disabled>
-                  {!types ? 'Loading report types…' : types.length ? 'Choose a report type' : 'No report types to copy yet'}
+                  {!types ? t('start.loadingTypes') : types.length ? t('start.chooseType') : t('start.noTypes')}
                 </option>
                 {(types || []).map((type) => (
                   <option key={type.id || type._id} value={type.id || type._id}>
@@ -166,13 +168,13 @@ const StartScreen = ({ onStart, onCancel, starting = false }) => {
         <div className="flex flex-wrap items-center gap-3 border-t border-line-subtle bg-subtle px-6 py-4 sm:px-7">
           <span className="flex flex-[1_1_15rem] items-center gap-2 text-xs text-ink-secondary">
             <Info className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
-            Nothing is saved until you publish it or save a draft.
+            {t('start.nothingSaved')}
           </span>
           <Button variant="secondary" onClick={onCancel}>
-            Cancel
+            {t('common:actions.cancel')}
           </Button>
           <Button type="submit" disabled={!ready} isLoading={starting} endIcon={ArrowRight}>
-            Open builder
+            {t('start.openBuilder')}
           </Button>
         </div>
       </form>

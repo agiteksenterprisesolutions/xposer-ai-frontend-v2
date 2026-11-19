@@ -22,6 +22,12 @@ import { parseServerDate } from '../../utils/formatters';
 import { tone } from '../../utils/tone';
 import useSEO from '../../hooks/useSEO';
 import { normalizeReportsResponse } from '../../utils/reports';
+import { useTranslation } from 'react-i18next';
+import { intlLocale, isRtl } from '../../utils/locale';
+
+// Tour placements are written for left-to-right; Arabic mirrors the sidebar.
+const side = (placement) =>
+  isRtl() ? ({ left: 'right', right: 'left' }[placement] || placement) : placement;
 
 const REVIEWER_TOUR_KEY = 'xposer_reviewer_dashboard_tour_seen';
 
@@ -35,10 +41,11 @@ const ReviewerDashboard = () => {
   const navigate = useNavigate();
   const tourRef = useRef(null);
   const isDesktop = useIsDesktop();
+  const { t, i18n } = useTranslation('dashboards');
 
   useSEO({
-    title: 'Reviewer Dashboard',
-    description: 'Reports assigned to you for review, with status and category breakdowns.',
+    title: t('reviewer.seo.title'),
+    description: t('reviewer.seo.description'),
     noIndex: true,
   });
   useEffect(() => {
@@ -64,35 +71,35 @@ const ReviewerDashboard = () => {
   const reportsPath = `/${user?.organization_slug || ''}/staff/reports`;
   const statCards = [
     {
-      title: 'Total Assigned',
+      title: t('reviewer.cards.total.title'),
       value: stats?.total || 0,
       icon: FileText,
       color: 'blue',
-      description: 'Total reports assigned to you',
+      description: t('reviewer.cards.total.description'),
       to: reportsPath
     },
     {
-      title: 'Pending Review',
+      title: t('compliance.cards.pending.title'),
       value: stats?.pending || 0,
       icon: ShieldAlert,
       color: 'orange',
-      description: 'Awaiting your initial review',
+      description: t('reviewer.cards.pending.description'),
       to: `${reportsPath}?status=pending`
     },
     {
-      title: 'Active Cases',
+      title: t('compliance.cards.active.title'),
       value: stats?.in_progress || 0,
       icon: Clock,
       color: 'indigo',
-      description: 'Currently being investigated',
+      description: t('compliance.cards.active.description'),
       to: `${reportsPath}?status=in_progress`
     },
     {
-      title: 'Resolved/Closed',
+      title: t('compliance.cards.resolved.title'),
       value: (stats?.resolved || 0) + (stats?.closed || 0),
       icon: CheckCircle,
       color: 'green',
-      description: 'Successfully resolved or closed',
+      description: t('compliance.cards.resolved.description'),
       to: `${reportsPath}?status=resolved`
     }
   ];
@@ -102,17 +109,17 @@ const ReviewerDashboard = () => {
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-user"]',
-        title: 'Welcome, Reviewer',
-        content: 'This sidebar is where you navigate between your dashboard and all reports.',
-        placement: 'right',
+        title: t('reviewer.tour.welcome.title'),
+        content: t('compliance.tour.welcome.content'),
+        placement: side('right'),
         skipBeacon: true,
       });
     }
 
     steps.push({
       target: '[data-tour="reviewer-stats"]',
-      title: 'Case overview',
-      content: 'Track total, pending, active, and resolved reports assigned to you.',
+      title: t('compliance.tour.stats.title'),
+      content: t('reviewer.tour.stats.content'),
       placement: 'bottom',
       skipBeacon: !isDesktop,
     });
@@ -120,23 +127,23 @@ const ReviewerDashboard = () => {
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-all-reports"]',
-        title: 'All Reports',
-        content: 'Browse and open every report you have access to review.',
-        placement: 'right',
+        title: t('compliance.tour.allReports.title'),
+        content: t('reviewer.tour.allReports.content'),
+        placement: side('right'),
       });
     }
 
     steps.push(
       {
         target: '[data-tour="reviewer-recent"]',
-        title: 'Recent submissions',
-        content: 'The newest reports land here first — click any row to open the case.',
+        title: t('compliance.tour.recent.title'),
+        content: t('compliance.tour.recent.content'),
         placement: 'top',
       },
       {
         target: '[data-tour="reviewer-category"]',
-        title: 'Reports by category',
-        content: 'See how reports break down by type, so you can spot trends quickly.',
+        title: t('compliance.tour.category.title'),
+        content: t('compliance.tour.category.content'),
         placement: 'top',
       }
     );
@@ -144,21 +151,21 @@ const ReviewerDashboard = () => {
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-help"]',
-        title: 'Help & Support',
-        content: 'Have a question? Find guidance and support resources here.',
-        placement: 'right',
+        title: t('reviewer.tour.help.title'),
+        content: t('reviewer.tour.help.content'),
+        placement: side('right'),
       });
     }
 
     steps.push({
       target: '[data-tour="tour-user-menu"]',
-      title: 'Your account',
-      content: 'Manage your profile or log out from here.',
+      title: t('compliance.tour.account.title'),
+      content: t('compliance.tour.account.content'),
       placement: 'bottom',
     });
 
     return steps;
-  }, [isDesktop]);
+  }, [isDesktop, t, i18n.resolvedLanguage]);
 
   return (
     <div className="space-y-8">
@@ -173,7 +180,7 @@ const ReviewerDashboard = () => {
             shadow="sm"
             role="button"
             tabIndex={0}
-            aria-label={`${stat.title}: ${stat.value}. Open the filtered list.`}
+            aria-label={t('compliance.cards.ariaLabel', { title: stat.title, value: stat.value })}
             onClick={() => navigate(stat.to)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -205,18 +212,18 @@ const ReviewerDashboard = () => {
         {/* Recent Reports Table */}
         <Card className="lg:col-span-2" padding="none" data-tour="reviewer-recent">
           <Card.Header className="p-6 border-b border-line-subtle flex items-center justify-between">
-            <Card.Title>Recent Submissions</Card.Title>
+            <Card.Title>{t('compliance.recent.title')}</Card.Title>
             <Link to={reportsPath} className="text-sm font-medium text-accent-fg hover:text-accent-fg flex items-center">
-              View All <ArrowRight className="h-4 w-4 ms-1" />
+              {t('compliance.recent.viewAll')} <ArrowRight className="h-4 w-4 ms-1" />
             </Link>
           </Card.Header>
           <Table>
             <Table.Header>
               <Table.Row hover={false}>
-                <Table.Head>ID & Date</Table.Head>
-                <Table.Head>Category</Table.Head>
-                <Table.Head>Priority</Table.Head>
-                <Table.Head>Status</Table.Head>
+                <Table.Head>{t('compliance.recent.columns.idDate')}</Table.Head>
+                <Table.Head>{t('compliance.recent.columns.category')}</Table.Head>
+                <Table.Head>{t('compliance.recent.columns.priority')}</Table.Head>
+                <Table.Head>{t('compliance.recent.columns.status')}</Table.Head>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -239,7 +246,7 @@ const ReviewerDashboard = () => {
                   <Table.Cell>
                     <div className="flex flex-col">
                       <span className="font-medium text-ink">#{report.report_number}</span>
-                      <span className="text-xs text-ink-muted">{parseServerDate(report.created_at)?.toLocaleDateString() || 'N/A'}</span>
+                      <span className="text-xs text-ink-muted">{parseServerDate(report.created_at)?.toLocaleDateString(intlLocale()) || t('shared.notAvailable')}</span>
                     </div>
                   </Table.Cell>
                   <Table.Cell>
@@ -256,7 +263,7 @@ const ReviewerDashboard = () => {
                 </Table.Row>
               ))}
               {!loading && recentReports.length === 0 && (
-                <Table.Empty message="No reports found" description="New reports will appear here." icon={FileText} />
+                <Table.Empty message={t('compliance.recent.emptyTitle')} description={t('compliance.recent.emptyDescription')} icon={FileText} />
               )}
             </Table.Body>
           </Table>
@@ -267,11 +274,11 @@ const ReviewerDashboard = () => {
           <Card.Header>
             <Card.Title className="flex items-center">
               <BarChart3 className="h-5 w-5 me-2 text-accent-fg" />
-              Reports by Category
+              {t('compliance.category.title')}
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col gap-4">
               {loading ? (
                 [0, 1, 2].map((i) => (
                   <div key={i} className="space-y-1">
@@ -296,7 +303,7 @@ const ReviewerDashboard = () => {
                         <span className="font-medium text-ink-secondary truncate pe-2">
                           {categoryFor(item.report_type_id, item.report_type_name) ?? <Skeleton.Text className="w-28" />}
                         </span>
-                        <span className="text-ink-muted shrink-0">{item.count} ({percentage}%)</span>
+                        <span className="text-ink-muted shrink-0">{t('compliance.category.countPercent', { count: item.count, percent: percentage })}</span>
                       </div>
                       <div className="w-full bg-active rounded-full h-1.5">
                         <div className={`${color} h-1.5 rounded-full`} style={{ width: `${percentage}%` }} />
@@ -305,7 +312,7 @@ const ReviewerDashboard = () => {
                   );
                 })
               ) : (
-                <div className="text-sm text-ink-muted text-center py-4">No data available</div>
+                <div className="text-sm text-ink-muted text-center py-4">{t('shared.noData')}</div>
               )}
             </div>
           </Card.Content>

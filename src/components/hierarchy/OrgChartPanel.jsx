@@ -31,6 +31,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { AlertTriangle, ChevronsDownUp, Loader2, Pencil, Search, Users, X } from 'lucide-react';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
@@ -88,13 +90,16 @@ const PersonLink = ({ member, onSelect }) => (
 
 const loginLabel = (member) => {
   if (member.has_account === undefined) return '—';
-  if (!member.has_account) return 'None';
-  if (!member.has_active_account) return <span className="text-warning-fg">Deactivated</span>;
-  return (member.accounts?.length || 1) > 1 ? `${member.accounts.length} logins` : 'Has a login';
+  if (!member.has_account) return i18n.t('hierarchy:chart.loginNone');
+  if (!member.has_active_account) return <span className="text-warning-fg">{i18n.t('hierarchy:chart.loginDeactivated')}</span>;
+  return (member.accounts?.length || 1) > 1
+    ? i18n.t('hierarchy:directory.logins', { count: member.accounts.length })
+    : i18n.t('hierarchy:directory.hasLogin');
 };
 
 /** The selected person, their place in the chart, and anything wrong with it. */
 const PersonPanel = ({ member, manager, reports, levelTitle, flags, canManage, onSelect, onOpenTeam, onEdit, onClose }) => {
+  const { t } = useTranslation('hierarchy');
   const { nameFor } = useOrgRoles();
   const count = member.direct_report_count ?? reports?.ids.length ?? 0;
 
@@ -102,17 +107,17 @@ const PersonPanel = ({ member, manager, reports, levelTitle, flags, canManage, o
     <aside className="flex max-h-full w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
       <header className="flex items-start justify-between gap-2 border-b border-line-subtle px-4 py-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">Person</p>
-          <h3 className="truncate text-sm font-semibold text-ink">{member.name}</h3>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">{t('directory.cols.person')}</p>
+          <h3 className="truncate text-sm font-semibold text-ink" dir="auto">{member.name}</h3>
           <p className="truncate text-xs text-ink-muted">{member.email || member.external_id}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t('common:actions.close')}
           className="rounded-md p-1 text-ink-muted transition-colors hover:bg-hover hover:text-ink"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </header>
 
@@ -121,7 +126,7 @@ const PersonPanel = ({ member, manager, reports, levelTitle, flags, canManage, o
           <ul className="space-y-1.5">
             {flags.map((flag) => (
               <li key={flag} className="flex items-start gap-1.5 rounded-lg bg-warning-soft px-2.5 py-2 text-xs text-warning-fg">
-                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span>
                   <span className="font-semibold">{FLAG_INFO[flag].label}.</span> {FLAG_INFO[flag].description}
                 </span>
@@ -131,27 +136,27 @@ const PersonPanel = ({ member, manager, reports, levelTitle, flags, canManage, o
         )}
 
         <div className="space-y-2">
-          <Detail label="Job title">{member.designation || '—'}</Detail>
-          <Detail label="Department">{member.department || '—'}</Detail>
-          <Detail label="Role">{member.role_code ? nameFor(member.role_code) : '—'}</Detail>
-          <Detail label="Level">{levelTitle || member.level_code || '—'}</Detail>
-          <Detail label="Manager">
+          <Detail label={t('directory.cols.jobTitle')}>{member.designation || '—'}</Detail>
+          <Detail label={t('levelEditor.department')}>{member.department || '—'}</Detail>
+          <Detail label={t('member.role')}>{member.role_code ? nameFor(member.role_code) : '—'}</Detail>
+          <Detail label={t('directory.cols.level')}>{levelTitle || member.level_code || '—'}</Detail>
+          <Detail label={t('directory.cols.manager')}>
             {manager ? (
               <PersonLink member={manager} onSelect={onSelect} />
             ) : member.manager_external_id ? (
-              <span className="text-warning-fg">{member.manager_external_id} (not on file)</span>
+              <span className="text-warning-fg">{t('chart.notOnFile', { id: member.manager_external_id })}</span>
             ) : (
               '—'
             )}
           </Detail>
-          <Detail label="Login">{loginLabel(member)}</Detail>
-          <Detail label="Source">
+          <Detail label={t('directory.cols.login')}>{loginLabel(member)}</Detail>
+          <Detail label={t('directory.cols.source')}>
             <Badge size="small" variant={member.source === 'manual' ? 'secondary' : 'default'}>
-              {member.source === 'manual' ? 'Added by hand' : 'From HR'}
+              {member.source === 'manual' ? t('directory.manual') : t('directory.fromHr')}
             </Badge>
             {member.has_manual_override && (
               <Badge size="small" variant="info" className="ms-1">
-                Corrected
+                {t('directory.corrected')}
               </Badge>
             )}
           </Detail>
@@ -159,24 +164,24 @@ const PersonPanel = ({ member, manager, reports, levelTitle, flags, canManage, o
 
         <div className="space-y-2">
           <p className="text-xs font-medium text-ink-secondary">
-            Direct reports <span className="text-ink-subtle">({count})</span>
+            {t('chart.directReports')} <span className="text-ink-subtle">({count})</span>
           </p>
           {count === 0 ? (
-            <p className="text-xs text-ink-muted">No one reports to {member.name.split(' ')[0]}.</p>
+            <p className="text-xs text-ink-muted">{t('chart.noReports', { name: member.name })}</p>
           ) : !reports ? (
             <button type="button" onClick={onOpenTeam} className="text-xs font-medium text-link hover:underline">
-              Show them on the chart
+              {t('chart.showOnChart')}
             </button>
           ) : (
             <ul className="space-y-1">
               {reports.people.map((report) => (
                 <li key={report.external_id} className="flex items-center justify-between gap-2 text-[13px]">
                   <PersonLink member={report} onSelect={onSelect} />
-                  <span className="truncate text-xs text-ink-subtle">{report.designation}</span>
+                  <span className="truncate text-xs text-ink-subtle" dir="auto">{report.designation}</span>
                 </li>
               ))}
               {reports.total > reports.people.length && (
-                <li className="text-xs text-ink-muted">and {reports.total - reports.people.length} more</li>
+                <li className="text-xs text-ink-muted">{t('chart.andMore', { count: reports.total - reports.people.length })}</li>
               )}
             </ul>
           )}
@@ -185,9 +190,9 @@ const PersonPanel = ({ member, manager, reports, levelTitle, flags, canManage, o
 
       {canManage && (
         <footer className="flex items-center justify-between gap-2 border-t border-line-subtle px-4 py-3">
-          <p className="text-[11px] text-ink-subtle">Drag the card onto someone to change their manager.</p>
+          <p className="text-[11px] text-ink-subtle">{t('chart.dragHint')}</p>
           <Button variant="secondary" size="small" startIcon={Pencil} onClick={onEdit}>
-            Edit
+            {t('common:actions.edit')}
           </Button>
         </footer>
       )}
@@ -204,6 +209,7 @@ const removeFrom = (set, key) => {
 };
 
 const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
+  const { t } = useTranslation('hierarchy');
   const flow = useReactFlow();
   const theme = useThemeStore((state) => state.theme);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -254,7 +260,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
   /** A card that 404s was removed since the chart loaded: fold it and say so. */
   const reportFailure = useCallback((key, error) => {
     if (error?.response?.status === 404 && key !== TOP) {
-      toast.info('That person is no longer in the directory. Refresh to redraw the chart.');
+      toast.info(t('chart.goneRefresh'));
       setExpanded((prev) => removeFrom(prev, key));
       return;
     }
@@ -432,7 +438,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
           position: layout.looseLabel,
           draggable: false,
           selectable: false,
-          data: { label: `No manager and no reports (${layout.looseCount}${lists.get(TOP)?.hasNext ? '+' : ''})` },
+          data: { label: t('chart.looseLabel', { count: `${layout.looseCount}${lists.get(TOP)?.hasNext ? '+' : ''}` }) },
         },
       ];
     });
@@ -531,7 +537,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
         setSelectedId(id);
         setFocusId(id);
       } catch (error) {
-        if (error?.response?.status === 404) toast.info('That person is no longer in the directory.');
+        if (error?.response?.status === 404) toast.info(t('chart.gone'));
         else toast.error(errorSummary(error));
       } finally {
         setRevealing(false);
@@ -645,7 +651,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
     if (!target) return;
     if (parentOf.get(node.id) === target.id) return;
     if (isUnder(parentOf, target.id, node.id)) {
-      toast.info(`${people.get(target.id).name} reports to ${people.get(node.id).name}, so they can't be their manager.`);
+      toast.info(t('chart.cycle', { target: people.get(target.id).name, member: people.get(node.id).name }));
       return;
     }
     setPendingMove({ member: people.get(node.id), manager: people.get(target.id) });
@@ -655,7 +661,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
     setMoving(true);
     try {
       await orgHierarchyAPI.updateMember(pendingMove.member.id, { manager_external_id: pendingMove.manager.external_id });
-      toast.success(`${pendingMove.member.name} now reports to ${pendingMove.manager.name}.`);
+      toast.success(t('chart.moved', { member: pendingMove.member.name, manager: pendingMove.manager.name }));
       // Show where they went: the new manager's team, opened.
       setExpanded((prev) => addTo(prev, pendingMove.manager.external_id));
       setPendingMove(null);
@@ -674,7 +680,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
   if (status === 'loading' && !lists.has(TOP)) {
     return (
       <div className="flex h-[calc(100dvh-17rem)] min-h-[520px] items-center justify-center rounded-xl border border-line bg-canvas">
-        <Loader2 className="h-6 w-6 animate-spin text-ink-subtle" aria-label="Loading the org chart" />
+        <Loader2 className="h-6 w-6 animate-spin text-ink-subtle" aria-label={t('chart.loading')} />
       </div>
     );
   }
@@ -682,10 +688,10 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
   if (status === 'error' && !lists.has(TOP)) {
     return (
       <div className="rounded-xl border border-line bg-surface px-6 py-14 text-center">
-        <p className="text-sm font-semibold text-ink">Couldn't load the org chart</p>
+        <p className="text-sm font-semibold text-ink">{t('chart.loadError')}</p>
         <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">{loadError}</p>
         <Button variant="secondary" className="mt-4" onClick={onChanged}>
-          Try again
+          {t('common:actions.retry')}
         </Button>
       </div>
     );
@@ -694,19 +700,18 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
   if (tops.length === 0) {
     return (
       <div className="rounded-xl border border-line bg-surface px-6 py-14 text-center">
-        <Users className="mx-auto h-8 w-8 text-ink-subtle" />
-        <p className="mt-3 text-sm font-semibold text-ink">No one in the directory yet</p>
+        <Users className="mx-auto h-8 w-8 text-ink-subtle" aria-hidden="true" />
+        <p className="mt-3 text-sm font-semibold text-ink">{t('directory.empty')}</p>
         <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
-          The org chart draws itself from the directory: each person's manager and level. Add people by hand, paste a
-          spreadsheet, or connect your HR system.
+          {t('chart.emptyBody')}
         </p>
         <div className="mt-4 flex justify-center gap-2">
           <Button variant="secondary" onClick={() => onGoTo('directory')}>
-            Go to the directory
+            {t('chart.goToDirectory')}
           </Button>
           {canManage && (
             <Button variant="outline" onClick={() => onGoTo('hr')}>
-              Connect HR
+              {t('chart.connectHr')}
             </Button>
           )}
         </div>
@@ -718,8 +723,7 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-muted">
         <span>
-          Showing <span className="font-semibold text-ink">{visiblePeople.length}</span>{' '}
-          {visiblePeople.length === 1 ? 'person' : 'people'}. Open a team with the count under a card.
+          <Trans t={t} i18nKey="chart.showing" count={visiblePeople.length} components={{ b: <span className="font-semibold text-ink" /> }} />
         </span>
         {Object.entries(flagCounts).map(([flag, count]) => (
           <button
@@ -727,14 +731,14 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
             type="button"
             onClick={() => setHighlight((current) => (current === flag ? null : flag))}
             aria-pressed={highlight === flag}
-            title={`${FLAG_INFO[flag].description} Counted among the people shown. Click to highlight them.`}
+            title={t('chart.flagHint', { description: FLAG_INFO[flag].description })}
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium transition-colors ${
               highlight === flag
                 ? 'border-warning-solid bg-warning-solid text-ink-inverse'
                 : 'border-warning-line bg-warning-soft text-warning-fg hover:brightness-95'
             }`}
           >
-            <AlertTriangle className="h-3 w-3" />
+            <AlertTriangle className="h-3 w-3" aria-hidden="true" />
             {count} · {FLAG_INFO[flag].label}
           </button>
         ))}
@@ -781,14 +785,14 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
                 if (event.key === 'Enter' && matches[0]) pick(matches[0]);
                 if (event.key === 'Escape') setQuery('');
               }}
-              placeholder="Find a person"
-              aria-label="Find a person"
+              placeholder={t('chart.find')}
+              aria-label={t('chart.find')}
               className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
             />
           </label>
           {query.trim() && debouncedQuery === query.trim() && !searching && (
             <ul className="mt-1 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-lg">
-              {matches.length === 0 && <li className="px-3 py-2 text-xs text-ink-muted">No one matches.</li>}
+              {matches.length === 0 && <li className="px-3 py-2 text-xs text-ink-muted">{t('picker.noMatches')}</li>}
               {matches.map((member) => (
                 <li key={member.external_id}>
                   <button
@@ -843,11 +847,11 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
                 <button
                   type="button"
                   onClick={() => setExpanded(new Set())}
-                  aria-label="Fold every team"
-                  title="Fold every team"
+                  aria-label={t('chart.foldAll')}
+                  title={t('chart.foldAll')}
                   className={canvasIconButton}
                 >
-                  <ChevronsDownUp className="h-4 w-4" />
+                  <ChevronsDownUp className="h-4 w-4" aria-hidden="true" />
                 </button>
               </>
             )
@@ -859,19 +863,25 @@ const Chart = ({ levels, canManage, onChanged, onGoTo, reloadKey }) => {
         isOpen={Boolean(pendingMove)}
         onClose={() => setPendingMove(null)}
         onConfirm={confirmMove}
-        title="Change manager?"
+        title={t('chart.move.title')}
         message={
           pendingMove
-            ? `${pendingMove.member.name} will report to ${pendingMove.manager.name}${
+            ? [
                 people.get(parentOf.get(pendingMove.member.external_id))
-                  ? ` instead of ${people.get(parentOf.get(pendingMove.member.external_id)).name}`
-                  : ''
-              }. Reports naming ${pendingMove.member.name} will escalate to ${pendingMove.manager.name}.${
-                pendingMove.member.source !== 'manual' ? ' This is saved as a correction, so the next HR sync keeps it.' : ''
-              }`
+                  ? t('chart.move.instead', {
+                      member: pendingMove.member.name,
+                      manager: pendingMove.manager.name,
+                      old: people.get(parentOf.get(pendingMove.member.external_id)).name,
+                    })
+                  : t('chart.move.willReport', { member: pendingMove.member.name, manager: pendingMove.manager.name }),
+                t('chart.move.escalates', { member: pendingMove.member.name, manager: pendingMove.manager.name }),
+                pendingMove.member.source !== 'manual' ? t('chart.move.correction') : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
             : ''
         }
-        confirmText="Change manager"
+        confirmText={t('chart.move.confirm')}
         variant="primary"
         isLoading={moving}
       />

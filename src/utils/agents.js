@@ -5,6 +5,12 @@
 // backend's own validation so a doomed upload is rejected before it is sent —
 // the server validates the whole batch up front, so one bad file rejects all
 // of them and nothing is stored.
+//
+// Labels are getters (or functions) that read the current interface language
+// each time, so the exported shapes stay the same for every caller.
+import i18n from '../i18n';
+
+const tr = (key, options) => i18n.t(key, { ns: 'agents', ...options });
 
 /** Extensions the backend will accept. Binary formats are parsed server-side. */
 export const KB_ACCEPTED_EXTENSIONS = [
@@ -23,16 +29,24 @@ export const KB_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
  * Ingestion states, in the order they occur. `spinner` marks the unsettled
  * ones — while any document is in one of those, the list must keep polling.
  */
+const kbStatus = (key, variant, spinner) => ({
+  variant,
+  spinner,
+  get label() {
+    return tr(`kb.status.${key}`);
+  },
+});
+
 export const KB_STATUS = {
-  pending: { label: 'Queued', variant: 'default', spinner: true },
-  parsing: { label: 'Reading document', variant: 'info', spinner: true },
-  embedding: { label: 'Indexing', variant: 'info', spinner: true },
-  ready: { label: 'Ready', variant: 'success', spinner: false },
-  failed: { label: 'Failed', variant: 'danger', spinner: false },
+  pending: kbStatus('pending', 'default', true),
+  parsing: kbStatus('parsing', 'info', true),
+  embedding: kbStatus('embedding', 'info', true),
+  ready: kbStatus('ready', 'success', false),
+  failed: kbStatus('failed', 'danger', false),
 };
 
 export const getKbStatus = (status) =>
-  KB_STATUS[status] || { label: status || 'Unknown', variant: 'default', spinner: false };
+  KB_STATUS[status] || { label: status || tr('kb.status.unknown'), variant: 'default', spinner: false };
 
 /** True while at least one document is still being parsed or indexed. */
 export const hasUnsettledDocuments = (documents = []) =>
@@ -50,29 +64,25 @@ const extensionOf = (filename = '') => {
 export const validateKbUpload = (files, existingCount = 0) => {
   const errors = [];
 
-  if (files.length === 0) return ['Choose at least one file to upload.'];
+  if (files.length === 0) return [tr('kb.upload.none')];
 
   if (files.length > KB_MAX_FILES_PER_REQUEST) {
-    errors.push(`Too many files in one request (max ${KB_MAX_FILES_PER_REQUEST}).`);
+    errors.push(tr('kb.upload.tooMany', { max: KB_MAX_FILES_PER_REQUEST }));
   }
 
   if (existingCount + files.length > KB_MAX_DOCUMENTS_PER_ORG) {
-    errors.push(
-      `Your organization already has ${existingCount} document(s); the limit is ${KB_MAX_DOCUMENTS_PER_ORG}.`
-    );
+    errors.push(tr('kb.upload.orgLimit', { count: existingCount, max: KB_MAX_DOCUMENTS_PER_ORG }));
   }
 
   files.forEach((file) => {
     if (file.size === 0) {
-      errors.push(`'${file.name}' is empty.`);
+      errors.push(tr('kb.upload.empty', { name: file.name }));
     } else if (file.size > KB_MAX_FILE_SIZE) {
-      errors.push(`'${file.name}' is larger than the 10 MB limit.`);
+      errors.push(tr('kb.upload.tooLarge', { name: file.name }));
     }
 
     if (!KB_ACCEPTED_EXTENSIONS.includes(extensionOf(file.name))) {
-      errors.push(
-        `'${file.name}' has an unsupported type. Allowed: ${KB_ACCEPTED_EXTENSIONS.join(' ')}`
-      );
+      errors.push(tr('kb.upload.badType', { name: file.name, allowed: KB_ACCEPTED_EXTENSIONS.join(' ') }));
     }
   });
 
@@ -87,29 +97,31 @@ export const validateKbUpload = (files, existingCount = 0) => {
  */
 export const AGENT_TYPES = ['summarizer', 'manager', 'officer', 'reviewer'];
 
-export const AGENT_LABELS = {
-  summarizer: 'Summarizer',
-  manager: 'Manager',
-  officer: 'Officer',
-  reviewer: 'Reviewer',
-};
+export const AGENT_LABELS = Object.defineProperties({}, Object.fromEntries(
+  AGENT_TYPES.map((type) => [type, { enumerable: true, get: () => tr(`agentTypes.${type}`) }]),
+));
 
 export const formatRoleLabel = (role) =>
-  role ? role.charAt(0).toUpperCase() + role.slice(1) : '';
+  role
+    ? tr(`agentTypes.${role}`, { defaultValue: role.charAt(0).toUpperCase() + role.slice(1) })
+    : '';
 
 /**
  * What each organization-defined agent kind is for. The list of kinds itself
  * comes from GET /org-agents/capabilities; this only describes them.
  */
+const described = (prefix) => ({
+  get label() {
+    return tr(`${prefix}.label`);
+  },
+  get description() {
+    return tr(`${prefix}.description`);
+  },
+});
+
 export const AGENT_KIND_INFO = {
-  analyst: {
-    label: 'Analyst',
-    description: 'Reads a report and reaches a decision that the workflow can branch on.',
-  },
-  summarizer: {
-    label: 'Summarizer',
-    description: 'Writes a factual digest of the evidence. It reaches no decision and never contacts the reporter.',
-  },
+  analyst: described('kinds.analyst'),
+  summarizer: described('kinds.summarizer'),
 };
 
 /**
@@ -117,23 +129,19 @@ export const AGENT_KIND_INFO = {
  * each needs, come from GET /org-agents/capabilities; a capability missing here
  * still renders, under its code.
  */
-export const CAPABILITY_INFO = {
-  message_reporter: { label: 'Message the reporter', description: 'Send messages the reporter can read.' },
-  internal_note: { label: 'Write internal notes', description: 'Leave notes only staff can see.' },
-  update_report: { label: 'Update the report', description: 'Change status, priority and details.' },
-  assign_report: { label: 'Assign the report', description: 'Hand the report to a member of staff.' },
-  // Filenames, sizes and types are part of the report and visible to any agent
-  // that can read it; this gates downloading the file contents.
-  read_attachments: {
-    label: 'Download evidence files',
-    description: 'Open and read the contents of attached files. File names are visible either way.',
-  },
-  consult_kb: { label: 'Consult the knowledge base', description: "Quote the organization's policy documents." },
-  resolve_escalation: {
-    label: 'Resolve escalation',
-    description: 'Use the reporting hierarchy to work out who a report escalates to.',
-  },
-};
+export const CAPABILITY_INFO = Object.fromEntries(
+  [
+    'message_reporter',
+    'internal_note',
+    'update_report',
+    'assign_report',
+    // Filenames, sizes and types are part of the report and visible to any
+    // agent that can read it; this gates downloading the file contents.
+    'read_attachments',
+    'consult_kb',
+    'resolve_escalation',
+  ].map((code) => [code, described(`capabilities.${code}`)]),
+);
 
 export const SUMMARIZER_KIND = 'summarizer';
 
@@ -160,8 +168,8 @@ export const SUGGESTED_DECISIONS = ['assign', 'ask_info', 'escalate', 'handle_lo
 
 /** Manager triage verdict. May be absent on older runs. */
 export const DECISION_LABELS = {
-  assign: { label: 'Assigned', variant: 'success' },
-  ask_info: { label: 'More info requested', variant: 'warning' },
+  assign: { variant: 'success', get label() { return tr('decisions.assign'); } },
+  ask_info: { variant: 'warning', get label() { return tr('decisions.ask_info'); } },
 };
 
 /** A step routed to a human by the org's orchestration mode. */
@@ -176,25 +184,14 @@ export const isManualAction = (action) =>
  * as a quote, and reads identically to a real one unless it is flagged.
  */
 export const citationVerdict = (citation = {}) => {
-  if (citation.verified === false) {
-    return {
-      variant: 'danger',
-      label: 'Unverified',
-      note: 'This wording was not found in the cited document.',
-    };
-  }
-  if (citation.verified && citation.source_matches === false) {
-    return {
-      variant: 'warning',
-      label: 'Wrong document',
-      note: 'The quote is real, but it comes from a different document.',
-    };
-  }
-  return {
-    variant: 'success',
-    label: 'Verified',
-    note: 'Found verbatim in the named document.',
-  };
+  const verdict = (variant, key) => ({
+    variant,
+    label: tr(`citations.${key}.label`),
+    note: tr(`citations.${key}.note`),
+  });
+  if (citation.verified === false) return verdict('danger', 'unverified');
+  if (citation.verified && citation.source_matches === false) return verdict('warning', 'wrongDocument');
+  return verdict('success', 'verified');
 };
 
 /**
@@ -205,11 +202,14 @@ export const citationVerdict = (citation = {}) => {
 export const AGENT_ORG_REQUIRED_MESSAGE =
   'These settings belong to an organization. Sign in with an organization admin account to manage them.';
 
+/** AGENT_ORG_REQUIRED_MESSAGE in the interface language. */
+export const agentOrgRequiredMessage = () => tr('orgRequired');
+
 /** Pulls the readable reason out of a FastAPI {"detail": "..."} error. */
-export const agentErrorMessage = (error, fallback = 'Something went wrong.') => {
+export const agentErrorMessage = (error, fallback = tr('errors.fallback')) => {
   // A run on a case this person can't open is a plain 404, like the case
   // itself; nothing may hint that it exists.
-  if (error?.response?.status === 404) return 'Not found.';
+  if (error?.response?.status === 404) return tr('errors.notFound');
   const detail = error?.response?.data?.detail;
   if (typeof detail === 'string') return detail;
   if (detail && typeof detail === 'object' && typeof detail.message === 'string') return detail.message;

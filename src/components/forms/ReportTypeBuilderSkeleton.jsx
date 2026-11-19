@@ -3,6 +3,7 @@
 // ReportTypeBuilder while its report type loads: the same top bar, sidebar
 // and section list (edit), or the same preview card (view), with the data
 // stubbed — so nothing moves when the type arrives.
+import { useTranslation } from 'react-i18next';
 import { Eye, FileText, Landmark, LayoutTemplate, Plus, Sparkles } from 'lucide-react';
 import Skeleton from '../ui/Skeleton';
 
@@ -12,6 +13,7 @@ const Field = ({ tall = false }) => (
 
 const ReportTypeBuilderSkeleton = ({ mode = 'edit' }) => {
   const view = mode === 'view';
+  const { t } = useTranslation('builder');
   return (
     <div className="min-h-screen bg-subtle pb-20" aria-busy="true">
       <div className="sticky top-0 z-50 bg-surface border-b border-line shadow-sm">
@@ -23,7 +25,7 @@ const ReportTypeBuilderSkeleton = ({ mode = 'edit' }) => {
               </div>
               <div className="min-w-0">
                 <h1 className="text-base sm:text-xl font-bold text-ink truncate">
-                  {view ? 'View Report Type' : 'Edit Report Type'}
+                  {view ? t('legacy.viewTitle') : t('legacy.editTitle')}
                 </h1>
                 <Skeleton.Text size="xs" className="hidden w-48 sm:flex" />
               </div>

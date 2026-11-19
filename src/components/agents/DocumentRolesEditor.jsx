@@ -13,6 +13,7 @@
 // This opens a small modal rather than a popover: the desktop table renders
 // inside an `overflow-x-auto` wrapper, which would clip an absolutely
 // positioned panel.
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { Pencil, Loader2 } from 'lucide-react';
 import Modal from '../ui/Modal';
@@ -21,6 +22,7 @@ import Badge from '../ui/Badge';
 import AgentAssignmentPicker, { DEFAULT_SENTINEL, isAllAgents } from './AgentAssignmentPicker';
 
 const DocumentRolesEditor = ({ doc, agents = [], sentinel = DEFAULT_SENTINEL, onSave, disabled = false }) => {
+  const { t } = useTranslation('agents');
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState(doc.roles || []);
@@ -52,16 +54,16 @@ const DocumentRolesEditor = ({ doc, agents = [], sentinel = DEFAULT_SENTINEL, on
         type="button"
         disabled={disabled}
         onClick={() => setOpen(true)}
-        aria-label={`Change which agents can use ${doc.filename}`}
+        aria-label={t('docRoles.change', { name: doc.filename })}
         className="group inline-flex max-w-full items-center gap-1.5 rounded-lg border border-transparent px-1.5 py-1 text-start transition-colors hover:border-line hover:bg-hover disabled:cursor-default focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         <span className="flex flex-wrap gap-1">
           {allAgents ? (
             <Badge variant="secondary" size="small">
-              All agents
+              {t('docRoles.all')}
             </Badge>
           ) : stored.length === 0 ? (
-            <span className="text-xs text-ink-subtle">No agents</span>
+            <span className="text-xs text-ink-subtle">{t('docRoles.none')}</span>
           ) : (
             stored.map((code) =>
               stale.has(code) ? (
@@ -70,7 +72,7 @@ const DocumentRolesEditor = ({ doc, agents = [], sentinel = DEFAULT_SENTINEL, on
                   variant="warning"
                   size="small"
                   className="line-through"
-                  title="This agent no longer exists or can no longer consult the knowledge base, so it can't use this document."
+                  title={t('docRoles.staleTitle')}
                 >
                   {nameOf(code)}
                 </Badge>
@@ -90,21 +92,21 @@ const DocumentRolesEditor = ({ doc, agents = [], sentinel = DEFAULT_SENTINEL, on
       <Modal
         isOpen={open}
         onClose={() => !saving && setOpen(false)}
-        title="Agents allowed to use this document"
+        title={t('docRoles.modalTitle')}
         size="sm"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button variant="secondary" onClick={() => setOpen(false)} disabled={saving}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button onClick={handleSave} isLoading={saving}>
-              Save
+              {t('common:actions.save')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4">
-          <p className="truncate text-sm font-medium text-ink" title={doc.filename}>
+          <p className="truncate text-sm font-medium text-ink" title={doc.filename} dir="auto">
             {doc.filename}
           </p>
 
@@ -112,8 +114,7 @@ const DocumentRolesEditor = ({ doc, agents = [], sentinel = DEFAULT_SENTINEL, on
 
           <p className="flex items-start gap-1.5 text-xs leading-relaxed text-ink-muted">
             {saving && <Loader2 className="mt-0.5 h-3 w-3 shrink-0 animate-spin" />}
-            Takes effect immediately. The document is not re-read or re-indexed, so there
-            is nothing to wait for.
+            {t('docRoles.immediate')}
           </p>
         </div>
       </Modal>

@@ -4,6 +4,7 @@
 // the run in a side panel — its timeline, the policies it relied on and the
 // outcome — without leaving the list (?run=<report id> keeps it open on
 // reload and makes it linkable).
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Activity, Bot, RefreshCw, Search } from 'lucide-react';
@@ -19,12 +20,13 @@ import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
 import useSEO from '../../hooks/useSEO';
 import { parseServerDate } from '../../utils/formatters';
+import { intlLocale, isRtl } from '../../utils/locale';
 import { ACCESS } from '../../utils/permissions';
 import { casePath } from '../../utils/navigation';
 import {
   AGENT_LABELS,
   AGENT_TYPES,
-  AGENT_ORG_REQUIRED_MESSAGE,
+  agentOrgRequiredMessage,
   DECISION_LABELS,
   agentErrorMessage,
   isServiceUnavailable,
@@ -39,7 +41,7 @@ const ALL = '';
 const formatRunTime = (value) => {
   const date = parseServerDate(value);
   if (!date) return '—';
-  return date.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString(intlLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 };
 
 /** The agents that acted, known ones in run order first. */
@@ -61,9 +63,10 @@ const DecisionBadge = ({ decision }) => {
 };
 
 const AgentActivity = () => {
+  const { t, i18n } = useTranslation('agents');
   useSEO({
-    title: 'AI Activity',
-    description: 'Review what the AI agents decided on each report, and the policy they cited.',
+    title: t('activity.title'),
+    description: t('activity.seoDescription'),
     noIndex: true,
   });
 
@@ -97,7 +100,7 @@ const AgentActivity = () => {
     } catch (error) {
       console.error('Error fetching agent runs:', error);
       if (isServiceUnavailable(error)) {
-        setServiceError(agentErrorMessage(error, 'The AI agent service is not available right now.'));
+        setServiceError(agentErrorMessage(error, t('activity.serviceDown')));
       }
     } finally {
       setLoading(false);
@@ -139,39 +142,41 @@ const AgentActivity = () => {
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-ai-activity"]',
-        title: 'AI Activity',
-        content: 'See what each AI agent decided, and which policy it based that on.',
-        placement: 'right',
+        title: t('activity.title'),
+        content: t('activity.tour.sidebar'),
+        // The sidebar is on the inline-start side, so the tip opens away from it.
+        placement: isRtl() ? 'left' : 'right',
         skipBeacon: true,
       });
     }
     steps.push(
       {
         target: '[data-tour="runs-filters"]',
-        title: 'Find a run',
-        content: 'Search by report number or title, filter by decision, or load more of the history.',
+        title: t('activity.tour.findTitle'),
+        content: t('activity.tour.find'),
         placement: 'bottom',
         skipBeacon: !isDesktop,
       },
       {
         target: '[data-tour="runs-table"]',
-        title: 'Every AI run',
-        content: 'Select a row to see what each agent did, the policy passages it relied on, and the outcome.',
+        title: t('activity.tour.tableTitle'),
+        content: t('activity.tour.table'),
         placement: 'top',
       },
     );
     return steps;
-  }, [isDesktop]);
+    // i18n.language: rebuild the steps when the language changes.
+  }, [isDesktop, t, i18n.language]);
 
   if (missingOrganization) {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-ink">AI Activity</h1>
-          <p className="text-sm text-ink-muted">What the AI agents did on each report.</p>
+          <h1 className="text-xl font-bold text-ink">{t('activity.title')}</h1>
+          <p className="text-sm text-ink-muted">{t('activity.subtitle')}</p>
         </div>
-        <Alert variant="warning" title="No organization on this account">
-          {AGENT_ORG_REQUIRED_MESSAGE}
+        <Alert variant="warning" title={t('activity.noOrg')}>
+          {agentOrgRequiredMessage()}
         </Alert>
       </div>
     );
@@ -183,11 +188,8 @@ const AgentActivity = () => {
 
       <div className="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <h1 className="text-xl font-bold text-ink">AI Activity</h1>
-          <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            Every report your agents have worked on — what each one did, what it decided, and which policies it relied
-            on.
-          </p>
+          <h1 className="text-xl font-bold text-ink">{t('activity.title')}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-ink-muted">{t('activity.intro')}</p>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto" data-tour="runs-filters">
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 focus-within:border-line-accent lg:w-64 lg:flex-none">
@@ -195,18 +197,18 @@ const AgentActivity = () => {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Report number or title"
-              aria-label="Search runs"
+              placeholder={t('activity.searchPlaceholder')}
+              aria-label={t('activity.search')}
               className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
             />
           </label>
           <select
             value={decisionFilter}
             onChange={(event) => setDecisionFilter(event.target.value)}
-            aria-label="Decision"
+            aria-label={t('run.decision')}
             className="h-10 rounded-lg border border-line bg-surface px-3 text-sm text-ink"
           >
-            <option value={ALL}>All decisions</option>
+            <option value={ALL}>{t('activity.allDecisions')}</option>
             {decisions.map((d) => (
               <option key={d} value={d}>
                 {DECISION_LABELS[d]?.label || d}
@@ -216,24 +218,24 @@ const AgentActivity = () => {
           <select
             value={limit}
             onChange={(event) => setLimit(Number(event.target.value))}
-            aria-label="How many runs"
+            aria-label={t('activity.howMany')}
             className="h-10 rounded-lg border border-line bg-surface px-3 text-sm text-ink"
           >
             {LIMIT_OPTIONS.map((n) => (
               <option key={n} value={n}>
-                Latest {n}
+                {t('activity.latest', { count: n })}
               </option>
             ))}
           </select>
-          <Button variant="outline" onClick={fetchRuns} disabled={loading} aria-label="Refresh" title="Refresh">
+          <Button variant="outline" onClick={fetchRuns} disabled={loading} aria-label={t('page.refresh')} title={t('page.refresh')}>
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
 
       {serviceError && (
-        <Alert variant="warning" title="AI activity unavailable">
-          {serviceError} Reports are still processed normally.
+        <Alert variant="warning" title={t('activity.unavailable')}>
+          {serviceError} {t('activity.stillProcessed')}
         </Alert>
       )}
 
@@ -242,12 +244,12 @@ const AgentActivity = () => {
           <table className="w-full min-w-176 text-start">
             <thead>
               <tr className="border-b border-line-subtle bg-subtle text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
-                <th scope="col" className="px-5 py-3">Report</th>
-                <th scope="col" className="px-3 py-3">Decision</th>
-                <th scope="col" className="px-3 py-3">Priority</th>
-                <th scope="col" className="px-3 py-3">Agents</th>
-                <th scope="col" className="px-3 py-3">Report status</th>
-                <th scope="col" className="px-5 py-3 text-end">When</th>
+                <th scope="col" className="px-5 py-3">{t('activity.columns.report')}</th>
+                <th scope="col" className="px-3 py-3">{t('run.decision')}</th>
+                <th scope="col" className="px-3 py-3">{t('run.priority')}</th>
+                <th scope="col" className="px-3 py-3">{t('run.agents')}</th>
+                <th scope="col" className="px-3 py-3">{t('activity.columns.status')}</th>
+                <th scope="col" className="px-5 py-3 text-end">{t('activity.columns.when')}</th>
               </tr>
             </thead>
             <tbody>
@@ -286,12 +288,10 @@ const AgentActivity = () => {
                   <td colSpan={6} className="px-5 py-14 text-center">
                     <Bot className="mx-auto h-8 w-8 text-ink-subtle" />
                     <p className="mt-3 text-sm font-semibold text-ink">
-                      {runs.length === 0 ? 'No agent runs yet' : 'No runs match'}
+                      {runs.length === 0 ? t('activity.empty') : t('activity.noMatch')}
                     </p>
                     <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
-                      {runs.length === 0
-                        ? 'Once a report is processed by the AI agents, what they did and the policies they cited appear here.'
-                        : 'Try a different search or decision.'}
+                      {runs.length === 0 ? t('activity.emptyBody') : t('activity.noMatchBody')}
                     </p>
                   </td>
                 </tr>
@@ -305,7 +305,7 @@ const AgentActivity = () => {
                     key={`${run.report_id}-${run.created_at}`}
                     onClick={() => setOpen(run.report_id)}
                     className={`cursor-pointer border-b border-line-subtle transition-colors last:border-b-0 ${
-                      selected ? 'bg-accent-soft shadow-[inset_3px_0_0_var(--color-accent)]' : 'hover:bg-hover'
+                      selected ? 'bg-accent-soft shadow-[inset_3px_0_0_var(--color-accent)] rtl:shadow-[inset_-3px_0_0_var(--color-accent)]' : 'hover:bg-hover'
                     }`}
                   >
                     <td className="px-5 py-3.5">
@@ -317,7 +317,7 @@ const AgentActivity = () => {
                         }}
                         className="block max-w-sm text-start focus:outline-none focus-visible:underline"
                       >
-                        <span className="block truncate text-sm font-semibold text-ink">{run.title || 'Untitled report'}</span>
+                        <span className="block truncate text-sm font-semibold text-ink" dir="auto">{run.title || t('run.untitled')}</span>
                         <span className="block font-mono text-xs text-ink-subtle">#{run.report_number}</span>
                       </button>
                     </td>
@@ -328,7 +328,7 @@ const AgentActivity = () => {
                       {run.priority ? <PriorityBadge priority={run.priority} /> : <span className="text-xs text-ink-subtle">—</span>}
                     </td>
                     <td className="px-3 py-3.5">
-                      <span className="flex" title={agents.map((a) => AGENT_LABELS[a] || a).join(' → ')}>
+                      <span className="flex" title={agents.map((a) => AGENT_LABELS[a] || a).join(isRtl() ? ' ← ' : ' → ')}>
                         {agents.map((agent, index) => (
                           <span key={agent} className={`rounded-full ring-2 ring-surface ${index ? '-ms-1.5' : ''}`}>
                             <AgentMark type={agent} size="sm" />
@@ -353,7 +353,7 @@ const AgentActivity = () => {
 
       <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink-subtle">
         <Activity className="h-3 w-3" />
-        Runs whose report is outside your organization are never listed.
+        {t('activity.footer')}
       </p>
 
       {openRun && (

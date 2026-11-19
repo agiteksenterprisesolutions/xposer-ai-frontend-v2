@@ -5,6 +5,7 @@
 // alongside), and every holder of the role sits there. Two roles may share a
 // level; one role is never at two. These helpers keep every screen ordering
 // and labelling roles the same way.
+import i18n from '../i18n';
 
 /** Most senior first; roles with no level last; then by name. */
 export const byLevelThenName = (a, b) => {
@@ -18,7 +19,7 @@ export const sortRolesByLevel = (roles = []) => [...roles].sort(byLevelThenName)
 
 /** "Officer · Senior", so the consequence of picking a role is visible. */
 export const roleWithLevel = (role) =>
-  role ? `${role.name || role.code} · ${role.level_title || 'no level'}` : '';
+  role ? `${role.name || role.code} · ${role.level_title || i18n.t('roles.noLevel', { ns: 'hierarchy' })}` : '';
 
 /** A role that can't place anyone in the chart. */
 export const isUnplacedRole = (role) => Boolean(role) && !role.level_code;

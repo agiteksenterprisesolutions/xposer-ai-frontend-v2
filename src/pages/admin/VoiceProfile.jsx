@@ -11,6 +11,7 @@
 //
 // Organization admins edit their own organization. Super admins have none of
 // their own, so they choose one first and every request carries its id.
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AudioLines, Info, Lock, Plus, Volume2 } from 'lucide-react';
@@ -25,7 +26,8 @@ import { useAuthStore } from '../../store/authStore';
 import useSEO from '../../hooks/useSEO';
 import { useCan } from '../../hooks/useCan';
 import { PERM } from '../../utils/permissions';
-import { AGENT_ORG_REQUIRED_MESSAGE } from '../../utils/agents';
+import { agentOrgRequiredMessage } from '../../utils/agents';
+import { intlLocale } from '../../utils/locale';
 import {
   GREETING_LANGUAGE,
   ORGANIZATION_PLACEHOLDER,
@@ -91,9 +93,10 @@ const Field = ({ id, label, hint, error, counter, action, children }) => (
 );
 
 const VoiceProfile = () => {
+  const { t } = useTranslation('agents');
   useSEO({
-    title: 'Voice Profile',
-    description: 'Set how the voice assistant introduces your organization on calls.',
+    title: t('voice.title'),
+    description: t('voice.seoDescription'),
     noIndex: true,
   });
   const { user, role } = useAuthStore();
@@ -170,11 +173,11 @@ const VoiceProfile = () => {
       setForm(EMPTY_FORM);
       // 400/403 are already toasted by the interceptor; this keeps the reason
       // on the page, which is otherwise empty.
-      setLoadError(voiceProfileErrorMessage(error, 'The voice profile could not be loaded.'));
+      setLoadError(voiceProfileErrorMessage(error, t('voice.loadFailedBody')));
     } finally {
       setLoading(false);
     }
-  }, [applyProfile, canLoad, scope]);
+  }, [applyProfile, canLoad, scope, t]);
 
   useEffect(() => {
     fetchProfile();
@@ -212,7 +215,7 @@ const VoiceProfile = () => {
     const validation = validateVoiceProfile(form);
     setErrors(validation);
     if (Object.keys(validation).length > 0) {
-      toast.error('Fix the highlighted fields before saving.');
+      toast.error(t('voice.fixFields'));
       return;
     }
 
@@ -231,14 +234,14 @@ const VoiceProfile = () => {
         scope,
       );
       applyProfile(data);
-      toast.success('Saved — this applies from the next call.');
+      toast.success(t('voice.saved'));
     } catch (error) {
       console.error('Error saving voice profile:', error);
       const fieldErrors = parseVoiceProfileErrors(error);
       // Anything that is not a 422 has already been toasted by the interceptor.
       if (Object.keys(fieldErrors).length > 0) {
         setErrors(fieldErrors);
-        toast.error('Fix the highlighted fields before saving.');
+        toast.error(t('voice.fixFields'));
       }
     } finally {
       setSaving(false);
@@ -250,7 +253,7 @@ const VoiceProfile = () => {
     try {
       applyProfile(await voiceProfileAPI.resetVoiceProfile(scope));
       setConfirmReset(false);
-      toast.success('Voice profile reset to the defaults.');
+      toast.success(t('voice.resetDone'));
     } catch (error) {
       console.error('Error resetting voice profile:', error);
     } finally {
@@ -286,7 +289,7 @@ const VoiceProfile = () => {
     const raw = profile.updated_at;
     const date = new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(raw) ? raw : `${raw}Z`);
     if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
   }, [profile?.updated_at]);
 
   const discard = () => {
@@ -310,11 +313,8 @@ const VoiceProfile = () => {
   const header = (
     <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <h1 className="text-xl font-bold text-ink">Voice Profile</h1>
-        <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          How your voice agent introduces you on a call. Every field is optional — a blank one uses a sensible default —
-          and changes apply from the next call.
-        </p>
+        <h1 className="text-xl font-bold text-ink">{t('voice.title')}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-ink-muted">{t('voice.intro')}</p>
       </div>
       {!profile && loading && canManage && (
         <div className="flex flex-wrap items-center gap-3">
@@ -324,15 +324,15 @@ const VoiceProfile = () => {
       )}
       {profile && (
         <div className="flex flex-wrap items-center gap-3">
-          {profile.version > 0 && updatedLabel && <span className="text-xs text-ink-subtle">Saved {updatedLabel}</span>}
+          {profile.version > 0 && updatedLabel && <span className="text-xs text-ink-subtle">{t('voice.savedOn', { date: updatedLabel })}</span>}
           {canManage && (
             <Button
               variant="outline"
               onClick={() => setConfirmReset(true)}
               disabled={busy || isDefault}
-              title={isDefault ? 'Already using the defaults' : 'Clear the profile and use the defaults'}
+              title={isDefault ? t('voice.alreadyDefault') : t('voice.resetTitle')}
             >
-              Reset to defaults
+              {t('voice.reset')}
             </Button>
           )}
         </div>
@@ -344,8 +344,8 @@ const VoiceProfile = () => {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         {header}
-        <Alert variant="warning" title="Not available for your role">
-          Viewing the voice profile needs a role that allows “View the voice profile”.
+        <Alert variant="warning" title={t('voice.notAvailable')}>
+          {t('voice.notAvailableBody')}
         </Alert>
       </div>
     );
@@ -355,8 +355,8 @@ const VoiceProfile = () => {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         {header}
-        <Alert variant="warning" title="No organization on this account">
-          {AGENT_ORG_REQUIRED_MESSAGE}
+        <Alert variant="warning" title={t('activity.noOrg')}>
+          {agentOrgRequiredMessage()}
         </Alert>
       </div>
     );
@@ -371,7 +371,7 @@ const VoiceProfile = () => {
           <form onSubmit={openOrganization} className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="min-w-0 flex-1">
               <label htmlFor="vp-organization" className="mb-1.5 block text-sm font-medium text-ink">
-                Organization ID
+                {t('voice.orgId')}
               </label>
               <input
                 id="vp-organization"
@@ -381,17 +381,16 @@ const VoiceProfile = () => {
                 spellCheck={false}
                 autoComplete="off"
                 disabled={busy}
+                dir="ltr"
                 className={`${controlClass(false)} font-mono`}
               />
             </div>
             <Button type="submit" variant="secondary" disabled={busy || !organizationInput.trim()}>
-              Open profile
+              {t('voice.openProfile')}
             </Button>
           </form>
           <p className="mt-2 text-xs text-ink-subtle">
-            {profile
-              ? `Editing ${profile.organization_name}.`
-              : 'As a super admin you can edit any organization. Choose one to load its profile.'}
+            {profile ? t('voice.editing', { name: profile.organization_name }) : t('voice.superAdminHint')}
           </p>
         </section>
       )}
@@ -407,21 +406,21 @@ const VoiceProfile = () => {
               </span>
               <span className="flex flex-col items-center">
                 <Skeleton.Text size="xl" className="w-28 opacity-30" />
-                <span className="mt-1 block text-sm opacity-70">Reporting line voice agent</span>
+                <span className="mt-1 block text-sm opacity-70">{t('voice.agentLabel')}</span>
               </span>
             </div>
             <div className="space-y-6 p-5 sm:p-7">
-              <Field id="vp-skeleton-name" label="Name callers know you by" hint={<Skeleton.Text size="xs" className="w-72" />}>
+              <Field id="vp-skeleton-name" label={t('voice.nameLabel')} hint={<Skeleton.Text size="xs" className="w-72" />}>
                 <input disabled aria-hidden="true" className={`${controlClass()} animate-pulse text-[15px]`} />
               </Field>
               <Field
                 id="vp-skeleton-about"
-                label="Background for the agent"
+                label={t('voice.aboutLabel')}
                 hint={<Skeleton.Text size="xs" className="w-80" />}
                 action={
                   <span className="inline-flex items-center gap-1 rounded-full bg-active px-2 py-0.5 text-[11px] font-semibold text-ink-muted">
                     <Lock className="h-3 w-3" />
-                    Private
+                    {t('voice.private')}
                   </span>
                 }
               >
@@ -431,15 +430,13 @@ const VoiceProfile = () => {
           </section>
           <section className="rounded-2xl border border-line bg-surface p-5 sm:p-7">
             <div className="flex flex-col gap-1">
-              <h2 className="text-base font-semibold text-ink">First thing callers hear</h2>
-              <p className="text-sm text-ink-muted">
-                Spoken as written. Callers who speak another language hear it translated for them.
-              </p>
+              <h2 className="text-base font-semibold text-ink">{t('voice.firstHeard')}</h2>
+              <p className="text-sm text-ink-muted">{t('voice.firstHeardHint')}</p>
             </div>
             <div className="mt-5">
               <Field
                 id="vp-skeleton-greeting"
-                label="Greeting"
+                label={t('voice.greeting')}
                 hint={<Skeleton.Text size="xs" className="w-64" />}
                 action={canManage && <Skeleton className="h-6.5 w-36 rounded-md" />}
               >
@@ -460,7 +457,7 @@ const VoiceProfile = () => {
       )}
 
       {!loading && loadError && (
-        <Alert variant="error" title="Could not load the voice profile">
+        <Alert variant="error" title={t('voice.loadFailed')}>
           {loadError}
         </Alert>
       )}
@@ -468,15 +465,14 @@ const VoiceProfile = () => {
       {!loading && profile && (
         <>
           {isDefault && (
-            <Alert variant="info" title="Using the defaults">
-              Nothing has been saved for {profile.organization_name} yet. Callers hear the default greeting until you
-              save a profile.
+            <Alert variant="info" title={t('voice.usingDefaults')}>
+              {t('voice.usingDefaultsBody', { name: profile.organization_name })}
             </Alert>
           )}
 
           {!canManage && (
-            <Alert variant="info" title="View only">
-              Your role can see the voice profile but not change it.
+            <Alert variant="info" title={t('page.viewOnly')}>
+              {t('voice.viewOnlyBody')}
             </Alert>
           )}
 
@@ -488,15 +484,15 @@ const VoiceProfile = () => {
               </span>
               <span>
                 <span dir="auto" className="block break-words text-xl font-bold">{spokenName}</span>
-                <span className="mt-1 block text-sm opacity-70">Reporting line voice agent</span>
+                <span className="mt-1 block text-sm opacity-70">{t('voice.agentLabel')}</span>
               </span>
             </div>
 
             <div className="space-y-6 p-5 sm:p-7">
               <Field
                 id="vp-display-name"
-                label="Name callers know you by"
-                hint={`As the agent should say it. Leave blank to use your registered name, ${profile.organization_name}.`}
+                label={t('voice.nameLabel')}
+                hint={t('voice.nameHint', { name: profile.organization_name })}
                 error={errors.display_name}
                 counter={<Counter value={form.display_name} max={VOICE_PROFILE_LIMITS.display_name} />}
               >
@@ -514,14 +510,14 @@ const VoiceProfile = () => {
 
               <Field
                 id="vp-about"
-                label="Background for the agent"
-                hint="What your organization is and does. It helps the agent understand callers, and is never read out."
+                label={t('voice.aboutLabel')}
+                hint={t('voice.aboutHint')}
                 error={errors.about}
                 counter={<Counter value={form.about} max={VOICE_PROFILE_LIMITS.about} />}
                 action={
                   <span className="inline-flex items-center gap-1 rounded-full bg-active px-2 py-0.5 text-[11px] font-semibold text-ink-muted">
                     <Lock className="h-3 w-3" />
-                    Private
+                    {t('voice.private')}
                   </span>
                 }
               >
@@ -531,7 +527,7 @@ const VoiceProfile = () => {
                   rows={4}
                   value={form.about}
                   onChange={(event) => setField('about', event.target.value)}
-                  placeholder="e.g. A software company building AI products for enterprises."
+                  placeholder={t('voice.aboutPlaceholder')}
                   disabled={locked}
                   aria-invalid={errors.about ? 'true' : undefined}
                   className={`${controlClass(errors.about)} resize-y leading-relaxed`}
@@ -543,20 +539,18 @@ const VoiceProfile = () => {
           {/* Greeting */}
           <section className="rounded-2xl border border-line bg-surface p-5 sm:p-7">
             <div className="flex flex-col gap-1">
-              <h2 className="text-base font-semibold text-ink">First thing callers hear</h2>
-              <p className="text-sm text-ink-muted">
-                Spoken as written. Callers who speak another language hear it translated for them.
-              </p>
+              <h2 className="text-base font-semibold text-ink">{t('voice.firstHeard')}</h2>
+              <p className="text-sm text-ink-muted">{t('voice.firstHeardHint')}</p>
             </div>
 
             <div className="mt-5">
               <Field
                 id="vp-greeting"
-                label="Greeting"
+                label={t('voice.greetingEnglish')}
                 hint={
                   form.greeting.trim()
-                    ? `Write ${ORGANIZATION_PLACEHOLDER} where the organization's name should go.`
-                    : 'Leave blank for the default greeting shown below.'
+                    ? t('voice.greetingHint', { placeholder: ORGANIZATION_PLACEHOLDER })
+                    : t('voice.greetingBlank')
                 }
                 error={errors.greeting}
                 counter={<Counter value={form.greeting} max={VOICE_PROFILE_LIMITS.greeting} />}
@@ -566,11 +560,11 @@ const VoiceProfile = () => {
                       type="button"
                       onClick={insertPlaceholder}
                       disabled={locked}
-                      title={`Insert ${ORGANIZATION_PLACEHOLDER}, which is replaced with the name callers know you by`}
+                      title={t('voice.insertTitle', { placeholder: ORGANIZATION_PLACEHOLDER })}
                       className="inline-flex items-center gap-1 rounded-md border border-line-accent bg-surface px-2 py-1 text-xs font-semibold text-accent-fg transition-colors hover:bg-accent-soft disabled:opacity-50"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      Organization name
+                      {t('voice.insertButton')}
                     </button>
                   )
                 }
@@ -597,7 +591,7 @@ const VoiceProfile = () => {
               </span>
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.06em] opacity-60">
-                  {form.greeting.trim() ? 'Callers will hear' : 'Callers will hear the default'}
+                  {form.greeting.trim() ? t('voice.willHear') : t('voice.willHearDefault')}
                 </p>
                 <p dir="auto" className="mt-1 whitespace-pre-wrap text-sm leading-relaxed [overflow-wrap:anywhere]">
                   “{preview}”
@@ -608,8 +602,10 @@ const VoiceProfile = () => {
             {otherGreetings.length > 0 && (
               <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-subtle">
                 <Info className="mt-px h-3.5 w-3.5 shrink-0" />
-                {otherGreetings.length} greeting{otherGreetings.length === 1 ? '' : 's'} in other languages (
-                {otherGreetings.map((entry) => entry.language.toUpperCase()).join(', ')}) will be kept as they are.
+                {t('voice.otherGreetings', {
+                  count: otherGreetings.length,
+                  languages: otherGreetings.map((entry) => entry.language.toUpperCase()).join(t('listSeparator')),
+                })}
               </p>
             )}
           </section>
@@ -619,7 +615,7 @@ const VoiceProfile = () => {
       {/* Save bar */}
       {canManage && isDirty && (
         <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:ps-5">
-          <p className="min-w-0 flex-1 text-sm">Unsaved changes · they apply from the next call</p>
+          <p className="min-w-0 flex-1 text-sm">{t('voice.unsaved')}</p>
           <div className="flex shrink-0 gap-2">
             <button
               type="button"
@@ -627,7 +623,7 @@ const VoiceProfile = () => {
               disabled={busy}
               className="h-9 rounded-lg border border-canvas/25 px-3.5 text-sm font-medium transition-colors hover:bg-canvas/10 disabled:opacity-50"
             >
-              Discard
+              {t('summarizer.discard')}
             </button>
             <button
               type="button"
@@ -635,7 +631,7 @@ const VoiceProfile = () => {
               disabled={busy}
               className="h-9 rounded-lg bg-canvas px-4 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save profile'}
+              {saving ? t('common:status.saving') : t('voice.save')}
             </button>
           </div>
         </div>
@@ -645,9 +641,9 @@ const VoiceProfile = () => {
         isOpen={confirmReset}
         onClose={() => setConfirmReset(false)}
         onConfirm={handleReset}
-        title="Reset the voice profile?"
-        message="The name, background and greeting will be permanently cleared, and callers will hear the default greeting from the next call. This cannot be undone."
-        confirmText="Reset to defaults"
+        title={t('voice.resetConfirmTitle')}
+        message={t('voice.resetConfirmBody')}
+        confirmText={t('voice.reset')}
         destructive
         isLoading={resetting}
       />

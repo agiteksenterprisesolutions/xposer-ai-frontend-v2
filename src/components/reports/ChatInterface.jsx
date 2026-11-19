@@ -15,6 +15,8 @@ import Card from '../ui/Card';
 import { formatDateTime, formatRelativeTime } from '../../utils/formatters';
 import { ATTACHMENT_ACCEPT, validateAttachments } from '../../utils/attachments';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
+import { intlLocale } from '../../utils/locale';
 
 const ChatInterface = ({
   messages = [],
@@ -26,6 +28,7 @@ const ChatInterface = ({
   showInternalToggle = true,
   isLoading = false,
 }) => {
+  const { t } = useTranslation('dashboards');
   const [newMessage, setNewMessage] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [showInternal, setShowInternal] = useState(false);
@@ -120,17 +123,17 @@ const ChatInterface = ({
             <div className="flex items-center">
               {isInternal ? (
                 <>
-                  <Shield className="w-4 h-4 text-warning-fg me-2" />
+                  <Shield className="w-4 h-4 text-warning-fg me-2" aria-hidden="true" />
                   <span className="text-sm font-medium text-warning-fg">
-                    Internal Note
+                    {t('timeline.internalNote')}
                   </span>
                 </>
               ) : (
                 <>
-                  <User className="w-4 h-4 text-ink-muted me-2" />
+                  <User className="w-4 h-4 text-ink-muted me-2" aria-hidden="true" />
                   <span className="text-sm font-medium text-ink">
-                    {message.sender?.full_name || message.sender?.name || message.sender?.username || 'Unknown'}
-                    {isCurrentUser && ' (You)'}
+                    {message.sender?.full_name || message.sender?.name || message.sender?.username || t('chat.unknownSender')}
+                    {isCurrentUser && ` ${t('chat.you')}`}
                   </span>
                 </>
               )}
@@ -142,7 +145,7 @@ const ChatInterface = ({
 
           {/* Message Content */}
           <div className="mb-3">
-            <p className="text-ink whitespace-pre-wrap wrap-break-word">
+            <p className="text-ink whitespace-pre-wrap wrap-break-word" dir="auto">
               {message.content}
             </p>
           </div>
@@ -157,17 +160,17 @@ const ChatInterface = ({
                     href={attachment.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-2 px-3 py-2 bg-surface border border-line-strong rounded-lg hover:bg-subtle transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 bg-surface border border-line-strong rounded-lg hover:bg-subtle transition-colors"
                   >
                     {attachment.type?.startsWith('image/') ? (
                       <Image className="w-4 h-4 text-ink-muted" />
                     ) : (
                       <FileText className="w-4 h-4 text-ink-muted" />
                     )}
-                    <span className="text-sm text-ink-secondary">
+                    <span className="text-sm text-ink-secondary" dir="auto">
                       {attachment.name}
                     </span>
-                    <Download className="w-3 h-3 text-ink-subtle" />
+                    <Download className="w-3 h-3 text-ink-subtle" aria-hidden="true" />
                   </a>
                 ))}
               </div>
@@ -178,8 +181,8 @@ const ChatInterface = ({
           {message.read && (
             <div className="text-xs text-ink-muted mt-2">
               <span className="flex items-center">
-                <Eye className="w-3 h-3 me-1" />
-                Read
+                <Eye className="w-3 h-3 me-1" aria-hidden="true" />
+                {t('chat.read')}
               </span>
             </div>
           )}
@@ -194,12 +197,12 @@ const ChatInterface = ({
         <MessageSquare className="w-6 h-6 text-ink-subtle" />
       </div>
       <h3 className="text-lg font-semibold text-ink mb-2">
-        No Messages Yet
+        {t('chat.emptyTitle')}
       </h3>
       <p className="text-ink-muted max-w-md mx-auto">
         {isReporter
-          ? 'Send a message to the compliance team to provide additional information or ask questions about your report.'
-          : 'Start a conversation with the reporter or add internal notes for your team.'}
+          ? t('chat.emptyReporter')
+          : t('chat.emptyStaff')}
       </p>
     </div>
   );
@@ -211,10 +214,10 @@ const ChatInterface = ({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-ink">
-              Communication
+              {t('chat.title')}
             </h3>
             <p className="text-sm text-ink-muted">
-              {filteredMessages.length} messages
+              {t('card.messages', { count: filteredMessages.length })}
             </p>
           </div>
 
@@ -225,13 +228,13 @@ const ChatInterface = ({
               onClick={() => setShowInternal(!showInternal)}
               startIcon={showInternal ? EyeOff : Eye}
             >
-              {showInternal ? 'Hide Internal' : 'Show Internal'}
+              {showInternal ? t('chat.hideInternal') : t('chat.showInternal')}
             </Button>
           )}
         </div>
 
         {!isReporter && (
-          <div className="mt-3 flex items-center space-x-4">
+          <div className="mt-3 flex items-center gap-4">
             <label className="inline-flex items-center">
               <input
                 type="checkbox"
@@ -240,14 +243,14 @@ const ChatInterface = ({
                 className="rounded border-line-strong text-accent-fg focus:ring-accent-ring"
               />
               <span className="ms-2 text-sm text-ink-secondary">
-                Send as internal note
+                {t('chat.sendAsInternal')}
               </span>
             </label>
 
             {isInternal && (
               <div className="flex items-center text-sm text-warning-fg">
-                <Shield className="w-4 h-4 me-1" />
-                Only visible to compliance team
+                <Shield className="w-4 h-4 me-1" aria-hidden="true" />
+                {t('chat.onlyCompliance')}
               </div>
             )}
           </div>
@@ -279,7 +282,7 @@ const ChatInterface = ({
                     {file.name}
                   </p>
                   <p className="text-xs text-ink-muted">
-                    {(file.size / 1024).toFixed(1)} KB
+                    {t('chat.kb', { size: (file.size / 1024).toLocaleString(intlLocale(), { maximumFractionDigits: 1, minimumFractionDigits: 1 }) })}
                   </p>
                 </div>
               </div>
@@ -288,14 +291,14 @@ const ChatInterface = ({
                 size="small"
                 onClick={() => setFile(null)}
               >
-                Remove
+                {t('chat.remove')}
               </Button>
             </div>
           </div>
         )}
 
         {/* Input Form */}
-        <div className="flex space-x-2">
+        <div className="flex gap-2">
           <div className="flex-1">
             <textarea
               value={newMessage}
@@ -303,18 +306,20 @@ const ChatInterface = ({
               onKeyPress={handleKeyPress}
               placeholder={
                 isInternal
-                  ? 'Add an internal note...'
+                  ? t('chat.placeholderInternal')
                   : isReporter
-                    ? 'Type your message to the compliance team...'
-                    : 'Type your message...'
+                    ? t('chat.placeholderReporter')
+                    : t('chat.placeholder')
               }
+              aria-label={isInternal ? t('chat.internalLabel') : t('chat.messageLabel')}
+              dir="auto"
               rows={3}
               className="w-full border border-line-strong rounded-lg px-3 py-2 focus:ring-accent-ring focus:border-line-accent resize-none"
               disabled={isLoading}
             />
           </div>
 
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col gap-2">
             <input
               type="file"
               ref={fileInputRef}
@@ -339,9 +344,10 @@ const ChatInterface = ({
               onClick={handleSend}
               disabled={isLoading || (!newMessage.trim() && !file)}
               isLoading={isLoading}
-              title="Send message"
+              title={t('chat.send')}
+              aria-label={t('chat.send')}
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-5 h-5" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -350,13 +356,13 @@ const ChatInterface = ({
         <div className="mt-2 text-xs text-ink-muted">
           {isInternal ? (
             <div className="flex items-center">
-              <Shield className="w-3 h-3 me-1 text-warning-fg" />
-              Internal notes are only visible to the compliance team
+              <Shield className="w-3 h-3 me-1 text-warning-fg" aria-hidden="true" />
+              {t('chat.internalHint')}
             </div>
           ) : isReporter ? (
-            'Your messages are confidential and will only be seen by the compliance team'
+            t('chat.reporterHint')
           ) : (
-            'Press Enter to send, Shift+Enter for new line'
+            t('chat.keyHint')
           )}
         </div>
       </div>

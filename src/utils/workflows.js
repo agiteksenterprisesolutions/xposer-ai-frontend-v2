@@ -4,6 +4,9 @@
 // on whether a workflow can run; the local checks here only give instant
 // feedback on things visible without it (a blank or duplicate key).
 import { CODE_PATTERN } from './codes';
+import i18n from '../i18n';
+
+const tw = (key, opts) => i18n.t(`workflow.${key}`, { ns: 'admin', ...opts });
 
 // Reserved `goto` targets.
 export const NEXT = 'next';
@@ -51,33 +54,33 @@ export const localProblems = (stages) => {
   stages.forEach((stage) => {
     const key = stage.key.trim();
     if (!key) {
-      problems.push({ stage: null, code: 'missing_key', message: 'Every step needs a key.' });
+      problems.push({ stage: null, code: 'missing_key', message: tw('problems.missingKey') });
     } else if (!CODE_PATTERN.test(key)) {
-      problems.push({ stage: key, code: 'bad_key', message: 'Keys use lowercase letters, numbers and underscores, starting with a letter.' });
+      problems.push({ stage: key, code: 'bad_key', message: tw('problems.badKey') });
     } else if ([NEXT, END].includes(key)) {
-      problems.push({ stage: key, code: 'reserved_key', message: `"${key}" is reserved for branching.` });
+      problems.push({ stage: key, code: 'reserved_key', message: tw('problems.reservedKey', { key }) });
     }
     if (key) seen.set(key, (seen.get(key) || 0) + 1);
     if (!stage.executor_ref) {
       problems.push({
         stage: key || null,
         code: 'missing_executor',
-        message: `Choose ${stage.executor_type === EXECUTOR_HUMAN ? 'a role' : 'an agent'} to run this step.`,
+        message: stage.executor_type === EXECUTOR_HUMAN ? tw('problems.missingRole') : tw('problems.missingAgent'),
       });
     }
   });
   seen.forEach((count, key) => {
-    if (count > 1) problems.push({ stage: key, code: 'duplicate_key', message: `Two steps use the key "${key}".` });
+    if (count > 1) problems.push({ stage: key, code: 'duplicate_key', message: tw('problems.duplicateKey', { key }) });
   });
   return problems;
 };
 
 /** Where a `goto` leads, in words. */
 export const gotoLabel = (goto, stagesByKey) => {
-  if (goto === NEXT) return 'the next stage';
-  if (goto === END) return 'end the run';
+  if (goto === NEXT) return tw('goto.next');
+  if (goto === END) return tw('goto.end');
   const stage = stagesByKey.get(goto);
-  return stage ? stage.name || stage.key : `"${goto}" (missing)`;
+  return stage ? stage.name || stage.key : tw('goto.missing', { key: goto });
 };
 
 // ─── Canvas helpers ──────────────────────────────────────────────────────

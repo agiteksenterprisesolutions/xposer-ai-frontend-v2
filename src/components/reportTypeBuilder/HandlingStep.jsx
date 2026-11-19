@@ -5,11 +5,13 @@
 // there — who it is assigned to, who may open it, its deadlines and how long
 // it is kept. Cases already filed keep the settings they were filed under.
 import { useEffect, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { AlertCircle, AlertTriangle, Archive, Clock, FileText, Info, Lock, ShieldCheck, Users } from 'lucide-react';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useOrgJurisdiction } from '../../hooks/useOrgJurisdiction';
 import { reportTypesAPI } from '../../api';
 import { parseServerDate } from '../../utils/formatters';
+import { intlLocale } from '../../utils/locale';
 import { CONFIDENTIALITY_TIERS } from '../../utils/reportTypes';
 import { retentionProblem } from './model';
 
@@ -17,7 +19,7 @@ const inputClass =
   'w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-line-accent disabled:cursor-not-allowed disabled:bg-subtle disabled:text-ink-muted';
 
 const Card = ({ icon: Icon, title, children, className = '', tour }) => (
-  <section className={`space-y-4 rounded-2xl border border-line bg-surface p-5 sm:p-6 ${className}`} data-tour={tour}>
+  <section className={`flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 sm:p-6 ${className}`} data-tour={tour}>
     <div className="flex items-center gap-2.5">
       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-soft text-accent-fg">
         <Icon className="h-4 w-4" aria-hidden="true" />
@@ -62,7 +64,7 @@ const NumberRow = ({ id, label, value, onChange, unit, hint, error, min = 0, max
           aria-describedby={hint || error ? `${id}-hint` : undefined}
           className={`${inputClass.replace('w-full', 'w-20')} text-end ${error ? 'border-danger-line' : ''}`}
         />
-        <span className="w-9 text-sm text-ink-muted">{unit}</span>
+        <span className="min-w-9 text-sm text-ink-muted">{unit}</span>
       </span>
     </div>
     {(error || hint) && (
@@ -104,12 +106,7 @@ const Switch = ({ checked, onChange, label }) => (
   </button>
 );
 
-/** What each confidentiality level means, under the radio buttons. */
-const TIER_HINTS = {
-  standard: 'Anyone who handles cases.',
-  confidential: 'Only staff cleared for confidential cases.',
-  restricted: 'Only staff cleared for restricted cases.',
-};
+/** What each confidentiality level means, under the radio buttons: builder:handling.tierHints.<tier>. */
 
 /**
  * The server's own check of the saved settings (`governance_problems`) — an
@@ -117,11 +114,12 @@ const TIER_HINTS = {
  * the type refuses. Errors in red, warnings in amber, worded as sent.
  */
 export const GovernanceProblems = ({ problems }) => {
+  const { t } = useTranslation('builder');
   if (!problems?.length) return null;
   const errors = problems.filter((p) => p.severity === 'error');
   const warnings = problems.filter((p) => p.severity !== 'error');
   return (
-    <section aria-label="Problems with these settings" className="space-y-2">
+    <section aria-label={t('handling.problemsLabel')} className="flex flex-col gap-2">
       {[...errors, ...warnings].map((problem, i) => {
         const isError = problem.severity === 'error';
         const Icon = isError ? AlertCircle : AlertTriangle;
@@ -152,6 +150,7 @@ export const GovernanceProblems = ({ problems }) => {
  */
 const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverErrors = {}, onClearError }) => {
   const { form, setField: setDraftField } = draft;
+  const { t } = useTranslation('builder');
   const { roles, nameFor } = useOrgRoles({ source: 'owners' });
   const approvedAt = parseServerDate(form.approved_at);
   const tier = form.confidentiality_tier || 'standard';
@@ -173,7 +172,7 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
     let live = true;
     reportTypesAPI
       .getReportTypes(false, false)
-      .then((list) => live && setCategories([...new Set(list.map((t) => t.category?.trim()).filter(Boolean))].sort()))
+      .then((list) => live && setCategories([...new Set(list.map((type) => type.category?.trim()).filter(Boolean))].sort()))
       .catch(() => {});
     return () => {
       live = false;
@@ -181,41 +180,41 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-260 space-y-5 px-4 py-7 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-260 flex-col gap-5 px-4 py-7 sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-xl font-bold tracking-[-0.01em] text-ink sm:text-2xl">How these reports are handled</h1>
+        <h1 className="text-xl font-bold tracking-[-0.01em] text-ink sm:text-2xl">{t('handling.title')}</h1>
         <p className="mt-1 flex items-start gap-1.5 text-sm text-ink-muted">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          These settings apply to every new case of this type. Cases already filed keep the settings they were filed under.
+          {t('handling.intro')}
         </p>
       </div>
 
       <GovernanceProblems problems={problems} />
 
-      <Card icon={FileText} title="About this type" tour="rtb-handling-basics">
+      <Card icon={FileText} title={t('handling.aboutType')} tour="rtb-handling-basics">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <Label htmlFor="rt-name">Name</Label>
+            <Label htmlFor="rt-name">{t('start.name')}</Label>
             <input
               id="rt-name"
               value={form.name}
               onChange={(e) => setField('name', e.target.value)}
-              placeholder="e.g. Workplace harassment"
+              placeholder={t('start.namePlaceholder')}
               aria-invalid={Boolean(nameError)}
               className={`${inputClass} ${nameError ? 'border-danger-line' : ''}`}
             />
             {nameError && <p className="mt-1 text-xs text-danger-fg">{nameError}</p>}
           </div>
           <div>
-            <Label htmlFor="rt-category" hint="optional">
-              Category
+            <Label htmlFor="rt-category" hint={t('common:form.optional')}>
+              {t('start.category')}
             </Label>
             <input
               id="rt-category"
               list="rt-categories"
               value={form.category || ''}
               onChange={(e) => setField('category', e.target.value)}
-              placeholder="e.g. Fraud, Conduct, Health & safety"
+              placeholder={t('start.categoryPlaceholder')}
               className={inputClass}
             />
             <datalist id="rt-categories">
@@ -225,14 +224,14 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
             </datalist>
           </div>
           <div className="md:col-span-2">
-            <Label htmlFor="rt-description" hint="optional">
-              Description
+            <Label htmlFor="rt-description" hint={t('common:form.optional')}>
+              {t('handling.description')}
             </Label>
             <input
               id="rt-description"
               value={form.description || ''}
               onChange={(e) => setField('description', e.target.value)}
-              placeholder="One line on when to choose this type"
+              placeholder={t('handling.descriptionPlaceholder')}
               className={inputClass}
             />
           </div>
@@ -240,51 +239,48 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
         <Divider />
         <div className="flex items-center justify-between gap-3">
           <span>
-            <span className="block text-sm font-medium text-ink">Allow anonymous reports</span>
-            <span className="block text-xs text-ink-muted">When off, reporters must sign in to file this type.</span>
+            <span className="block text-sm font-medium text-ink">{t('handling.allowAnonymous')}</span>
+            <span className="block text-xs text-ink-muted">{t('handling.allowAnonymousHint')}</span>
           </span>
           <Switch
             checked={form.allows_anonymous ?? true}
             onChange={(on) => setField('allows_anonymous', on)}
-            label="Allow anonymous reports"
+            label={t('handling.allowAnonymous')}
           />
         </div>
         <Divider />
         <div className="flex items-center justify-between gap-3">
           <span>
-            <span className="block text-sm font-medium text-ink">Escalate when a report is about someone</span>
-            <span className="block text-xs text-ink-muted">
-              Sends the case up the reporting line of the person it's about, or to the senior route set in the escalation
-              policy. When off, that person is still kept off the case, but it goes to the usual owner.
-            </span>
+            <span className="block text-sm font-medium text-ink">{t('handling.escalate')}</span>
+            <span className="block text-xs text-ink-muted">{t('handling.escalateHint')}</span>
           </span>
           <Switch
             checked={form.escalate_on_subject ?? true}
             onChange={(on) => setField('escalate_on_subject', on)}
-            label="Escalate when a report is about someone"
+            label={t('handling.escalate')}
           />
         </div>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card icon={Users} title="Who owns these cases">
-          <div className="space-y-4">
+        <Card icon={Users} title={t('handling.whoOwns')}>
+          <div className="flex flex-col gap-4">
             <div>
-              <Label htmlFor="rt-owner">Owner</Label>
+              <Label htmlFor="rt-owner">{t('handling.owner')}</Label>
               <RoleSelect
                 id="rt-owner"
                 value={form.default_owner_role}
                 onChange={(role) => setField('default_owner_role', role)}
                 roles={roles}
                 nameFor={nameFor}
-                empty="Not set — cases wait unassigned"
+                empty={t('review.handling.ownerNone')}
                 error={serverErrors.default_owner_role}
               />
-              <FieldNote error={serverErrors.default_owner_role}>New cases are assigned to someone in this role.</FieldNote>
+              <FieldNote error={serverErrors.default_owner_role}>{t('handling.ownerHint')}</FieldNote>
             </div>
             <div>
-              <Label htmlFor="rt-alt-owner" hint="optional">
-                Backup owner
+              <Label htmlFor="rt-alt-owner" hint={t('common:form.optional')}>
+                {t('handling.backupOwner')}
               </Label>
               <RoleSelect
                 id="rt-alt-owner"
@@ -292,19 +288,19 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
                 onChange={(role) => setField('alternate_owner_role', role)}
                 roles={roles}
                 nameFor={nameFor}
-                empty="Not set"
+                empty={t('handling.notSet')}
                 error={serverErrors.alternate_owner_role}
               />
               <FieldNote error={serverErrors.alternate_owner_role}>
-                The backup takes over when a report names someone in the owner role.
+                {t('handling.backupHint')}
               </FieldNote>
             </div>
           </div>
         </Card>
 
-        <Card icon={ShieldCheck} title="Confidentiality">
-          <p className="-mt-1 text-xs text-ink-muted">Only staff cleared for this level can see these cases.</p>
-          <div role="radiogroup" aria-label="Confidentiality" className="space-y-2">
+        <Card icon={ShieldCheck} title={t('review.handling.confidentiality')}>
+          <p className="-mt-1 text-xs text-ink-muted">{t('handling.confidentialityHint')}</p>
+          <div role="radiogroup" aria-label={t('review.handling.confidentiality')} className="flex flex-col gap-2">
             {CONFIDENTIALITY_TIERS.map((option) => {
               const on = tier === option.value;
               return (
@@ -327,74 +323,74 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-ink">{option.label}</span>
-                    <span className="block text-xs text-ink-muted">{TIER_HINTS[option.value]}</span>
+                    <span className="block text-xs text-ink-muted">{t(`handling.tierHints.${option.value}`)}</span>
                   </span>
                 </button>
               );
             })}
           </div>
           <p className="text-xs text-ink-muted">
-            A report naming a senior person can be raised to a higher level automatically, never lowered.
+            {t('handling.tierRaise')}
           </p>
         </Card>
 
-        <Card icon={Clock} title="Response times">
-          <div className="space-y-3">
+        <Card icon={Clock} title={t('handling.responseTimes')}>
+          <div className="flex flex-col gap-3">
             <NumberRow
               id="rt-ack"
-              label="Acknowledge the reporter within"
-              unit="days"
+              label={t('handling.ackWithin')}
+              unit={t('handling.daysUnit')}
               value={form.ack_sla_days}
               onChange={(days) => setField('ack_sla_days', days)}
-              hint="Calendar days from submission."
+              hint={t('handling.calendarDays')}
             />
             <NumberRow
               id="rt-triage"
-              label="Triage within"
-              unit="days"
+              label={t('handling.triageWithin')}
+              unit={t('handling.daysUnit')}
               value={form.triage_sla_days}
               onChange={(days) => setField('triage_sla_days', days)}
-              hint="Calendar days from submission."
+              hint={t('handling.calendarDays')}
             />
           </div>
           <Divider />
           <div>
-            <Label htmlFor="rt-regulatory" hint="optional">
-              Regulator reminder
+            <Label htmlFor="rt-regulatory" hint={t('common:form.optional')}>
+              {t('handling.regulatorReminder')}
             </Label>
             <input
               id="rt-regulatory"
               value={form.regulatory_trigger || ''}
               onChange={(e) => setField('regulatory_trigger', e.target.value)}
-              placeholder="e.g. Notify the regulator within 72 hours if personal data is involved"
+              placeholder={t('handling.regulatorPlaceholder')}
               className={inputClass}
             />
-            <FieldNote>Shown to case handlers as a reminder. Nobody is notified automatically.</FieldNote>
+            <FieldNote>{t('handling.regulatorHint')}</FieldNote>
           </div>
         </Card>
 
-        <Card icon={Archive} title="Records">
+        <Card icon={Archive} title={t('review.handling.records')}>
           <NumberRow
             id="rt-retention"
-            label="Keep closed cases for"
-            unit="years"
+            label={t('handling.keepFor')}
+            unit={t('handling.yearsUnit')}
             min={1}
             max={100}
             value={form.retention_years}
             onChange={(years) => setField('retention_years', years)}
             error={retentionError}
-            hint="After this, the case's answers, messages and files are permanently deleted."
+            hint={t('handling.keepHint')}
           />
           {belowPack && (
             <p className="mt-2 flex items-start gap-1.5 text-xs text-warning-fg">
               <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              Your jurisdiction pack ({pack.code}) keeps cases for at least {packMinimum} years, so that minimum still applies.
+              {t('handling.packMinimum', { pack: pack.code, count: packMinimum })}
             </p>
           )}
           <Divider />
           <div>
-            <Label htmlFor="rt-code" hint={codeLocked ? 'fixed' : 'optional'}>
-              Compliance code
+            <Label htmlFor="rt-code" hint={codeLocked ? t('handling.fixed') : t('common:form.optional')}>
+              {t('handling.complianceCode')}
             </Label>
             <div className="relative">
               <input
@@ -408,12 +404,21 @@ const HandlingStep = ({ draft, codeLocked, nameError, problems = [], serverError
               />
               {codeLocked && <Lock className="absolute end-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
             </div>
-            <FieldNote error={serverErrors.code}>A compliance code is permanent once set.</FieldNote>
+            <FieldNote error={serverErrors.code}>{t('handling.codeHint')}</FieldNote>
           </div>
           {(form.approved_by || approvedAt) && (
             <p className="border-t border-line-subtle pt-3 text-xs text-ink-muted">
-              Approved{form.approved_by && <> by <span className="font-medium text-ink">{form.approved_by}</span></>}
-              {approvedAt && ` on ${approvedAt.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`}
+              <Trans
+                t={t}
+                i18nKey={
+                  form.approved_by && approvedAt ? 'handling.approvedByOn' : form.approved_by ? 'handling.approvedBy' : 'handling.approvedOn'
+                }
+                values={{
+                  name: form.approved_by,
+                  date: approvedAt?.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' }),
+                }}
+                components={{ b: <span className="font-medium text-ink" /> }}
+              />
             </p>
           )}
         </Card>

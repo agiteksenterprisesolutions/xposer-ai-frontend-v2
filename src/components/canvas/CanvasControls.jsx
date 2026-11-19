@@ -2,6 +2,7 @@
 //
 // The floating zoom bar shared by the canvas screens (workflow builder, org
 // chart). Screen-specific buttons go before or after the zoom group.
+import { useTranslation } from 'react-i18next';
 import { Maximize, Minus, Plus } from 'lucide-react';
 import { useReactFlow, useViewport } from '@xyflow/react';
 
@@ -17,22 +18,24 @@ const ZoomLevel = () => {
 
 const CanvasControls = ({ onFit, before, after, className = '' }) => {
   const flow = useReactFlow();
+  const { t } = useTranslation('admin');
   return (
     <div
+      dir="ltr"
       className={`absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-lg border border-line bg-surface p-1 shadow-md ${className}`}
     >
       {before}
       {before && <CanvasDivider />}
-      <button type="button" onClick={() => flow.zoomOut({ duration: 150 })} aria-label="Zoom out" title="Zoom out" className={canvasIconButton}>
-        <Minus className="h-4 w-4" />
+      <button type="button" onClick={() => flow.zoomOut({ duration: 150 })} aria-label={t('canvas.zoomOut')} title={t('canvas.zoomOut')} className={canvasIconButton}>
+        <Minus className="h-4 w-4" aria-hidden="true" />
       </button>
       <ZoomLevel />
-      <button type="button" onClick={() => flow.zoomIn({ duration: 150 })} aria-label="Zoom in" title="Zoom in" className={canvasIconButton}>
-        <Plus className="h-4 w-4" />
+      <button type="button" onClick={() => flow.zoomIn({ duration: 150 })} aria-label={t('canvas.zoomIn')} title={t('canvas.zoomIn')} className={canvasIconButton}>
+        <Plus className="h-4 w-4" aria-hidden="true" />
       </button>
       <CanvasDivider />
-      <button type="button" onClick={onFit} aria-label="Fit to screen" title="Fit to screen" className={canvasIconButton}>
-        <Maximize className="h-4 w-4" />
+      <button type="button" onClick={onFit} aria-label={t('canvas.fit')} title={t('canvas.fit')} className={canvasIconButton}>
+        <Maximize className="h-4 w-4" aria-hidden="true" />
       </button>
       {after}
     </div>

@@ -12,6 +12,8 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Layers, UserX, Users } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
+import { intlLocale } from '../../utils/locale';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
@@ -24,7 +26,7 @@ import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
 const Stat = ({ icon: Icon, label, value }) => (
   <div className="rounded-xl border border-line bg-surface p-4">
     <div className="flex items-center gap-2 text-xs text-ink-muted">
-      <Icon className="h-4 w-4" />
+      <Icon className="h-4 w-4" aria-hidden="true" />
       {label}
     </div>
     <p className="mt-1 text-2xl font-bold text-ink tabular-nums">{value ?? 0}</p>
@@ -32,6 +34,7 @@ const Stat = ({ icon: Icon, label, value }) => (
 );
 
 const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
+  const { t } = useTranslation('hierarchy');
   const [levelCode, setLevelCode] = useState('');
   const [roleCode, setRoleCode] = useState('');
   const [busy, setBusy] = useState(null); // 'alias' | 'assign'
@@ -60,7 +63,7 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
       await orgHierarchyAPI.updateLevel(level.id, {
         designation_aliases: [...(level.designation_aliases || []), entry.designation],
       });
-      toast.success(`"${entry.designation}" now maps to ${level.title} from the next sync.`);
+      toast.success(t('coverage.aliasAdded', { title: entry.designation, level: level.title }));
       onChanged();
     } catch (error) {
       toast.error(errorSummary(error));
@@ -74,7 +77,7 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
     try {
       const unplaced = await unplacedWithTitle();
       if (unplaced.length === 0) {
-        toast.info(`Everyone titled "${entry.designation}" already has a level.`);
+        toast.info(t('coverage.allPlaced', { title: entry.designation }));
         return;
       }
       const results = await Promise.allSettled(
@@ -82,11 +85,9 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
       );
       const failed = results.filter((r) => r.status === 'rejected');
       if (failed.length === 0) {
-        toast.success(
-          `${unplaced.length} ${unplaced.length === 1 ? 'person is' : 'people are'} now ${role.name} (${role.level_title}).`,
-        );
+        toast.success(t('coverage.roleGiven', { count: unplaced.length, role: role.name, level: role.level_title }));
       } else {
-        toast.error(`${failed.length} of ${unplaced.length} couldn't be updated: ${errorSummary(failed[0].reason)}`);
+        toast.error(t('coverage.someFailed', { failed: failed.length, total: unplaced.length, error: errorSummary(failed[0].reason) }));
       }
       onChanged();
     } catch (error) {
@@ -99,9 +100,9 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
   return (
     <li className="space-y-2 py-3">
       <div>
-        <p className="text-sm font-medium text-ink">{entry.designation}</p>
+        <p className="text-sm font-medium text-ink" dir="auto">{entry.designation}</p>
         <p className="text-xs text-ink-muted">
-          {entry.people.length} {entry.people.length === 1 ? 'person' : 'people'}: {entry.people.join(', ')}
+          {t('coverage.peopleList', { count: entry.people.length, names: new Intl.ListFormat(intlLocale(), { type: 'unit' }).format(entry.people) })}
         </p>
       </div>
       {canManage && levels.length > 0 && (
@@ -109,10 +110,10 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
           <select
             value={levelCode}
             onChange={(event) => setLevelCode(event.target.value)}
-            aria-label={`Level for ${entry.designation}`}
+            aria-label={t('coverage.levelFor', { title: entry.designation })}
             className="rounded-lg border border-line bg-subtle px-3 py-2 text-sm text-ink sm:w-56"
           >
-            <option value="">Choose a level…</option>
+            <option value="">{t('coverage.chooseLevel')}</option>
             {levels.map((l) => (
               <option key={l.code} value={l.code}>
                 {l.title}
@@ -125,9 +126,9 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
             disabled={!level || Boolean(busy)}
             isLoading={busy === 'alias'}
             onClick={addAlias}
-            title="Future syncs suggest this level, and the role at it, for everyone with this title"
+            title={t('coverage.addAliasHint')}
           >
-            Add title to level
+            {t('coverage.addAlias')}
           </Button>
         </div>
       )}
@@ -136,10 +137,10 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
           <select
             value={roleCode}
             onChange={(event) => setRoleCode(event.target.value)}
-            aria-label={`Role for the people titled ${entry.designation}`}
+            aria-label={t('coverage.roleFor', { title: entry.designation })}
             className="rounded-lg border border-line bg-subtle px-3 py-2 text-sm text-ink sm:w-56"
           >
-            <option value="">Choose a role…</option>
+            <option value="">{t('coverage.chooseRole')}</option>
             {placingRoles.map((r) => (
               <option key={r.code} value={r.code}>
                 {roleWithLevel(r)}
@@ -152,9 +153,9 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
             disabled={!role || Boolean(busy)}
             isLoading={busy === 'assign'}
             onClick={assignPeople}
-            title="Their role places them — and becomes the role on any account linked to them"
+            title={t('coverage.giveRoleHint')}
           >
-            Give {named === 1 ? 'this person' : `these ${named} people`} this role
+            {t('coverage.giveRole', { count: named })}
           </Button>
         </div>
       )}
@@ -163,6 +164,7 @@ const UnmappedTitle = ({ entry, levels, canManage, onChanged }) => {
 };
 
 const CoveragePanel = ({ coverage, levels, canManage, onChanged, onGoTo }) => {
+  const { t } = useTranslation('hierarchy');
   if (!coverage) return null;
 
   const problems = coverage.problems || [];
@@ -174,30 +176,30 @@ const CoveragePanel = ({ coverage, levels, canManage, onChanged, onGoTo }) => {
   return (
     <div className="space-y-6">
       {coverage.resolvable ? (
-        <Alert variant="success" title="Escalation can resolve">
-          A report naming someone in the directory can be routed to the person above them.
-          {problems.length > 0 && ' Some gaps below may still leave individual reports for a human to route.'}
+        <Alert variant="success" title={t('coverage.resolvableTitle')}>
+          {t('coverage.resolvableBody')}
+          {problems.length > 0 && ` ${t('coverage.resolvableGaps')}`}
         </Alert>
       ) : (
-        <Alert variant="error" title="Escalation can't resolve anything yet">
-          Every report will fall back to manual routing until the problems below are fixed.
+        <Alert variant="error" title={t('coverage.unresolvableTitle')}>
+          {t('coverage.unresolvableBody')}
         </Alert>
       )}
 
       {problems.length > 0 && (
-        <Card title="What needs attention" icon={AlertTriangle}>
+        <Card title={t('coverage.needsAttention')} icon={AlertTriangle}>
           <ul className="space-y-2">
             {problems.map((problem, index) => (
               <li key={`${problem.code}-${index}`} className="flex flex-col gap-1 text-sm text-ink-secondary sm:flex-row sm:items-center sm:justify-between">
                 <span>{problem.message}</span>
                 {problem.code === 'no_levels' && canManage && (
                   <Button variant="outline" size="small" onClick={() => onGoTo('levels')}>
-                    Add levels
+                    {t('coverage.addLevels')}
                   </Button>
                 )}
                 {problem.code === 'no_members' && canManage && (
                   <Button variant="outline" size="small" onClick={() => onGoTo('directory')}>
-                    Add people
+                    {t('coverage.addPeople')}
                   </Button>
                 )}
               </li>
@@ -207,16 +209,16 @@ const CoveragePanel = ({ coverage, levels, canManage, onChanged, onGoTo }) => {
       )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat icon={Layers} label="Levels" value={coverage.level_count} />
-        <Stat icon={Users} label="People" value={coverage.member_count} />
-        <Stat icon={Users} label="Added by hand" value={coverage.manual_member_count} />
-        <Stat icon={CheckCircle2} label="Corrected from HR" value={coverage.override_count} />
+        <Stat icon={Layers} label={t('coverage.stats.levels')} value={coverage.level_count} />
+        <Stat icon={Users} label={t('coverage.stats.people')} value={coverage.member_count} />
+        <Stat icon={Users} label={t('coverage.stats.manual')} value={coverage.manual_member_count} />
+        <Stat icon={CheckCircle2} label={t('coverage.stats.overrides')} value={coverage.override_count} />
       </div>
 
       {unmapped.length > 0 && (
-        <Card title={`Job titles on no level (${unmapped.length})`} icon={AlertTriangle}>
+        <Card title={t('coverage.unmappedTitle', { count: unmapped.length })} icon={AlertTriangle}>
           <p className="text-xs text-ink-muted">
-            People with these titles can't be escalated from, and nobody can escalate to them.
+            {t('coverage.unmappedBody')}
           </p>
           <ul className="mt-2 divide-y divide-line-subtle">
             {unmapped.map((entry) => (
@@ -233,18 +235,18 @@ const CoveragePanel = ({ coverage, levels, canManage, onChanged, onGoTo }) => {
       )}
 
       {coverageLevels.length > 0 && (
-        <Card title="Levels" icon={Layers} padding="none">
+        <Card title={t('coverage.levelsCard')} icon={Layers} padding="none">
           <ul className="divide-y divide-line-subtle">
             {coverageLevels.map((level) => (
               <li key={level.code} className="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-ink">{level.title}</span>
+                    <span className="text-sm font-medium text-ink" dir="auto">{level.title}</span>
                     <span className="font-mono text-[11px] text-ink-subtle">
-                      {level.code} · rank {level.rank}
+                      {t('coverage.codeRank', { code: level.code, rank: level.rank })}
                     </span>
                     {level.department && <Badge size="small">{level.department}</Badge>}
-                    {level.vacant && <Badge variant="warning" size="small">Vacant</Badge>}
+                    {level.vacant && <Badge variant="warning" size="small">{t('coverage.vacant')}</Badge>}
                   </div>
                   {level.members?.length > 0 && (
                     <p className="truncate text-xs text-ink-muted" title={level.members.join(', ')}>
@@ -253,7 +255,7 @@ const CoveragePanel = ({ coverage, levels, canManage, onChanged, onGoTo }) => {
                   )}
                 </div>
                 <span className="shrink-0 text-xs text-ink-muted tabular-nums">
-                  {level.member_count} {level.member_count === 1 ? 'person' : 'people'}
+                  {t('people', { count: level.member_count })}
                 </span>
               </li>
             ))}
@@ -262,10 +264,9 @@ const CoveragePanel = ({ coverage, levels, canManage, onChanged, onGoTo }) => {
       )}
 
       {noManager.length > 0 && (
-        <Card title={`No manager on file (${noManager.length})`} icon={UserX}>
+        <Card title={t('coverage.noManagerTitle', { count: noManager.length })} icon={UserX}>
           <p className="text-xs text-ink-muted">
-            Escalation falls back to the nearest level above for these people, which is less precise than a real reporting
-            line.
+            {t('coverage.noManagerBody')}
           </p>
           <ul className="mt-2 divide-y divide-line-subtle">
             {noManager.map((person, index) => (
@@ -277,14 +278,14 @@ const CoveragePanel = ({ coverage, levels, canManage, onChanged, onGoTo }) => {
           </ul>
           {canManage && (
             <Button className="mt-3" variant="outline" size="small" onClick={() => onGoTo('directory')}>
-              Open the directory
+              {t('coverage.openDirectory')}
             </Button>
           )}
         </Card>
       )}
 
       {!hasCode('no_levels') && !hasCode('no_members') && unmapped.length === 0 && noManager.length === 0 && problems.length === 0 && (
-        <p className="text-sm text-ink-muted">No gaps found: every person has a level and a manager on file.</p>
+        <p className="text-sm text-ink-muted">{t('coverage.noGaps')}</p>
       )}
     </div>
   );

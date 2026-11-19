@@ -8,6 +8,7 @@ import ReportTypeBuilderSkeleton from '../../components/forms/ReportTypeBuilderS
 import ReportTypeBuilder from '../../components/forms/ReportTypeBuilder';
 import { reportTypesAPI } from '../../api';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import useSEO from '../../hooks/useSEO';
 import { useCan } from '../../hooks/useCan';
@@ -24,6 +25,7 @@ const ViewReportType = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const canManage = useCan()(PERM.reportTypeManage);
+  const { t } = useTranslation('reportTypes');
 
   const [loading, setLoading] = useState(true);
   const [reportType, setReportType] = useState(null);
@@ -46,8 +48,8 @@ const ViewReportType = () => {
         if (!cancelled) setReportType(data);
       } catch (err) {
         console.error('Failed to load report type:', err);
-        if (!cancelled) setError('Failed to load report type. Please try again.');
-        toast.error('Failed to load report type');
+        if (!cancelled) setError(t('view.loadFailed'));
+        toast.error(t('view.loadFailedShort'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -68,12 +70,12 @@ const ViewReportType = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <Alert variant="error">
           <div className="flex items-center">
-            {error || 'Report type not found'}
+            {error || t('edit.notFound')}
           </div>
         </Alert>
         <div className="mt-4">
           <Button variant="secondary" onClick={() => navigate(listPath)} startIcon={ArrowLeft}>
-            Back to Report Types
+            {t('edit.back')}
           </Button>
         </div>
       </div>

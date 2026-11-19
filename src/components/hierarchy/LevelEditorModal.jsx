@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -19,7 +20,7 @@ import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import { staffPath } from '../../utils/navigation';
-import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
+import { codeHint, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import { describeError } from '../../utils/errors';
 
 /**
@@ -29,6 +30,7 @@ import { describeError } from '../../utils/errors';
  *   readOnly, onClose, onSaved
  */
 const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, onClose, onSaved }) => {
+  const { t } = useTranslation('hierarchy');
   const isCreate = !level;
   const { allRoles, nameFor } = useOrgRoles();
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
@@ -53,8 +55,8 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
   }, [title, isCreate, codeTouched]);
 
   const rankNumber = Number(rank);
-  const rankError = rank === '' || !Number.isInteger(rankNumber) ? 'A whole number. Higher is more senior.' : null;
-  const codeError = isCreate ? (!code ? 'A code is required.' : !CODE_PATTERN.test(code) ? CODE_HINT : null) : null;
+  const rankError = rank === '' || !Number.isInteger(rankNumber) ? t('levelEditor.rankError') : null;
+  const codeError = isCreate ? (!code ? t('levelEditor.codeRequired') : !CODE_PATTERN.test(code) ? codeHint() : null) : null;
   const blocked = !title.trim() || Boolean(rankError) || Boolean(codeError);
 
   const save = async () => {
@@ -72,7 +74,7 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
       const saved = isCreate
         ? await orgHierarchyAPI.createLevel({ ...body, code })
         : await orgHierarchyAPI.updateLevel(level.id, { ...body, is_active: isActive });
-      toast.success(isCreate ? `Level "${body.title}" added.` : `Level "${body.title}" saved.`);
+      toast.success(isCreate ? t('levelEditor.added', { title: body.title }) : t('levelEditor.saved', { title: body.title }));
       onSaved?.(saved);
     } catch (err) {
       setError(describeError(err));
@@ -85,23 +87,23 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
     <Modal
       isOpen
       onClose={saving ? () => {} : onClose}
-      title={isCreate ? 'New level' : readOnly ? level.title : `Edit ${level.title}`}
+      title={isCreate ? t('levelEditor.newTitle') : readOnly ? level.title : t('levelEditor.editTitle', { title: level.title })}
       size="large"
       closeOnOverlayClick={false}
       footer={
         readOnly ? (
           <div className="flex justify-end">
             <Button variant="secondary" onClick={onClose}>
-              Close
+              {t('common:actions.close')}
             </Button>
           </div>
         ) : (
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button variant="secondary" onClick={onClose} disabled={saving}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button onClick={save} isLoading={saving} disabled={blocked}>
-              {isCreate ? 'Add level' : 'Save changes'}
+              {isCreate ? t('levelEditor.add') : t('levelEditor.save')}
             </Button>
           </div>
         )
@@ -122,15 +124,15 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label="Title"
+            label={t('levelEditor.title')}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             required
             readOnly={readOnly}
-            placeholder="e.g. Finance Manager"
+            placeholder={t('levelEditor.titlePlaceholder')}
           />
           <Input
-            label="Code"
+            label={t('levelEditor.code')}
             value={code}
             onChange={(event) => {
               setCodeTouched(true);
@@ -140,46 +142,45 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
             required={isCreate}
             error={codeError}
             className="font-mono"
-            helperText={isCreate ? 'Directory entries refer to the level by this. It cannot be changed later.' : 'Codes cannot change.'}
+            helperText={isCreate ? t('levelEditor.codeHelpNew') : t('levelEditor.codeHelpFixed')}
           />
           <Input
-            label="Rank"
+            label={t('levelEditor.rank')}
             type="number"
             step="1"
             value={rank}
             onChange={(event) => setRank(event.target.value)}
             readOnly={readOnly}
             error={rankError}
-            helperText="Higher is more senior. Leave gaps (10, 20, 30) so a level can be slotted in later."
+            helperText={t('levelEditor.rankHelp')}
           />
           <Input
-            label="Department"
+            label={t('levelEditor.department')}
             value={department}
             onChange={(event) => setDepartment(event.target.value)}
             readOnly={readOnly}
-            placeholder="Leave empty for organization-wide"
-            helperText="Restricts the level to one department. Empty means it applies everywhere."
+            placeholder={t('levelEditor.departmentPlaceholder')}
+            helperText={t('levelEditor.departmentHelp')}
           />
         </div>
 
         <div className="space-y-1.5">
-          <p className="text-sm font-medium text-ink">Job titles from your HR system</p>
+          <p className="text-sm font-medium text-ink">{t('levelEditor.aliasesTitle')}</p>
           <p className="text-xs text-ink-muted">
-            The exact titles your HR system uses for people at this level — e.g. "Finance Manager" and "Sr. Finance
-            Manager". During a sync, a matching title suggests this level, and the role that sits at it.
+            {t('levelEditor.aliasesHelp')}
           </p>
           <TagInput
             value={aliases}
             onChange={setAliases}
             readOnly={readOnly}
-            placeholder="Type a job title and press Enter"
-            emptyText="No job titles yet. People are placed here by their role either way."
-            ariaLabel="Job titles"
+            placeholder={t('levelEditor.aliasesPlaceholder')}
+            emptyText={t('levelEditor.aliasesEmpty')}
+            ariaLabel={t('levelEditor.aliasesLabel')}
           />
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-ink">Roles at this level</p>
+          <p className="text-sm font-medium text-ink">{t('levelEditor.rolesTitle')}</p>
           {levelRoles.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {levelRoles.map((code) => (
@@ -187,7 +188,7 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
                   key={code}
                   to={`${staffPath(orgSlug, 'roles')}?role=${encodeURIComponent(code)}`}
                   className="inline-flex items-center gap-1 rounded-full border border-line px-3 py-1 text-sm text-ink-secondary transition-colors hover:border-line-accent hover:text-accent-fg"
-                  title={`Open ${nameFor(code)} in Roles & Permissions`}
+                  title={t('levelEditor.openRole', { role: nameFor(code) })}
                 >
                   {nameFor(code)}
                   <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
@@ -195,11 +196,10 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
               ))}
             </div>
           ) : (
-            <p className="text-sm text-ink-muted">{isCreate ? 'None yet.' : 'No role sits here yet.'}</p>
+            <p className="text-sm text-ink-muted">{isCreate ? t('levelEditor.noneYet') : t('levelEditor.noRoleYet')}</p>
           )}
           <p className="text-xs text-ink-muted">
-            A role's level is set on the role, and everyone holding it sits there. To put a role here, change its level in
-            Roles &amp; Permissions. Several roles can share a level.
+            {t('levelEditor.rolesHelp')}
           </p>
         </div>
 
@@ -212,12 +212,10 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
           />
           <span>
             <span id="level-no-escalation-label" className="block text-sm font-medium text-ink">
-              Not an escalation target
+              {t('levelChart.notTarget')}
             </span>
             <span className="block text-xs text-ink-muted">
-              Escalation passes through this level without stopping on it. For levels that oversee cases rather than
-              handle them — an audit committee, external counsel. Leave it off otherwise; people who can't take a case
-              are already skipped one by one. The lowest level is never a target either way.
+              {t('levelEditor.notTargetHelp')}
             </span>
           </span>
         </label>
@@ -232,9 +230,9 @@ const LevelEditorModal = ({ level = null, defaultRank = 10, readOnly = false, on
             />
             <span>
               <span id="level-active-label" className="block text-sm font-medium text-ink">
-                Active
+                {t('levelEditor.active')}
               </span>
-              <span className="block text-xs text-ink-muted">An inactive level is ignored when resolving escalations.</span>
+              <span className="block text-xs text-ink-muted">{t('levelEditor.activeHelp')}</span>
             </span>
           </label>
         )}

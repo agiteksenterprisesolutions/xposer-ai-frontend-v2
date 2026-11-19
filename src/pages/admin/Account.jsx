@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { Check, Eye, EyeOff, KeyRound, LogIn, Lock, UserRound } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
@@ -22,12 +23,19 @@ import { usersAPI } from '../../api/users';
 import { authAPI } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
-import { AUTH_PROVIDERS, authProviderLabel, isPasswordAccount } from '../../utils/authProviders';
+import { AUTH_PROVIDERS, authProviderLabel as englishProviderLabel, isPasswordAccount } from '../../utils/authProviders';
+import i18n from '../../i18n';
 import { PASSWORD_RULES, changePasswordSchema } from '../../utils/passwordPolicy';
 import { describeError } from '../../utils/errors';
 import { useCan } from '../../hooks/useCan';
 import { PERM } from '../../utils/permissions';
 import useSEO from '../../hooks/useSEO';
+
+// Google and Microsoft are names; "Password" is a word to translate.
+const authProviderLabel = (provider) =>
+  !provider || provider === AUTH_PROVIDERS.PASSWORD
+    ? i18n.t('provider.password', { ns: 'people' })
+    : englishProviderLabel(provider);
 
 const inputClass =
   'h-10 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-line-accent';
@@ -42,26 +50,30 @@ const Field = ({ id, label, error, children }) => (
   </div>
 );
 
-const ReadOnlyProfile = ({ user }) => (
+const ReadOnlyProfile = ({ user }) => {
+  const { t } = useTranslation('people');
+  return (
   <Card>
     <Card.Header>
       <Card.Title className="flex items-center gap-2">
-        <UserRound className="h-4 w-4 text-ink-muted" /> Your details
+        <UserRound className="h-4 w-4 text-ink-muted" aria-hidden="true" /> {t('account.details')}
       </Card.Title>
     </Card.Header>
     <Card.Content className="space-y-3">
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-sm">
-        <dt className="text-ink-muted">Full name</dt>
-        <dd className="text-ink">{user.full_name || '—'}</dd>
-        <dt className="text-ink-muted">Email</dt>
-        <dd className="break-all text-ink">{user.email || '—'}</dd>
+        <dt className="text-ink-muted">{t('account.fullName')}</dt>
+        <dd className="text-ink" dir="auto">{user.full_name || '—'}</dd>
+        <dt className="text-ink-muted">{t('account.email')}</dt>
+        <dd className="break-all text-ink" dir="ltr">{user.email || '—'}</dd>
       </dl>
-      <p className="text-xs text-ink-muted">To change your name or email, ask an admin.</p>
+      <p className="text-xs text-ink-muted">{t('account.askAdmin')}</p>
     </Card.Content>
   </Card>
-);
+  );
+};
 
 const Profile = ({ user }) => {
+  const { t } = useTranslation('people');
   const [fullName, setFullName] = useState(user.full_name || '');
   const [email, setEmail] = useState(user.email || '');
   const [saving, setSaving] = useState(false);
@@ -76,7 +88,7 @@ const Profile = ({ user }) => {
     try {
       await usersAPI.updateMe(user.id, { full_name: fullName.trim(), email: email.trim() });
       await useAuthStore.getState().refreshUser();
-      toast.success('Saved.');
+      toast.success(t('account.saved'));
     } catch (err) {
       setError(describeError(err).summary);
     } finally {
@@ -88,24 +100,24 @@ const Profile = ({ user }) => {
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
-          <UserRound className="h-4 w-4 text-ink-muted" /> Your details
+          <UserRound className="h-4 w-4 text-ink-muted" aria-hidden="true" /> {t('account.details')}
         </Card.Title>
       </Card.Header>
       <Card.Content>
         <form onSubmit={save} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="acc-name" label="Full name" error={!fullName.trim() ? 'Enter your name' : null}>
-              <input id="acc-name" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
+            <Field id="acc-name" label={t('account.fullName')} error={!fullName.trim() ? t('account.enterName') : null}>
+              <input id="acc-name" autoComplete="name" dir="auto" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
             </Field>
-            <Field id="acc-email" label="Email" error={!email.trim() ? 'Enter your email' : null}>
+            <Field id="acc-email" label={t('account.email')} error={!email.trim() ? t('account.enterEmail') : null}>
               <input
- autoComplete="email" id="acc-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+ autoComplete="email" dir="ltr" id="acc-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
             </Field>
           </div>
           {error && <Alert variant="error">{error}</Alert>}
           <div className="flex justify-end">
             <Button type="submit" isLoading={saving} disabled={!dirty || !fullName.trim() || !email.trim()} startIcon={Check}>
-              Save
+              {t('common:actions.save')}
             </Button>
           </div>
         </form>
@@ -115,6 +127,7 @@ const Profile = ({ user }) => {
 };
 
 const PasswordField = ({ id, label, value, onChange, error, autoComplete }) => {
+  const { t } = useTranslation('people');
   const [show, setShow] = useState(false);
   return (
     <Field id={id} label={label} error={error}>
@@ -130,10 +143,10 @@ const PasswordField = ({ id, label, value, onChange, error, autoComplete }) => {
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          aria-label={show ? 'Hide password' : 'Show password'}
+          aria-label={show ? t('setPassword.hide', { field: label }) : t('setPassword.show', { field: label })}
           className="absolute end-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-ink-subtle hover:text-ink"
         >
-          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {show ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
         </button>
       </div>
     </Field>
@@ -141,6 +154,7 @@ const PasswordField = ({ id, label, value, onChange, error, autoComplete }) => {
 };
 
 const Password = ({ user }) => {
+  const { t } = useTranslation('people');
   const blank = { current_password: '', new_password: '', confirm_password: '' };
   const [form, setForm] = useState(blank);
   const [errors, setErrors] = useState({});
@@ -156,13 +170,12 @@ const Password = ({ user }) => {
       <Card>
         <Card.Header>
           <Card.Title className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-ink-muted" /> Password
+            <KeyRound className="h-4 w-4 text-ink-muted" aria-hidden="true" /> {t('account.password')}
           </Card.Title>
         </Card.Header>
         <Card.Content>
           <p className="text-sm text-ink-secondary">
-            You sign in with {authProviderLabel(user.auth_provider)}, so there's no password to change here. Manage it with{' '}
-            {authProviderLabel(user.auth_provider)}.
+            {t('account.ssoNoPassword', { provider: authProviderLabel(user.auth_provider) })}
           </p>
         </Card.Content>
       </Card>
@@ -192,14 +205,14 @@ const Password = ({ user }) => {
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-ink-muted" /> Change password
+          <KeyRound className="h-4 w-4 text-ink-muted" aria-hidden="true" /> {t('account.changePassword')}
         </Card.Title>
       </Card.Header>
       <Card.Content>
         <form onSubmit={submit} className="space-y-4">
           <PasswordField
             id="acc-current"
-            label="Current password"
+            label={t('account.currentPassword')}
             value={form.current_password}
             onChange={set('current_password')}
             error={errors.current_password}
@@ -208,7 +221,7 @@ const Password = ({ user }) => {
           <div className="grid gap-4 sm:grid-cols-2">
             <PasswordField
               id="acc-new"
-              label="New password"
+              label={t('setPassword.new')}
               value={form.new_password}
               onChange={set('new_password')}
               error={errors.new_password}
@@ -216,7 +229,7 @@ const Password = ({ user }) => {
             />
             <PasswordField
               id="acc-confirm"
-              label="Confirm new password"
+              label={t('setPassword.confirm')}
               value={form.confirm_password}
               onChange={set('confirm_password')}
               error={errors.confirm_password}
@@ -228,8 +241,9 @@ const Password = ({ user }) => {
               const met = rule.test(form.new_password);
               return (
                 <li key={rule.id} className={`flex items-center gap-1.5 ${met ? 'text-success-fg' : 'text-ink-muted'}`}>
-                  <Check className={`h-3.5 w-3.5 ${met ? '' : 'opacity-30'}`} />
+                  <Check className={`h-3.5 w-3.5 ${met ? '' : 'opacity-30'}`} aria-hidden="true" />
                   {rule.label}
+                  <span className="sr-only">{met ? t('setPassword.met') : t('setPassword.notMet')}</span>
                 </li>
               );
             })}
@@ -237,7 +251,7 @@ const Password = ({ user }) => {
           {error && <Alert variant="error">{error}</Alert>}
           <div className="flex justify-end">
             <Button type="submit" isLoading={saving}>
-              Change password
+              {t('account.changePassword')}
             </Button>
           </div>
         </form>
@@ -250,6 +264,7 @@ const SSO_PROVIDERS = [AUTH_PROVIDERS.GOOGLE, AUTH_PROVIDERS.MICROSOFT];
 
 /** Admins only: move your own account onto single sign-on. */
 const SignInMethod = ({ user }) => {
+  const { t } = useTranslation('people');
   const current = user.auth_provider || AUTH_PROVIDERS.PASSWORD;
   const choices = SSO_PROVIDERS.filter((provider) => provider !== current);
   const [next, setNext] = useState(choices[0]);
@@ -263,7 +278,7 @@ const SignInMethod = ({ user }) => {
     try {
       await usersAPI.updateMe(user.id, { auth_provider: next });
       await useAuthStore.getState().refreshUser();
-      toast.success(`You now sign in with ${authProviderLabel(next)}.`);
+      toast.success(t('account.switched', { provider: authProviderLabel(next) }));
     } catch (err) {
       setError(describeError(err).summary);
     } finally {
@@ -276,15 +291,15 @@ const SignInMethod = ({ user }) => {
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
-          <LogIn className="h-4 w-4 text-ink-muted" /> Sign-in method
+          <LogIn className="h-4 w-4 text-ink-muted" aria-hidden="true" /> {t('account.signInMethod')}
         </Card.Title>
       </Card.Header>
       <Card.Content className="space-y-3">
         <p className="text-sm text-ink-secondary">
-          You sign in with <span className="font-medium text-ink">{authProviderLabel(current)}</span>.
+          <Trans t={t} i18nKey="account.signsInWith" values={{ provider: authProviderLabel(current) }} components={{ b: <span className="font-medium text-ink" /> }} />
         </p>
         <div className="flex flex-wrap items-end gap-3">
-          <Field id="acc-provider" label="Switch to">
+          <Field id="acc-provider" label={t('account.switchTo')}>
             <select id="acc-provider" value={next} onChange={(e) => setNext(e.target.value)} className={`${inputClass} sm:w-56`}>
               {choices.map((provider) => (
                 <option key={provider} value={provider}>
@@ -294,32 +309,33 @@ const SignInMethod = ({ user }) => {
             </select>
           </Field>
           <Button variant="secondary" onClick={() => setConfirming(true)} disabled={saving}>
-            Switch
+            {t('account.switch')}
           </Button>
         </div>
         {error && <Alert variant="error">{error}</Alert>}
         <p className="text-xs text-ink-muted">
-          {isPasswordAccount(user) ? 'Your password is removed when you switch. ' : ''}
-          To go back to a password, ask another admin. A password can&apos;t be set on your own account.
+          {isPasswordAccount(user) ? `${t('account.passwordRemoved')} ` : ''}
+          {t('account.goBack')}
         </p>
       </Card.Content>
       <ConfirmationModal
         isOpen={confirming}
         onClose={() => setConfirming(false)}
         onConfirm={save}
-        title={`Sign in with ${authProviderLabel(next)}?`}
-        message={`From now on you sign in with the ${authProviderLabel(next)} account for ${user.email}.${
-          isPasswordAccount(user) ? ' Your password stops working.' : ''
-        } Only another admin can move you back onto a password.`}
-        confirmText="Switch"
-        cancelText="Cancel"
+        title={t('account.confirmTitle', { provider: authProviderLabel(next) })}
+        message={`${t('account.confirmBody', { provider: authProviderLabel(next), email: user.email })}${
+          isPasswordAccount(user) ? ` ${t('account.passwordStops')}` : ''
+        } ${t('account.onlyAdminBack')}`}
+        confirmText={t('account.switch')}
+        cancelText={t('common:actions.cancel')}
       />
     </Card>
   );
 };
 
 const Account = () => {
-  useSEO({ title: 'My account', description: 'Your name, email and password.', noIndex: true });
+  const { t } = useTranslation('people');
+  useSEO({ title: t('account.title'), description: t('account.subtitleAdmin'), noIndex: true });
   const user = useAuthStore((state) => state.user);
   const { nameFor } = useOrgRoles();
   // Only admins (user:update) may edit their own name and email.
@@ -329,9 +345,9 @@ const Account = () => {
   return (
     <div className="mx-auto max-w-3xl space-y-5 pb-12">
       <div>
-        <h1 className="text-xl font-bold text-ink">My account</h1>
+        <h1 className="text-xl font-bold text-ink">{t('account.title')}</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          {canEditProfile ? 'Your name, email and password.' : 'Your details, and your password.'}
+          {canEditProfile ? t('account.subtitleAdmin') : t('account.subtitle')}
         </p>
       </div>
 
@@ -346,26 +362,26 @@ const Account = () => {
       <Card>
         <Card.Content className="space-y-2">
           <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-            <Lock className="h-4 w-4 text-ink-muted" /> Set by an admin
+            <Lock className="h-4 w-4 text-ink-muted" aria-hidden="true" /> {t('account.setByAdmin')}
           </p>
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-sm">
-            <dt className="text-ink-muted">Username</dt>
-            <dd className="font-mono text-ink">{user.username}</dd>
-            <dt className="text-ink-muted">Role</dt>
+            <dt className="text-ink-muted">{t('account.username')}</dt>
+            <dd className="font-mono text-ink" dir="ltr">{user.username}</dd>
+            <dt className="text-ink-muted">{t('account.role')}</dt>
             <dd className="text-ink">
               <Badge size="small">{user.role_name || nameFor(user.role)}</Badge>
             </dd>
             {!canEditProfile && (
               <>
-                <dt className="text-ink-muted">Sign-in method</dt>
+                <dt className="text-ink-muted">{t('account.signInMethod')}</dt>
                 <dd className="text-ink">{authProviderLabel(user.auth_provider)}</dd>
               </>
             )}
           </dl>
           <p className="text-xs text-ink-muted">
             {canEditProfile
-              ? 'Your directory link is on User Management. Your own role and active state can only be changed by another admin.'
-              : 'Your role, sign-in method and place in the directory can only be changed by an admin.'}
+              ? t('account.footAdmin')
+              : t('account.foot')}
           </p>
         </Card.Content>
       </Card>

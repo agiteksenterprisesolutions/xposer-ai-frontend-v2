@@ -3,7 +3,11 @@
 // The open Reporting Hierarchy tab while the hierarchy loads, shaped like that
 // tab's panel so nothing jumps when the data arrives.
 import { Layers, Users, CheckCircle2, Search } from 'lucide-react';
+import i18n from '../../i18n';
 import Card from '../ui/Card';
+
+// Rendered only while the page loads; translated at render time.
+const t = (key, options) => i18n.t(key, options);
 import Skeleton from '../ui/Skeleton';
 import Table, { TableLoading } from '../ui/Table';
 import { EscalationSkeleton } from './EscalationPanel';
@@ -26,14 +30,14 @@ const Coverage = () => (
     </div>
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {[
-        [Layers, 'Levels'],
-        [Users, 'People'],
-        [Users, 'Added by hand'],
-        [CheckCircle2, 'Corrected from HR'],
+        [Layers, t('hierarchy:coverage.stats.levels')],
+        [Users, t('hierarchy:coverage.stats.people')],
+        [Users, t('hierarchy:coverage.stats.manual')],
+        [CheckCircle2, t('hierarchy:coverage.stats.overrides')],
       ].map(([Icon, label]) => (
         <div key={label} className="rounded-xl border border-line bg-surface p-4">
           <div className="flex items-center gap-2 text-xs text-ink-muted">
-            <Icon className="h-4 w-4" />
+            <Icon className="h-4 w-4" aria-hidden="true" />
             {label}
           </div>
           <Skeleton.Text size="2xl" className="mt-1 w-10" />
@@ -85,7 +89,7 @@ const Chart = () => (
 const Levels = ({ canManage }) => (
   <div className="space-y-4">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-ink-muted">Most senior first. A report escalates up this ladder.</p>
+      <p className="text-sm text-ink-muted">{t('hierarchy:levels.intro')}</p>
       {canManage && <Skeleton.Button className="w-28" />}
     </div>
     <Card padding="none">
@@ -126,12 +130,12 @@ const Directory = ({ canManage }) => (
       <Table>
         <Table.Header>
           <Table.Row hover={false}>
-            <Table.Head>Person</Table.Head>
-            <Table.Head>Job title</Table.Head>
-            <Table.Head>Level</Table.Head>
-            <Table.Head>Manager</Table.Head>
-            <Table.Head>Source</Table.Head>
-            {canManage && <Table.Head className="text-end">Actions</Table.Head>}
+            <Table.Head>{t('hierarchy:directory.cols.person')}</Table.Head>
+            <Table.Head>{t('hierarchy:directory.cols.jobTitle')}</Table.Head>
+            <Table.Head>{t('hierarchy:directory.cols.level')}</Table.Head>
+            <Table.Head>{t('hierarchy:directory.cols.manager')}</Table.Head>
+            <Table.Head>{t('hierarchy:directory.cols.source')}</Table.Head>
+            {canManage && <Table.Head className="text-end">{t('hierarchy:directory.cols.actions')}</Table.Head>}
           </Table.Row>
         </Table.Header>
         <Table.Body>

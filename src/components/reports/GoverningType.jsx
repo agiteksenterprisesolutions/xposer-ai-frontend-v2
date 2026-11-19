@@ -10,6 +10,7 @@
 // look like it skipped questions that didn't exist at the time.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { ArrowUpRight, CheckCircle2, CircleDashed, ListChecks, MinusCircle, PlusCircle } from 'lucide-react';
 import Modal from '../layout/Modal';
 import Button from '../ui/Button';
@@ -42,13 +43,15 @@ export const governingTypeOf = (report) => {
 
 const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
 
+// Labels come from cases:governing.state.<key>.
 const STATUS = {
-  asked: { icon: CheckCircle2, className: 'text-success-fg', label: 'Asked' },
-  declined: { icon: MinusCircle, className: 'text-warning-fg', label: 'Declined' },
-  missing: { icon: CircleDashed, className: 'text-ink-subtle', label: 'Not needed' },
+  asked: { icon: CheckCircle2, className: 'text-success-fg' },
+  declined: { icon: MinusCircle, className: 'text-warning-fg' },
+  missing: { icon: CircleDashed, className: 'text-ink-subtle' },
 };
 
 const Comparison = ({ report, governing }) => {
+  const { t } = useTranslation('cases');
   const [form, setForm] = useState(null);
   const [error, setError] = useState(null);
 
@@ -63,7 +66,7 @@ const Comparison = ({ report, governing }) => {
     };
   }, [governing.id, governing.version]);
 
-  if (error) return <p className="text-sm text-ink-muted">Couldn&apos;t load the report type. {error}</p>;
+  if (error) return <p className="text-sm text-ink-muted">{t('governing.loadError', { error })}</p>;
   if (!form) return <Skeleton.Lines size="sm" lines={8} />;
 
   const asked = new Map(buildVoiceAnswerRows(report).map((row) => [row.key, row]));
@@ -79,26 +82,31 @@ const Comparison = ({ report, governing }) => {
   return (
     <div className="space-y-4">
       <p className="text-sm text-ink-secondary">
-        The AI covered <span className="font-semibold text-ink">{covered} of {total}</span> questions on this form
-        {governing.version != null && <> (version {governing.version}, the one it worked from)</>}.
-        {extra.length > 0 && <> It also asked {extra.length} that {extra.length === 1 ? "isn't" : "aren't"} on the form.</>}
+        <Trans
+          t={t}
+          i18nKey={governing.version != null ? 'governing.coveredVersion' : 'governing.covered'}
+          values={{ covered, total, version: governing.version }}
+          components={{ strong: <span className="font-semibold text-ink" /> }}
+        />
+        {extra.length > 0 && <> {t('governing.extra', { count: extra.length })}</>}
       </p>
 
       {sections.map((section, s) => (
         <section key={section.id || s} className="rounded-xl border border-line">
           <h4 className="border-b border-line px-4 py-2.5 text-sm font-semibold text-ink">
-            {section.title || `Step ${s + 1}`}
+            <span dir="auto">{section.title || t('governing.step', { number: s + 1 })}</span>
           </h4>
           <ul className="divide-y divide-line-subtle">
             {section.questions.map((question) => {
               const row = asked.get(question.name);
               const state = !row ? 'missing' : row.skipped ? 'declined' : 'asked';
-              const { icon: Icon, className, label } = STATUS[state];
+              const { icon: Icon, className } = STATUS[state];
+              const label = t(`governing.state.${state}`);
               return (
                 <li key={question.id || question.name} className="flex gap-3 px-4 py-2.5">
                   <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${className}`} aria-label={label} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-ink">
+                    <p className="text-sm text-ink" dir="auto">
                       {question.label || question.name}
                       {question.required && <span className="text-danger-fg"> *</span>}
                     </p>
@@ -120,14 +128,14 @@ const Comparison = ({ report, governing }) => {
       {extra.length > 0 && (
         <section className="rounded-xl border border-line">
           <h4 className="flex items-center gap-2 border-b border-line px-4 py-2.5 text-sm font-semibold text-ink">
-            <PlusCircle className="h-4 w-4 text-ink-muted" /> Asked, but not on the form
+            <PlusCircle className="h-4 w-4 text-ink-muted" aria-hidden="true" /> {t('governing.notOnForm')}
           </h4>
           <ul className="divide-y divide-line-subtle">
             {extra.map((row) => (
               <li key={row.key} className="px-4 py-2.5">
-                <p className="text-sm text-ink">{row.label}</p>
+                <p className="text-sm text-ink" dir="auto">{row.label}</p>
                 <p className="mt-0.5 wrap-break-word text-xs text-ink-secondary">
-                  {row.skipped ? 'Declined' : formatAnswer(row.answer)}
+                  {row.skipped ? t('governing.state.declined') : formatAnswer(row.answer)}
                 </p>
               </li>
             ))}
@@ -140,13 +148,14 @@ const Comparison = ({ report, governing }) => {
 
 /** The "Report type" row for the case sidebar. Nothing when there's no governing type. */
 const GoverningType = ({ report, orgSlug }) => {
+  const { t } = useTranslation('cases');
   const can = useCan();
   const { types } = useReportTypeNames();
   const [comparing, setComparing] = useState(false);
   const governing = governingTypeOf(report);
   if (!governing) return null;
 
-  const known = types.find((t) => t.id === governing.id);
+  const known = types.find((type) => type.id === governing.id);
   const name = governing.name || known?.name || null;
   const code = governing.code || known?.code || null;
   // Editors open the builder; anyone else who can see types gets the read-only view.
@@ -160,16 +169,16 @@ const GoverningType = ({ report, orgSlug }) => {
   return (
     <div className="space-y-1">
       <p className="text-xs font-semibold text-ink-muted uppercase">
-        {hasAiAnswers ? 'Matched report type' : 'Report type'}
+        {hasAiAnswers ? t('governing.matchedType') : t('governing.type')}
       </p>
       {name ? (
         href ? (
           <Link to={href} className="group inline-flex items-start gap-1 text-sm font-medium text-link hover:underline">
-            <span className="wrap-break-word">{name}</span>
+            <span className="wrap-break-word" dir="auto">{name}</span>
             <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           </Link>
         ) : (
-          <p className="text-sm font-medium text-ink wrap-break-word">{name}</p>
+          <p className="text-sm font-medium text-ink wrap-break-word" dir="auto">{name}</p>
         )
       ) : (
         <Skeleton.Text className="w-36" />
@@ -178,12 +187,12 @@ const GoverningType = ({ report, orgSlug }) => {
         <p className="text-xs text-ink-muted">
           {code && <span className="font-mono">{code}</span>}
           {code && governing.version != null && ' · '}
-          {governing.version != null && `version ${governing.version}`}
+          {governing.version != null && t('governing.version', { version: governing.version })}
         </p>
       )}
       {hasAiAnswers && (
         <Button variant="secondary" size="small" startIcon={ListChecks} className="mt-2" onClick={() => setComparing(true)}>
-          Compare with form
+          {t('governing.compare')}
         </Button>
       )}
 
@@ -191,7 +200,7 @@ const GoverningType = ({ report, orgSlug }) => {
         isOpen={comparing}
         onClose={() => setComparing(false)}
         size="large"
-        title={name ? `${name}: what the AI asked` : 'What the AI asked'}
+        title={name ? t('governing.modalTitleNamed', { name }) : t('governing.modalTitle')}
       >
         {comparing && <Comparison report={report} governing={governing} />}
       </Modal>

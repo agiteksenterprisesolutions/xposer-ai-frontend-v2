@@ -5,16 +5,20 @@
 // ignored.
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const TagInput = ({
   value = [],
   onChange,
-  placeholder = 'Type and press Enter',
+  placeholder,
   readOnly = false,
-  emptyText = 'None yet.',
+  emptyText,
   ariaLabel,
   normalize = (text) => text.trim(),
 }) => {
+  const { t } = useTranslation('common');
+  placeholder ??= t('tags.placeholder');
+  emptyText ??= t('tags.empty');
   const [draft, setDraft] = useState('');
 
   const add = (texts) => {
@@ -45,7 +49,7 @@ const TagInput = ({
               <button
                 type="button"
                 onClick={() => onChange(value.filter((t) => t !== tag))}
-                aria-label={`Remove ${tag}`}
+                aria-label={t('tags.remove', { tag })}
                 className="rounded-full text-ink-subtle hover:text-ink"
               >
                 <X className="h-3 w-3" />

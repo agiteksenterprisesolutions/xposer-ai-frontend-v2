@@ -113,7 +113,7 @@
       "password": "Password",
       "copy": "Copy",
       "download": "Download",
-      "signInHint": "Some report types are only available after you <link>sign in</link>.",
+      "signInHint": "Some report types are only available after you <lnk>sign in</lnk>.",
       "anonymityTitle": "Complete anonymity",
       "anonymityBody": "No personal information is required. Your credentials are your only identifier.",
       "secureTitle": "Secure & encrypted",

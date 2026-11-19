@@ -90,13 +90,17 @@ pass. Keep it there:
 
 ## Languages (English and Arabic)
 
-The interface is translated with react-i18next. Phase 1 covers the
-reporter-facing screens. Staff and admin screens are still English-only.
+The whole tenant app (reporter, staff and admin screens) is translated with
+react-i18next. The backend still sends some text in English only (error
+messages, coverage and routing reasons, role descriptions); that needs
+backend support (requests already send `Accept-Language`).
 
 - **Text:** `src/locales/<lang>/<namespace>.json`. Files are picked up
   automatically (`src/i18n/index.js`). Namespaces: `common` (shared: nav,
-  buttons, statuses, errors), `public`, `submit`, `form`, `track`, `chat`,
-  `reporter`. Add a namespace by adding the same file under `en/` and `ar/`.
+  staff menu, buttons, statuses, errors, password rules), reporter side
+  `public`, `submit`, `form`, `track`, `chat`, `reporter`; staff side
+  `dashboards`, `cases`, `reportTypes`, `builder`, `people`, `hierarchy`,
+  `agents`, `admin` (workflows, settings, audit log, jurisdiction, entities). Add a namespace by adding the same file under `en/` and `ar/`.
 - **In code:** `const { t } = useTranslation('submit')`, then `t('picker.title')`.
   Outside components use `i18n.t(...)` at call time, never at module load (it
   wouldn't follow a language change). Interpolate with `{{name}}`; don't glue
@@ -106,7 +110,13 @@ reporter-facing screens. Staff and admin screens are still English-only.
   people wrote comes from the API as written. Give such text `dir="auto"` when
   it can be in either language.
 - **Check:** `node scripts/check-i18n.mjs` (English and Arabic have the same
-  keys, and every key the code uses exists).
+  keys, every key the code uses exists, no `<Trans>` tag named after an HTML
+  void element: `<link>`/`<br>` lose their content, use `<lnk>`).
+- **Shared label lists** (statuses, tiers, permissions, agent kinds) read their
+  text through getters or functions (`noTypeLabel()`, `codeHint()`), so
+  importers get the current language. Don't turn them back into constants.
+- **Values saved to the API never change with the language.** Tour targets
+  (`data-tour`) also stay English-derived.
 - **Right-to-left:** `<html dir>` follows the language. Use logical Tailwind
   classes only: `ms-/me-`, `ps-/pe-`, `start-/end-`, `text-start/end`,
   `border-s/e`, `rounded-s/e`. Never `ml-`, `pr-`, `left-`, `text-left` etc.

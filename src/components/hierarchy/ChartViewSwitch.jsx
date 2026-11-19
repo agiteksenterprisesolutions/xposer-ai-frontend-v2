@@ -3,15 +3,18 @@
 // The org chart's two views: levels with the roles at each (from
 // /org-hierarchy/chart), or the directory as a tree of people.
 import { Layers, Network } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const VIEWS = [
-  { value: 'levels', label: 'By level', icon: Layers },
-  { value: 'people', label: 'By person', icon: Network },
+  { value: 'levels', icon: Layers },
+  { value: 'people', icon: Network },
 ];
 
-const ChartViewSwitch = ({ value, onChange }) => (
-  <div role="radiogroup" aria-label="Chart view" className="mb-4 inline-flex rounded-lg bg-active p-1">
-    {VIEWS.map(({ value: v, label, icon: Icon }) => {
+const ChartViewSwitch = ({ value, onChange }) => {
+  const { t } = useTranslation('hierarchy');
+  return (
+  <div role="radiogroup" aria-label={t('chartView.label')} className="mb-4 inline-flex rounded-lg bg-active p-1">
+    {VIEWS.map(({ value: v, icon: Icon }) => {
       const on = v === value;
       return (
         <button
@@ -25,11 +28,12 @@ const ChartViewSwitch = ({ value, onChange }) => (
           }`}
         >
           <Icon className="h-4 w-4" aria-hidden="true" />
-          {label}
+          {t(`chartView.${v}`)}
         </button>
       );
     })}
   </div>
-);
+  );
+};
 
 export default ChartViewSwitch;

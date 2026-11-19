@@ -20,22 +20,30 @@ import {
   Upload,
 } from 'lucide-react';
 import { normalizeOptions, normalizeValidation, reportTypeStatus } from '../../utils/reportTypes';
+import i18n from '../../i18n';
+
+// Builder text, translated when it's read (never at module load).
+const tb = (key, options) => i18n.t(key, { ns: 'builder', ...options });
+
+// A catalogue entry whose `label` is read in the current interface language.
+const labelled = (entry, key) =>
+  Object.defineProperty(entry, 'label', { get: () => tb(key), enumerable: true, configurable: true });
 
 /** Every question type, in the order the type picker lists them. */
 export const QUESTION_TYPES = [
-  { value: 'text', label: 'Short answer', icon: Type, seconds: 20 },
-  { value: 'textarea', label: 'Paragraph', icon: Text, seconds: 60 },
-  { value: 'select', label: 'Dropdown', icon: List, seconds: 10 },
-  { value: 'multiselect', label: 'Checkboxes', icon: ListChecks, seconds: 15 },
-  { value: 'boolean', label: 'Yes / No', icon: CheckCircle2, seconds: 5 },
-  { value: 'date', label: 'Date', icon: Calendar, seconds: 10 },
-  { value: 'datetime', label: 'Date & time', icon: CalendarClock, seconds: 15 },
-  { value: 'time', label: 'Time', icon: Clock, seconds: 10 },
-  { value: 'number', label: 'Number', icon: Hash, seconds: 10 },
-  { value: 'currency', label: 'Amount', icon: Banknote, seconds: 15 },
-  { value: 'email', label: 'Email', icon: Mail, seconds: 10 },
-  { value: 'phone', label: 'Phone', icon: Phone, seconds: 10 },
-  { value: 'file', label: 'File upload', icon: Upload, seconds: 30 },
+  labelled({ value: 'text', icon: Type, seconds: 20 }, 'questionTypes.text'),
+  labelled({ value: 'textarea', icon: Text, seconds: 60 }, 'questionTypes.textarea'),
+  labelled({ value: 'select', icon: List, seconds: 10 }, 'questionTypes.select'),
+  labelled({ value: 'multiselect', icon: ListChecks, seconds: 15 }, 'questionTypes.multiselect'),
+  labelled({ value: 'boolean', icon: CheckCircle2, seconds: 5 }, 'questionTypes.boolean'),
+  labelled({ value: 'date', icon: Calendar, seconds: 10 }, 'questionTypes.date'),
+  labelled({ value: 'datetime', icon: CalendarClock, seconds: 15 }, 'questionTypes.datetime'),
+  labelled({ value: 'time', icon: Clock, seconds: 10 }, 'questionTypes.time'),
+  labelled({ value: 'number', icon: Hash, seconds: 10 }, 'questionTypes.number'),
+  labelled({ value: 'currency', icon: Banknote, seconds: 15 }, 'questionTypes.currency'),
+  labelled({ value: 'email', icon: Mail, seconds: 10 }, 'questionTypes.email'),
+  labelled({ value: 'phone', icon: Phone, seconds: 10 }, 'questionTypes.phone'),
+  labelled({ value: 'file', icon: Upload, seconds: 30 }, 'questionTypes.file'),
 ];
 
 /** The types one click away under the form; the rest sit behind "More". */
@@ -48,18 +56,18 @@ export const hasOptions = (question) => OPTION_TYPES.includes(question?.type);
 
 /** Condition operators, worded to read as part of a sentence. */
 export const OPERATORS = [
-  { value: 'equals', label: 'is' },
-  { value: 'not_equals', label: 'is not' },
-  { value: 'in', label: 'is any of' },
-  { value: 'not_in', label: 'is none of' },
-  { value: 'contains', label: 'contains' },
-  { value: 'not_contains', label: "doesn't contain" },
-  { value: 'starts_with', label: 'starts with' },
-  { value: 'ends_with', label: 'ends with' },
-  { value: 'greater_than', label: 'is more than' },
-  { value: 'less_than', label: 'is less than' },
-  { value: 'is_not_empty', label: 'is answered' },
-  { value: 'is_empty', label: 'is not answered' },
+  labelled({ value: 'equals' }, 'operators.equals'),
+  labelled({ value: 'not_equals' }, 'operators.not_equals'),
+  labelled({ value: 'in' }, 'operators.in'),
+  labelled({ value: 'not_in' }, 'operators.not_in'),
+  labelled({ value: 'contains' }, 'operators.contains'),
+  labelled({ value: 'not_contains' }, 'operators.not_contains'),
+  labelled({ value: 'starts_with' }, 'operators.starts_with'),
+  labelled({ value: 'ends_with' }, 'operators.ends_with'),
+  labelled({ value: 'greater_than' }, 'operators.greater_than'),
+  labelled({ value: 'less_than' }, 'operators.less_than'),
+  labelled({ value: 'is_not_empty' }, 'operators.is_not_empty'),
+  labelled({ value: 'is_empty' }, 'operators.is_empty'),
 ];
 
 export const isListOperator = (operator) => operator === 'in' || operator === 'not_in';
@@ -197,20 +205,21 @@ export const countQuestions = (sections) => sections.reduce((total, s) => total 
 // ── Checks ──────────────────────────────────────────────────────────────────
 
 const ruleProblem = (rule, earlier) => {
-  if (!rule.when_question) return 'a condition has no question picked';
-  if (!earlier.some((q) => q.name === rule.when_question)) return 'a condition looks at a question that comes later or no longer exists';
+  if (!rule.when_question) return tb('issues.rule.noQuestion');
+  if (!earlier.some((q) => q.name === rule.when_question)) return tb('issues.rule.laterQuestion');
   if (isValuelessOperator(rule.operator)) return null;
-  if (isListOperator(rule.operator)) return rule.values?.length ? null : 'a condition has no answers picked';
-  return rule.value === '' || rule.value === null || rule.value === undefined ? 'a condition has no answer picked' : null;
+  if (isListOperator(rule.operator)) return rule.values?.length ? null : tb('issues.rule.noAnswers');
+  return rule.value === '' || rule.value === null || rule.value === undefined ? tb('issues.rule.noAnswer') : null;
 };
 
-export const RETENTION_MESSAGE = 'Enter a whole number of years from 1 to 100.';
+/** The retention-period message, in the current interface language. */
+export const retentionMessage = () => tb('issues.retention');
 
 /** The retention period is optional, but when set the server takes 1–100 whole years. */
 export const retentionProblem = (value) => {
   if (value === '' || value === null || value === undefined) return null;
   const years = Number(value);
-  return Number.isInteger(years) && years >= 1 && years <= 100 ? null : RETENTION_MESSAGE;
+  return Number.isInteger(years) && years >= 1 && years <= 100 ? null : retentionMessage();
 };
 
 /**
@@ -221,49 +230,54 @@ export const findIssues = (form, catalog = null) => {
   const issues = [];
   const sections = form.sections || [];
   // `blank` marks what is simply not filled in yet — not worth flagging on a
-  // question someone has only just added, until they try to save.
-  const push = (level, check, message, target, blank = false) => issues.push({ level, check, message, target, blank });
+  // question someone has only just added, until they try to save. `about`
+  // names the setting it concerns (wording, fieldName, options, condition,
+  // title), so the inspector can show it under that field in any language.
+  const push = (level, check, message, target, blank = false, about = null) =>
+    issues.push({ level, check, message, target, blank, about });
 
-  if (!form.name?.trim()) push('error', 'name', 'The report type needs a name', { field: 'name' });
-  if (sections.length === 0) push('error', 'steps', 'Add at least one step with a question', { step: 'questions' });
+  if (!form.name?.trim()) push('error', 'name', tb('issues.noName'), { field: 'name' });
+  if (sections.length === 0) push('error', 'steps', tb('issues.noSteps'), { step: 'questions' });
 
   const seen = new Map();
   sections.forEach((section, sectionIndex) => {
-    const sectionLabel = section.title?.trim() || `Step ${sectionIndex + 1}`;
+    const sectionLabel = section.title?.trim() || tb('issues.stepN', { n: sectionIndex + 1 });
     const atSection = { sectionId: section.id };
-    if (!section.title?.trim()) push('error', 'steps', `Step ${sectionIndex + 1} needs a title`, atSection, true);
-    if (section.questions.length === 0) push('error', 'steps', `"${sectionLabel}" has no questions`, atSection, true);
+    if (!section.title?.trim()) push('error', 'steps', tb('issues.stepNoTitle', { n: sectionIndex + 1 }), atSection, true, 'title');
+    if (section.questions.length === 0) push('error', 'steps', tb('issues.stepNoQuestions', { step: sectionLabel }), atSection, true);
 
     const sectionRules = section.conditional_logic?.rules || [];
     const beforeSection = questionsBefore(sections, section.id);
     const sectionRuleProblem = sectionRules.map((rule) => ruleProblem(rule, beforeSection)).find(Boolean);
-    if (sectionRuleProblem) push('error', 'conditions', `In "${sectionLabel}", ${sectionRuleProblem}`, atSection);
+    if (sectionRuleProblem) push('error', 'conditions', tb('issues.inItem', { item: sectionLabel, problem: sectionRuleProblem }), atSection, false, 'condition');
 
     section.questions.forEach((question, questionIndex) => {
-      const label = question.label?.trim() || `Question ${questionIndex + 1} of "${sectionLabel}"`;
+      const label = question.label?.trim() || tb('issues.questionNOf', { n: questionIndex + 1, step: sectionLabel });
       const at = { sectionId: section.id, questionId: question.id };
-      if (!question.label?.trim()) push('error', 'questions', `${label} has no wording`, at, true);
-      if (!question.name?.trim()) push('error', 'questions', `"${label}" needs a field name`, at, true);
+      if (!question.label?.trim()) push('error', 'questions', tb('issues.noWording', { question: label }), at, true, 'wording');
+      if (!question.name?.trim()) push('error', 'questions', tb('issues.noFieldName', { question: label }), at, true, 'fieldName');
       else if (!FIELD_NAME_PATTERN.test(question.name))
-        push('error', 'questions', `"${label}" has a field name with spaces or symbols`, at);
-      else if (seen.has(question.name)) push('error', 'questions', `"${label}" uses the same field name as "${seen.get(question.name)}"`, at);
+        push('error', 'questions', tb('issues.badFieldName', { question: label }), at, false, 'fieldName');
+      else if (seen.has(question.name)) push('error', 'questions', tb('issues.duplicateFieldName', { question: label, other: seen.get(question.name) }), at, false, 'fieldName');
       else if (question._custom && catalog?.byName.has(question.name))
         push(
           'error',
           'questions',
-          `"${label}" has the field name of the standard question "${catalog.byName.get(question.name).label}". Give it another field name.`,
+          tb('issues.standardFieldName', { question: label, standard: catalog.byName.get(question.name).label }),
           at,
+          false,
+          'fieldName',
         );
       else seen.set(question.name, label);
 
       if (hasOptions(question)) {
         const options = normalizeOptions(question.options).filter((o) => String(o.value).trim());
-        if (options.length === 0) push('error', 'answers', `"${label}" has no answers to choose from`, at);
+        if (options.length === 0) push('error', 'answers', tb('issues.noOptions', { question: label }), at, false, 'options');
       }
       const rules = question.conditional_logic?.rules || [];
       const earlier = questionsBefore(sections, section.id, question.id);
       const problem = rules.map((rule) => ruleProblem(rule, earlier)).find(Boolean);
-      if (problem) push('error', 'conditions', `In "${label}", ${problem}`, at);
+      if (problem) push('error', 'conditions', tb('issues.inItem', { item: label, problem }), at, false, 'condition');
     });
   });
 
@@ -275,16 +289,16 @@ export const findIssues = (form, catalog = null) => {
       .filter((entry) => entry.can_disable === false && !present.has(entry.name))
       .forEach((entry) => {
         if (form.code?.trim()) {
-          push('error', 'core', `Add "${entry.label}" before this type can go live`, { standard: entry.name });
+          push('error', 'core', tb('issues.coreMissing', { question: entry.label }), { standard: entry.name });
         } else {
-          push('warning', 'core', `"${entry.label}" isn't asked. ${entry.if_disabled}`, { standard: entry.name });
+          push('warning', 'core', [tb('issues.coreNotAsked', { question: entry.label }), entry.if_disabled].filter(Boolean).join(' '), { standard: entry.name });
         }
       });
   }
 
   if (retentionProblem(form.retention_years)) push('error', 'retention', retentionProblem(form.retention_years), { step: 'handling' });
   if (!form.default_owner_role)
-    push('warning', 'owner', 'No owner is set, so new cases will wait unassigned', { step: 'handling' });
+    push('warning', 'owner', tb('issues.noOwner'), { step: 'handling' });
 
   return issues;
 };
@@ -323,26 +337,34 @@ export const asCopy = (data, name) => {
 };
 
 const answerLabel = (question, value) => {
-  if (question?.type === 'boolean') return value === true || value === 'true' || value === 1 || value === '1' ? 'Yes' : 'No';
+  if (question?.type === 'boolean') return value === true || value === 'true' || value === 1 || value === '1' ? tb('logic.yes') : tb('logic.no');
   const option = normalizeOptions(question?.options).find((o) => o.value === value);
   return option?.label || String(value ?? '');
 };
 
 /** "“Was anyone hurt?” is Yes", for a step's or question's show-when logic. */
-export const describeLogic = (logic, sections) => {
+export const describeLogic = (logic, sections, { subject = 'question' } = {}) => {
   const rules = logic?.rules || [];
   if (!rules.length) return '';
   const byName = new Map(sections.flatMap((s) => s.questions).map((q) => [q.name, q]));
   const [rule] = rules;
   const question = byName.get(rule.when_question);
-  const name = `“${question?.label || rule.when_question || 'a question'}”`;
+  const name = question?.label || rule.when_question || tb('logic.aQuestion');
   const operator = OPERATORS.find((o) => o.value === rule.operator)?.label || rule.operator;
   let answer = '';
-  if (isListOperator(rule.operator)) answer = (rule.values || []).map((v) => answerLabel(question, v)).join(', ');
+  if (isListOperator(rule.operator)) answer = (rule.values || []).map((v) => answerLabel(question, v)).join(tb('logic.listSeparator'));
   else if (!isValuelessOperator(rule.operator)) answer = answerLabel(question, rule.value);
-  const more = rules.length > 1 ? ` ${logic.logic_type === 'or' ? 'or' : 'and'} ${rules.length - 1} more` : '';
-  const verb = rule.condition_type === 'skip' || rule.condition_type === 'hide' ? 'Skipped' : 'Only shown';
-  return `${verb} when ${name} ${operator}${answer ? ` ${answer}` : ''}${more}`;
+  const more =
+    rules.length > 1
+      ? tb(logic.logic_type === 'or' ? 'logic.orMore' : 'logic.andMore', { count: rules.length - 1 })
+      : '';
+  const skipped = rule.condition_type === 'skip' || rule.condition_type === 'hide';
+  const key = subject === 'step' ? (skipped ? 'logic.stepSkippedWhen' : 'logic.stepShownWhen') : skipped ? 'logic.skippedWhen' : 'logic.shownWhen';
+  return tb(key, {
+    question: name,
+    condition: answer ? `${operator} ${answer}` : operator,
+    more,
+  });
 };
 
 /**
@@ -358,12 +380,12 @@ export const saveErrorFields = ({ status, summary, problems = [] }, form) => {
   const fields = {};
   problems.forEach((p) => {
     const field = String(p.field || '').split('.').pop();
-    if (field === 'retention_years') fields.retention_years = RETENTION_MESSAGE;
+    if (field === 'retention_years') fields.retention_years = retentionMessage();
     else if (['default_owner_role', 'alternate_owner_role', 'code'].includes(field)) fields[field] = p.message;
   });
   if (Object.keys(fields).length) return fields;
 
-  if (/retention/i.test(text)) return { retention_years: RETENTION_MESSAGE };
+  if (/retention/i.test(text)) return { retention_years: retentionMessage() };
   if (status === 409 && /code/i.test(text)) return { code: text };
   if (status === 400 && /role/i.test(text)) {
     // The message names the role it refused; pin it to the field holding that role.

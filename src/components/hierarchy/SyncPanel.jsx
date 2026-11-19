@@ -15,6 +15,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Eye, PlugZap, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
+import { intlLocale } from '../../utils/locale';
 import Card from '../ui/Card';
 import Skeleton from '../ui/Skeleton';
 import Button from '../ui/Button';
@@ -25,21 +27,18 @@ import { Checkbox } from '../roles/PermissionPicker';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { describeError } from '../../utils/errors';
 
-const AUTH_TYPES = [
-  { value: 'none', label: 'None' },
-  { value: 'api_key', label: 'API key in a header' },
-  { value: 'bearer', label: 'Bearer token' },
-  { value: 'basic', label: 'Basic (username and password)' },
-];
+// Labels: sync.auth.<value>.
+const AUTH_TYPES = ['none', 'api_key', 'bearer', 'basic'];
 
 // Our directory fields, and what to tell the user about each mapping.
+// Labels: sync.fields.<field>.
 const MAPPED_FIELDS = [
-  { field: 'external_id', label: 'Employee ID', required: true, example: 'employeeId' },
-  { field: 'name', label: 'Name', required: true, example: 'displayName' },
-  { field: 'email', label: 'Email', example: 'workEmail' },
-  { field: 'designation', label: 'Job title', example: 'job.title' },
-  { field: 'department', label: 'Department', example: 'job.department' },
-  { field: 'manager_external_id', label: "Manager's employee ID", example: 'manager.employeeId' },
+  { field: 'external_id', required: true, example: 'employeeId' },
+  { field: 'name', required: true, example: 'displayName' },
+  { field: 'email', example: 'workEmail' },
+  { field: 'designation', example: 'job.title' },
+  { field: 'department', example: 'job.department' },
+  { field: 'manager_external_id', example: 'manager.employeeId' },
 ];
 
 const DEFAULTS = {
@@ -84,18 +83,19 @@ const lastSyncOf = (config) => config?.last_synced_at || config?.last_sync_at ||
 const formatWhen = (value) => {
   if (!value) return null;
   const date = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString(intlLocale());
 };
 
 /** The API may send titles as strings or as { designation, people }. */
 const titleOf = (entry) => (typeof entry === 'string' ? entry : entry?.designation || JSON.stringify(entry));
 
 const ErrorAlert = ({ error }) => {
+  const { t } = useTranslation('hierarchy');
   if (!error) return null;
   if (error.status === 502) {
     return (
-      <Alert variant="error" title="Could not reach your HR system">
-        {error.summary} Nothing in the directory was changed.
+      <Alert variant="error" title={t('sync.unreachable')}>
+        {error.summary} {t('sync.nothingChanged')}
       </Alert>
     );
   }
@@ -127,6 +127,7 @@ const Figure = ({ label, value, tone = 'default' }) => (
 );
 
 const PreviewResult = ({ preview }) => {
+  const { t } = useTranslation('hierarchy');
   const skipped = preview.would_skip_missing_id_or_name || 0;
   const unmapped = preview.unmapped_designations || [];
   const sample = preview.sample || preview.sample_rows || preview.rows || [];
@@ -135,31 +136,30 @@ const PreviewResult = ({ preview }) => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Figure label="Records returned" value={preview.records_returned} />
-        <Figure label="Would be synced" value={preview.would_upsert} />
-        <Figure label="Would be skipped" value={skipped} tone={skipped > 0 ? 'danger' : 'default'} />
-        <Figure label="Titles on no level" value={unmapped.length} tone={unmapped.length > 0 ? 'warning' : 'default'} />
+        <Figure label={t('sync.preview.returned')} value={preview.records_returned} />
+        <Figure label={t('sync.preview.wouldSync')} value={preview.would_upsert} />
+        <Figure label={t('sync.preview.wouldSkip')} value={skipped} tone={skipped > 0 ? 'danger' : 'default'} />
+        <Figure label={t('sync.titlesNoLevel')} value={unmapped.length} tone={unmapped.length > 0 ? 'warning' : 'default'} />
       </div>
 
       {preview.records_returned === 0 && (
-        <Alert variant="warning" title="Your HR system returned no records">
-          Check the employees path, and the results path if the list is nested inside the response.
+        <Alert variant="warning" title={t('sync.preview.noRecords')}>
+          {t('sync.preview.noRecordsBody')}
         </Alert>
       )}
 
       {skipped > 0 && (
-        <Alert variant="error" title={`${skipped} record${skipped === 1 ? '' : 's'} would be skipped for having no ID or name`}>
-          This almost always means the mapping for <strong>Employee ID</strong> or <strong>Name</strong> points at the
-          wrong field. A real sync drops these rows without saying so — fix the mapping and preview again before syncing.
+        <Alert variant="error" title={t('sync.preview.skippedTitle', { count: skipped })}>
+          <Trans t={t} i18nKey="sync.preview.skippedBody" components={{ strong: <strong /> }} />
         </Alert>
       )}
 
       {unmapped.length > 0 && (
-        <Alert variant="warning" title="Job titles that match no level">
-          <p>People with these titles would sync with no level. Add each title to a level's job titles first, or map them on the Coverage tab after syncing.</p>
+        <Alert variant="warning" title={t('sync.preview.unmappedTitle')}>
+          <p>{t('sync.preview.unmappedBody')}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {unmapped.map((entry, index) => (
-              <span key={index} className="rounded-full border border-warning-line bg-surface px-2 py-0.5 text-xs text-ink">
+              <span key={index} className="rounded-full border border-warning-line bg-surface px-2 py-0.5 text-xs text-ink" dir="auto">
                 {titleOf(entry)}
               </span>
             ))}
@@ -169,8 +169,8 @@ const PreviewResult = ({ preview }) => {
 
       {Object.keys(mappingUsed).length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">Mapping used</p>
-          <p className="mt-1 font-mono text-xs text-ink-secondary">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">{t('sync.preview.mappingUsed')}</p>
+          <p className="mt-1 font-mono text-xs text-ink-secondary" dir="ltr">
             {Object.entries(mappingUsed)
               .map(([ours, theirs]) => `${ours} ← ${theirs}`)
               .join(' · ')}
@@ -185,7 +185,7 @@ const PreviewResult = ({ preview }) => {
               <tr>
                 {MAPPED_FIELDS.map((f) => (
                   <th key={f.field} className="whitespace-nowrap px-3 py-2 font-semibold">
-                    {f.label}
+                    {t(`sync.fields.${f.field}`)}
                   </th>
                 ))}
               </tr>
@@ -195,7 +195,7 @@ const PreviewResult = ({ preview }) => {
                 <tr key={index}>
                   {MAPPED_FIELDS.map((f) => (
                     <td key={f.field} className={`px-3 py-2 ${row[f.field] ? 'text-ink' : f.required ? 'text-danger-fg' : 'text-ink-subtle'}`}>
-                      {row[f.field] || (f.required ? 'missing' : '—')}
+                      {row[f.field] || (f.required ? t('sync.preview.missing') : '—')}
                     </td>
                   ))}
                 </tr>
@@ -203,7 +203,7 @@ const PreviewResult = ({ preview }) => {
             </tbody>
           </table>
           <p className="border-t border-line-subtle px-3 py-2 text-xs text-ink-muted">
-            A sample of rows as they would be stored. Nothing has been written.
+            {t('sync.preview.sampleNote')}
           </p>
         </div>
       )}
@@ -213,39 +213,42 @@ const PreviewResult = ({ preview }) => {
 
 const SyncResult = ({ result, onGoTo }) => {
   const unmatched = result.unmatched_designations || [];
+  const { t } = useTranslation('hierarchy');
   const waiting = result.awaiting_approval_total ?? 0;
   return (
     <div className="space-y-4">
       {waiting > 0 && (
-        <Alert variant="info" title={`${waiting} ${waiting === 1 ? 'person is' : 'people are'} waiting for approval`}>
+        <Alert variant="info" title={t('sync.result.waiting', { count: waiting })}>
           <p>
-            {result.staged_for_approval
-              ? `${result.staged_for_approval} found for the first time in this sync. `
-              : ''}
-            New people aren't added until you give them a level, decide whether they sign in, and approve them.
-            {result.skipped_dismissed ? ` ${result.skipped_dismissed} dismissed ${result.skipped_dismissed === 1 ? 'person was' : 'people were'} skipped.` : ''}
+            {[
+              result.staged_for_approval ? t('sync.result.stagedNew', { count: result.staged_for_approval }) : '',
+              t('sync.result.notAddedUntil'),
+              result.skipped_dismissed ? t('sync.result.skippedDismissed', { count: result.skipped_dismissed }) : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           </p>
           <Button className="mt-3" variant="outline" size="small" onClick={() => onGoTo('approvals')}>
-            Review them in Approvals
+            {t('sync.result.review')}
           </Button>
         </Alert>
       )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Figure label="Synced" value={result.synced} />
-        <Figure label="Placed on a level" value={result.matched_to_a_level} />
-        <Figure label="Deactivated (left HR)" value={result.deactivated} />
-        <Figure label="Titles on no level" value={unmatched.length} tone={unmatched.length > 0 ? 'warning' : 'default'} />
+        <Figure label={t('sync.result.synced')} value={result.synced} />
+        <Figure label={t('sync.result.placed')} value={result.matched_to_a_level} />
+        <Figure label={t('sync.result.deactivated')} value={result.deactivated} />
+        <Figure label={t('sync.titlesNoLevel')} value={unmatched.length} tone={unmatched.length > 0 ? 'warning' : 'default'} />
       </div>
       {unmatched.length > 0 && (
-        <Alert variant="warning" title="Next: map these job titles">
-          <p>People with these titles were synced with no level, so they can't be escalated from yet.</p>
+        <Alert variant="warning" title={t('sync.result.mapTitle')}>
+          <p>{t('sync.result.mapBody')}</p>
           <ul className="mt-2 list-disc space-y-0.5 ps-4">
             {unmatched.map((entry, index) => (
-              <li key={index}>{titleOf(entry)}</li>
+              <li key={index} dir="auto">{titleOf(entry)}</li>
             ))}
           </ul>
           <Button className="mt-3" variant="outline" size="small" onClick={() => onGoTo('coverage')}>
-            Map them on the Coverage tab
+            {t('sync.result.mapOnCoverage')}
           </Button>
         </Alert>
       )}
@@ -254,13 +257,15 @@ const SyncResult = ({ result, onGoTo }) => {
 };
 
 /** The HR connection form while its settings load. */
-export const SyncSkeleton = () => (
+export const SyncSkeleton = () => {
+  const { t } = useTranslation('hierarchy');
+  return (
   <div className="space-y-6" aria-busy="true">
     <div className="rounded-xl border border-line bg-surface p-4">
       <Skeleton.Text className="w-48" />
       <Skeleton.Text className="w-4/5" />
     </div>
-    <Card title="Connection" icon={PlugZap}>
+    <Card title={t('sync.connection')} icon={PlugZap}>
       <div className="grid gap-4 sm:grid-cols-2">
         {[0, 1, 2, 3].map((i) => (
           <div key={i}>
@@ -271,9 +276,11 @@ export const SyncSkeleton = () => (
       </div>
     </Card>
   </div>
-);
+  );
+};
 
 const SyncPanel = ({ onChanged, onGoTo }) => {
+  const { t } = useTranslation('hierarchy');
   const [config, setConfig] = useState(undefined); // undefined loading · null none
   const [loadError, setLoadError] = useState(null);
   const [form, setForm] = useState(() => toForm(null));
@@ -369,7 +376,7 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
 
   const saveOnly = async () => {
     setError(null);
-    if (await saveIfNeeded()) toast.success('HR connection saved.');
+    if (await saveIfNeeded()) toast.success(t('sync.saved'));
     setBusy(null);
   };
 
@@ -384,8 +391,8 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
       const staged = result?.staged_for_approval ?? 0;
       toast.success(
         staged > 0
-          ? `Synced ${result?.synced ?? 0} people. ${staged} new ${staged === 1 ? 'person is' : 'people are'} waiting for approval.`
-          : `Synced ${result?.synced ?? 0} people from HR.`,
+          ? `${t('sync.toast.synced', { count: result?.synced ?? 0 })} ${t('sync.toast.newWaiting', { count: staged })}`
+          : t('sync.toast.syncedFromHr', { count: result?.synced ?? 0 }),
       );
       onChanged?.();
       load();
@@ -403,23 +410,22 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
   return (
     <div className="space-y-6">
       {loadError && (
-        <Alert variant="error" title="Couldn't load the HR connection">
+        <Alert variant="error" title={t('sync.loadError')}>
           {loadError}
         </Alert>
       )}
 
       {!isConfigured && !loadError && (
-        <Alert variant="info" title="No HR system connected">
-          Connect any HR system that returns employees as JSON. Until then, add people by hand or paste them on the
-          Directory tab.
+        <Alert variant="info" title={t('sync.notConnected')}>
+          {t('sync.notConnectedBody')}
         </Alert>
       )}
 
-      <Card title="Connection" icon={PlugZap}>
+      <Card title={t('sync.connection')} icon={PlugZap}>
         <div className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              label="API base URL"
+              label={t('sync.baseUrl')}
               value={form.api_base_url}
               onChange={set('api_base_url')}
               required
@@ -427,24 +433,24 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
               className="font-mono"
             />
             <Input
-              label="Employees path"
+              label={t('sync.employeesPath')}
               value={form.employees_path}
               onChange={set('employees_path')}
               placeholder="/employees"
               className="font-mono"
-              helperText="The path (or full URL) that returns the list of employees."
+              helperText={t('sync.employeesPathHelp')}
             />
             <Input
-              label="Results path"
+              label={t('sync.resultsPath')}
               value={form.results_path}
               onChange={set('results_path')}
-              placeholder="e.g. data.employees"
+              placeholder={t('sync.resultsPathPlaceholder')}
               className="font-mono"
-              helperText="Where the list sits inside the response, as a dot-path. Leave empty if the response is the list."
+              helperText={t('sync.resultsPathHelp')}
             />
             <div className="space-y-1.5">
               <label htmlFor="sync-auth" className="text-xs font-medium text-ink-secondary">
-                Authentication
+                {t('sync.authentication')}
               </label>
               <select
                 id="sync-auth"
@@ -452,74 +458,68 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
                 onChange={set('auth_type')}
                 className="w-full rounded-lg border border-line bg-subtle px-3 py-2.5 text-sm text-ink hover:border-line-strong"
               >
-                {AUTH_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
+                {AUTH_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {t(`sync.auth.${type}`)}
                   </option>
                 ))}
               </select>
             </div>
             {needsCredential && form.auth_type !== 'basic' && (
               <Input
-                label="Header name"
+                label={t('sync.headerName')}
                 value={form.auth_header_name}
                 onChange={set('auth_header_name')}
                 className="font-mono"
-                helperText={form.auth_type === 'api_key' ? 'Often X-API-Key — check your HR system.' : 'Usually Authorization.'}
+                helperText={form.auth_type === 'api_key' ? t('sync.headerApiKey') : t('sync.headerUsual')}
               />
             )}
             {needsCredential && (
               <Input
-                label={form.auth_type === 'basic' ? 'Username and password' : form.auth_type === 'api_key' ? 'API key' : 'Token'}
+                label={form.auth_type === 'basic' ? t('sync.cred.basic') : form.auth_type === 'api_key' ? t('sync.cred.apiKey') : t('sync.cred.token')}
                 type="password"
                 autoComplete="new-password"
                 value={credential}
                 onChange={(event) => setCredential(event.target.value)}
-                placeholder={credentialSaved ? '•••••••• saved — leave empty to keep' : form.auth_type === 'basic' ? 'user:password' : ''}
+                placeholder={credentialSaved ? t('sync.cred.savedPlaceholder') : form.auth_type === 'basic' ? 'user:password' : ''}
                 className="font-mono"
                 helperText={
                   credentialSaved
-                    ? 'A credential is saved and never shown again. Type a new one only to replace it.'
+                    ? t('sync.cred.savedHelp')
                     : form.auth_type === 'basic'
-                      ? 'As user:password.'
-                      : 'Stored securely and never shown again.'
+                      ? t('sync.cred.basicHelp')
+                      : t('sync.cred.newHelp')
                 }
               />
             )}
           </div>
 
           {/graph\.microsoft\.com/i.test(form.api_base_url) && (
-            <Alert variant="warning" title="Microsoft Graph: check these before syncing">
+            <Alert variant="warning" title={t('sync.graph.title')}>
               <ul className="list-disc space-y-1 ps-4">
                 <li>
-                  Set <span className="font-mono">Results path</span> to <span className="font-mono">value</span> — Graph wraps
-                  the list in it.
+                  <Trans t={t} i18nKey="sync.graph.resultsPath" components={{ code: <span className="font-mono" dir="ltr" /> }} />
                 </li>
                 <li>
-                  Add <span className="font-mono">$expand=manager($select=id)</span> to the employees path and map{' '}
-                  <span className="font-mono">manager.id</span>, or nobody gets a manager and escalation can't route above
-                  anyone.
+                  <Trans t={t} i18nKey="sync.graph.expand" components={{ code: <span className="font-mono" dir="ltr" /> }} />
                 </li>
-                <li>
-                  Only the first 100 people are read — later pages are ignored, and people missing from them are marked as
-                  having left. The token isn't refreshed either, so scheduled syncs stop working after about an hour.
-                </li>
+                <li>{t('sync.graph.paging')}</li>
               </ul>
             </Alert>
           )}
 
           <div className="space-y-2">
             <div>
-              <p className="text-sm font-medium text-ink">Field mapping</p>
+              <p className="text-sm font-medium text-ink">{t('sync.mapping')}</p>
               <p className="text-xs text-ink-muted">
-                The name of each field in your HR system's JSON. Use dots for nested fields — e.g. <span className="font-mono">job.title</span>.
+                <Trans t={t} i18nKey="sync.mappingHelp" components={{ code: <span className="font-mono" dir="ltr" /> }} />
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {MAPPED_FIELDS.map((f) => (
                 <Input
                   key={f.field}
-                  label={f.label}
+                  label={t(`sync.fields.${f.field}`)}
                   value={form.field_mapping[f.field] || ''}
                   onChange={setMapping(f.field)}
                   required={f.required}
@@ -533,7 +533,7 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="sm:w-48">
               <Input
-                label="Sync every (hours)"
+                label={t('sync.frequency')}
                 type="number"
                 min="1"
                 step="1"
@@ -548,23 +548,23 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
                 labelledBy="sync-active"
               />
               <span id="sync-active" className="text-sm text-ink">
-                Sync automatically on this schedule
+                {t('sync.automatic')}
               </span>
             </label>
           </div>
 
-          {lastSync && <p className="text-xs text-ink-muted">Last synced {lastSync}.</p>}
+          {lastSync && <p className="text-xs text-ink-muted">{t('sync.lastSynced', { when: lastSync })}</p>}
 
           <ErrorAlert error={error} />
 
           <div className="flex flex-col-reverse gap-2 border-t border-line-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-ink-muted">
-              {isDirty ? 'Previewing saves these settings first.' : 'Preview reads from your HR system and writes nothing.'}
+              {isDirty ? t('sync.previewSavesFirst') : t('sync.previewReadsOnly')}
             </p>
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
               {isConfigured && isDirty && (
                 <Button variant="ghost" onClick={saveOnly} isLoading={busy === 'save'} disabled={invalid || Boolean(busy)}>
-                  Save only
+                  {t('sync.saveOnly')}
                 </Button>
               )}
               <Button
@@ -573,9 +573,9 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
                 onClick={() => setConfirmSync(true)}
                 isLoading={busy === 'sync'}
                 disabled={!isConfigured || isDirty || Boolean(busy)}
-                title={isDirty ? 'Save and preview your changes first' : 'Pull from HR into the live directory'}
+                title={isDirty ? t('sync.syncNowDirty') : t('sync.syncNowHint')}
               >
-                Sync now
+                {t('sync.syncNow')}
               </Button>
               <Button
                 startIcon={Eye}
@@ -583,7 +583,7 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
                 isLoading={busy === 'save' || busy === 'preview'}
                 disabled={invalid || Boolean(busy)}
               >
-                {isDirty ? 'Save & preview' : 'Preview'}
+                {isDirty ? t('sync.savePreview') : t('escalation.d.preview')}
               </Button>
             </div>
           </div>
@@ -591,22 +591,21 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
       </Card>
 
       {preview && (
-        <Card title="Preview" icon={Eye}>
+        <Card title={t('escalation.d.preview')} icon={Eye}>
           <PreviewResult preview={preview} />
         </Card>
       )}
 
       {syncResult && (
-        <Card title="Sync complete" icon={CheckCircle2}>
+        <Card title={t('sync.complete')} icon={CheckCircle2}>
           <SyncResult result={syncResult} onGoTo={onGoTo} />
         </Card>
       )}
 
       {!preview && !syncResult && isConfigured && (
         <p className="flex items-center gap-2 text-xs text-ink-subtle">
-          <AlertTriangle className="h-3.5 w-3.5" />
-          Preview before every first sync or mapping change — a wrong mapping otherwise looks like a successful sync of
-          nobody.
+          <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+          {t('sync.previewAdvice')}
         </p>
       )}
 
@@ -614,9 +613,9 @@ const SyncPanel = ({ onChanged, onGoTo }) => {
         isOpen={confirmSync}
         onClose={() => setConfirmSync(false)}
         onConfirm={runSync}
-        title="Sync from HR now?"
-        message="This pulls every employee from your HR system into the live directory. People who were synced before but are missing from this pull will be deactivated. People added by hand, and corrections to level and manager, are kept."
-        confirmText="Sync now"
+        title={t('sync.confirmTitle')}
+        message={t('sync.confirmMessage')}
+        confirmText={t('sync.syncNow')}
         variant="primary"
         isLoading={busy === 'sync'}
       />

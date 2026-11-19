@@ -8,6 +8,8 @@
 // nobody can hand out access they don't have, and the save would 403.
 import { useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, Lock, Plus, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { PERMISSION_HINTS, permissionLabel, permissionLabels } from '../../utils/permissions';
 
 /** permission → catalog entry ({ permission, granted, requires_any_of }). */
@@ -23,7 +25,7 @@ export const localPrerequisiteErrors = (selected, entries) => {
   selected.forEach((permission) => {
     const requires = entries.get(permission)?.requires_any_of || [];
     if (requires.length && !requires.some((p) => selected.has(p))) {
-      errors.set(permission, { requires, message: `Needs ${permissionLabels(requires)} as well.` });
+      errors.set(permission, { requires, message: i18n.t('permPicker.needsAlso', { ns: 'people', labels: permissionLabels(requires) }) });
     }
   });
   return errors;
@@ -47,6 +49,7 @@ export const Checkbox = ({ checked, disabled, onChange, labelledBy, title }) => 
 );
 
 const PermissionOption = ({ entry, checked, readOnly, error, warning, fixes, onToggle, onFix, hint }) => {
+  const { t } = useTranslation('people');
   const { permission, granted } = entry;
   const locked = !granted;
   const id = `perm-${permission.replace(/[^a-z0-9]/g, '-')}`;
@@ -56,14 +59,14 @@ const PermissionOption = ({ entry, checked, readOnly, error, warning, fixes, onT
       className={`rounded-lg border px-3 py-2.5 ${
         error ? 'border-danger-line bg-danger-soft' : checked ? 'border-line-accent bg-accent-soft' : 'border-line bg-surface'
       }`}
-      title={locked && !readOnly ? "You can't grant a permission you don't hold yourself." : undefined}
+      title={locked && !readOnly ? t('permPicker.lockedTitle') : undefined}
     >
       <div className="flex items-start gap-3">
         <Checkbox checked={checked} disabled={readOnly || locked} onChange={onToggle} labelledBy={id} />
         <div className="min-w-0 flex-1">
           <p id={id} className="flex items-center gap-1.5 text-sm font-medium text-ink">
             {permissionLabel(permission)}
-            {locked && !readOnly && <Lock className="h-3 w-3 shrink-0 text-ink-subtle" aria-label="Not grantable by you" />}
+            {locked && !readOnly && <Lock className="h-3 w-3 shrink-0 text-ink-subtle" aria-label={t('permPicker.lockedLabel')} />}
           </p>
           {hint && <p className="mt-0.5 text-xs text-ink-muted">{hint}</p>}
 
@@ -104,6 +107,7 @@ const PermissionOption = ({ entry, checked, readOnly, error, warning, fixes, onT
 };
 
 const PermissionGroup = ({ group, children, selectedCount }) => {
+  const { t } = useTranslation('people');
   const [open, setOpen] = useState(true);
   return (
     <section className="rounded-xl border border-line">
@@ -116,7 +120,7 @@ const PermissionGroup = ({ group, children, selectedCount }) => {
         <span className="text-sm font-semibold text-ink">{group.label}</span>
         <span className="flex items-center gap-2">
           <span className="text-xs text-ink-subtle">
-            {selectedCount} of {group.permissions.length}
+            {t('permPicker.selectedOf', { count: selectedCount, total: group.permissions.length })}
           </span>
           <ChevronDown className={`h-4 w-4 text-ink-subtle transition-transform ${open ? 'rotate-180' : ''}`} />
         </span>

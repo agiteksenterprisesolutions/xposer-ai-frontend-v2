@@ -2,6 +2,9 @@
 //
 // Limits and validation for the voice profile, mirroring the server so a save
 // that is going to be rejected is caught next to the field that caused it.
+import i18n from '../i18n';
+
+const tr = (key, options) => i18n.t(key, { ns: 'agents', ...options });
 
 export const VOICE_PROFILE_LIMITS = {
   display_name: 120,
@@ -42,7 +45,7 @@ export const validateVoiceProfile = (values) => {
     // Measured the way the server stores it — trimmed, whitespace collapsed —
     // so extra spaces never make the form refuse a save the server would take.
     if (normaliseLength(values[field]) > max) {
-      errors[field] = `String should have at most ${max} characters`;
+      errors[field] = tr('voice.validation.tooLong', { count: max });
     }
   });
 
@@ -53,7 +56,7 @@ export const validateVoiceProfile = (values) => {
       .match(/\{[^{}]*\}/g)
       ?.find((token) => token !== ORGANIZATION_PLACEHOLDER);
     if (unknown) {
-      errors.greeting = `greeting contains ${unknown}, which is not a known placeholder. Use ${ORGANIZATION_PLACEHOLDER} for the organization's name, or remove the braces.`;
+      errors.greeting = tr('voice.validation.unknownPlaceholder', { token: unknown, placeholder: ORGANIZATION_PLACEHOLDER });
     }
   }
 
@@ -74,7 +77,7 @@ export const parseVoiceProfileErrors = (error) => {
     const raw = item?.loc?.[1];
     const field = raw === 'greetings' ? 'greeting' : raw;
     if (field && !errors[field]) {
-      errors[field] = String(item.msg || 'Invalid value').replace(/^Value error, /, '');
+      errors[field] = String(item.msg || tr('voice.validation.invalid')).replace(/^Value error, /, '');
     }
     return errors;
   }, {});

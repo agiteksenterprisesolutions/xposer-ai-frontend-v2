@@ -591,7 +591,7 @@ const TrackReport = () => {
                   t={t}
                   i18nKey="details.anonymousText"
                   components={{
-                    link: <Link to="/register" className="underline font-medium hover:text-link-hover" />,
+                    lnk: <Link to="/register" className="underline font-medium hover:text-link-hover" />,
                   }}
                 />
               </p>

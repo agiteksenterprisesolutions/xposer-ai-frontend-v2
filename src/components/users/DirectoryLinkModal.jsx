@@ -12,6 +12,7 @@
 // account holding report:read_subordinates sees only its own caseload.
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
@@ -25,6 +26,7 @@ const fieldClass =
   'w-full rounded-lg border border-line-strong bg-subtle px-3 py-2 text-sm text-ink outline-none focus:border-line-accent disabled:opacity-60';
 
 const DirectoryLinkModal = ({ user, levels = [], onClose, onSaved }) => {
+  const { t } = useTranslation('people');
   const displayName = user.full_name || user.username;
   const [memberId, setMemberId] = useState(user.hierarchy_member_id || '');
   // The entry chosen in the picker, or the one already linked, looked up by id.
@@ -65,7 +67,7 @@ const DirectoryLinkModal = ({ user, levels = [], onClose, onSaved }) => {
     setError(null);
     try {
       if (linkChanged) await usersAPI.linkDirectoryEntry(user.id, memberId);
-      toast.success(memberId ? `${displayName} is linked to ${member?.name || memberId}.` : `${displayName} is unlinked.`);
+      toast.success(memberId ? t('dirLink.linked', { name: displayName, entry: member?.name || memberId }) : t('dirLink.unlinked', { name: displayName }));
       onSaved?.();
     } catch (err) {
       setError(describeError(err));
@@ -78,59 +80,57 @@ const DirectoryLinkModal = ({ user, levels = [], onClose, onSaved }) => {
     <Modal
       isOpen
       onClose={saving ? () => {} : onClose}
-      title={`Directory entry for ${displayName}`}
+      title={t('dirLink.title', { name: displayName })}
       size="md"
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('common:actions.cancel')}
           </Button>
           <Button onClick={save} isLoading={saving} disabled={!linkChanged}>
-            Save
+            {t('common:actions.save')}
           </Button>
         </div>
       }
     >
       <div className="space-y-4">
         <p className="text-sm text-ink-secondary">
-          The directory entry decides <span className="font-medium text-ink">which</span> reports this person can see —
-          their own team's, through the reporting tree. Their role decides what they can do with them.
+          <Trans t={t} i18nKey="dirLink.intro" components={{ b: <span className="font-medium text-ink" /> }} />
         </p>
 
         <div>
           <label htmlFor="link-member" className="mb-1 block text-xs font-medium text-ink-secondary">
-            Directory entry
+            {t('dirLink.entry')}
           </label>
           <MemberPicker
             id="link-member"
             value={memberId}
             onChange={pick}
-            emptyLabel="Not linked"
+            emptyLabel={t('dirLink.notLinked')}
             className={fieldClass}
           />
           {!memberId && emailMatch && (
             <button type="button" onClick={() => pick(emailMatch.external_id, emailMatch)} className="mt-1.5 text-xs font-medium text-link hover:underline">
-              Use {emailMatch.name} — same email
+              {t('dirLink.useMatch', { name: emailMatch.name })}
             </button>
           )}
         </div>
 
         {member && (
           <div>
-            <p className="mb-1 text-xs font-medium text-ink-secondary">Level</p>
+            <p className="mb-1 text-xs font-medium text-ink-secondary">{t('dirLink.level')}</p>
             <p className="text-sm text-ink">
-              {member.level_code ? levelTitle(member.level_code) : 'Not placed yet'}
+              {member.level_code ? levelTitle(member.level_code) : t('dirLink.notPlaced')}
             </p>
             <p className="mt-1 text-[11px] text-ink-subtle">
-              Comes from {displayName}'s role. To move them, change their role; to move everyone in a role, change the
-              role's level in Roles &amp; Permissions.
+              {t('dirLink.levelHelp', { name: displayName })}
             </p>
           </div>
         )}
 
         {!memberId && (
           <Alert variant="warning">
-            Unlinked, anyone allowed to see their team's reports sees only their own cases instead.
+            {t('dirLink.unlinkedWarning')}
           </Alert>
         )}
 

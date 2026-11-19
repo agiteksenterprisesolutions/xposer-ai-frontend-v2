@@ -16,6 +16,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -41,6 +42,7 @@ const FIELDS = ['name', 'email', 'designation', 'department', 'role_code', 'mana
  *   readOnly, onClose, onSaved
  */
 const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClose, onSaved }) => {
+  const { t } = useTranslation('hierarchy');
   const isCreate = !member;
   const fromHr = member?.source === 'hr_sync';
 
@@ -77,7 +79,7 @@ const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClo
           ['external_id', ...FIELDS].map((field) => [field, form[field].trim() || null]),
         );
         saved = await orgHierarchyAPI.createMember(body);
-        toast.success(`${body.name} added to the directory.`);
+        toast.success(t('member.added', { name: body.name }));
       } else {
         const changes = {};
         FIELDS.forEach((field) => {
@@ -89,7 +91,7 @@ const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClo
           return;
         }
         saved = await orgHierarchyAPI.updateMember(member.id, changes);
-        toast.success(`${form.name.trim()} updated.`);
+        toast.success(t('member.updated', { name: form.name.trim() }));
       }
       onSaved?.(saved);
     } catch (err) {
@@ -104,7 +106,7 @@ const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClo
   const hrNote = (field, value, format = (v) => v) =>
     fromHr && member.has_manual_override && (member[`${field}_from_hr`] ?? null) !== (member[field] ?? null) ? (
       <p className="mt-1 text-xs text-ink-muted">
-        HR says: <span className="font-medium">{value ? format(value) : '(none)'}</span>
+        {t('member.hrSays')} <span className="font-medium">{value ? format(value) : t('member.none')}</span>
       </p>
     ) : null;
 
@@ -112,23 +114,23 @@ const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClo
     <Modal
       isOpen
       onClose={saving ? () => {} : onClose}
-      title={isCreate ? 'Add a person' : readOnly ? member.name : `Edit ${member.name}`}
+      title={isCreate ? t('member.addTitle') : readOnly ? member.name : t('levelEditor.editTitle', { title: member.name })}
       size="large"
       closeOnOverlayClick={false}
       footer={
         readOnly ? (
           <div className="flex justify-end">
             <Button variant="secondary" onClick={onClose}>
-              Close
+              {t('common:actions.close')}
             </Button>
           </div>
         ) : (
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button variant="secondary" onClick={onClose} disabled={saving}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button onClick={save} isLoading={saving} disabled={!form.name.trim()}>
-              {isCreate ? 'Add person' : 'Save changes'}
+              {isCreate ? t('member.add') : t('levelEditor.save')}
             </Button>
           </div>
         )
@@ -136,8 +138,8 @@ const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClo
     >
       <div className="space-y-5">
         {fromHr && !readOnly && (
-          <Alert variant="info" title="This person comes from your HR system">
-            A manager change is kept as a correction and survives the next sync. Other fields may be overwritten by it.
+          <Alert variant="info" title={t('member.fromHrTitle')}>
+            {t('member.fromHrBody')}
           </Alert>
         )}
 
@@ -155,7 +157,7 @@ const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClo
                 to={`${staffPath(orgSlug, 'roles')}?role=${encodeURIComponent(roleWithoutLevel)}`}
                 className="mt-2 inline-block font-semibold underline underline-offset-2"
               >
-                Give that role a level
+                {t('member.giveRoleLevel')}
               </Link>
             )}
           </Alert>
@@ -163,79 +165,78 @@ const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClo
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label="Full name"
+            label={t('member.fullName')}
             value={form.name}
             onChange={set('name')}
             required
             readOnly={readOnly}
-            helperText="Spelled as a reporter would write it — escalation matches names in report text exactly."
+            helperText={t('member.fullNameHelp')}
           />
           <Input
-            label="Employee ID"
+            label={t('member.employeeId')}
             value={form.external_id}
             onChange={set('external_id')}
             readOnly={!isCreate || readOnly}
             className="font-mono"
-            helperText={isCreate ? 'Optional — generated from the name if left empty.' : 'IDs cannot change.'}
+            helperText={isCreate ? t('member.employeeIdHelpNew') : t('member.employeeIdHelpFixed')}
           />
-          <Input label="Email" type="email" value={form.email} onChange={set('email')} readOnly={readOnly} />
+          <Input label={t('member.email')} type="email" value={form.email} onChange={set('email')} readOnly={readOnly} />
           <Input
-            label="Job title"
+            label={t('member.jobTitle')}
             value={form.designation}
             onChange={set('designation')}
             readOnly={readOnly}
-            placeholder="e.g. Finance Executive"
+            placeholder={t('member.jobTitlePlaceholder')}
           />
-          <Input label="Department" value={form.department} onChange={set('department')} readOnly={readOnly} />
+          <Input label={t('levelEditor.department')} value={form.department} onChange={set('department')} readOnly={readOnly} />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label htmlFor="member-role" className="text-xs font-medium text-ink-secondary">
-              Role
+              {t('member.role')}
             </label>
             <select id="member-role" value={form.role_code} onChange={set('role_code')} disabled={readOnly} className={selectClass}>
-              <option value="">No role</option>
+              <option value="">{t('member.noRole')}</option>
               {roles.map((role) => (
                 <option key={role.code} value={role.code}>
                   {roleWithLevel(role)}
                 </option>
               ))}
               {form.role_code && !roles.some((r) => r.code === form.role_code) && (
-                <option value={form.role_code}>{form.role_code} (not found)</option>
+                <option value={form.role_code}>{t('member.notFound', { code: form.role_code })}</option>
               )}
             </select>
             {form.role_code ? (
               resolvedLevel ? (
                 <p className="text-xs text-ink-muted">
-                  Sits at <span className="font-medium text-ink">{resolvedLevel}</span>, with everyone else in this role.
+                  <Trans t={t} i18nKey="member.sitsAt" values={{ level: resolvedLevel }} components={{ b: <span className="font-medium text-ink" /> }} />
                 </p>
               ) : (
                 <p className="flex items-start gap-1.5 text-xs text-warning-fg">
-                  <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
-                  This role has no level yet, so this person can't be placed until it gets one.
+                  <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {t('member.roleNoLevel')}
                 </p>
               )
             ) : (
               <p className="flex items-start gap-1.5 text-xs text-warning-fg">
-                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {member?.level_from === 'legacy' && member?.level_code
-                  ? `Still on the old level (${levelTitle(member.level_code)}). Give them a role to place them properly.`
-                  : "Without a role, a report naming this person can't be escalated."}
+                  ? t('member.legacyLevel', { level: levelTitle(member.level_code) })
+                  : t('member.noRoleWarning')}
               </p>
             )}
             <p className="text-xs text-ink-subtle">
-              To move someone, change their role. If the role itself is at the wrong level, change it in Roles &amp;
-              Permissions — that moves everyone who holds it.
+              {t('member.moveHelp')}
             </p>
             {!isCreate && (
-              <p className="text-xs text-ink-subtle">Their account, if they have one, gets the same role.</p>
+              <p className="text-xs text-ink-subtle">{t('member.accountSameRole')}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="member-manager" className="text-xs font-medium text-ink-secondary">
-              Direct manager
+              {t('member.directManager')}
             </label>
             <MemberPicker
               id="member-manager"
@@ -247,7 +248,7 @@ const MemberEditorModal = ({ member = null, levels = [], readOnly = false, onClo
             />
             {hrNote('manager_external_id', member?.manager_external_id_from_hr, (id) => nameOf(id) || id)}
             <p className="text-xs text-ink-muted">
-              Escalation goes to the direct manager first, before the level ladder. A manager has to sit above this person.
+              {t('member.managerHelp')}
             </p>
           </div>
         </div>

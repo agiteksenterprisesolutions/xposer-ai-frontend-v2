@@ -21,6 +21,7 @@
 // a verdict the agent never returns, a branch on a summarizer, duplicate keys
 // — are pinned to the step that caused them. Cycles are allowed on purpose
 // (review → investigate); max_stage_visits bounds them.
+import { Trans, useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -134,17 +135,19 @@ const dots = {
 };
 
 /** The builder while the workflow loads: top bar, dotted canvas, side panels. */
-const BuilderSkeleton = ({ onBack, panels }) => (
+const BuilderSkeleton = ({ onBack, panels }) => {
+  const { t } = useTranslation('admin');
+  return (
   <div className="flex h-[calc(100dvh-4rem)] flex-col bg-canvas" aria-busy="true">
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-2">
-        <button type="button" onClick={onBack} aria-label="Back to workflows" className={iconButton}>
-          <ArrowLeft className="h-4 w-4" />
+        <button type="button" onClick={onBack} aria-label={t('editor.back')} className={iconButton}>
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </button>
         <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-fg sm:flex">
           <GitBranch className="h-4 w-4" />
         </span>
-        <span className="hidden text-sm text-ink-muted md:block">Workflows</span>
+        <span className="hidden text-sm text-ink-muted md:block">{t('workflows.title')}</span>
         <span className="hidden text-ink-subtle md:block">/</span>
         <Skeleton.Text className="mx-2 w-44" />
         <Skeleton.Badge className="hidden w-16 sm:block" />
@@ -190,9 +193,11 @@ const BuilderSkeleton = ({ onBack, panels }) => (
       )}
     </div>
   </div>
-);
+  );
+};
 
 const Builder = () => {
+  const { t } = useTranslation('admin');
   const { id } = useParams();
   const isCreate = !id;
   const navigate = useNavigate();
@@ -255,7 +260,7 @@ const Builder = () => {
   const [baseline, setBaseline] = useState(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
 
-  useSEO({ title: isCreate ? 'New workflow' : name || 'Workflow', noIndex: true });
+  useSEO({ title: isCreate ? t('workflows.new') : name || t('workflow.inspector.workflow'), noIndex: true });
 
   // The builder takes the whole content area rather than a padded column.
   useEffect(() => {
@@ -288,7 +293,7 @@ const Builder = () => {
 
         const loadedStages = (current?.stages || []).map((stage) => withId(stage));
         const initial = {
-          name: current ? current.name || '' : others.length === 0 ? 'Default workflow' : 'Untitled workflow',
+          name: current ? current.name || '' : others.length === 0 ? t('editor.defaultName') : t('workflow.inspector.untitled'),
           description: current?.description || '',
           maxVisits: String(current?.max_stage_visits ?? 3),
           // The first workflow has nothing to stand down; later ones are
@@ -414,10 +419,10 @@ const Builder = () => {
   const visits = Number(maxVisits);
   const visitsError =
     !Number.isInteger(visits) || visits < VISIT_LIMITS.min || visits > VISIT_LIMITS.max
-      ? `Between ${VISIT_LIMITS.min} and ${VISIT_LIMITS.max}.`
+      ? t('editor.visitsRange', { min: VISIT_LIMITS.min, max: VISIT_LIMITS.max })
       : null;
 
-  const blockedReason = stages.length === 0 ? 'Add at least one step.' : visitsError ? 'Fix the visit limit.' : null;
+  const blockedReason = stages.length === 0 ? t('editor.addOneStep') : visitsError ? t('editor.fixVisits') : null;
   const blocked = local.length > 0 || Boolean(blockedReason);
 
   const current = JSON.stringify({ name, description, maxVisits, isActive, stages: apiStages });
@@ -445,28 +450,29 @@ const Builder = () => {
     (stage) => {
       const ref = stage.executor_ref;
       if (stage.executor_type === EXECUTOR_HUMAN) {
-        if (!ref) return { kindLabel: 'Person', label: '', detail: 'Choose a role', warning: true };
+        const person = t('editor.exec.person');
+        if (!ref) return { kindLabel: person, label: '', detail: t('editor.exec.chooseRole'), warning: true };
         const role = rolesByCode.get(ref);
-        if (role) return { kindLabel: 'Person', label: role.name, detail: `Waits for: ${role.name}`, warning: false };
+        if (role) return { kindLabel: person, label: role.name, detail: t('editor.exec.waitsFor', { name: role.name }), warning: false };
         return rolesLoading
-          ? { kindLabel: 'Person', label: humanizeRoleCode(ref), detail: 'Waits for a person', warning: false }
-          : { kindLabel: 'Person', label: humanizeRoleCode(ref), detail: `Role "${ref}" not found`, warning: true };
+          ? { kindLabel: person, label: humanizeRoleCode(ref), detail: t('editor.exec.waitsForPerson'), warning: false }
+          : { kindLabel: person, label: humanizeRoleCode(ref), detail: t('editor.exec.roleNotFound', { ref }), warning: true };
       }
-      if (!ref) return { kindLabel: 'AI agent', label: '', detail: 'Choose an agent', warning: true };
+      if (!ref) return { kindLabel: t('workflow.inspector.aiAgent'), label: '', detail: t('editor.exec.chooseAgent'), warning: true };
       const agent = agentsByCode.get(ref);
-      if (!agent) return { kindLabel: 'AI agent', label: ref, detail: `Agent "${ref}" not found`, warning: true };
+      if (!agent) return { kindLabel: t('workflow.inspector.aiAgent'), label: ref, detail: t('editor.exec.agentNotFound', { ref }), warning: true };
       if (isSummarizerAgent(agent)) {
-        return { kindLabel: 'Summarizer', label: agent.name, detail: 'Skipped — remove this step', warning: true };
+        return { kindLabel: t('editor.exec.summarizer'), label: agent.name, detail: t('editor.exec.skipped'), warning: true };
       }
       const inactive = agent.is_active === false;
       return {
-        kindLabel: AGENT_KIND_INFO[agent.kind]?.label || 'AI agent',
+        kindLabel: AGENT_KIND_INFO[agent.kind]?.label || t('workflow.inspector.aiAgent'),
         label: agent.name,
-        detail: inactive ? `${agent.name} · inactive` : `Run by ${agent.name}`,
+        detail: inactive ? `${agent.name} · ${t('workflow.palette.inactive')}` : t('editor.exec.runBy', { name: agent.name }),
         warning: inactive,
       };
     },
-    [agentsByCode, rolesByCode, rolesLoading],
+    [agentsByCode, rolesByCode, rolesLoading, t],
   );
 
   useEffect(() => {
@@ -477,10 +483,10 @@ const Builder = () => {
     const byKey = new Map(stages.map((stage) => [stage.key, stage]));
 
     const targetLabel = (goto) => {
-      if (!goto || goto === NEXT) return 'next step';
-      if (goto === END) return 'End';
+      if (!goto || goto === NEXT) return t('editor.target.next');
+      if (goto === END) return t('editor.target.end');
       const target = byKey.get(goto);
-      return target ? target.name || target.key : `${goto} (missing)`;
+      return target ? target.name || target.key : t('workflow.goto.missing', { key: goto });
     };
 
     setNodes((prev) => {
@@ -524,7 +530,7 @@ const Builder = () => {
         make(END_ID, 'terminal', { kind: 'end', readOnly, horizontal }, { selectable: false, deletable: false, selected: false }),
       ];
     });
-  }, [loading, stages, positions, problemsKey, readOnly, horizontal, agentsByCode, describeExecutor]);
+  }, [loading, stages, positions, problemsKey, readOnly, horizontal, agentsByCode, describeExecutor, t]);
 
   const selectNode = useCallback((nodeId) => {
     setSelectedEdgeId(null);
@@ -872,14 +878,14 @@ const Builder = () => {
       const found = result?.problems || [];
       setValidation({ key: stagesKey, problems: found });
       if (found.length > 0) {
-        toast.error(`${found.length} problem${found.length === 1 ? '' : 's'} to fix before saving.`);
+        toast.error(t('editor.problemsBeforeSaving', { count: found.length }));
         selectNode(null);
         setInspectorOpen(true);
         return;
       }
 
       const body = {
-        name: name.trim() || 'Workflow',
+        name: name.trim() || t('workflow.inspector.workflow'),
         description: description.trim() || null,
         stages: apiStages,
         max_stage_visits: visits,
@@ -888,7 +894,7 @@ const Builder = () => {
       const saved = isCreate ? await orgWorkflowsAPI.create(body) : await orgWorkflowsAPI.update(id, body);
       setBaseline(current);
       if (isCreate) {
-        toast.success('Workflow created.');
+        toast.success(t('editor.created'));
         if (saved?.id) {
           saveLayout(saved.id, stages, positions, orientation);
           navigate(`${listPath}/${saved.id}`, { replace: true });
@@ -897,7 +903,7 @@ const Builder = () => {
         }
         return;
       }
-      toast.success('Workflow saved.');
+      toast.success(t('editor.saved'));
       if (saved?.id) setWorkflow(saved);
       // Keys are now stable identifiers; a later rename shouldn't change them.
       const settled = { ...docRef.current, stages: docRef.current.stages.map((stage) => ({ ...stage, _autoKey: false })) };
@@ -946,11 +952,11 @@ const Builder = () => {
   if (loadError) {
     return (
       <div className="mx-auto max-w-xl space-y-4 p-6">
-        <Alert variant="error" title="Couldn't load the workflow">
+        <Alert variant="error" title={t('editor.loadError')}>
           {loadError}
         </Alert>
         <Button variant="secondary" startIcon={ArrowLeft} onClick={() => navigate(listPath)}>
-          Back to workflows
+          {t('editor.back')}
         </Button>
       </div>
     );
@@ -958,32 +964,33 @@ const Builder = () => {
 
   const h = history.current;
   const status = isCreate
-    ? { label: 'Draft', variant: 'default' }
+    ? { label: t('editor.draft'), variant: 'default' }
     : workflow?.is_active
-      ? { label: 'Running', variant: 'success' }
-      : { label: 'Standby', variant: 'default' };
+      ? { label: t('workflow.status.running'), variant: 'success' }
+      : { label: t('workflow.status.standby'), variant: 'default' };
 
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col bg-canvas">
       {/* Top bar */}
       <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-3 sm:px-4">
         <div className="flex min-w-0 items-center gap-2">
-          <button type="button" onClick={leave} aria-label="Back to workflows" title="Back to workflows" className={iconButton}>
-            <ArrowLeft className="h-4 w-4" />
+          <button type="button" onClick={leave} aria-label={t('editor.back')} title={t('editor.back')} className={iconButton}>
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-fg sm:flex">
             <GitBranch className="h-4 w-4" />
           </span>
           <button type="button" onClick={leave} className="hidden text-sm text-ink-muted hover:text-ink md:block">
-            Workflows
+            {t('workflows.title')}
           </button>
           <span className="hidden text-ink-subtle md:block">/</span>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
             readOnly={readOnly}
-            aria-label="Workflow name"
-            placeholder="Untitled workflow"
+            aria-label={t('editor.nameLabel')}
+            placeholder={t('workflow.inspector.untitled')}
+            dir="auto"
             size={Math.min(Math.max(name.length + 1, 10), 32)}
             className="min-w-0 truncate rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-ink outline-none transition-colors hover:border-line focus:border-line-accent focus:bg-subtle"
           />
@@ -991,7 +998,7 @@ const Builder = () => {
             {status.label}
           </Badge>
           {workflow?.version != null && <span className="hidden text-xs text-ink-subtle sm:inline">v{workflow.version}</span>}
-          {dirty && <span className="hidden whitespace-nowrap text-xs text-warning-fg lg:inline">· Unsaved changes</span>}
+          {dirty && <span className="hidden whitespace-nowrap text-xs text-warning-fg lg:inline">· {t('editor.unsaved')}</span>}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -1018,10 +1025,10 @@ const Builder = () => {
                 <CheckCircle2 className="h-3.5 w-3.5" />
               )}
               {problems.length
-                ? `${problems.length} problem${problems.length === 1 ? '' : 's'}`
+                ? t('editor.problems', { count: problems.length })
                 : checking
-                  ? 'Checking…'
-                  : 'Ready to run'}
+                  ? t('editor.checking')
+                  : t('workflow.inspector.ready')}
             </button>
           )}
           <Button
@@ -1032,13 +1039,13 @@ const Builder = () => {
               setInspectorOpen((open) => (selectedStage ? true : !open));
             }}
           >
-            <span className="hidden sm:inline">Settings</span>
+            <span className="hidden sm:inline">{t('editor.settings')}</span>
           </Button>
           {readOnly ? (
-            <Badge size="small">View only</Badge>
+            <Badge size="small">{t('editor.viewOnly')}</Badge>
           ) : (
             <Button startIcon={Save} onClick={save} isLoading={saving} disabled={blocked || (!dirty && !isCreate)}>
-              {isCreate ? 'Create' : 'Save'}
+              {isCreate ? t('editor.create') : t('common:actions.save')}
             </Button>
           )}
         </div>
@@ -1047,6 +1054,9 @@ const Builder = () => {
       {/* Canvas */}
       <div className="relative min-h-0 flex-1" onDragOver={onDragOver} onDrop={onDrop}>
         <WorkflowCanvasContext.Provider value={canvasActions}>
+          {/* The graph is drawn left to right in every language (its connectors
+              sit on fixed sides); the panels around it follow the page. */}
+          <div dir="ltr" className="h-full w-full">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -1074,6 +1084,7 @@ const Builder = () => {
           >
             <Background variant={BackgroundVariant.Dots} gap={20} size={1.5} color="var(--color-line-strong)" />
           </ReactFlow>
+          </div>
         </WorkflowCanvasContext.Provider>
 
         {/* Steps to add */}
@@ -1153,8 +1164,7 @@ const Builder = () => {
 
         {stages.length === 0 && !readOnly && (
           <p className="pointer-events-none absolute left-1/2 top-4 z-5 w-max max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full border border-line bg-surface px-4 py-2 text-center text-xs text-ink-muted shadow-sm">
-            Pick an agent or a role from the list, or press <span className="font-semibold text-ink">+</span> to add the
-            first step.
+            <Trans t={t} i18nKey="editor.emptyHint" components={{ b: <span className="font-semibold text-ink" /> }} />
           </p>
         )}
 
@@ -1163,25 +1173,25 @@ const Builder = () => {
           before={
             !readOnly && (
               <>
-                <button type="button" onClick={undo} disabled={!h.past.length} aria-label="Undo" title="Undo (Ctrl+Z)" className={iconButton}>
-                  <Undo2 className="h-4 w-4" />
+                <button type="button" onClick={undo} disabled={!h.past.length} aria-label={t('editor.undo')} title={t('editor.undoTitle')} className={iconButton}>
+                  <Undo2 className="h-4 w-4" aria-hidden="true" />
                 </button>
-                <button type="button" onClick={redo} disabled={!h.future.length} aria-label="Redo" title="Redo (Ctrl+Shift+Z)" className={iconButton}>
-                  <Redo2 className="h-4 w-4" />
+                <button type="button" onClick={redo} disabled={!h.future.length} aria-label={t('editor.redo')} title={t('editor.redoTitle')} className={iconButton}>
+                  <Redo2 className="h-4 w-4" aria-hidden="true" />
                 </button>
               </>
             )
           }
           after={
             <>
-              <button type="button" onClick={() => tidy()} aria-label="Tidy up the layout" title="Tidy up the layout" className={iconButton}>
-                <LayoutList className="h-4 w-4" />
+              <button type="button" onClick={() => tidy()} aria-label={t('editor.tidy')} title={t('editor.tidy')} className={iconButton}>
+                <LayoutList className="h-4 w-4" aria-hidden="true" />
               </button>
               <CanvasDivider />
-              <div className="flex rounded-md bg-subtle p-0.5" role="radiogroup" aria-label="Direction">
+              <div className="flex rounded-md bg-subtle p-0.5" role="radiogroup" aria-label={t('editor.direction')}>
                 {[
-                  { value: VERTICAL, label: 'Top to bottom', icon: ArrowDownToLine },
-                  { value: HORIZONTAL, label: 'Left to right', icon: ArrowRightToLine },
+                  { value: VERTICAL, label: t('editor.topToBottom'), icon: ArrowDownToLine },
+                  { value: HORIZONTAL, label: t('editor.leftToRight'), icon: ArrowRightToLine },
                 ].map(({ value, label, icon: Icon }) => (
                   <button
                     key={value}
@@ -1195,7 +1205,7 @@ const Builder = () => {
                       orientation === value ? 'bg-surface text-accent-fg shadow-sm' : 'text-ink-muted hover:text-ink'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4" aria-hidden="true" />
                   </button>
                 ))}
               </div>
@@ -1208,10 +1218,10 @@ const Builder = () => {
         isOpen={confirmLeave}
         onClose={() => setConfirmLeave(false)}
         onConfirm={() => navigate(listPath)}
-        title="Leave without saving?"
-        message="Your changes to this workflow haven't been saved and will be lost."
-        confirmText="Discard changes"
-        cancelText="Keep editing"
+        title={t('editor.leaveTitle')}
+        message={t('editor.leaveMessage')}
+        confirmText={t('editor.discard')}
+        cancelText={t('editor.keepEditing')}
         variant="danger"
       />
     </div>

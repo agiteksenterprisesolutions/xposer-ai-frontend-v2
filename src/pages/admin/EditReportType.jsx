@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { reportTypesAPI } from '../../api';
@@ -24,6 +25,7 @@ const EditReportType = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const listPath = staffPath(user?.organization_slug, 'report-types');
+  const { t } = useTranslation('reportTypes');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,7 +37,7 @@ const EditReportType = () => {
 
   useSEO({
     enabled: !loading && !!reportType,
-    title: reportType ? `Edit — ${reportType.name}` : '',
+    title: reportType ? t('edit.seoTitle', { name: reportType.name }) : '',
     description: reportType?.description,
     noIndex: true,
   });
@@ -46,7 +48,7 @@ const EditReportType = () => {
     reportTypesAPI
       .getReportType(id)
       .then((data) => live && setReportType(data))
-      .catch(() => live && setError("Couldn't load this report type. Try again."))
+      .catch(() => live && setError(t('edit.loadFailed')))
       .finally(() => live && setLoading(false));
     return () => {
       live = false;
@@ -63,8 +65,8 @@ const EditReportType = () => {
       const before = reportType?.version;
       toast.success(
         saved?.version != null && before != null && saved.version > before
-          ? `Saved as version ${saved.version}`
-          : 'Changes saved',
+          ? t('edit.savedVersion', { version: saved.version })
+          : t('edit.saved'),
       );
       // governance_problems reflect the settings just saved; fetch them if
       // the save didn't send them back.
@@ -86,9 +88,9 @@ const EditReportType = () => {
   if (error || !reportType) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <Alert variant="error">{error || 'Report type not found'}</Alert>
+        <Alert variant="error">{error || t('edit.notFound')}</Alert>
         <Button variant="secondary" onClick={() => navigate(listPath)} startIcon={ArrowLeft} className="mt-4">
-          Back to report types
+          {t('edit.back')}
         </Button>
       </div>
     );

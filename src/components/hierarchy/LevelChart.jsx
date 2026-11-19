@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowUpRight, Layers, Link2Off, UserRound, Users } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import Skeleton from '../ui/Skeleton';
@@ -30,12 +31,15 @@ import { errorSummary } from '../../utils/errors';
 
 const usersLink = (orgSlug, params) => `${staffPath(orgSlug, 'users')}?${new URLSearchParams(params).toString()}`;
 
+const BOLD = { b: <span className="font-semibold text-ink" /> };
+
 const LevelRow = ({ level, isLowest, usersHref, directoryHref, nameFor }) => {
+  const { t } = useTranslation('hierarchy');
   const roles = level.roles || [];
   const blockedReason = level.receives_escalations === false
     ? isLowest || level.is_lowest_level
-      ? 'Lowest level · never an escalation target'
-      : 'Not an escalation target'
+      ? t('levelChart.lowestNeverTarget')
+      : t('levelChart.notTarget')
     : null;
 
   return (
@@ -43,12 +47,12 @@ const LevelRow = ({ level, isLowest, usersHref, directoryHref, nameFor }) => {
       <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[0.9375rem] font-semibold text-ink">{level.title}</span>
+            <span className="text-[0.9375rem] font-semibold text-ink" dir="auto">{level.title}</span>
             <span className="font-mono text-[11px] text-ink-subtle">
-              {level.code} · rank {level.rank}
+              {t('coverage.codeRank', { code: level.code, rank: level.rank })}
             </span>
             {level.department && <Badge size="small">{level.department}</Badge>}
-            {level.vacant && <Badge variant="warning" size="small">Vacant</Badge>}
+            {level.vacant && <Badge variant="warning" size="small">{t('coverage.vacant')}</Badge>}
             {blockedReason && <Badge size="small">{blockedReason}</Badge>}
           </div>
           {level.departments?.length > 0 && !level.department && (
@@ -56,32 +60,32 @@ const LevelRow = ({ level, isLowest, usersHref, directoryHref, nameFor }) => {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-4 text-xs text-ink-muted">
-          <span className="flex items-center gap-1.5" title="People in the directory at this level">
+          <span className="flex items-center gap-1.5" title={t('levelChart.peopleHint')}>
             <Users className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="font-semibold text-ink">{level.member_count ?? 0}</span> people
+            <Trans t={t} i18nKey="levelChart.peopleCount" count={level.member_count ?? 0} components={BOLD} />
           </span>
-          <span title="Directory entries with a login, and without one">
+          <span title={t('levelChart.loginHint')}>
             {usersHref && level.with_account > 0 ? (
               <Link
                 to={usersHref({ level: level.code })}
                 className="hover:text-accent-fg hover:underline"
-                title={`See the accounts at ${level.title}`}
+                title={t('levelChart.seeAccounts', { level: level.title })}
               >
-                <span className="font-semibold text-ink">{level.with_account}</span> with a login
+                <Trans t={t} i18nKey="levelChart.withLogin" values={{ count: level.with_account }} components={BOLD} />
               </Link>
             ) : (
               <>
-                <span className="font-semibold text-ink">{level.with_account ?? 0}</span> with a login
+                <Trans t={t} i18nKey="levelChart.withLogin" values={{ count: level.with_account ?? 0 }} components={BOLD} />
               </>
             )}{' '}
             ·{' '}
-            <span className="font-semibold text-ink">{level.without_account ?? 0}</span> without
+            <Trans t={t} i18nKey="levelChart.without" values={{ count: level.without_account ?? 0 }} components={BOLD} />
           </span>
         </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {roles.length === 0 && <span className="text-xs text-ink-muted">No accounts at this level yet.</span>}
+        {roles.length === 0 && <span className="text-xs text-ink-muted">{t('levelChart.noAccounts')}</span>}
         {roles.map(({ role, count }) => {
           const chip = (
             <>
@@ -94,7 +98,7 @@ const LevelRow = ({ level, isLowest, usersHref, directoryHref, nameFor }) => {
               key={role}
               to={directoryHref(level.code)}
               className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink-secondary transition-colors hover:border-line-accent hover:text-accent-fg"
-              title={`See the people at ${level.title} in the directory`}
+              title={t('levelChart.seeInDirectory', { level: level.title })}
             >
               {chip}
               <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
@@ -131,6 +135,7 @@ const LevelChartSkeleton = () => (
 );
 
 const LevelChart = ({ onGoTo, reloadKey }) => {
+  const { t } = useTranslation('hierarchy');
   const { nameFor } = useOrgRoles();
   const can = useCan();
   const orgSlug = useAuthStore((s) => s.user?.organization_slug);
@@ -158,9 +163,9 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
   if (error) {
     return (
       <div className="rounded-xl border border-line bg-surface p-5 text-sm text-ink-secondary">
-        Couldn't load the chart. {error}{' '}
+        {t('levelChart.loadError')} {error}{' '}
         <button type="button" onClick={load} className="font-medium text-link hover:underline">
-          Try again
+          {t('common:actions.retry')}
         </button>
       </div>
     );
@@ -177,14 +182,11 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
         <div className="flex flex-wrap items-start gap-3 rounded-xl border border-warning-line bg-warning-soft px-4 py-3 text-sm text-warning-fg">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <p className="min-w-0 flex-1">
-            <span className="font-semibold">
-              {chart.unplaced_members} {chart.unplaced_members === 1 ? 'person isn’t' : 'people aren’t'} placed.
-            </span>{' '}
-            They have no role, or a role with no level. Escalation can't route a report around someone who isn't placed —
-            give them a role, or give their role a level.
+            <span className="font-semibold">{t('levelChart.unplaced', { count: chart.unplaced_members })}</span>{' '}
+            {t('levelChart.unplacedBody')}
           </p>
           <button type="button" onClick={() => onGoTo?.('directory')} className="font-semibold underline underline-offset-2">
-            Place them
+            {t('levelChart.placeThem')}
           </button>
         </div>
       )}
@@ -192,15 +194,12 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
         <div className="flex flex-wrap items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink-secondary">
           <Link2Off className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
           <p className="min-w-0 flex-1">
-            <span className="font-semibold text-ink">
-              {unlinked} {unlinked === 1 ? 'account isn’t' : 'accounts aren’t'} linked to
-              the directory.
-            </span>{' '}
-            They see only their own cases, whatever their role allows.
+            <span className="font-semibold text-ink">{t('levelChart.unlinked', { count: unlinked })}</span>{' '}
+            {t('levelChart.unlinkedBody')}
           </p>
           {usersHref && (
             <Link to={usersHref({ unlinked: 'true' })} className="font-semibold text-link hover:underline">
-              See them
+              {t('levelChart.seeThem')}
             </Link>
           )}
         </div>
@@ -209,20 +208,23 @@ const LevelChart = ({ onGoTo, reloadKey }) => {
       {levels.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line-strong bg-surface px-6 py-12 text-center">
           <Layers className="h-6 w-6 text-ink-subtle" aria-hidden="true" />
-          <p className="text-sm font-semibold text-ink">No levels yet</p>
+          <p className="text-sm font-semibold text-ink">{t('levelChart.noLevels')}</p>
           <p className="max-w-sm text-sm text-ink-muted">
-            The chart is drawn from your levels — the ladder a report escalates up. Add them first.
+            {t('levelChart.noLevelsBody')}
           </p>
           <Button variant="secondary" size="small" className="mt-2" onClick={() => onGoTo?.('levels')}>
-            Go to Levels
+            {t('levelChart.goToLevels')}
           </Button>
         </div>
       ) : (
         <>
           <p className="flex items-center gap-1.5 text-xs text-ink-muted">
             <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
-            {chart.level_count ?? levels.length} levels · {chart.member_count ?? 0} people · most senior first.
-            {directoryHref && ' Click a role to see who holds it.'}
+            {t('levelChart.summary', {
+              levels: t('levelCount', { count: chart.level_count ?? levels.length }),
+              people: t('people', { count: chart.member_count ?? 0 }),
+            })}
+            {directoryHref && ` ${t('levelChart.clickRole')}`}
           </p>
           <ol className="space-y-3">
             {levels.map((level) => (

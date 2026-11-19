@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Eye, History, Info, Send } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import Modal, { ConfirmationModal } from '../layout/Modal';
 import { useUIStore } from '../../store/uiStore';
@@ -32,17 +33,15 @@ import { reportTypeStatus, toReportTypePayload } from '../../utils/reportTypes';
 import VersionHistory from './VersionHistory';
 import { describeError } from '../../utils/errors';
 
-const STEPS = [
-  { id: 'questions', label: 'Questions' },
-  { id: 'handling', label: 'Handling' },
-  { id: 'review', label: 'Review' },
-];
+// Labels: builder:steps.<id>.
+const STEPS = [{ id: 'questions' }, { id: 'handling' }, { id: 'review' }];
 
+// Labels: builder:editor.pill.<status>.
 const STATUS_PILL = {
-  new: ['New', 'bg-active text-ink-secondary'],
-  draft: ['Draft', 'bg-active text-ink-secondary'],
-  active: ['Active', 'bg-success-soft text-success-fg'],
-  inactive: ['Inactive', 'bg-warning-soft text-warning-fg'],
+  new: 'bg-active text-ink-secondary',
+  draft: 'bg-active text-ink-secondary',
+  active: 'bg-success-soft text-success-fg',
+  inactive: 'bg-warning-soft text-warning-fg',
 };
 
 /**
@@ -68,6 +67,8 @@ const ReportTypeEditor = ({
   version = null,
 }) => {
   const draft = useReportTypeDraft(initialData);
+  const { t, i18n } = useTranslation('builder');
+  const language = i18n.resolvedLanguage;
   const { form, dirty, select } = draft;
   const [step, setStep] = useState(initialStep || 'questions');
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -104,11 +105,17 @@ const ReportTypeEditor = ({
     };
   }, [setCatalog]);
 
-  const issues = useMemo(() => findIssues(form, catalog), [form, catalog]);
+  // `language`: the messages are worded in the interface language when found.
+  const issues = useMemo(
+    () => findIssues(form, catalog),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form, catalog, language],
+  );
   // What going live would need: the core questions it doesn't ask yet.
   const activationBlock = useMemo(
     () => findIssues({ ...form, status: 'active' }, catalog).filter((i) => i.check === 'core' && i.level === 'error'),
-    [form, catalog],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form, catalog, language],
   );
   const errors = issues.filter((issue) => issue.level === 'error');
   // Until a save is tried, only flag what's actually been touched, not the
@@ -156,7 +163,7 @@ const ReportTypeEditor = ({
     const blocking = status ? findIssues({ ...form, status }, catalog).filter((i) => i.level === 'error') : errors;
     if (blocking.length) {
       goTo('review');
-      toast.error(`Fix ${blocking.length === 1 ? 'one thing' : `${blocking.length} things`} before saving.`);
+      toast.error(t('editor.fixBeforeSaving', { count: blocking.length }));
       return;
     }
     try {
@@ -169,7 +176,7 @@ const ReportTypeEditor = ({
       if (detail?.code === 'missing_core_field') {
         setCoreError({ message: detail.message, fields: Array.isArray(detail.fields) ? detail.fields : [] });
         goTo('review');
-        toast.error('Not saved. The reason is shown on the Review step.');
+        toast.error(t('editor.notSavedReview'));
         return;
       }
       const described = describeError(err);
@@ -177,7 +184,7 @@ const ReportTypeEditor = ({
       if (Object.keys(fields).length) {
         setServerErrors(fields);
         goTo('handling');
-        toast.error('Not saved. The reason is shown under the field.');
+        toast.error(t('editor.notSavedField'));
       } else {
         toast.error(described.summary);
       }
@@ -187,7 +194,9 @@ const ReportTypeEditor = ({
   const exit = () => (dirty ? setConfirmLeave(true) : onExit());
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
-  const [pillLabel, pillClass] = STATUS_PILL[isNew ? 'new' : reportTypeStatus(form)] || STATUS_PILL.draft;
+  const pillStatus = isNew ? 'new' : STATUS_PILL[reportTypeStatus(form)] ? reportTypeStatus(form) : 'draft';
+  const pillClass = STATUS_PILL[pillStatus];
+  const pillLabel = t(`editor.pill.${pillStatus}`);
 
   return (
     <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-canvas lg:h-[calc(100dvh-4rem)]">
@@ -196,7 +205,7 @@ const ReportTypeEditor = ({
           <button
             type="button"
             onClick={exit}
-            aria-label="Back to report types"
+            aria-label={t('editor.backToTypes')}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line text-ink-secondary hover:bg-hover"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -204,10 +213,10 @@ const ReportTypeEditor = ({
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
               <input
-                aria-label="Report type name"
+                aria-label={t('editor.nameLabel')}
                 value={form.name}
                 onChange={(e) => draft.setField('name', e.target.value)}
-                placeholder="Untitled report type"
+                placeholder={t('editor.untitledType')}
                 className="-ms-1 min-w-[12ch] max-w-full truncate rounded-md border border-transparent bg-transparent px-1 text-base font-semibold text-ink outline-none [field-sizing:content] placeholder:text-ink-muted hover:border-line focus:border-line-accent"
               />
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${pillClass}`}>{pillLabel}</span>
@@ -216,14 +225,14 @@ const ReportTypeEditor = ({
               {dirty ? (
                 <>
                   <span className="h-1.5 w-1.5 rounded-full bg-warning-solid" aria-hidden="true" />
-                  Unsaved changes
+                  {t('editor.unsaved')}
                 </>
               ) : isNew ? (
-                'Not saved yet'
+                t('editor.notSavedYet')
               ) : (
                 <>
                   <Check className="h-3.5 w-3.5 text-success-fg" aria-hidden="true" />
-                  All changes saved
+                  {t('editor.allSaved')}
                 </>
               )}
               {!isNew && version != null && typeId && (
@@ -233,10 +242,10 @@ const ReportTypeEditor = ({
                     type="button"
                     onClick={() => setHistoryOpen(true)}
                     className="inline-flex items-center gap-1 font-medium text-link hover:underline"
-                    title="See every saved version of the questions"
+                    title={t('editor.versionTitle')}
                   >
                     <History className="h-3.5 w-3.5" aria-hidden="true" />
-                    Version {version}
+                    {t('versions.version', { version })}
                   </button>
                 </>
               )}
@@ -244,7 +253,7 @@ const ReportTypeEditor = ({
           </div>
         </div>
 
-        <nav aria-label="Builder steps" className="order-last flex w-full gap-1 rounded-xl bg-active p-1 sm:order-none sm:w-auto" data-tour="rtb-steps">
+        <nav aria-label={t('editor.stepsLabel')} className="order-last flex w-full gap-1 rounded-xl bg-active p-1 sm:order-none sm:w-auto" data-tour="rtb-steps">
           {STEPS.map((s, i) => {
             const current = s.id === step;
             const flagged = s.id === 'questions' && triedSave && questionErrors > 0;
@@ -271,7 +280,7 @@ const ReportTypeEditor = ({
                 >
                   {flagged ? questionErrors : i < stepIndex && !current ? <Check className="h-3 w-3" /> : i + 1}
                 </span>
-                {s.label}
+                {t(`steps.${s.id}`)}
               </button>
             );
           })}
@@ -279,24 +288,30 @@ const ReportTypeEditor = ({
 
         <div className="flex flex-[1_1_16rem] items-center justify-end gap-2">
           {step === 'questions' && (
-            <Button variant="secondary" startIcon={Eye} onClick={() => setPreviewOpen(true)} data-tour="rtb-preview">
-              <span className="hidden sm:inline">Preview</span>
+            <Button
+              variant="secondary"
+              startIcon={Eye}
+              onClick={() => setPreviewOpen(true)}
+              aria-label={t('editor.preview')}
+              data-tour="rtb-preview"
+            >
+              <span className="hidden sm:inline">{t('editor.preview')}</span>
             </Button>
           )}
           {step !== 'questions' && isNew && (
             <Button variant="secondary" onClick={() => goTo(STEPS[stepIndex - 1].id)}>
-              Back
+              {t('common:actions.back')}
             </Button>
           )}
           {!isNew && (
             <Button variant={step === 'review' ? 'primary' : 'secondary'} onClick={() => save()} isLoading={saving} startIcon={Check}>
-              Save changes
+              {t('editor.saveChanges')}
             </Button>
           )}
           {isNew && step === 'review' && (
             <>
               <Button variant="secondary" onClick={() => save('draft')} disabled={saving}>
-                Save as draft
+                {t('editor.saveDraft')}
               </Button>
               <Button
                 onClick={() => save('active')}
@@ -306,7 +321,7 @@ const ReportTypeEditor = ({
                 startIcon={Send}
                 data-tour="rtb-submit"
               >
-                Publish
+                {t('editor.publish')}
               </Button>
             </>
           )}
@@ -317,7 +332,7 @@ const ReportTypeEditor = ({
               onClick={() => goTo(STEPS[stepIndex + 1].id)}
               data-tour="rtb-next"
             >
-              {isNew ? `Next: ${STEPS[stepIndex + 1].label}` : STEPS[stepIndex + 1].label}
+              {isNew ? t('editor.nextStep', { step: t(`steps.${STEPS[stepIndex + 1].id}`) }) : t(`steps.${STEPS[stepIndex + 1].id}`)}
             </Button>
           )}
         </div>
@@ -327,8 +342,7 @@ const ReportTypeEditor = ({
         <p className="flex items-start gap-2 border-b border-line bg-info-soft px-4 py-2 text-xs text-info-fg sm:px-6" role="status">
           <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>
-            Changes to the questions save as a new version{version != null ? ` (version ${version + 1})` : ''}. Reports
-            already started keep the version they began with.
+            {version != null ? t('editor.newVersionNumbered', { version: version + 1 }) : t('editor.newVersion')}
           </span>
         </p>
       )}
@@ -341,7 +355,7 @@ const ReportTypeEditor = ({
           <HandlingStep
             draft={draft}
             codeLocked={codeLocked}
-            nameError={triedSave && !form.name?.trim() ? 'Give the report type a name' : null}
+            nameError={triedSave && !form.name?.trim() ? t('editor.nameRequired') : null}
             problems={problems}
             serverErrors={serverErrors}
             onClearError={(field) => setServerErrors(({ [field]: _cleared, ...rest }) => rest)}
@@ -363,11 +377,11 @@ const ReportTypeEditor = ({
       <Modal
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        title="What reporters will see"
+        title={t('editor.previewTitle')}
         size="xl"
         footer={
           <div className="flex items-center justify-between gap-3">
-            <span className="text-xs text-ink-muted">Nothing here is saved. Use Continue to page through the steps.</span>
+            <span className="text-xs text-ink-muted">{t('editor.previewHint')}</span>
             <span className="flex rounded-lg bg-active p-0.5">
               {['desktop', 'phone'].map((d) => (
                 <button
@@ -375,9 +389,9 @@ const ReportTypeEditor = ({
                   type="button"
                   aria-pressed={previewDevice === d}
                   onClick={() => setPreviewDevice(d)}
-                  className={`h-7 rounded-md px-2.5 text-xs font-medium capitalize ${previewDevice === d ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted'}`}
+                  className={`h-7 rounded-md px-2.5 text-xs font-medium ${previewDevice === d ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted'}`}
                 >
-                  {d}
+                  {t(`review.device.${d}`)}
                 </button>
               ))}
             </span>
@@ -405,10 +419,10 @@ const ReportTypeEditor = ({
           setConfirmLeave(false);
           onExit();
         }}
-        title="Leave without saving?"
-        message={isNew ? "This report type hasn't been saved. It will be lost." : 'Your unsaved changes will be lost.'}
-        confirmText="Leave"
-        cancelText="Keep editing"
+        title={t('editor.leaveTitle')}
+        message={isNew ? t('editor.leaveNew') : t('editor.leaveEdit')}
+        confirmText={t('editor.leave')}
+        cancelText={t('editor.keepEditing')}
       />
     </div>
   );

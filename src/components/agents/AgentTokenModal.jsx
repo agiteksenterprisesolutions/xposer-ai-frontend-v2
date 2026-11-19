@@ -6,6 +6,7 @@
 // for it again. So the reveal step cannot be dismissed by accident — no
 // overlay click, no Escape, no close button — until the user says it is
 // stored. Rotating invalidates the previous token the moment it succeeds.
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Check, Copy, KeyRound } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -17,26 +18,8 @@ import { orgAgentsAPI } from '../../api/orgAgents';
 import { copyToClipboard } from '../../utils/clipboard';
 import { describeError } from '../../utils/errors';
 
-const COPY = {
-  mint: {
-    title: 'Create a token',
-    body: 'The multiagent service uses this token to act as the agent. It is shown once, so have somewhere safe ready to store it.',
-    action: 'Create token',
-    variant: 'primary',
-  },
-  rotate: {
-    title: 'Rotate the token',
-    body: 'A new token replaces the current one immediately. Anything still using the old token stops working until it is given the new one.',
-    action: 'Rotate token',
-    variant: 'warning',
-  },
-  revoke: {
-    title: 'Revoke the token',
-    body: 'The agent stops being able to act as soon as the token is revoked. You can create a new one later.',
-    action: 'Revoke token',
-    variant: 'danger',
-  },
-};
+// Text for each mode lives under token.<mode>.{title,body,action}.
+const VARIANT = { mint: 'primary', rotate: 'warning', revoke: 'danger' };
 
 /** mode: 'mint' | 'rotate' | 'revoke' */
 const AgentTokenModal = ({ agent, mode, onClose, onDone }) => {
@@ -45,7 +28,13 @@ const AgentTokenModal = ({ agent, mode, onClose, onDone }) => {
   const [issued, setIssued] = useState(null);
   const [copied, setCopied] = useState(false);
   const [stored, setStored] = useState(false);
-  const copy = COPY[mode];
+  const { t } = useTranslation('agents');
+  const copy = {
+    title: t(`token.${mode}.title`),
+    body: t(`token.${mode}.body`),
+    action: t(`token.${mode}.action`),
+    variant: VARIANT[mode],
+  };
 
   const run = async () => {
     setWorking(true);
@@ -53,7 +42,7 @@ const AgentTokenModal = ({ agent, mode, onClose, onDone }) => {
     try {
       if (mode === 'revoke') {
         await orgAgentsAPI.revokeToken(agent.id);
-        toast.success(`Token revoked for ${agent.name}.`);
+        toast.success(t('token.revoked', { name: agent.name }));
         onDone?.();
       } else {
         setIssued(await orgAgentsAPI.mintToken(agent.id));
@@ -69,7 +58,7 @@ const AgentTokenModal = ({ agent, mode, onClose, onDone }) => {
 
   const handleCopy = async () => {
     if (!(await copyToClipboard(issued.token))) {
-      toast.error('Could not copy — select the token and copy it manually.');
+      toast.error(t('token.copyFailed'));
       return;
     }
     setCopied(true);
@@ -81,7 +70,7 @@ const AgentTokenModal = ({ agent, mode, onClose, onDone }) => {
       <Modal
         isOpen
         onClose={() => {}}
-        title={`Token for ${agent.name}`}
+        title={t('token.revealTitle', { name: agent.name })}
         size="medium"
         closeOnOverlayClick={false}
         closeOnEsc={false}
@@ -90,28 +79,28 @@ const AgentTokenModal = ({ agent, mode, onClose, onDone }) => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <label className="flex items-center gap-2.5 text-sm text-ink">
               <Checkbox checked={stored} onChange={() => setStored((v) => !v)} labelledBy="token-stored" />
-              <span id="token-stored">I've stored this token somewhere safe</span>
+              <span id="token-stored">{t('token.stored')}</span>
             </label>
             <Button onClick={onClose} disabled={!stored}>
-              Done
+              {t('token.done')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4">
-          <Alert variant="warning" title="This is the only time the token is shown">
-            {issued.note || 'Store it now — it cannot be recovered. Rotating replaces it immediately.'}
+          <Alert variant="warning" title={t('token.onceTitle')}>
+            {issued.note || t('token.onceBody')}
           </Alert>
           <div className="flex items-stretch gap-2">
-            <code className="min-w-0 flex-1 select-all break-all rounded-lg border border-line bg-sunken px-3 py-2.5 font-mono text-sm text-ink">
+            <code dir="ltr" className="min-w-0 flex-1 select-all break-all rounded-lg border border-line bg-sunken px-3 py-2.5 font-mono text-sm text-ink">
               {issued.token}
             </code>
             <Button variant="secondary" startIcon={copied ? Check : Copy} onClick={handleCopy}>
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? t('common:actions.copied') : t('common:actions.copy')}
             </Button>
           </div>
           <p className="text-xs text-ink-muted">
-            Agent code <span className="font-mono text-ink">{issued.agent_code || agent.code}</span>
+            {t('token.agentCode')} <span className="font-mono text-ink" dir="ltr">{issued.agent_code || agent.code}</span>
           </p>
         </div>
       </Modal>
@@ -122,12 +111,12 @@ const AgentTokenModal = ({ agent, mode, onClose, onDone }) => {
     <Modal
       isOpen
       onClose={working ? () => {} : onClose}
-      title={`${copy.title} — ${agent.name}`}
+      title={t('token.modalTitle', { action: copy.title, name: agent.name })}
       size="sm"
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button variant="secondary" onClick={onClose} disabled={working}>
-            Cancel
+            {t('common:actions.cancel')}
           </Button>
           <Button variant={copy.variant} startIcon={KeyRound} onClick={run} isLoading={working}>
             {copy.action}

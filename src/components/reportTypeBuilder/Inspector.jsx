@@ -10,6 +10,7 @@
 // so nobody types an edit the server would undo on save. Its field name is
 // its identity and never changes.
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Lock, Plus, Trash2, X, GripVertical, Layers } from 'lucide-react';
 import QuestionValidationEditor, { validationFieldsFor } from '../forms/QuestionValidationEditor';
 import { CURRENCIES, DEFAULT_CURRENCY, SENSITIVE_DATA_CLASSES, normalizeOptions } from '../../utils/reportTypes';
@@ -22,7 +23,7 @@ const inputClass =
   'w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink-subtle focus:border-line-accent disabled:cursor-not-allowed disabled:bg-subtle disabled:text-ink-muted';
 
 const Field = ({ label, hint, htmlFor, children, error }) => (
-  <div className="space-y-1.5">
+  <div className="flex flex-col gap-1.5">
     <label htmlFor={htmlFor} className="block text-sm font-medium text-ink-secondary">
       {label}
       {hint && <span className="ms-1 font-normal text-ink-muted">{hint}</span>}
@@ -33,7 +34,7 @@ const Field = ({ label, hint, htmlFor, children, error }) => (
 );
 
 const Group = ({ title, aside, children }) => (
-  <section className="space-y-3 border-t border-line-subtle px-5 py-4">
+  <section className="flex flex-col gap-3 border-t border-line-subtle px-5 py-4">
     <div className="flex items-center justify-between gap-2">
       <h3 className="text-sm font-semibold text-ink">{title}</h3>
       {aside}
@@ -58,7 +59,7 @@ const Disclosure = ({ title, summary, children, defaultOpen = false }) => {
           <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
         </span>
       </button>
-      {open && <div className="space-y-4 px-5 pb-5">{children}</div>}
+      {open && <div className="flex flex-col gap-4 px-5 pb-5">{children}</div>}
     </section>
   );
 };
@@ -79,6 +80,7 @@ const Switch = ({ checked, onChange, label }) => (
 // ── Answers for dropdown / checkbox questions ─────────────────────────────────
 
 const OptionsEditor = ({ question, onChange, error }) => {
+  const { t } = useTranslation('builder');
   const [showValues, setShowValues] = useState(false);
   const options = normalizeOptions(question.options);
 
@@ -102,25 +104,26 @@ const OptionsEditor = ({ question, onChange, error }) => {
     const taken = new Set(options.map((o) => o.value));
     let n = options.length + 1;
     while (taken.has(`option_${n}`)) n += 1;
+    // The default label is stored data (like a new question's), so it stays as-is.
     onChange([...options, { value: `option_${n}`, label: `Option ${n}` }]);
   };
 
   return (
-    <div className="space-y-2">
-      <ul className="space-y-1.5">
+    <div className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-1.5">
         {options.map((option, index) => (
           <li key={index} className="flex items-start gap-1.5">
             <GripVertical className="mt-2.5 h-4 w-4 shrink-0 text-ink-subtle" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <input
-                aria-label={`Answer ${index + 1}`}
+                aria-label={t('inspector.answerN', { n: index + 1 })}
                 value={option.label}
                 onChange={(e) => setLabel(index, e.target.value)}
                 className={`${inputClass} h-9 py-1.5`}
               />
               {showValues && (
                 <input
-                  aria-label={`Stored value for answer ${index + 1}`}
+                  aria-label={t('inspector.storedValueN', { n: index + 1 })}
                   value={option.value}
                   onChange={(e) => onChange(options.map((o, i) => (i === index ? { ...o, value: e.target.value } : o)))}
                   className={`${inputClass} mt-1 h-8 py-1 font-mono text-xs`}
@@ -130,7 +133,7 @@ const OptionsEditor = ({ question, onChange, error }) => {
             <button
               type="button"
               onClick={() => onChange(options.filter((_, i) => i !== index))}
-              aria-label={`Remove ${option.label || `answer ${index + 1}`}`}
+              aria-label={t('inspector.removeAnswer', { answer: option.label || t('inspector.answerN', { n: index + 1 }) })}
               className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-danger-soft hover:text-danger-fg"
             >
               <X className="h-3.5 w-3.5" />
@@ -146,10 +149,10 @@ const OptionsEditor = ({ question, onChange, error }) => {
           className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-link hover:bg-accent-soft"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-          Add answer
+          {t('inspector.addAnswer')}
         </button>
         <button type="button" onClick={() => setShowValues((v) => !v)} className="text-xs text-ink-muted hover:text-ink">
-          {showValues ? 'Hide stored values' : 'Show stored values'}
+          {showValues ? t('inspector.hideValues') : t('inspector.showValues')}
         </button>
       </div>
     </div>
@@ -157,9 +160,11 @@ const OptionsEditor = ({ question, onChange, error }) => {
 };
 
 /** Answers that can't be changed: routing reads their stored values. */
-const LockedOptions = ({ question }) => (
-  <div className="space-y-2">
-    <ul className="space-y-1">
+const LockedOptions = ({ question }) => {
+  const { t } = useTranslation('builder');
+  return (
+  <div className="flex flex-col gap-2">
+    <ul className="flex flex-col gap-1">
       {normalizeOptions(question.options).map((option) => (
         <li key={option.value} className="flex items-center gap-2 rounded-lg bg-subtle px-3 py-1.5 text-sm text-ink-secondary">
           <span className="min-w-0 flex-1 truncate">{option.label}</span>
@@ -169,14 +174,16 @@ const LockedOptions = ({ question }) => (
     </ul>
     <p className="flex gap-1.5 text-xs text-ink-muted">
       <Lock className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
-      Fixed. Escalation reads these stored values, so renaming one would silently stop it recognising that answer.
+      {t('inspector.lockedOptions')}
     </p>
   </div>
-);
+  );
+};
 
 // ── Question ──────────────────────────────────────────────────────────────────
 
-const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) => {
+const QuestionInspector = ({ draft, section, question, issueAbout, onRemove }) => {
+  const { t } = useTranslation('builder');
   const { form, updateQuestion, setOptions, setLogic, moveQuestionToSection, catalog } = draft;
   const core = isCore(question);
   const entry = entryFor(catalog, question);
@@ -187,15 +194,14 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
   // A type saved before the catalogue may differ; the server corrects it on save.
   const drift = entry
     ? [
-        labelLocked && question.label !== entry.label && `the wording becomes “${entry.label}”`,
-        typeLocked && question.type !== entry.type && `the type becomes ${typeInfo(entry.type).label}`,
+        labelLocked && question.label !== entry.label && t('inspector.driftWording', { label: entry.label }),
+        typeLocked && question.type !== entry.type && t('inspector.driftType', { type: typeInfo(entry.type).label }),
       ].filter(Boolean)
     : [];
   const info = typeInfo(question.type);
   const Icon = info.icon;
   const set = (patch) => updateQuestion(section.id, question.id, patch);
-  const errors = issuesFor(question.id);
-  const errorAbout = (word) => errors.find((m) => m.includes(word));
+  const errorAbout = (about) => issueAbout?.(question.id, about);
   const earlier = questionsBefore(form.sections, section.id, question.id);
   const sensitive = SENSITIVE_DATA_CLASSES.find((c) => c.value === (question.sensitive_data_class || 'none'));
   const limits = validationFieldsFor(question.type);
@@ -209,9 +215,9 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
           <Icon className="h-4.5 w-4.5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-ink">Question settings</h2>
+          <h2 className="text-sm font-semibold text-ink">{t('inspector.questionSettings')}</h2>
           <label htmlFor={typeSelectId} className="sr-only">
-            Question type
+            {t('inspector.questionType')}
           </label>
           <select
             id={typeSelectId}
@@ -231,8 +237,8 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
           <button
             type="button"
             onClick={() => onRemove(section, question)}
-            aria-label={entry ? 'Turn off this question' : 'Delete question'}
-            title={entry ? 'Turn off' : 'Delete'}
+            aria-label={entry ? t('inspector.turnOffQuestion') : t('inspector.deleteQuestion')}
+            title={entry ? t('inspector.turnOffShort') : t('common:actions.delete')}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-danger-soft hover:text-danger-fg"
           >
             <Trash2 className="h-4 w-4" />
@@ -241,13 +247,14 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
       </div>
 
       {entry ? (
-        <div className="mx-5 mb-4 space-y-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
+        <div className="mx-5 mb-4 flex flex-col gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
           <p className="flex gap-2">
             <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
             <span>
-              <span className="font-semibold text-ink">{core || !canTurnOff(entry) ? 'Core question · always on.' : 'Standard question.'}</span>{' '}
-              The platform reads this answer by name, so its wording and type are fixed. You can move it to any step and
-              order{canTurnOff(entry) ? ', or turn it off' : ''}.
+              <span className="font-semibold text-ink">
+                {core || !canTurnOff(entry) ? t('inspector.coreAlwaysOn') : t('inspector.standardQuestion')}
+              </span>{' '}
+              {canTurnOff(entry) ? t('inspector.standardFixedCanTurnOff') : t('inspector.standardFixed')}
             </span>
           </p>
           {entry.drives && (
@@ -255,22 +262,22 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
           )}
           <StandardDetails entry={entry} />
           {drift.length > 0 && (
-            <p className="text-warning-fg">Saved with the standard version: {drift.join(' and ')}.</p>
+            <p className="text-warning-fg">{t('inspector.drift', { changes: drift.join(t('inspector.driftJoin')) })}</p>
           )}
         </div>
       ) : (
         core && (
           <p className="mx-5 mb-4 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
             <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
-            A core question. It can't be removed or change its type.
+            {t('inspector.coreNote')}
           </p>
         )
       )}
 
-      <div className="space-y-4 px-5 pb-5">
+      <div className="flex flex-col gap-4 px-5 pb-5">
         <Field
-          label="Question"
-          hint={labelLocked ? '· standard wording' : undefined}
+          label={t('inspector.question')}
+          hint={labelLocked ? t('inspector.standardWording') : undefined}
           htmlFor={`${question.id}-label`}
           error={errorAbout('wording')}
         >
@@ -281,31 +288,31 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
               value={question.label}
               readOnly={labelLocked}
               onChange={(e) => set({ label: e.target.value })}
-              placeholder="What do you want to ask?"
+              placeholder={t('inspector.questionPlaceholder')}
               className={`${inputClass} resize-none ${labelLocked ? 'bg-subtle pe-8 text-ink-secondary' : ''}`}
             />
             {labelLocked && <Lock className="absolute end-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
           </div>
         </Field>
-        <Field label="Hint for reporters" hint="optional" htmlFor={`${question.id}-help`}>
+        <Field label={t('inspector.hint')} hint={t('common:form.optional')} htmlFor={`${question.id}-help`}>
           <textarea
             id={`${question.id}-help`}
             rows={2}
             value={question.help_text || ''}
             onChange={(e) => set({ help_text: e.target.value })}
-            placeholder="Shown under the question"
+            placeholder={t('inspector.hintPlaceholder')}
             className={`${inputClass} resize-none`}
           />
         </Field>
         <div className="flex items-center justify-between gap-3">
           <span>
-            <span className="block text-sm font-medium text-ink-secondary">Required</span>
-            <span className="block text-xs text-ink-muted">Reporters must answer to continue</span>
+            <span className="block text-sm font-medium text-ink-secondary">{t('inspector.required')}</span>
+            <span className="block text-xs text-ink-muted">{t('inspector.requiredHint')}</span>
           </span>
-          <Switch checked={Boolean(question.required)} onChange={(required) => set({ required })} label="Required" />
+          <Switch checked={Boolean(question.required)} onChange={(required) => set({ required })} label={t('inspector.required')} />
         </div>
         {form.sections.length > 1 && (
-          <Field label="Step" htmlFor={`${question.id}-step`}>
+          <Field label={t('inspector.step')} htmlFor={`${question.id}-step`}>
             <select
               id={`${question.id}-step`}
               value={section.id}
@@ -314,7 +321,7 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
             >
               {form.sections.map((s, i) => (
                 <option key={s.id} value={s.id}>
-                  {i + 1}. {s.title || 'Untitled step'}
+                  {i + 1}. {s.title || t('preview.untitledStep')}
                 </option>
               ))}
             </select>
@@ -323,20 +330,20 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
       </div>
 
       {hasOptions(question) && (
-        <Group title="Answers" aside={<span className="text-xs text-ink-muted">{normalizeOptions(question.options).length}</span>}>
+        <Group title={t('inspector.answers')} aside={<span className="text-xs text-ink-muted">{normalizeOptions(question.options).length}</span>}>
           {optionsLocked ? (
             <LockedOptions question={question} />
           ) : (
             <OptionsEditor
               question={question}
               onChange={(options) => setOptions(section.id, question.id, options)}
-              error={errorAbout('answers to choose')}
+              error={errorAbout('options')}
             />
           )}
         </Group>
       )}
 
-      <Group title="When to show it">
+      <Group title={t('inspector.whenToShow')}>
         <LogicEditor
           logic={question.conditional_logic}
           earlier={earlier}
@@ -346,8 +353,8 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
         {errorAbout('condition') && <p className="text-xs text-danger-fg">{errorAbout('condition')}</p>}
       </Group>
 
-      <Group title="Data protection">
-        <div role="radiogroup" aria-label="How sensitive the answer is" className="grid grid-cols-2 gap-1.5">
+      <Group title={t('inspector.dataProtection')}>
+        <div role="radiogroup" aria-label={t('inspector.sensitivity')} className="grid grid-cols-2 gap-1.5">
           {SENSITIVE_DATA_CLASSES.map((option) => {
             const on = (question.sensitive_data_class || 'none') === option.value;
             return (
@@ -370,13 +377,13 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
         </div>
         <p className="text-xs text-ink-muted">
           {sensitive?.value === 'none'
-            ? 'Stored and shown like any other answer.'
-            : 'Encrypted when stored. Hidden from staff who lack the View sensitive answers permission, and every time it is shown, the view is logged.'}
+            ? t('inspector.notSensitiveHint')
+            : t('inspector.sensitiveHint')}
         </p>
       </Group>
 
       {limits.length > 0 && (
-        <Disclosure title="Answer limits" summary={limitCount ? `${limitCount} set` : 'none'}>
+        <Disclosure title={t('inspector.answerLimits')} summary={limitCount ? t('inspector.limitsSet', { count: limitCount }) : t('inspector.none')}>
           <QuestionValidationEditor
             question={question}
             onChange={(key, value) => set({ validation: { ...question.validation, [key]: value } })}
@@ -384,12 +391,16 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
         </Disclosure>
       )}
 
-      <Disclosure title="Advanced" summary={question.name || 'field name'} defaultOpen={Boolean(question.name && errorAbout('field name'))}>
+      <Disclosure
+        title={t('inspector.advanced')}
+        summary={question.name || t('inspector.fieldNameLower')}
+        defaultOpen={Boolean(question.name && errorAbout('fieldName'))}
+      >
         <Field
-          label="Field name"
-          hint={core || entry ? 'fixed' : question._autoName ? 'follows the question' : undefined}
+          label={t('inspector.fieldName')}
+          hint={core || entry ? t('handling.fixed') : question._autoName ? t('inspector.followsQuestion') : undefined}
           htmlFor={`${question.id}-name`}
-          error={errorAbout('field name')}
+          error={errorAbout('fieldName')}
         >
           <div className="relative">
             <input
@@ -402,21 +413,21 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
             />
             {(core || entry) && <Lock className="absolute end-3 top-2.5 h-4 w-4 text-ink-subtle" aria-hidden="true" />}
           </div>
-          <p className="text-xs text-ink-muted">How the answer is stored and exported. Conditions refer to it.</p>
+          <p className="text-xs text-ink-muted">{t('inspector.fieldNameHint')}</p>
         </Field>
         {!['boolean', 'multiselect', 'file', 'date', 'datetime', 'time'].includes(question.type) && (
-          <Field label="Placeholder" hint="optional" htmlFor={`${question.id}-placeholder`}>
+          <Field label={t('inspector.placeholder')} hint={t('common:form.optional')} htmlFor={`${question.id}-placeholder`}>
             <input
               id={`${question.id}-placeholder`}
               value={question.placeholder || ''}
               onChange={(e) => set({ placeholder: e.target.value })}
-              placeholder="Example text inside the empty field"
+              placeholder={t('inspector.placeholderPlaceholder')}
               className={inputClass}
             />
           </Field>
         )}
         {question.type === 'currency' && (
-          <Field label="Default currency" htmlFor={`${question.id}-currency`}>
+          <Field label={t('inspector.defaultCurrency')} htmlFor={`${question.id}-currency`}>
             <select
               id={`${question.id}-currency`}
               value={question.default_value?.currency || DEFAULT_CURRENCY}
@@ -429,7 +440,7 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
                 </option>
               ))}
             </select>
-            <p className="text-xs text-ink-muted">Reporters can pick another.</p>
+            <p className="text-xs text-ink-muted">{t('inspector.currencyHint')}</p>
           </Field>
         )}
       </Disclosure>
@@ -439,10 +450,11 @@ const QuestionInspector = ({ draft, section, question, issuesFor, onRemove }) =>
 
 // ── Step ──────────────────────────────────────────────────────────────────────
 
-const SectionInspector = ({ draft, section, sectionIndex, issuesFor }) => {
+const SectionInspector = ({ draft, section, sectionIndex, issueAbout }) => {
+  const { t } = useTranslation('builder');
   const { form, updateSection, removeSection, setLogic } = draft;
   const holdsCore = section.questions.some((q) => isCore(q) || !canTurnOff(entryFor(draft.catalog, q)));
-  const errors = issuesFor(section.id);
+  const errorAbout = (about) => issueAbout?.(section.id, about);
   const earlier = questionsBefore(form.sections, section.id);
 
   return (
@@ -452,19 +464,19 @@ const SectionInspector = ({ draft, section, sectionIndex, issuesFor }) => {
           <Layers className="h-4.5 w-4.5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold text-ink">Step settings</h2>
+          <h2 className="text-sm font-semibold text-ink">{t('inspector.stepSettings')}</h2>
           <p className="text-xs text-ink-muted">
-            Step {sectionIndex + 1} of {form.sections.length} · {section.questions.length} question
-            {section.questions.length === 1 ? '' : 's'}
+            {t('preview.stepOf', { n: sectionIndex + 1, total: form.sections.length })} ·{' '}
+            {t('inspector.questionCount', { count: section.questions.length })}
           </p>
         </div>
         {!holdsCore && (
           <button
             type="button"
             onClick={() => {
-              if (section.questions.length === 0 || window.confirm('Delete this step and its questions?')) removeSection(section.id);
+              if (section.questions.length === 0 || window.confirm(t('inspector.deleteStepConfirm'))) removeSection(section.id);
             }}
-            aria-label="Delete step"
+            aria-label={t('inspector.deleteStep')}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-danger-soft hover:text-danger-fg"
           >
             <Trash2 className="h-4 w-4" />
@@ -472,56 +484,55 @@ const SectionInspector = ({ draft, section, sectionIndex, issuesFor }) => {
         )}
       </div>
 
-      <div className="space-y-4 px-5 pb-5">
-        <Field label="Title" htmlFor={`${section.id}-title`} error={errors.find((m) => m.includes('needs a title'))}>
+      <div className="flex flex-col gap-4 px-5 pb-5">
+        <Field label={t('inspector.title')} htmlFor={`${section.id}-title`} error={errorAbout('title')}>
           <input
             id={`${section.id}-title`}
             value={section.title}
             onChange={(e) => updateSection(section.id, { title: e.target.value })}
-            placeholder="e.g. People involved"
+            placeholder={t('inspector.titlePlaceholder')}
             className={inputClass}
           />
         </Field>
-        <Field label="Introduction" hint="optional" htmlFor={`${section.id}-description`}>
+        <Field label={t('inspector.introduction')} hint={t('common:form.optional')} htmlFor={`${section.id}-description`}>
           <textarea
             id={`${section.id}-description`}
             rows={3}
             value={section.description || ''}
             onChange={(e) => updateSection(section.id, { description: e.target.value })}
-            placeholder="A line telling reporters what this step covers"
+            placeholder={t('inspector.introPlaceholder')}
             className={`${inputClass} resize-none`}
           />
         </Field>
         {holdsCore && (
           <p className="flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
             <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
-            This step holds required questions, so it can't be deleted. Move them to another step first.
+            {t('inspector.holdsCore')}
           </p>
         )}
       </div>
 
-      <Group title="When to show this step">
+      <Group title={t('inspector.whenToShowStep')}>
         <LogicEditor
           logic={section.conditional_logic}
           earlier={earlier}
           subject="step"
           onChange={(logic) => setLogic(section.id, null, logic)}
         />
-        {errors.find((m) => m.includes('condition')) && (
-          <p className="text-xs text-danger-fg">{errors.find((m) => m.includes('condition'))}</p>
-        )}
+        {errorAbout('condition') && <p className="text-xs text-danger-fg">{errorAbout('condition')}</p>}
       </Group>
     </>
   );
 };
 
-const Inspector = ({ draft, issuesFor, onRemove }) => {
+const Inspector = ({ draft, issueAbout, onRemove }) => {
+  const { t } = useTranslation('builder');
   const { selected } = draft;
   if (!selected) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
-        <p className="text-sm font-medium text-ink">Nothing selected</p>
-        <p className="text-sm text-ink-muted">Click a question or step on the form to change its settings.</p>
+        <p className="text-sm font-medium text-ink">{t('inspector.nothingSelected')}</p>
+        <p className="text-sm text-ink-muted">{t('inspector.nothingSelectedHint')}</p>
       </div>
     );
   }
@@ -531,7 +542,7 @@ const Inspector = ({ draft, issuesFor, onRemove }) => {
       draft={draft}
       section={selected.section}
       question={selected.question}
-      issuesFor={issuesFor}
+      issueAbout={issueAbout}
       onRemove={onRemove}
     />
   ) : (
@@ -540,7 +551,7 @@ const Inspector = ({ draft, issuesFor, onRemove }) => {
       draft={draft}
       section={selected.section}
       sectionIndex={selected.sectionIndex}
-      issuesFor={issuesFor}
+      issueAbout={issueAbout}
     />
   );
 };

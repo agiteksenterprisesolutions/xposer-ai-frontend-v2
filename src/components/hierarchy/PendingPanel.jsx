@@ -18,6 +18,9 @@
 // carry both `approved` and `problems`, and both are shown.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
+import { intlLocale } from '../../utils/locale';
 import { CheckCircle2, Inbox, RotateCcw, Search, UserCheck, UserX } from 'lucide-react';
 import Button from '../ui/Button';
 import Skeleton from '../ui/Skeleton';
@@ -33,35 +36,35 @@ import { deriveUsername, usernameNeedsAttention } from '../../utils/usernames';
 import { errorSummary } from '../../utils/errors';
 import { roleWithLevel, sortRolesByLevel } from '../../utils/roleLevels';
 
-const VIEWS = [
-  { value: 'attention', label: 'Needs attention' },
-  { value: 'ready', label: 'Ready' },
-  { value: 'dismissed', label: 'Dismissed' },
-];
+// Labels: pending.views.<value>.
+const VIEWS = [{ value: 'attention' }, { value: 'ready' }, { value: 'dismissed' }];
 
-const MISSING_LABEL = {
-  full_name: 'name',
-  create_login: 'login decision',
-  role: 'role',
-  auth_provider: 'sign-in method',
-  email: 'email',
-};
+// What a person still needs, by the API's `missing` codes: pending.missing.<code>.
+const MISSING_KEYS = ['full_name', 'create_login', 'role', 'auth_provider', 'email'];
+const missingLabel = (code) => (MISSING_KEYS.includes(code) ? i18n.t(`hierarchy:pending.missing.${code}`) : code);
 
 const selectClass =
   'h-9 w-full rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-ink outline-none focus:border-line-accent disabled:opacity-60';
 
 /** Firebase's own sign_in_provider values. */
 export const SIGN_IN_METHODS = [
-  { value: 'password', label: 'Password' },
+  {
+    value: 'password',
+    get label() {
+      return i18n.t('hierarchy:pending.password');
+    },
+  },
   { value: 'google.com', label: 'Google' },
   { value: 'microsoft.com', label: 'Microsoft' },
 ];
 
-const LoginChoice = ({ value, onChange, disabled, name }) => (
-  <div role="radiogroup" aria-label={`Login for ${name}`} className="grid grid-cols-2 gap-1 rounded-lg bg-active p-1">
+const LoginChoice = ({ value, onChange, disabled, name }) => {
+  const { t } = useTranslation('hierarchy');
+  return (
+  <div role="radiogroup" aria-label={t('pending.loginFor', { name })} className="grid grid-cols-2 gap-1 rounded-lg bg-active p-1">
     {[
-      [true, 'Login'],
-      [false, 'Directory only'],
+      [true, t('pending.login')],
+      [false, t('pending.directoryOnly')],
     ].map(([v, label]) => {
       const on = value === v;
       return (
@@ -81,9 +84,11 @@ const LoginChoice = ({ value, onChange, disabled, name }) => (
       );
     })}
   </div>
-);
+  );
+};
 
 const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dismissed, selected, onSelect, onSave, onApprove, onDismiss, onRestage, busy, orgName }) => {
+  const { t } = useTranslation('hierarchy');
   const levelTitle = (code) => levels.find((l) => l.code === code)?.title || code;
   const editable = canManage && !dismissed;
   const suggested = person.suggested_role_code ? [person.suggested_role_code] : person.candidate_role_codes || [];
@@ -101,26 +106,26 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
           </span>
         )}
         <div className="min-w-0">
-          <p id={`pending-${person.id}`} className="text-sm font-semibold text-ink">
-            {person.full_name || <span className="italic text-ink-muted">No name from HR</span>}
+          <p id={`pending-${person.id}`} className="text-sm font-semibold text-ink" dir="auto">
+            {person.full_name || <span className="italic text-ink-muted">{t('pending.noName')}</span>}
           </p>
           <p className="text-xs text-ink-muted">
-            {[person.email, person.designation, person.department].filter(Boolean).join(' · ') || 'No details from HR'}
+            {[person.email, person.designation, person.department].filter(Boolean).join(' · ') || t('pending.noDetails')}
           </p>
           {person.manager_external_id && (
-            <p className="text-xs text-ink-subtle">Reports to {person.manager_external_id}</p>
+            <p className="text-xs text-ink-subtle">{t('pending.reportsTo', { id: person.manager_external_id })}</p>
           )}
           {person.suggested_level_code && (
-            <p className="text-xs text-ink-subtle">Their title matched {levelTitle(person.suggested_level_code)}</p>
+            <p className="text-xs text-ink-subtle">{t('pending.titleMatched', { level: levelTitle(person.suggested_level_code) })}</p>
           )}
           {!dismissed && missing.length > 0 && (
             <p className="mt-1.5 text-xs font-medium text-warning-fg">
-              Needs: {missing.map((m) => MISSING_LABEL[m] || m).join(', ')}
+              {t('pending.needs', { list: new Intl.ListFormat(intlLocale(), { type: 'unit' }).format(missing.map(missingLabel)) })}
             </p>
           )}
           {!dismissed && person.ready_to_approve && (
             <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-success-fg">
-              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Ready to approve
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> {t('pending.readyToApprove')}
             </p>
           )}
         </div>
@@ -130,7 +135,7 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
         <div className="grid w-full gap-2.5 sm:grid-cols-3 lg:w-[34rem] lg:shrink-0">
           <div className="space-y-1">
             <label htmlFor={`pl-role-${person.id}`} className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-muted">
-              Role
+              {t('member.role')}
             </label>
             <select
               id={`pl-role-${person.id}`}
@@ -140,10 +145,10 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
               className={selectClass}
             >
               <option value="">
-                {person.suggested_role_code ? `Suggested: ${nameFor(person.suggested_role_code)}` : 'Choose a role'}
+                {person.suggested_role_code ? t('pending.suggestedRole', { role: nameFor(person.suggested_role_code) }) : t('pending.chooseRole')}
               </option>
               {suggestedRoles.length > 0 && (
-                <optgroup label={suggestedRoles.length === 1 ? 'Suggested' : 'Suggested — at the level their title matched'}>
+                <optgroup label={suggestedRoles.length === 1 ? t('pending.suggested') : t('pending.suggestedAtLevel')}>
                   {suggestedRoles.map((role) => (
                     <option key={role.code} value={role.code}>
                       {roleWithLevel(role)}
@@ -151,7 +156,7 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
                   ))}
                 </optgroup>
               )}
-              <optgroup label={suggestedRoles.length ? 'All roles' : 'Roles'}>
+              <optgroup label={suggestedRoles.length ? t('pending.allRoles') : t('pending.roles')}>
                 {otherRoles.map((role) => (
                   <option key={role.code} value={role.code}>
                     {roleWithLevel(role)}
@@ -165,15 +170,15 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
                 onClick={() => onSave(person, { role: person.suggested_role_code })}
                 className="text-xs font-medium text-link hover:underline"
               >
-                Use suggestion
+                {t('pending.useSuggestion')}
               </button>
             )}
             {!person.role && !person.suggested_role_code && suggestedRoles.length > 1 && (
-              <p className="text-[11px] text-ink-muted">{suggestedRoles.length} roles sit at that level — pick one.</p>
+              <p className="text-[11px] text-ink-muted">{t('pending.severalRoles', { count: suggestedRoles.length })}</p>
             )}
           </div>
           <div className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-muted">Sign-in</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-muted">{t('pending.signIn')}</span>
             <LoginChoice
               value={person.create_login}
               disabled={!editable || busy}
@@ -182,13 +187,13 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
             />
             {username && (
               <p className={`truncate text-[11px] ${usernameNeedsAttention(username, orgName) ? 'text-warning-fg' : 'text-ink-muted'}`} title={username}>
-                as <span className="font-mono">{username}</span>
+                <Trans t={t} i18nKey="pending.asUsername" values={{ username }} components={{ code: <span className="font-mono" dir="ltr" /> }} />
               </p>
             )}
           </div>
           <div className="space-y-1">
             <label htmlFor={`pl-method-${person.id}`} className="text-[11px] font-semibold uppercase tracking-[0.05em] text-ink-muted">
-              Signs in with
+              {t('pending.signsInWith')}
             </label>
             {person.create_login ? (
               <select
@@ -199,8 +204,8 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
                 className={selectClass}
                 title={
                   (person.auth_provider || 'password') === 'password'
-                    ? 'A one-time password, emailed, to change at first sign-in'
-                    : 'No password is created; they sign in with that account'
+                    ? t('pending.passwordHint')
+                    : t('pending.ssoHint')
                 }
               >
                 {SIGN_IN_METHODS.map((m) => (
@@ -211,7 +216,7 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
               </select>
             ) : (
               <p className="flex h-9 items-center text-xs text-ink-muted">
-                {person.create_login === false ? 'No login' : 'Decide sign-in first'}
+                {person.create_login === false ? t('directory.noLogin') : t('pending.decideFirst')}
               </p>
             )}
           </div>
@@ -222,17 +227,17 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
         <div className="flex shrink-0 gap-2 lg:pt-5">
           {dismissed ? (
             <Button variant="secondary" size="small" startIcon={RotateCcw} onClick={() => onRestage(person)} disabled={busy}>
-              Restage
+              {t('pending.restage')}
             </Button>
           ) : (
             <>
               {canApprove && (
                 <Button size="small" startIcon={UserCheck} onClick={() => onApprove([person.id])} disabled={busy || !person.ready_to_approve}>
-                  Approve
+                  {t('pending.approve')}
                 </Button>
               )}
-              <Button variant="ghost" size="small" onClick={() => onDismiss(person)} disabled={busy} aria-label={`Dismiss ${person.full_name}`} title="Dismiss">
-                <UserX className="h-4 w-4" />
+              <Button variant="ghost" size="small" onClick={() => onDismiss(person)} disabled={busy} aria-label={t('pending.dismissLabel', { name: person.full_name })} title={t('pending.dismiss')}>
+                <UserX className="h-4 w-4" aria-hidden="true" />
               </Button>
             </>
           )}
@@ -242,19 +247,21 @@ const PendingRow = ({ person, levels, roles, nameFor, canManage, canApprove, dis
   );
 };
 
-const ApprovalResult = ({ result, onClose, nameFor, levelTitle }) => (
+const ApprovalResult = ({ result, onClose, nameFor, levelTitle }) => {
+  const { t } = useTranslation('hierarchy');
+  return (
   <section className="space-y-3 rounded-xl border border-line bg-surface p-4" aria-live="polite">
     <div className="flex items-start justify-between gap-3">
       <div>
-        <p className="text-sm font-semibold text-ink">{result.message || `Approved ${result.approved_count ?? 0}.`}</p>
+        <p className="text-sm font-semibold text-ink">{result.message || t('pending.result.approved', { count: result.approved_count ?? 0 })}</p>
         <p className="text-xs text-ink-muted">
-          {result.approved_count ?? 0} admitted
-          {result.accounts_created != null && ` · ${result.accounts_created} with a login`}
-          {result.still_pending != null && ` · ${result.still_pending} still waiting`}
+          {t('pending.result.admitted', { count: result.approved_count ?? 0 })}
+          {result.accounts_created != null && ` · ${t('pending.result.withLogin', { count: result.accounts_created })}`}
+          {result.still_pending != null && ` · ${t('pending.result.stillWaiting', { count: result.still_pending })}`}
         </p>
       </div>
       <Button variant="ghost" size="small" onClick={onClose}>
-        Dismiss
+        {t('common:actions.dismiss')}
       </Button>
     </div>
     {result.approved?.length > 0 && (
@@ -279,7 +286,8 @@ const ApprovalResult = ({ result, onClose, nameFor, levelTitle }) => (
     )}
     <UndeliveredCredentials items={result.undelivered_credentials} />
   </section>
-);
+  );
+};
 
 const QueueSkeleton = () => (
   <ul className="divide-y divide-line-subtle" aria-busy="true">
@@ -302,13 +310,12 @@ const QueueSkeleton = () => (
   </ul>
 );
 
-const INTRO =
-  'People your HR sync found for the first time. Give each a role — it also places them in the org chart — and decide whether they sign in, and how. Then approve. Answers save as you go and survive the next sync.';
+const intro = () => i18n.t('hierarchy:pending.intro');
 
 /** The queue while the hierarchy loads: same intro, search, tabs and rows. */
 export const PendingSkeleton = () => (
   <div className="space-y-4" aria-busy="true">
-    <p className="text-sm text-ink-secondary">{INTRO}</p>
+    <p className="text-sm text-ink-secondary">{intro()}</p>
     <div className="rounded-xl border border-line bg-surface">
       <div className="space-y-3 border-b border-line-subtle p-4">
         <div className="relative">
@@ -321,7 +328,7 @@ export const PendingSkeleton = () => (
               key={v.value}
               className={`rounded-md px-3 py-1.5 text-sm ${i === 0 ? 'bg-surface font-semibold text-ink shadow-sm' : 'font-medium text-ink-muted'}`}
             >
-              {v.label}
+              {i18n.t(`hierarchy:pending.views.${v.value}`)}
             </span>
           ))}
         </div>
@@ -341,6 +348,7 @@ export const PendingSkeleton = () => (
  *   onCount    – (pendingTotal) for the tab badge
  */
 const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
+  const { t } = useTranslation('hierarchy');
   const canApprove = useCan()(PERM.userCreate);
   const { allRoles: unsortedRoles, nameFor } = useOrgRoles();
   const roles = useMemo(() => sortRolesByLevel(unsortedRoles.filter((r) => r.is_active !== false)), [unsortedRoles]);
@@ -437,7 +445,7 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
     setBusy(true);
     try {
       await orgHierarchyAPI.dismissPending(person.id);
-      toast.success(`${person.full_name || 'Person'} dismissed. Later syncs will skip them.`);
+      toast.success(t('pending.toast.dismissed', { name: person.full_name || t('pending.person') }));
       await load();
     } catch (err) {
       toast.error(errorSummary(err));
@@ -450,7 +458,7 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
     setBusy(true);
     try {
       await orgHierarchyAPI.restagePending(person.id);
-      toast.success(`${person.full_name || 'Person'} is back in the queue.`);
+      toast.success(t('pending.toast.restaged', { name: person.full_name || t('pending.person') }));
       await load();
     } catch (err) {
       toast.error(errorSummary(err));
@@ -477,15 +485,15 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
       suggestable.map((p) => orgHierarchyAPI.updatePending(p.id, { role: p.suggested_role_code })),
     );
     const failed = results.filter((r) => r.status === 'rejected').length;
-    if (failed) toast.error(`${failed} of ${suggestable.length} couldn't be set.`);
-    else toast.success(`Suggested roles set for ${suggestable.length} ${suggestable.length === 1 ? 'person' : 'people'}.`);
+    if (failed) toast.error(t('pending.toast.someFailed', { failed, total: suggestable.length }));
+    else toast.success(t('pending.toast.suggestedSet', { count: suggestable.length }));
     await load();
     setBusy(false);
   };
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-ink-secondary">{INTRO}</p>
+      <p className="text-sm text-ink-secondary">{t('pending.intro')}</p>
 
       {result && (
         <ApprovalResult
@@ -504,13 +512,13 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
               type="search"
               value={search}
               onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search by name, email, employee ID, job title or department"
-              aria-label="Search the queue"
+              placeholder={t('pending.searchPlaceholder')}
+              aria-label={t('pending.searchLabel')}
               className="h-10 w-full rounded-lg border border-line bg-subtle ps-9 pe-3 text-sm text-ink outline-none hover:border-line-strong focus:border-line-accent"
             />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div role="tablist" aria-label="Queue" className="inline-flex rounded-lg bg-active p-1">
+            <div role="tablist" aria-label={t('pending.queue')} className="inline-flex rounded-lg bg-active p-1">
               {VIEWS.map((v) => (
                 <button
                   key={v.value}
@@ -525,7 +533,7 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                     view === v.value ? 'bg-surface font-semibold text-ink shadow-sm' : 'font-medium text-ink-muted hover:text-ink'
                   }`}
                 >
-                  {v.label}
+                  {t(`pending.views.${v.value}`)}
                   {loaded && (
                     <span
                       className={`rounded-full px-1.5 text-[11px] font-semibold ${
@@ -543,21 +551,21 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
               <div className="flex flex-wrap items-center gap-2">
                 {selectedRows.length > 0 ? (
                   <>
-                    <span className="text-sm text-ink-muted">{selectedRows.length} selected</span>
-                    <Button variant="secondary" size="small" disabled={busy} onClick={() => bulk({ ids: selectedRows.map((r) => r.id), decision: { create_login: true } }, 'Login set.')}>
-                      Login
+                    <span className="text-sm text-ink-muted">{t('pending.selected', { count: selectedRows.length })}</span>
+                    <Button variant="secondary" size="small" disabled={busy} onClick={() => bulk({ ids: selectedRows.map((r) => r.id), decision: { create_login: true } }, t('pending.toast.loginSet'))}>
+                      {t('pending.login')}
                     </Button>
-                    <Button variant="secondary" size="small" disabled={busy} onClick={() => bulk({ ids: selectedRows.map((r) => r.id), decision: { create_login: false } }, 'Set to directory only.')}>
-                      Directory only
+                    <Button variant="secondary" size="small" disabled={busy} onClick={() => bulk({ ids: selectedRows.map((r) => r.id), decision: { create_login: false } }, t('pending.toast.directorySet'))}>
+                      {t('pending.directoryOnly')}
                     </Button>
                     <select
-                      aria-label="Set a role for the selected people"
+                      aria-label={t('pending.bulk.roleLabel')}
                       disabled={busy}
                       value=""
-                      onChange={(e) => e.target.value && bulk({ ids: selectedRows.map((r) => r.id), decision: { role: e.target.value } }, 'Role set.')}
+                      onChange={(e) => e.target.value && bulk({ ids: selectedRows.map((r) => r.id), decision: { role: e.target.value } }, t('pending.toast.roleSet'))}
                       className="h-8 rounded-lg border border-line bg-surface px-2 text-xs text-ink"
                     >
-                      <option value="">Set role…</option>
+                      <option value="">{t('pending.bulk.setRole')}</option>
                       {roles.map((r) => (
                         <option key={r.code} value={r.code}>
                           {roleWithLevel(r)}
@@ -565,19 +573,19 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                       ))}
                     </select>
                     <select
-                      aria-label="Set a sign-in method for the selected people"
+                      aria-label={t('pending.bulk.methodLabel')}
                       disabled={busy}
                       value=""
                       onChange={(e) =>
                         e.target.value &&
                         bulk(
                           { ids: selectedRows.map((r) => r.id), decision: { create_login: true, auth_provider: e.target.value } },
-                          'Sign-in method set.',
+                          t('pending.toast.methodSet'),
                         )
                       }
                       className="h-8 rounded-lg border border-line bg-surface px-2 text-xs text-ink"
                     >
-                      <option value="">Sign in with…</option>
+                      <option value="">{t('pending.bulk.signInWith')}</option>
                       {SIGN_IN_METHODS.map((m) => (
                         <option key={m.value} value={m.value}>
                           {m.label}
@@ -586,31 +594,31 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                     </select>
                     {canApprove && (
                       <Button size="small" startIcon={UserCheck} disabled={busy || selectedReady.length === 0} onClick={() => approve(selectedReady.map((r) => r.id))}>
-                        Approve {selectedReady.length || ''}
+                        {selectedReady.length ? t('pending.approveCount', { count: selectedReady.length }) : t('pending.approve')}
                       </Button>
                     )}
                   </>
                 ) : (
                   <>
                     <Button variant="secondary" size="small" disabled={busy} onClick={() => setConfirm('login')}>
-                      Create logins for all
+                      {t('pending.bulk.loginsForAll')}
                     </Button>
                     <Button variant="secondary" size="small" disabled={busy} onClick={() => setConfirm('directory')}>
-                      Directory only for all
+                      {t('pending.bulk.directoryForAll')}
                     </Button>
                     {suggestable.length > 0 && (
                       <Button variant="secondary" size="small" disabled={busy} onClick={applySuggestedRoles}>
-                        Use {suggestable.length} suggested role{suggestable.length === 1 ? '' : 's'}
+                        {t('pending.bulk.useSuggested', { count: suggestable.length })}
                       </Button>
                     )}
                     <select
-                      aria-label="Give everyone waiting one role"
+                      aria-label={t('pending.bulk.roleForAllLabel')}
                       disabled={busy}
                       value=""
                       onChange={(e) => e.target.value && setConfirm({ role: e.target.value })}
                       className="h-8 rounded-lg border border-line bg-surface px-2 text-xs text-ink"
                     >
-                      <option value="">Role for all…</option>
+                      <option value="">{t('pending.bulk.roleForAll')}</option>
                       {roles.map((r) => (
                         <option key={r.code} value={r.code}>
                           {roleWithLevel(r)}
@@ -619,7 +627,7 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
                     </select>
                     {canApprove && view === 'ready' && ready.length > 0 && (
                       <Button size="small" startIcon={UserCheck} disabled={busy} onClick={() => approve(ready.map((r) => r.id))}>
-                        Approve all {ready.length}
+                        {t('pending.approveAll', { count: ready.length })}
                       </Button>
                     )}
                   </>
@@ -631,9 +639,9 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
 
         {error ? (
           <p className="p-5 text-sm text-ink-secondary">
-            Couldn't load the queue. {error}{' '}
+            {t('pending.loadError')} {error}{' '}
             <button type="button" onClick={load} className="font-medium text-link hover:underline">
-              Try again
+              {t('common:actions.retry')}
             </button>
           </p>
         ) : !loaded ? (
@@ -643,17 +651,15 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
             <Inbox className="h-6 w-6 text-ink-subtle" aria-hidden="true" />
             <p className="text-sm font-semibold text-ink">
               {query
-                ? 'No one matches that search'
+                ? t('pending.empty.search')
                 : view === 'attention'
-                  ? 'Nobody needs an answer'
+                  ? t('pending.empty.attention')
                   : view === 'ready'
-                    ? 'Nobody is ready to approve yet'
-                    : 'Nobody has been dismissed'}
+                    ? t('pending.empty.ready')
+                    : t('pending.empty.dismissed')}
             </p>
             <p className="max-w-sm text-sm text-ink-muted">
-              {view === 'dismissed'
-                ? 'Dismissed people are skipped by every sync until you restage them.'
-                : 'New people appear here after an HR sync finds them.'}
+              {view === 'dismissed' ? t('pending.empty.dismissedBody') : t('pending.empty.body')}
             </p>
           </div>
         ) : (
@@ -684,8 +690,7 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
 
       {canManage && (
         <p className="text-xs text-ink-muted">
-          Password accounts approved here start on the default password and must change it at first sign-in; Google and
-          Microsoft accounts get no password. Bulk answers only touch people still waiting, never anyone already approved.
+          {t('pending.footnote')}
         </p>
       )}
 
@@ -696,29 +701,33 @@ const PendingPanel = ({ levels, canManage, onChanged, onCount }) => {
           const choice = confirm;
           setConfirm(null);
           if (choice?.role) {
-            bulk({ all_pending: true, decision: { role: choice.role } }, `Everyone waiting is now ${nameFor(choice.role)}.`);
+            bulk({ all_pending: true, decision: { role: choice.role } }, t('pending.toast.allRole', { role: nameFor(choice.role) }));
             return;
           }
           const login = choice === 'login';
-          bulk({ all_pending: true, decision: { create_login: login } }, login ? 'Logins set for everyone waiting.' : 'Everyone waiting set to directory only.');
+          bulk({ all_pending: true, decision: { create_login: login } }, login ? t('pending.toast.allLogin') : t('pending.toast.allDirectory'));
         }}
         title={
           confirm?.role
-            ? `Make everyone waiting ${nameFor(confirm.role)}?`
+            ? t('pending.confirm.roleTitle', { role: nameFor(confirm.role) })
             : confirm === 'login'
-              ? 'Create logins for everyone waiting?'
-              : 'Directory only for everyone waiting?'
+              ? t('pending.confirm.loginTitle')
+              : t('pending.confirm.directoryTitle')
         }
         message={
           confirm?.role
-            ? `All ${pending?.length ?? 0} people waiting will get the ${nameFor(confirm.role)} role, which also places them in the org chart${
-                roles.find((r) => r.code === confirm.role)?.level_title ? ` at ${roles.find((r) => r.code === confirm.role).level_title}` : ''
-              }. Nobody is admitted yet.`
+            ? roles.find((r) => r.code === confirm.role)?.level_title
+              ? t('pending.confirm.roleMessageLevel', {
+                  count: pending?.length ?? 0,
+                  role: nameFor(confirm.role),
+                  level: roles.find((r) => r.code === confirm.role).level_title,
+                })
+              : t('pending.confirm.roleMessage', { count: pending?.length ?? 0, role: nameFor(confirm.role) })
             : confirm === 'login'
-              ? `All ${pending?.length ?? 0} people waiting will be set to get a login, signing in with a password unless you choose otherwise. Nobody is admitted yet.`
-              : `All ${pending?.length ?? 0} people waiting will be added without a login. Nobody is admitted yet.`
+              ? t('pending.confirm.loginMessage', { count: pending?.length ?? 0 })
+              : t('pending.confirm.directoryMessage', { count: pending?.length ?? 0 })
         }
-        confirmText="Set it"
+        confirmText={t('pending.confirm.setIt')}
         variant="primary"
       />
     </div>

@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
+import { intlLocale, isRtl } from '../../utils/locale';
 import {
   UserPlus,
   UserX,
@@ -46,29 +49,36 @@ import Alert from '../../components/ui/Alert';
 import {
   AUTH_PROVIDERS,
   AUTH_PROVIDER_OPTIONS,
-  authProviderLabel,
+  authProviderLabel as englishProviderLabel,
   isPasswordAccount,
 } from '../../utils/authProviders';
+
+// Google and Microsoft are names; "Password" is a word to translate.
+const authProviderLabel = (provider) =>
+  !provider || provider === AUTH_PROVIDERS.PASSWORD
+    ? i18n.t('provider.password', { ns: 'people' })
+    : englishProviderLabel(provider);
 
 const USERS_TOUR_KEY = 'xposer_users_tour_seen';
 
 // Column order here is the column order in the table. Actions is not sortable,
-// so it keeps a plain header.
+// so it keeps a plain header. Labels are translation keys (users.columns.*),
+// read when the page renders.
 const SORT_COLUMNS = {
-  full_name: { label: 'User', defaultOrder: 'asc', value: byText('full_name') },
-  username: { label: 'Username', defaultOrder: 'asc', value: byText('username') },
+  full_name: { defaultOrder: 'asc', value: byText('full_name') },
+  username: { defaultOrder: 'asc', value: byText('username') },
   // Roles have no rank any more; the page swaps in their display names.
-  role: { label: 'Role', defaultOrder: 'asc', value: byText('role') },
-  auth_provider: { label: 'Sign-in', defaultOrder: 'asc', value: byText('auth_provider') },
-  created_at: { label: 'Created On', defaultOrder: 'desc', value: byDate('created_at') },
-  is_active: { label: 'Status', defaultOrder: 'desc', value: (user) => (user.is_active ? 1 : 0) },
+  role: { defaultOrder: 'asc', value: byText('role') },
+  auth_provider: { defaultOrder: 'asc', value: byText('auth_provider') },
+  created_at: { defaultOrder: 'desc', value: byDate('created_at') },
+  is_active: { defaultOrder: 'desc', value: (user) => (user.is_active ? 1 : 0) },
 };
 
 const formatDate = (dateString) => {
   if (!dateString) return '-';
   const date = parseServerDate(dateString);
   if (!date) return '-';
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(intlLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -78,9 +88,10 @@ const formatDate = (dateString) => {
 };
 
 const Users = () => {
+  const { t } = useTranslation('people');
   useSEO({
-    title: 'User Management',
-    description: 'Create, edit, and deactivate accounts across your organization.',
+    title: t('users.seoTitle'),
+    description: t('users.seoDescription'),
     noIndex: true,
   });
   // Every staff user can open this page; the list is filtered server-side to
@@ -253,10 +264,14 @@ const Users = () => {
 
   // Ordering the current page: the endpoint paginates server-side, so this
   // sorts the rows on screen rather than the whole result set.
-  const sortColumns = useMemo(() => ({
-    ...SORT_COLUMNS,
-    role: { ...SORT_COLUMNS.role, value: (user) => roleLabel(user).toLowerCase() },
-  }), [nameFor]);
+  const sortColumns = useMemo(() => {
+    const columns = Object.fromEntries(
+      Object.entries(SORT_COLUMNS).map(([field, column]) => [field, { ...column, label: t(`users.columns.${field}`) }]),
+    );
+    columns.role = { ...columns.role, value: (user) => roleLabel(user).toLowerCase() };
+    return columns;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nameFor, t]);
   const sort = useTableSort(visibleUsers, sortColumns, { defaultSortBy: 'created_at' });
   const { sortedRows: filteredUsers, getHeaderProps } = sort;
   // True only when moving an existing SSO account back onto a password.
@@ -271,7 +286,7 @@ const Users = () => {
   const handleStatusToggle = async (user) => {
     if (!user.is_active && roleMissing(user)) {
       setConfirmModal({ open: false, type: '', user: null });
-      toast.error(`The ${roleLabel(user)} role no longer exists. Give ${user.full_name || user.username} a role first.`);
+      toast.error(t('users.roleGone', { role: roleLabel(user), name: user.full_name || user.username }));
       if (canChangeRoles) setRoleChangeUser(user);
       return;
     }
@@ -312,9 +327,9 @@ const Users = () => {
     // Staying on (or switching back to) password sign-in always needs one:
     // the backend rejects a switch to 'password' without a new password.
     if (!resetPasswordFormData.new_password.trim()) {
-      errors.new_password = 'Password is required.';
+      errors.new_password = t('users.reset.required');
     } else if (resetPasswordFormData.new_password.length < 8) {
-      errors.new_password = 'Password must be at least 8 characters.';
+      errors.new_password = t('users.reset.tooShort');
     }
     return errors;
   };
@@ -375,11 +390,11 @@ const Users = () => {
         onClick={open}
         disabled={!open}
         className="min-w-0 text-start disabled:cursor-default"
-        title={open ? 'Change directory entry' : undefined}
+        title={open ? t('users.placement.change') : undefined}
       >
-        <span className="block truncate text-sm font-medium text-ink">{member.name}</span>
+        <span className="block truncate text-sm font-medium text-ink" dir="auto">{member.name}</span>
         <span className="block truncate text-xs text-ink-muted">
-          {member.level_code ? levelTitle(member.level_code) : 'No level'}
+          {member.level_code ? levelTitle(member.level_code) : t('users.placement.noLevel')}
         </span>
       </button>
     ) : (
@@ -392,17 +407,17 @@ const Users = () => {
           // employee ID that is no longer in the directory —
           // usually a person removed after the account was linked.
           user.hierarchy_member_id
-            ? `Linked to employee ID ${user.hierarchy_member_id}, which is no longer in the directory — the entry was probably removed. Re-link them to an existing entry, or unlink them.`
-            : 'Not linked to anyone in the directory, so they aren’t placed in the org chart. Link them to their directory entry, or add them to the directory.',
-          seesTeam && "Until then they see only their own cases, not their team's.",
-          open && 'Click to fix.',
+            ? t('users.placement.missingTitle', { id: user.hierarchy_member_id })
+            : t('users.placement.unlinkedTitle'),
+          seesTeam && t('users.placement.seesOwn'),
+          open && t('users.placement.clickToFix'),
         ]
           .filter(Boolean)
           .join(' ')}
         className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning-fg hover:bg-warning-line disabled:cursor-default"
       >
-        <AlertTriangle className="h-3 w-3" />
-        {user.hierarchy_member_id ? 'Entry missing' : 'Unlinked'}
+        <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+        {user.hierarchy_member_id ? t('users.placement.missing') : t('users.placement.unlinked')}
       </button>
     );
   };
@@ -414,37 +429,39 @@ const Users = () => {
         <Link
           to={staffPath(orgSlug, 'account')}
           className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-link hover:bg-accent-soft"
-          title={canUpdateUsers ? 'Edit your name and email, or change your password' : 'Change your password'}
+          title={canUpdateUsers ? t('users.self.editTitle') : t('users.self.passwordTitle')}
         >
-          <KeyRound className="h-4 w-4" />
-          {canUpdateUsers ? 'My account' : 'Change my password'}
+          <KeyRound className="h-4 w-4" aria-hidden="true" />
+          {canUpdateUsers ? t('users.self.myAccount') : t('users.self.changePassword')}
         </Link>
       )}
       {rowCanManage(user) && (
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end gap-2">
           {canChangeRoles && (
             <Button
               variant="ghost"
               size="small"
-              title="Change role"
-              aria-label={`Change role for ${user.full_name || user.username}`}
+              title={t('users.actions.changeRole')}
+              aria-label={t('changeRole.title', { name: user.full_name || user.username })}
               onClick={() => setRoleChangeUser(user)}
             >
-              <Shield className="h-4 w-4" />
+              <Shield className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
           <Button
             variant="ghost"
             size="small"
-            title="Manage sign-in"
+            title={t('users.actions.manageSignIn')}
+            aria-label={t('users.actions.manageSignInFor', { name: user.full_name || user.username })}
             onClick={() => handleResetPassword(user)}
           >
-            <PenBoxIcon className="h-4 w-4" />
+            <PenBoxIcon className="h-4 w-4" aria-hidden="true" />
           </Button>
           <Button
             variant="ghost"
             size="small"
-            title={user.is_active ? 'Deactivate' : 'Activate'}
+            title={user.is_active ? t('users.actions.deactivate') : t('users.actions.activate')}
+            aria-label={t(user.is_active ? 'users.actions.deactivateFor' : 'users.actions.activateFor', { name: user.full_name || user.username })}
             onClick={() => setConfirmModal({
               open: true,
               type: user.is_active ? 'deactivate' : 'activate',
@@ -452,8 +469,8 @@ const Users = () => {
             })}
           >
             {user.is_active
-              ? <UserX className="h-4 w-4 text-danger-fg" />
-              : <UserPlus className="h-4 w-4 text-success-fg" />
+              ? <UserX className="h-4 w-4 text-danger-fg" aria-hidden="true" />
+              : <UserPlus className="h-4 w-4 text-success-fg" aria-hidden="true" />
             }
           </Button>
         </div>
@@ -474,11 +491,11 @@ const Users = () => {
         <div className="flex items-center gap-3">
           <UserAvatar user={user} size="small" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-ink">{user.full_name || user.username}</p>
-            <p className="truncate text-xs text-ink-muted">{user.email}</p>
+            <p className="truncate text-sm font-semibold text-ink" dir="auto">{user.full_name || user.username}</p>
+            <p className="truncate text-xs text-ink-muted" dir="ltr">{user.email}</p>
           </div>
           <Badge variant={user.is_active ? 'success' : 'danger'} dot size="small">
-            {user.is_active ? 'Active' : 'Inactive'}
+            {user.is_active ? t('users.status.active') : t('users.status.inactive')}
           </Badge>
         </div>
         <div className="flex items-center justify-between gap-2 ps-12">
@@ -486,9 +503,9 @@ const Users = () => {
             <RoleBadge role={user.role} label={roleLabel(user)} />
             <span>{authProviderLabel(user.auth_provider)}</span>
             {placementProblem && renderPlacement(user)}
-            {user.must_change_password && <span className="font-medium text-warning-fg">Hasn’t set a password</span>}
+            {user.must_change_password && <span className="font-medium text-warning-fg">{t('users.noPasswordYet')}</span>}
           </div>
-          <div className="-my-1 shrink-0 [&_.space-x-2]:space-x-0">{renderActions(user)}</div>
+          <div className="-my-1 shrink-0 [&_.gap-2]:gap-0">{renderActions(user)}</div>
         </div>
       </div>
     );
@@ -499,9 +516,9 @@ const Users = () => {
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-user-management"]',
-        title: 'User Management',
-        content: 'Create, edit, and deactivate accounts for everyone in your organization.',
-        placement: 'right',
+        title: t('users.tour.sidebarTitle'),
+        content: t('users.tour.sidebarBody'),
+        placement: isRtl() ? 'left' : 'right',
         skipBeacon: true,
       });
     }
@@ -509,34 +526,34 @@ const Users = () => {
     steps.push(
       {
         target: '[data-tour="users-search"]',
-        title: 'Search users',
-        content: 'Find anyone by name, email, or username.',
+        title: t('users.tour.searchTitle'),
+        content: t('users.tour.searchBody'),
         placement: 'bottom',
         skipBeacon: !isDesktop,
       },
       {
         target: '[data-tour="users-add"]',
-        title: 'Add a new user',
-        content: "Create a new account and give it one of your organization's roles.",
+        title: t('users.tour.addTitle'),
+        content: t('users.tour.addBody'),
         placement: 'bottom',
       },
       {
         target: '[data-tour="users-table"]',
-        title: 'Manage users',
-        content: 'Reset a password, or activate/deactivate an account, right from this table.',
+        title: t('users.tour.tableTitle'),
+        content: t('users.tour.tableBody'),
         placement: 'top',
       }
     );
 
     steps.push({
       target: '[data-tour="tour-user-menu"]',
-      title: 'Your account',
-      content: 'Manage your profile or log out from here.',
+      title: t('users.tour.accountTitle'),
+      content: t('users.tour.accountBody'),
       placement: 'bottom',
     });
 
     return steps;
-  }, [isDesktop]);
+  }, [isDesktop, t]);
 
   return (
     <div className="space-y-6">
@@ -545,7 +562,7 @@ const Users = () => {
       {stranded && (
         <Alert
           variant="warning"
-          title={`Saved — ${stranded.user.full_name || stranded.user.username} has cases to hand over`}
+          title={t('users.stranded.title', { name: stranded.user.full_name || stranded.user.username })}
           dismissible
           onDismiss={() => setStranded(null)}
         >
@@ -562,7 +579,7 @@ const Users = () => {
               })}`}
               className="mt-2 inline-block font-semibold underline underline-offset-2"
             >
-              See their cases
+              {t('users.stranded.seeCases')}
             </Link>
           )}
         </Alert>
@@ -570,8 +587,7 @@ const Users = () => {
 
       {!canUpdateUsers && (
         <Alert variant="info">
-          You see your own account and the people whose roles your role is allowed to see. Only an admin can add, change or
-          deactivate accounts.
+          {t('users.readOnlyNotice')}
         </Alert>
       )}
 
@@ -580,22 +596,24 @@ const Users = () => {
       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 lg:gap-4">
         <div className="relative w-full lg:w-96" data-tour="users-search">
           <Input
-            placeholder="Search by name, email, or username..."
+            placeholder={t('users.searchPlaceholder')}
+            aria-label={t('users.searchLabel')}
             value={searchTerm}
             onChange={handleSearchChange}
           // startAdornment={<Search className="h-4 w-4 text-ink-subtle" />}
           />
         </div>
         <div className="flex flex-wrap items-center lg:justify-end gap-2 sm:gap-3 min-w-0">
-          <div className="inline-flex shrink-0 rounded-lg border border-line p-0.5">
+          <div className="inline-flex shrink-0 rounded-lg border border-line p-0.5" role="group" aria-label={t('users.statusFilter')}>
             {[
-              { id: 'all', label: 'All' },
-              { id: 'active', label: 'Active' },
-              { id: 'inactive', label: 'Inactive' },
+              { id: 'all', label: t('users.status.all') },
+              { id: 'active', label: t('users.status.active') },
+              { id: 'inactive', label: t('users.status.inactive') },
             ].map((option) => (
               <button
                 key={option.id}
                 type="button"
+                aria-pressed={statusFilter === option.id}
                 onClick={() => setStatusFilter(option.id)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${statusFilter === option.id
                   ? 'bg-accent-soft text-accent-fg'
@@ -610,13 +628,13 @@ const Users = () => {
             <select
               value={roleFilter}
               onChange={(event) => setRoleFilter(event.target.value)}
-              aria-label="Filter by role"
+              aria-label={t('users.roleFilter')}
               className="h-9 min-w-0 max-w-full rounded-lg border border-line bg-surface px-2.5 text-sm text-ink"
             >
-              <option value="">All roles</option>
+              <option value="">{t('users.allRoles')}</option>
               {visibleRoles.map((role) => (
                 <option key={role.code} value={role.code}>
-                  {role.code === REPORTER_ROLE ? 'Reporter' : role.name}
+                  {role.code === REPORTER_ROLE ? t('addPerson.reporter') : role.name}
                 </option>
               ))}
               {roleFilter && !visibleRoles.some((r) => r.code === roleFilter) && (
@@ -628,7 +646,7 @@ const Users = () => {
           {canCreateUsers && (
             <div className="flex w-full gap-2 sm:w-auto sm:gap-3">
               <Button variant="outline" startIcon={Upload} onClick={() => setImportOpen(true)} className="flex-1 sm:flex-none">
-                Import
+                {t('users.import')}
               </Button>
               <Button
                 variant="secondary"
@@ -637,7 +655,7 @@ const Users = () => {
                 data-tour="users-add"
                 className="flex-1 sm:flex-none"
               >
-                Add person
+                {t('addPerson.title')}
               </Button>
             </div>
           )}
@@ -646,11 +664,11 @@ const Users = () => {
 
       {(roleFilter || levelFilter || unlinkedFilter) && (
         <div className="flex flex-wrap items-center gap-2 text-sm text-ink-secondary">
-          Showing
+          {t('users.filters.showing')}
           {[
-            roleFilter && { key: 'role', label: `Role: ${nameFor(roleFilter)}` },
-            levelFilter && { key: 'level', label: `Level: ${levelTitle(levelFilter)}` },
-            unlinkedFilter && { key: 'unlinked', label: 'Not linked to the directory' },
+            roleFilter && { key: 'role', label: t('users.filters.role', { name: nameFor(roleFilter) }) },
+            levelFilter && { key: 'level', label: t('users.filters.level', { name: levelTitle(levelFilter) }) },
+            unlinkedFilter && { key: 'unlinked', label: t('users.filters.unlinked') },
           ]
             .filter(Boolean)
             .map((chip) => (
@@ -659,14 +677,14 @@ const Users = () => {
                 type="button"
                 onClick={() => clearFilter(chip.key)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-line-accent bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-fg hover:bg-hover"
-                aria-label={`Clear the filter ${chip.label}`}
+                aria-label={t('users.filters.clear', { label: chip.label })}
               >
                 {chip.label}
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" aria-hidden="true" />
               </button>
             ))}
           {unlinkedFilter && (
-            <span className="text-xs text-ink-muted">— these accounts see only their own cases until linked.</span>
+            <span className="text-xs text-ink-muted">{t('users.filters.unlinkedNote')}</span>
           )}
         </div>
       )}
@@ -676,12 +694,12 @@ const Users = () => {
         <Table>
           <Table.Header>
             <Table.Row hover={false}>
-              {Object.entries(SORT_COLUMNS).map(([field, column]) => (
+              {Object.entries(sortColumns).map(([field, column]) => (
                 <Table.Head key={field} {...getHeaderProps(field)}>
                   {column.label}
                 </Table.Head>
               ))}
-              <Table.Head className="text-end">Actions</Table.Head>
+              <Table.Head className="text-end">{t('users.columns.actions')}</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -689,7 +707,7 @@ const Users = () => {
               <TableLoading
                 rows={DEFAULT_PAGE_SIZE}
                 cells={[
-                  <div key="u" className="flex items-center space-x-3">
+                  <div key="u" className="flex items-center gap-3">
                     <Skeleton.Circle />
                     <div className="space-y-0.5">
                       <Skeleton.Text className="w-28" />
@@ -716,24 +734,24 @@ const Users = () => {
               />
             ) : filteredUsers.length === 0 ? (
               <Table.Empty
-                message={debouncedSearch ? 'No matching users' : 'No users found'}
-                description={debouncedSearch ? 'Try a different name, email, or username.' : 'Try adjusting your search criteria'}
+                message={debouncedSearch ? t('users.empty.noMatch') : t('users.empty.none')}
+                description={debouncedSearch ? t('users.empty.noMatchHelp') : t('users.empty.noneHelp')}
                 icon={Shield}
               />
             ) : (
               filteredUsers.map((user) => (
                 <Table.Row key={user.id} mobile={renderSummary(user)}>
                   <Table.Cell>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                       <UserAvatar user={user} size="medium" />
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-ink truncate">{user.full_name}</p>
-                        <p className="text-xs text-ink-muted break-all">{user.email}</p>
+                        <p className="text-sm font-semibold text-ink truncate" dir="auto">{user.full_name}</p>
+                        <p className="text-xs text-ink-muted break-all" dir="ltr">{user.email}</p>
                       </div>
                     </div>
                   </Table.Cell>
                   <Table.Cell>
-                    <span className="text-sm font-medium text-ink-muted font-mono">{user.username}</span>
+                    <span className="text-sm font-medium text-ink-muted font-mono" dir="ltr">{user.username}</span>
                   </Table.Cell>
                   <Table.Cell>
                     <RoleBadge role={user.role} label={roleLabel(user)} />
@@ -755,13 +773,13 @@ const Users = () => {
                   </Table.Cell>
                   <Table.Cell>
                     <Badge variant={user.is_active ? 'success' : 'danger'} dot>
-                      {user.is_active ? 'Active' : 'Inactive'}
+                      {user.is_active ? t('users.status.active') : t('users.status.inactive')}
                     </Badge>
                     {/* Still on the default password: they've never signed in
                         properly, which is worth seeing after a bulk import. */}
                     {user.must_change_password && (
-                      <span className="mt-1 block text-[11px] font-medium text-warning-fg" title="They must replace the temporary password at their next sign-in.">
-                        Hasn’t set a password
+                      <span className="mt-1 block text-[11px] font-medium text-warning-fg" title={t('users.noPasswordYetTitle')}>
+                        {t('users.noPasswordYet')}
                       </span>
                     )}
                   </Table.Cell>
@@ -793,14 +811,14 @@ const Users = () => {
         isOpen={confirmModal.open}
         onClose={() => setConfirmModal({ open: false, type: '', user: null })}
         onConfirm={() => handleStatusToggle(confirmModal.user)}
-        title={confirmModal.type === 'deactivate' ? 'Deactivate User' : 'Activate User'}
+        title={confirmModal.type === 'deactivate' ? t('users.confirm.deactivateTitle') : t('users.confirm.activateTitle')}
         message={
           confirmModal.type === 'activate' && confirmModal.user && roleMissing(confirmModal.user)
-            ? `${confirmModal.user.full_name || confirmModal.user.username}'s role, ${roleLabel(confirmModal.user)}, no longer exists, so they would return with no permissions. You'll be asked to choose a new role.`
-            : `Are you sure you want to ${confirmModal.type} user ${confirmModal.user?.full_name || confirmModal.user?.username}?`
+            ? t('users.confirm.roleGone', { name: confirmModal.user.full_name || confirmModal.user.username, role: roleLabel(confirmModal.user) })
+            : t(confirmModal.type === 'deactivate' ? 'users.confirm.deactivateBody' : 'users.confirm.activateBody', { name: confirmModal.user?.full_name || confirmModal.user?.username })
         }
         variant={confirmModal.type === 'deactivate' ? 'danger' : 'success'}
-        confirmText={confirmModal.type === 'deactivate' ? 'Deactivate' : 'Activate'}
+        confirmText={confirmModal.type === 'deactivate' ? t('users.actions.deactivate') : t('users.actions.activate')}
       />
 
       {linkUser && (
@@ -853,20 +871,22 @@ const Users = () => {
       <Modal
         isOpen={isResetPasswordModalOpen}
         onClose={() => setIsResetPasswordModalOpen(false)}
-        title="Manage Sign-in"
+        title={t('users.reset.title')}
         className="bg-surface absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]"
       >
         <div className="space-y-4">
           <p className="text-sm text-ink-muted">
-            {selectedUser?.full_name} currently signs in with{' '}
-            <span className="font-medium text-ink">
-              {authProviderLabel(selectedUser?.auth_provider)}
-            </span>.
+            <Trans
+              t={t}
+              i18nKey="users.reset.current"
+              values={{ name: selectedUser?.full_name, provider: authProviderLabel(selectedUser?.auth_provider) }}
+              components={{ b: <span className="font-medium text-ink" /> }}
+            />
           </p>
 
           <div className="flex flex-col">
             <label htmlFor="users-field-1" className="text-sm font-medium text-ink-secondary mb-1">
-              Sign-in Method
+              {t('addPerson.signInMethod')}
             </label>
             <select id="users-field-1"
               name="auth_provider"
@@ -878,7 +898,7 @@ const Users = () => {
               className="border border-line-strong rounded-lg shadow-sm focus:ring-accent-ring focus:border-line-accent p-2 text-sm"
             >
               {AUTH_PROVIDER_OPTIONS.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>{value === AUTH_PROVIDERS.PASSWORD ? t('provider.password') : label}</option>
               ))}
             </select>
           </div>
@@ -886,38 +906,37 @@ const Users = () => {
           {resetPasswordFormData.auth_provider === AUTH_PROVIDERS.PASSWORD ? (
             <div className="relative">
               <Input
-                label={isSwitchingToPassword ? 'New Password' : 'New Password (reset)'}
+                label={isSwitchingToPassword ? t('users.reset.newPassword') : t('users.reset.newPasswordReset')}
                 type={showResetPassword ? 'text' : 'password'}
                 name="new_password"
                 value={resetPasswordFormData.new_password}
                 onChange={(e) => setResetPasswordFormData((prev) => ({ ...prev, new_password: e.target.value }))}
                 error={resetPasswordFormErrors.new_password}
                 helperText={isSwitchingToPassword
-                  ? 'Required — switching away from SSO needs a password to sign in with.'
+                  ? t('users.reset.requiredForSwitch')
                   : undefined}
               />
               <button
                 type="button"
                 onClick={() => setShowResetPassword(!showResetPassword)}
+                aria-label={showResetPassword ? t('setPassword.hide', { field: t('users.reset.newPassword') }) : t('setPassword.show', { field: t('users.reset.newPassword') })}
                 className="absolute end-3 top-7.25 text-ink-muted hover:text-ink-secondary focus:outline-none z-10"
               >
-                {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showResetPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
               </button>
             </div>
           ) : (
             <Alert variant="warning">
-              This account will sign in with {authProviderLabel(resetPasswordFormData.auth_provider)}.
-              Any existing password is removed, and the email address above must match
-              their {authProviderLabel(resetPasswordFormData.auth_provider)} account.
+              {t('users.reset.ssoWarning', { provider: authProviderLabel(resetPasswordFormData.auth_provider) })}
             </Alert>
           )}
 
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={() => setIsResetPasswordModalOpen(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
             <Button variant="secondary" onClick={handleResetPasswordSubmit} disabled={resetPasswordFormLoading}>
-              {resetPasswordFormLoading ? 'Saving...' : 'Save Changes'}
+              {resetPasswordFormLoading ? t('common:status.saving') : t('roleEditor.saveChanges')}
             </Button>
           </div>
         </div>

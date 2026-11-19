@@ -23,7 +23,8 @@ import {
   Tooltip
 } from 'recharts';
 import useSEO from '../../hooks/useSEO';
-import { NO_TYPE_LABEL, useReportTypeNames } from '../../hooks/useReportTypeNames';
+import { noTypeLabel, useReportTypeNames } from '../../hooks/useReportTypeNames';
+import { useTranslation } from 'react-i18next';
 
 const CHART_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#0891b2', '#e11d48', '#4f46e5'];
 
@@ -32,9 +33,10 @@ const toStartOfDayIso = (dateString) => new Date(`${dateString}T00:00:00.000Z`).
 const toEndOfDayIso = (dateString) => new Date(`${dateString}T23:59:59.999Z`).toISOString();
 
 const ComplianceAnalytics = () => {
+  const { t, i18n } = useTranslation('dashboards');
   useSEO({
-    title: 'Analytics',
-    description: 'Trends, resolution times, and category breakdowns across your reports.',
+    title: t('analytics.seo.title'),
+    description: t('analytics.seo.description'),
     noIndex: true,
   });
   const now = new Date();
@@ -61,11 +63,11 @@ const ComplianceAnalytics = () => {
       setData(stats);
     } catch (error) {
       console.error('Error fetching compliance analytics:', error);
-      toast.error('Failed to fetch analytics data');
+      toast.error(i18n.t('dashboards:admin.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [i18n]);
 
   useEffect(() => {
     fetchAnalytics(filters);
@@ -86,10 +88,10 @@ const ComplianceAnalytics = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success('Analytics report downloaded successfully!');
+      toast.success(t('analytics.export.success'));
     } catch (error) {
       console.error('Export failed:', error);
-      toast.error('Failed to download report');
+      toast.error(t('analytics.export.failed'));
     }
   };
 
@@ -127,7 +129,7 @@ const ComplianceAnalytics = () => {
     const merged = new globalThis.Map(); // `Map` here is the lucide icon
     (data?.report_types || []).forEach((item) => {
       const id = item.id || item.report_type_id || item.type_id || '';
-      const name = categoryFor(id, item.name) || item.name || NO_TYPE_LABEL;
+      const name = categoryFor(id, item.name) || item.name || noTypeLabel();
       const total = Number(item.total) || 0;
       const prev = merged.get(name);
       merged.set(name, prev ? { ...prev, total: prev.total + total } : { name, total });
@@ -136,15 +138,15 @@ const ComplianceAnalytics = () => {
   }, [data, typesLoaded, categoryFor]);
 
   const metrics = data ? [
-    { label: 'Total Reports', value: getSummaryValue('Total Reports'), trend: '+5%', icon: BarChart3 },
-    { label: 'Registered Reporters', value: getSummaryValue('Registered Reporters'), trend: '+2%', icon: TrendingUp },
-    { label: 'Anonymous', value: getSummaryValue('Anonymous Reports'), trend: '+10%', icon: PieChartIcon },
-    { label: 'Active Users', value: getSummaryValue('Active Users'), trend: '0%', icon: Map }
+    { label: t('analytics.metrics.total'), value: getSummaryValue('Total Reports'), trend: '+5%', icon: BarChart3 },
+    { label: t('analytics.metrics.registered'), value: getSummaryValue('Registered Reporters'), trend: '+2%', icon: TrendingUp },
+    { label: t('analytics.metrics.anonymous'), value: getSummaryValue('Anonymous Reports'), trend: '+10%', icon: PieChartIcon },
+    { label: t('analytics.metrics.activeUsers'), value: getSummaryValue('Active Users'), trend: '0%', icon: Map }
   ] : [
-    { label: 'Total Reports', value: '0', trend: '0%', icon: BarChart3 },
-    { label: 'Registered Reporters', value: '0', trend: '0%', icon: TrendingUp },
-    { label: 'Anonymous', value: '0', trend: '0%', icon: PieChartIcon },
-    { label: 'Active Users', value: '0', trend: '0%', icon: Map }
+    { label: t('analytics.metrics.total'), value: '0', trend: '0%', icon: BarChart3 },
+    { label: t('analytics.metrics.registered'), value: '0', trend: '0%', icon: TrendingUp },
+    { label: t('analytics.metrics.anonymous'), value: '0', trend: '0%', icon: PieChartIcon },
+    { label: t('analytics.metrics.activeUsers'), value: '0', trend: '0%', icon: Map }
   ];
 
   return (
@@ -152,9 +154,9 @@ const ComplianceAnalytics = () => {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" startIcon={Filter} onClick={() => setShowFilters((prev) => !prev)}>
-            {showFilters ? 'Hide Filters' : 'Filter'}
+            {showFilters ? t('analytics.hideFilters') : t('analytics.filter')}
           </Button>
-          <Button variant="ghost" startIcon={X} onClick={handleResetFilters}>Reset</Button>
+          <Button variant="ghost" startIcon={X} onClick={handleResetFilters}>{t('analytics.reset')}</Button>
         </div>
         {/* <Button
           variant="secondary"
@@ -171,7 +173,7 @@ const ComplianceAnalytics = () => {
           <Card.Content>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label htmlFor="analytics-field-1" className="text-sm font-medium text-ink-secondary">Start Date</label>
+                <label htmlFor="analytics-field-1" className="text-sm font-medium text-ink-secondary">{t('admin.filters.startDate')}</label>
                 <input id="analytics-field-1"
                   type="date"
                   className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
@@ -181,7 +183,7 @@ const ComplianceAnalytics = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="analytics-field-2" className="text-sm font-medium text-ink-secondary">End Date</label>
+                <label htmlFor="analytics-field-2" className="text-sm font-medium text-ink-secondary">{t('admin.filters.endDate')}</label>
                 <input id="analytics-field-2"
                   type="date"
                   className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
@@ -192,15 +194,15 @@ const ComplianceAnalytics = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="analytics-field-3" className="text-sm font-medium text-ink-secondary">Interval</label>
+                <label htmlFor="analytics-field-3" className="text-sm font-medium text-ink-secondary">{t('admin.filters.interval')}</label>
                 <select id="analytics-field-3"
                   className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
                   value={filters.interval}
                   onChange={(e) => setFilters((prev) => ({ ...prev, interval: e.target.value }))}
                 >
-                  <option value="day">Day</option>
-                  <option value="week">Week</option>
-                  <option value="month">Month</option>
+                  <option value="day">{t('admin.filters.day')}</option>
+                  <option value="week">{t('admin.filters.week')}</option>
+                  <option value="month">{t('admin.filters.month')}</option>
                 </select>
               </div>
             </div>
@@ -243,11 +245,11 @@ const ComplianceAnalytics = () => {
           <Card.Header>
             <Card.Title className="flex items-center">
               <Layers className="h-5 w-5 me-2 shrink-0 text-accent-fg" />
-              Reports by Category
+              {t('admin.categories.title')}
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pe-3">
+            <div className="flex flex-col gap-4 max-h-80 overflow-y-auto -m-1 p-1 pe-3">
               {loading || !typesLoaded ? (
                 <Skeleton.Bars />
               ) : reportTypeData.length > 0 ? (
@@ -257,7 +259,7 @@ const ComplianceAnalytics = () => {
                     <div key={i} className="space-y-1.5 min-w-0">
                       <div className="flex justify-between gap-2 text-sm">
                         <span className="font-medium text-ink-secondary truncate" title={type.name}>{type.name}</span>
-                        <span className="text-ink-muted shrink-0 tabular-nums">{type.total} cases</span>
+                        <span className="text-ink-muted shrink-0 tabular-nums">{t('admin.categories.cases', { count: type.total })}</span>
                       </div>
                       <div className="w-full bg-active rounded-full h-2 text-start">
                         <div className="bg-accent h-2 rounded-full" style={{ width: `${percentage}%` }} />
@@ -266,7 +268,7 @@ const ComplianceAnalytics = () => {
                   );
                 })
               ) : (
-                <div className="text-center py-8 text-ink-muted text-sm">No data available.</div>
+                <div className="text-center py-8 text-ink-muted text-sm">{t('shared.noData')}</div>
               )}
             </div>
           </Card.Content>
@@ -276,7 +278,7 @@ const ComplianceAnalytics = () => {
           <Card.Header>
             <Card.Title className="flex items-center">
               <PieChartIcon className="h-5 w-5 me-2 shrink-0 text-accent-fg" />
-              Category Distribution
+              {t('admin.distribution.title')}
             </Card.Title>
           </Card.Header>
           <Card.Content>
@@ -293,7 +295,7 @@ const ComplianceAnalytics = () => {
                     shorter chart on phones. */}
                 <div className="w-full h-56 sm:h-64 lg:h-72"
                   role="img"
-                  aria-label={`Category distribution, pie chart: ${reportTypeData.map((t) => `${t.name} ${t.total}`).join(', ')}`}>
+                  aria-label={t('admin.distribution.chartLabel', { items: reportTypeData.map((item) => `${item.name} ${item.total}`).join(', ') })}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                       <Pie
@@ -310,7 +312,7 @@ const ComplianceAnalytics = () => {
                           <Cell key={`slice-${entry.name}-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`${value} cases`, 'Reports']} />
+                      <Tooltip formatter={(value) => [t('admin.categories.cases', { count: value }), t('admin.distribution.tooltipName')]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -334,8 +336,8 @@ const ComplianceAnalytics = () => {
             ) : (
               <div className="h-72 flex flex-col justify-center items-center text-center bg-subtle border-dashed border-2 border-line rounded-xl px-4">
                 <PieChartIcon className="h-14 w-14 text-ink-subtle mb-3" />
-                <h4 className="text-base font-semibold text-ink">No chart data available</h4>
-                <p className="text-sm text-ink-muted mt-1">Submit more reports to visualize category distribution.</p>
+                <h4 className="text-base font-semibold text-ink">{t('admin.distribution.emptyTitle')}</h4>
+                <p className="text-sm text-ink-muted mt-1">{t('admin.distribution.emptyText')}</p>
               </div>
             )}
           </Card.Content>

@@ -1,0 +1,366 @@
+{
+  "tier": {
+    "confidential": "Confidential",
+    "confidentialTitle": "Only staff cleared for confidential cases can see this",
+    "restricted": "Restricted",
+    "restrictedTitle": "Only staff cleared for restricted cases can see this"
+  },
+  "sla": {
+    "clock": {
+      "acknowledge": "Acknowledge",
+      "triage": "Triage"
+    },
+    "clockShort": {
+      "acknowledge": "Ack",
+      "triage": "Triage"
+    },
+    "filter": {
+      "breached": "Overdue",
+      "due_soon": "Due soon",
+      "on_track": "On track",
+      "met": "Met",
+      "met_late": "Met late"
+    },
+    "state": {
+      "dueOn": "Due {{date}}",
+      "due_soon": "Due soon",
+      "breached": "Overdue",
+      "met": "Met",
+      "met_late": "Late",
+      "stopped": "Not recorded"
+    },
+    "explain": {
+      "on_track": "Open, due in more than 24 hours",
+      "due_soon": "Open, due within 24 hours",
+      "breached": "Open, and the deadline has passed",
+      "met": "Done on time",
+      "met_late": "Done after the deadline",
+      "stopped": "Resolved or closed without this step being recorded"
+    },
+    "explainDue": "{{explain}} · due {{due}}"
+  },
+  "owner": {
+    "unassigned": "Unassigned",
+    "waitingRole": "Waiting for someone in this role",
+    "autoTitle": "Assigned automatically from the report type's owner role",
+    "auto": "auto"
+  },
+  "masked": {
+    "hint": "Hidden: you need the View sensitive answers permission."
+  },
+  "notices": {
+    "regulator": "Regulator:",
+    "regulatorNote": "A reminder for whoever handles this case. Nobody has been notified.",
+    "checkCall": "Check how this call was filed"
+  },
+  "deadlines": {
+    "length": {
+      "business_one": "{{count}} business day",
+      "business_other": "{{count}} business days",
+      "calendar_one": "{{count}} calendar day",
+      "calendar_other": "{{count}} calendar days"
+    },
+    "noDeadline": "No deadline",
+    "due": "Due",
+    "done": "Done",
+    "dueOn": "Due {{date}}",
+    "alreadyAcknowledged": "It was already recorded as acknowledged.",
+    "acknowledged": "Recorded as acknowledged.",
+    "title": "Deadlines",
+    "descriptionPack": "These follow the {{pack}} jurisdiction pack (version {{version}}). It can change when the case's legal entity is set; a deadline already met stays as it was. Times are in your time zone.",
+    "descriptionType": "Set by the report type when this case was filed. Times are in your time zone.",
+    "note": {
+      "acknowledge": "Met by the first message to the reporter, or by marking it below.",
+      "triage": "Met the first time someone moves the case out of Pending, including assigning it by hand."
+    },
+    "feedback": "Feedback to the reporter",
+    "feedbackNote": "For information. No reminders are sent for it yet.",
+    "businessDays": "Business days skip weekends and public holidays. If a holiday is added, a running deadline moves later.",
+    "businessDaysPack": "Business days skip weekends and public holidays in the {{pack}} calendar. If a holiday is added, a running deadline moves later.",
+    "markAcknowledged": "Mark as acknowledged",
+    "markAcknowledgedNote": "For an acknowledgement sent by letter or made by phone. Your first message to the reporter counts on its own."
+  },
+  "records": {
+    "holdPlaced": "Legal hold placed.",
+    "holdLifted": "Legal hold lifted.",
+    "onHold": "Legal hold: content will not be deleted.",
+    "deletedOn": "Content will be deleted on {{date}}.",
+    "noRetention": "This report type sets no retention period, so the content is kept.",
+    "noDate": "No deletion date is set yet.",
+    "title": "Records",
+    "closedKept_one": "Closed {{date}} · kept {{count}} year. Reopening the case cancels the date.",
+    "closedKept_other": "Closed {{date}} · kept {{count}} years. Reopening the case cancels the date.",
+    "jurisdiction": "Jurisdiction",
+    "version": "version {{version}}",
+    "regulators": "Regulators",
+    "listSeparator": ", ",
+    "keptAtLeast": "Kept at least",
+    "years_one": "{{count}} year",
+    "years_other": "{{count}} years",
+    "thisCase_one": "(this case: {{count}} year, from its report type)",
+    "thisCase_other": "(this case: {{count}}, from its report type)",
+    "liftHold": "Lift legal hold",
+    "placeHold": "Place legal hold",
+    "forever": "Kept forever: this case is never deleted."
+  },
+  "disposed": {
+    "reportType": "Report type",
+    "submitted": "Submitted",
+    "closed": "Closed",
+    "disposed": "Disposed",
+    "caseNumber": "Case #{{number}}",
+    "fallbackTitle": "{{type}} — disposed under retention policy",
+    "body": "Disposed on {{date}} under the retention policy. The answers, description, messages and attachments have been permanently deleted; this record that the case existed is kept.",
+    "bodyYears_one": "Disposed on {{date}} under a {{count}}-year retention policy. The answers, description, messages and attachments have been permanently deleted; this record that the case existed is kept.",
+    "bodyYears_other": "Disposed on {{date}} under a {{count}}-year retention policy. The answers, description, messages and attachments have been permanently deleted; this record that the case existed is kept."
+  },
+  "governing": {
+    "loadError": "Couldn't load the report type. {{error}}",
+    "covered": "The AI covered <strong>{{covered}} of {{total}}</strong> questions on this form.",
+    "coveredVersion": "The AI covered <strong>{{covered}} of {{total}}</strong> questions on this form (version {{version}}, the one it worked from).",
+    "extra_one": "It also asked {{count}} that isn't on the form.",
+    "extra_other": "It also asked {{count}} that aren't on the form.",
+    "step": "Step {{number}}",
+    "state": {
+      "asked": "Asked",
+      "declined": "Declined",
+      "missing": "Not needed"
+    },
+    "notOnForm": "Asked, but not on the form",
+    "matchedType": "Matched report type",
+    "type": "Report type",
+    "version": "version {{version}}",
+    "compare": "Compare with form",
+    "modalTitleNamed": "{{name}}: what the AI asked",
+    "modalTitle": "What the AI asked"
+  },
+  "escalationPreview": {
+    "title": "Escalation route",
+    "description": "Who this report would go to, based on the people it names and your reporting hierarchy. Nothing is changed.",
+    "departmentPlaceholder": "Department (optional)",
+    "department": "Department",
+    "checkAgain": "Check again",
+    "check": "Check routing",
+    "scans_one": "Scans {{count}} answer from this report for names in the directory.",
+    "scans_other": "Scans {{count}} answers from this report for names in the directory.",
+    "named": "Named in the report",
+    "escalatesTo": "Escalates to",
+    "routedToRole": "Routed to the {{role}} role.",
+    "manualTitle": "Needs manual triage",
+    "manualBody": "This person was identified, but no one above them on file can take the case. A person needs to decide where this report goes.",
+    "reviewHierarchy": "Review the hierarchy →",
+    "noneTitle": "No one in the directory is named",
+    "noneBody": "This does not mean no one is implicated — only that no name in the report matches someone on file. Matching is exact on purpose, so a misspelled name or a person missing from the directory reads the same. A person needs to decide the routing.",
+    "checkDirectory": "Check the directory →",
+    "noAnswers": "This report has no written answers to check."
+  },
+  "escalationRecord": {
+    "title": "Escalation",
+    "bypass": "Routed around the implicated person",
+    "implicated": "Implicated",
+    "escalatedTo": "Escalated to"
+  },
+  "skipped": {
+    "title": "Passed over on the way up",
+    "note": {
+      "noCaseAccess": "Their account can't open cases. Change their role only if they're meant to handle them.",
+      "lowestLevel": "The lowest level never receives cases. This is a fixed rule.",
+      "notTarget": "Their level is set as not an escalation target — a deliberate setting.",
+      "notInDirectory": "Missing from the directory — add them, or correct their entry."
+    }
+  },
+  "digest": {
+    "unreachable": "The AI service can't be reached right now, so the summary can't be loaded. Try again shortly.",
+    "notFound": "No summary is available for this report.",
+    "refresh": "Refresh the summary",
+    "refreshTitle": "Refresh — a summary can arrive a little after the evidence does",
+    "noFiles": "No evidence files were attached, so there is nothing to summarize. Summaries are written from attachments only.",
+    "notYet": "No summary for this report yet. One can arrive a little after the evidence does.",
+    "by": "By <code>{{agent}}</code>",
+    "byAtStage": "By <code>{{agent}}</code> at stage <code>{{stage}}</code>",
+    "disclaimer": "Written by an AI agent from the evidence files. Check it against the originals before relying on it.",
+    "title": "AI summary of the evidence",
+    "aiGenerated": "AI-generated",
+    "embeddedDescription": "A factual digest of the files below — not of the report as a whole.",
+    "description": "A factual digest of the evidence files on this report."
+  },
+  "detail": {
+    "originalSubmission": "Original submission",
+    "evidence": "Evidence & files",
+    "timeline": "Case timeline",
+    "caseDetails": "Case details",
+    "status": "Status",
+    "priority": "Priority",
+    "assignedTo": "Assigned to",
+    "loadFailed": "Failed to load case details",
+    "statusNotAllowed": "You are not allowed to update the status",
+    "statusInvalid": "Invalid status",
+    "statusUpdated": "Status updated",
+    "unknownUser": "Unknown user",
+    "downloadUnavailable": "Download link not available",
+    "downloadFailed": "Failed to download file",
+    "noReportNumber": "Report number not available",
+    "notFound": "Case not found",
+    "couldNotLoad": "This case couldn't be loaded",
+    "notFoundHint": "Check the link, or find the case from the reports list.",
+    "couldNotLoadHint": "Try again in a moment.",
+    "goBack": "Go back",
+    "reportFallback": "Report",
+    "viaAi": "via AI assistant",
+    "caseStatus": "Case status",
+    "submittedOn": "Submitted on {{date}}",
+    "notAvailable": "N/A",
+    "additionalDetails": "Additional details",
+    "sensitiveLogged": "Some answers here are marked sensitive. Viewing this is logged.",
+    "sensitiveHidden": "Answers marked sensitive are hidden. You need the View sensitive answers permission to see them.",
+    "unnamedFile": "Unnamed file",
+    "uploaded": "uploaded {{when}}",
+    "download": "Download {{name}}",
+    "file": "file",
+    "noEvidence": "No evidence attached.",
+    "noEvidenceSummary": "AI summaries are written from attached files, so there's nothing to summarize.",
+    "waitingFor": "Waiting for {{role}}",
+    "assignedAuto": "Assigned automatically {{when}}",
+    "assigned": "Assigned {{when}}",
+    "assignedBy": "Assigned {{when}} by {{name}}"
+  },
+  "timeline": {
+    "noteAdded": "Internal note added",
+    "messageSent": "Message sent",
+    "empty": "No timeline events yet.",
+    "system": "System",
+    "internalBadge": "INTERNAL",
+    "noContent": "No message content",
+    "messageKind": "Message type",
+    "internalNote": "Internal note",
+    "publicMessage": "Message to the reporter",
+    "notePlaceholder": "Add an internal note (only your team sees it)…",
+    "messagePlaceholder": "Send a message to the reporter…",
+    "firstReplyAck": "Your first reply to the reporter counts as the acknowledgement.",
+    "addNote": "Add note",
+    "sendMessage": "Send message"
+  },
+  "assign": {
+    "notCleared": {
+      "confidential": "Their role isn't cleared for confidential cases.",
+      "restricted": "Their role isn't cleared for restricted cases."
+    },
+    "notClearedOther": "Their role isn't cleared for {{tier}} cases.",
+    "isReporter": "They reported this case.",
+    "notAllowed": "You are not allowed to assign cases",
+    "wrongRole": "You can't assign this case to someone in that role",
+    "assigned": "Case assigned",
+    "button": "Assign",
+    "title": "Assign case",
+    "description": "Select an assignee. Only people whose role can open reports are listed; those who can't take this case are greyed out.",
+    "loading": "Loading assignees",
+    "none": "No eligible assignees available."
+  },
+  "list": {
+    "col": {
+      "reportId": "Report ID",
+      "submittedOn": "Submitted on",
+      "category": "Category",
+      "priority": "Priority",
+      "owner": "Owner",
+      "deadlines": "Deadlines",
+      "status": "Status"
+    },
+    "seoTitle": "All reports",
+    "seoDescription": "Browse, filter, and open every report submitted to your organization.",
+    "tab": {
+      "all": "All reports",
+      "pending": "Pending review",
+      "in_progress": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "chip": {
+      "category": "Category: {{value}}",
+      "priority": "Priority: {{value}}",
+      "assignee": "Assigned to: {{value}}",
+      "onePerson": "one person"
+    },
+    "filedBy": {
+      "true": "Anonymous",
+      "false": "From an account"
+    },
+    "filedByChip": {
+      "true": "Anonymous only",
+      "false": "Filed from an account"
+    },
+    "filedByLabel": "Filed by",
+    "anyone": "Anyone",
+    "anyDeadline": "Any deadline",
+    "tour": {
+      "allTitle": "All reports",
+      "allBody": "Every report submitted to your organization lives here, in one place.",
+      "searchTitle": "Search reports",
+      "searchBody": "Look up a report by ID, category, or the reporter/assignee username.",
+      "sortTitle": "Order the list",
+      "sortBody": "Sort by date, report ID, category, priority, assignee, or status — or click a column header.",
+      "tabsTitle": "Filter by status",
+      "tabsBody": "Quickly narrow the list to pending, in-progress, resolved, or closed reports.",
+      "tableTitle": "Report list",
+      "tableBody": "Click any row to open the full case, review details, and take action.",
+      "accountTitle": "Your account",
+      "accountBody": "Manage your profile or log out from here."
+    },
+    "searchPlaceholder": "Search by ID, category, or reporter…",
+    "search": "Search reports",
+    "count_one": "{{count}} report",
+    "count_other": "{{count}} reports",
+    "filteredBy": "Filtered by",
+    "removeFilter": "Remove filter: {{filter}}",
+    "clearAll": "Clear all",
+    "emptySearch": "No matching reports",
+    "empty": "No reports found",
+    "emptySla": {
+      "breached": "No overdue cases",
+      "due_soon": "No cases due soon",
+      "on_track": "No cases on track",
+      "met": "No cases with deadlines met",
+      "met_late": "No cases met late"
+    },
+    "emptySearchHint": "Try a different search term.",
+    "emptyHint": "Try adjusting your filters.",
+    "anonymous": "Anonymous"
+  },
+  "myCases": {
+    "col": {
+      "caseId": "Case ID",
+      "updated": "Last updated",
+      "open": "Open"
+    },
+    "seoTitle": "My cases",
+    "seoDescription": "The cases currently assigned to you for investigation.",
+    "title": "My assigned cases",
+    "subtitle": "Manage and update your active investigations",
+    "searchPlaceholder": "Search my cases…",
+    "search": "Search my cases",
+    "emptyTitle": "No assigned cases",
+    "emptyBody": "You don't have any cases assigned to you at the moment.",
+    "openCase": "Open case #{{number}}",
+    "awaiting": "Awaiting action",
+    "highPriority": "High priority",
+    "resolvedRecent": "Resolved (recent)"
+  },
+  "inbox": {
+    "seoTitle": "Messages",
+    "seoDescription": "Secure conversations with reporters across your assigned cases.",
+    "title": "Compliance inbox",
+    "subtitle": "Communicate with reporters and manage case discussions",
+    "searchPlaceholder": "Search by report ID or keywords…",
+    "search": "Search conversations",
+    "emptyTitle": "No conversations found",
+    "emptyBody": "Active reports with messages will appear here.",
+    "generalReport": "General report",
+    "messages_one": "{{count}} message",
+    "messages_other": "{{count}} messages",
+    "teamActivity": "Team activity",
+    "unread": "Unread messages",
+    "pendingReplies": "Pending replies",
+    "guidelinesTitle": "Communication guidelines",
+    "guidelinesBody": "Maintain strict confidentiality. Use internal notes for team discussion and messages to the reporter for reporter communication."
+  }
+}

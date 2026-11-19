@@ -41,6 +41,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
 import Skeleton from '../../components/ui/Skeleton';
 import Badge from '../../components/ui/Badge';
@@ -69,11 +70,12 @@ const CASE_WARNINGS = new Set(['assigned_cases_hidden']);
 const OWNER_WARNINGS = new Set(['owner_cannot_handle']);
 
 const SavedWarnings = ({ warnings, orgSlug, onDismiss }) => {
+  const { t } = useTranslation('people');
   if (!warnings.length) return null;
   const linkCases = warnings.some((w) => CASE_WARNINGS.has(w.code));
   const linkTypes = warnings.some((w) => OWNER_WARNINGS.has(w.code));
   return (
-    <Alert variant="warning" title="Saved — but check this" dismissible onDismiss={onDismiss}>
+    <Alert variant="warning" title={t('roles.savedWarnings.title')} dismissible onDismiss={onDismiss}>
       <ul className="list-disc space-y-1 ps-4">
         {warnings.map((warning, i) => (
           <li key={i}>
@@ -86,12 +88,12 @@ const SavedWarnings = ({ warnings, orgSlug, onDismiss }) => {
         <p className="mt-2 flex flex-wrap gap-x-4">
           {linkCases && (
             <Link to={staffPath(orgSlug, 'reports')} className="font-semibold underline underline-offset-2">
-              Go to cases
+              {t('roles.savedWarnings.goCases')}
             </Link>
           )}
           {linkTypes && (
             <Link to={staffPath(orgSlug, 'report-types')} className="font-semibold underline underline-offset-2">
-              Go to report types
+              {t('roles.savedWarnings.goTypes')}
             </Link>
           )}
         </p>
@@ -109,7 +111,9 @@ const sameSet = (a, b) => a.size === b.size && [...a].every((p) => b.has(p));
 const SKELETON_ROLES = 6;
 
 /** The summary card, legend and matrix, with the data stubbed. */
-const RolesSkeleton = () => (
+const RolesSkeleton = () => {
+  const { t } = useTranslation('people');
+  return (
   <div className="space-y-4" aria-busy="true">
     <section className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
@@ -147,7 +151,7 @@ const RolesSkeleton = () => (
         <thead>
           <tr className="bg-subtle">
             <th className="w-72 min-w-52 bg-subtle px-4 py-3 text-start align-bottom text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
-              Permission
+              {t('roles.permission')}
             </th>
             {Array.from({ length: SKELETON_ROLES }).map((_, i) => (
               <th key={i} className="min-w-30 border-s border-line-subtle px-2 py-3">
@@ -202,7 +206,8 @@ const RolesSkeleton = () => (
       </div>
     </section>
   </div>
-);
+  );
+};
 
 // ─── The selected role, in brief ─────────────────────────────────────────
 
@@ -236,6 +241,7 @@ const RoleSummary = ({
   onEdit,
   onDelete,
 }) => {
+  const { t } = useTranslation('people');
   const added = [...draft].filter((p) => !saved.has(p)).length;
   const removed = [...saved].filter((p) => !draft.has(p)).length;
   const changed = added + removed > 0;
@@ -249,44 +255,47 @@ const RoleSummary = ({
               role.is_fixed ? 'bg-ink text-canvas' : 'bg-accent-soft text-accent-fg'
             }`}
           >
-            {role.is_fixed ? <Lock className="h-4 w-4" /> : role.name.charAt(0).toUpperCase()}
+            {role.is_fixed ? <Lock className="h-4 w-4" aria-hidden="true" /> : role.name.charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <h2 className="truncate text-base font-bold text-ink">{role.name}</h2>
-              {role.is_fixed && <Badge variant="dark" size="small">Fixed</Badge>}
-              {role.is_active === false && <Badge variant="warning" size="small">Inactive</Badge>}
+              <h2 className="truncate text-base font-bold text-ink" dir="auto">{role.name}</h2>
+              {role.is_fixed && <Badge variant="dark" size="small">{t('roles.fixed')}</Badge>}
+              {role.is_active === false && <Badge variant="warning" size="small">{t('users.status.inactive')}</Badge>}
             </div>
-            <p className="font-mono text-xs text-ink-subtle">{role.code}</p>
+            <p className="font-mono text-xs text-ink-subtle" dir="ltr">{role.code}</p>
             <p className={`mt-0.5 text-xs ${role.level_code ? 'text-ink-muted' : 'font-medium text-warning-fg'}`}>
               {role.level_code
-                ? `Level: ${role.level_title || role.level_code}`
-                : 'No level — its holders can’t be placed in the org chart'}
+                ? t('users.filters.level', { name: role.level_title || role.level_code })
+                : t('roles.noLevel')}
             </p>
           </div>
         </div>
 
         <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-3">
           {people !== undefined && (
-            <Stat label="People with this role" to={paths.users ? `${paths.users}?role=${encodeURIComponent(role.code)}` : null}>
-              {people === null ? '—' : `${people} ${people === 1 ? 'person' : 'people'}`}
+            <Stat label={t('roles.stat.people')} to={paths.users ? `${paths.users}?role=${encodeURIComponent(role.code)}` : null}>
+              {people === null ? '—' : t('roles.stat.peopleCount', { count: people })}
             </Stat>
           )}
           {agents !== undefined && (
             <Stat
-              label="AI agents acting as it"
+              label={t('roles.stat.agents')}
               to={agents.length && paths.agents ? `${paths.agents}?agent=${encodeURIComponent(agents[0].code)}` : null}
             >
-              {agents.length === 0 ? 'None' : agents.map((a) => a.name).join(', ')}
+              {agents.length === 0 ? t('roles.stat.none') : agents.map((a) => a.name).join(t('permJoin.list'))}
             </Stat>
           )}
-          <Stat label="Permissions">
-            {draft.size} of {total}
+          <Stat label={t('roleEditor.permissions')}>
+            {t('permPicker.selectedOf', { count: draft.size, total })}
             {changed && (
               <span className="ms-1.5 text-xs font-medium text-accent-fg">
-                {added > 0 && `+${added}`}
-                {added > 0 && removed > 0 && ' '}
-                {removed > 0 && `−${removed}`} unsaved
+                <bdi dir="ltr">
+                  {added > 0 && `+${added}`}
+                  {added > 0 && removed > 0 && ' '}
+                  {removed > 0 && `−${removed}`}
+                </bdi>{' '}
+                {t('roles.unsaved')}
               </span>
             )}
           </Stat>
@@ -295,11 +304,11 @@ const RoleSummary = ({
         <div className="flex shrink-0 gap-2">
           {!canManage ? (
             <Button variant="outline" size="small" onClick={onEdit}>
-              View
+              {t('common:actions.view')}
             </Button>
           ) : role.is_fixed ? (
-            <Button variant="outline" size="small" startIcon={Pencil} onClick={onEdit} title="Only the level of a fixed role can change">
-              Change level
+            <Button variant="outline" size="small" startIcon={Pencil} onClick={onEdit} title={t('roles.changeLevelTitle')}>
+              {t('roles.changeLevel')}
             </Button>
           ) : (
             <>
@@ -309,12 +318,12 @@ const RoleSummary = ({
                 startIcon={Pencil}
                 onClick={onEdit}
                 disabled={changed}
-                title={changed ? 'Save or discard the changes in the grid first.' : 'Rename, change its level, deactivate or edit in a list'}
+                title={changed ? t('roles.editBlocked') : t('roles.editTitle')}
               >
-                Edit details
+                {t('roles.editDetails')}
               </Button>
-              <Button variant="ghost" size="small" onClick={onDelete} aria-label={`Delete ${role.name}`} title="Delete role">
-                <Trash2 className="h-4 w-4 text-danger-fg" />
+              <Button variant="ghost" size="small" onClick={onDelete} aria-label={t('deleteRole.title', { name: role.name }).replace(/[?؟]$/, '')} title={t('deleteRole.submit')}>
+                <Trash2 className="h-4 w-4 text-danger-fg" aria-hidden="true" />
               </Button>
             </>
           )}
@@ -322,19 +331,19 @@ const RoleSummary = ({
       </div>
 
       {Array.isArray(role.viewable_roles) && <p className="mt-3 text-xs text-ink-muted">
-        <span className="font-medium text-ink-secondary">Can see accounts of: </span>
+        <span className="font-medium text-ink-secondary">{t('roles.canSee')} </span>
         {role.code === 'admin'
-          ? 'everyone'
+          ? t('roles.canSeeEveryone')
           : viewableNames.length
-            ? `${viewableNames.join(', ')} — and their own`
-            : 'only their own account'}
+            ? t('roles.canSeeRoles', { roles: viewableNames.join(t('permJoin.list')) })
+            : t('roles.canSeeOwn')}
       </p>}
 
       {role.is_fixed && (
         <p className="mt-3 text-xs text-ink-muted">
           {role.is_staff_role === false
-            ? 'The identity people use to file and follow their own reports. Its permissions are fixed and it cannot be deleted; only its level can change.'
-            : "The organization's root role. It always holds every permission this organization can grant and cannot be deleted; only its level can change."}
+            ? t('roles.fixedReporter')
+            : t('roles.fixedAdmin')}
         </p>
       )}
 
@@ -346,9 +355,9 @@ const RoleSummary = ({
               className={`flex items-start gap-2 text-xs ${problem.error ? 'text-danger-fg' : 'text-warning-fg'}`}
             >
               {problem.error ? (
-                <XCircle className="mt-px h-3.5 w-3.5 shrink-0" />
+                <XCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               ) : (
-                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               )}
               <span>{problem.message}</span>
             </li>
@@ -362,6 +371,7 @@ const RoleSummary = ({
 // ─── One cell of the grid ─────────────────────────────────────────────────
 
 const Cell = ({ role, permission, label, held, was, locked, fixed, error, selected, onToggle }) => {
+  const { t } = useTranslation('people');
   const changed = held !== was;
   let mark = 'border-[1.5px] border-line-strong bg-surface';
   if (fixed) mark = held ? 'bg-active text-ink-muted' : 'border-[1.5px] border-line bg-surface';
@@ -370,8 +380,8 @@ const Cell = ({ role, permission, label, held, was, locked, fixed, error, select
   else if (held) mark = 'bg-accent text-on-accent';
   else if (changed) mark = 'border-[1.5px] border-dashed border-danger-line bg-danger-soft';
 
-  const state = held ? 'allowed' : 'not allowed';
-  const note = error || (changed ? (held ? 'will be allowed when saved' : 'will be removed when saved') : '');
+  const state = held ? t('roles.cell.allowed') : t('roles.cell.notAllowed');
+  const note = error || (changed ? (held ? t('roles.cell.willAllow') : t('roles.cell.willRemove')) : '');
 
   return (
     <td className={`border-s border-line-subtle p-0 text-center ${selected ? 'bg-accent-soft/40' : ''}`}>
@@ -379,12 +389,12 @@ const Cell = ({ role, permission, label, held, was, locked, fixed, error, select
         type="button"
         role="checkbox"
         aria-checked={held}
-        aria-label={`${role.name}: ${label}, ${state}${note ? ` — ${note}` : ''}`}
+        aria-label={t(note ? 'roles.cell.labelNote' : 'roles.cell.label', { role: role.name, permission: label, state, note })}
         title={
           fixed
-            ? `${role.name} is fixed`
+            ? t('roles.cell.fixed', { role: role.name })
             : locked
-              ? "You can't grant a permission you don't hold yourself."
+              ? t('permPicker.lockedTitle')
               : note || undefined
         }
         disabled={fixed || locked}
@@ -396,8 +406,8 @@ const Cell = ({ role, permission, label, held, was, locked, fixed, error, select
             locked && !fixed && !held ? 'opacity-40' : ''
           }`}
         >
-          {held && !error && <Check className="h-3 w-3" strokeWidth={3.2} />}
-          {error && <span className="text-[11px] font-bold leading-none">!</span>}
+          {held && !error && <Check className="h-3 w-3" strokeWidth={3.2} aria-hidden="true" />}
+          {error && <span className="text-[11px] font-bold leading-none" aria-hidden="true">!</span>}
         </span>
       </button>
     </td>
@@ -414,6 +424,7 @@ const Cell = ({ role, permission, label, held, was, locked, fixed, error, select
  * Management. Only admins can manage accounts; everyone sees their own.
  */
 const AccessMatrix = ({ data, canManage, onEdit }) => {
+  const { t } = useTranslation('people');
   const [open, setOpen] = useState(true);
   const rows = data?.roles || [];
   if (!rows.length) return null;
@@ -428,13 +439,12 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
         className="flex w-full items-start justify-between gap-3 px-4 py-3.5 text-start sm:px-5"
       >
         <span>
-          <span className="block text-[15px] font-semibold text-ink">Who can see whom</span>
+          <span className="block text-[15px] font-semibold text-ink">{t('roles.matrix.title')}</span>
           <span className="block text-xs text-ink-muted">
-            Whose accounts each role sees under User Management. Everyone sees their own account; admin accounts are
-            visible to admins only, and only admins can change accounts.
+            {t('roles.matrix.help')}
           </span>
         </span>
-        <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-ink-muted transition-transform ${open ? '' : '-rotate-90'}`} />
+        <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-ink-muted transition-transform ${open ? '' : '-rotate-90 rtl:rotate-90'}`} aria-hidden="true" />
       </button>
       {open && (
         <div className="overflow-x-auto border-t border-line-subtle scrollbar-thin">
@@ -442,14 +452,14 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
             <thead>
               <tr className="bg-subtle">
                 <th scope="col" className="sticky start-0 z-10 bg-subtle-solid px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
-                  People with… <span className="normal-case tracking-normal">can see…</span>
+                  <Trans t={t} i18nKey="roles.matrix.corner" components={{ s: <span className="normal-case tracking-normal" /> }} />
                 </th>
                 {columns.map((target) => (
                   <th key={target.role} scope="col" className="border-s border-line-subtle px-3 py-2.5 text-center text-xs font-semibold text-ink">
                     {target.name}
                   </th>
                 ))}
-                {canManage && <th scope="col" className="border-s border-line-subtle px-3 py-2.5" aria-label="Edit" />}
+                {canManage && <th scope="col" className="border-s border-line-subtle px-3 py-2.5" aria-label={t('common:actions.edit')} />}
               </tr>
             </thead>
             <tbody>
@@ -457,11 +467,11 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
                 <tr key={row.role} className="hover:bg-hover/50">
                   <th scope="row" className="sticky start-0 z-10 bg-surface px-4 py-2.5 font-medium text-ink">
                     <span className="flex items-center gap-1.5">
-                      {row.is_fixed && <Lock className="h-3 w-3 text-ink-subtle" aria-label="Fixed role" />}
+                      {row.is_fixed && <Lock className="h-3 w-3 text-ink-subtle" aria-label={t('roleEditor.fixed.title')} />}
                       {row.name}
                       {row.can_manage_users && (
                         <Badge variant="dark" size="small">
-                          Manages accounts
+                          {t('roles.matrix.managesAccounts')}
                         </Badge>
                       )}
                     </span>
@@ -471,17 +481,18 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
                       {target.can_view ? (
                         <span
                           className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-on-accent"
-                          title={`${row.name} can see ${target.name} accounts${target.can_manage ? ' and change them' : ''}`}
+                          title={t(target.can_manage ? 'roles.matrix.canSeeChange' : 'roles.matrix.canSee', { role: row.name, target: target.name })}
                         >
-                          <Check className="h-3 w-3" strokeWidth={3.5} />
+                          <Check className="h-3 w-3" strokeWidth={3.5} aria-hidden="true" />
+                          <span className="sr-only">{t('roles.cell.allowed')}</span>
                         </span>
                       ) : (
                         <span
                           className="inline-block h-5 w-5 rounded-full border-[1.5px] border-line-strong"
                           title={
                             target.role === 'admin' && row.role !== 'admin'
-                              ? 'Admin accounts are visible to admins only'
-                              : `${row.name} can't see ${target.name} accounts`
+                              ? t('roles.matrix.adminOnly')
+                              : t('roles.matrix.cantSee', { role: row.name, target: target.name })
                           }
                         />
                       )}
@@ -491,7 +502,7 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
                     <td className="border-s border-line-subtle px-3 py-2.5 text-end">
                       {!row.is_fixed && (
                         <button type="button" onClick={() => onEdit(row.role)} className="text-xs font-medium text-link hover:underline">
-                          Change
+                          {t('roles.matrix.change')}
                         </button>
                       )}
                     </td>
@@ -507,9 +518,10 @@ const AccessMatrix = ({ data, canManage, onEdit }) => {
 };
 
 const Roles = () => {
+  const { t } = useTranslation('people');
   useSEO({
-    title: 'Roles',
-    description: "Build your organization's roles from permissions.",
+    title: t('roles.seoTitle'),
+    description: t('roles.seoDescription'),
     noIndex: true,
   });
   const can = useCan();
@@ -704,9 +716,10 @@ const Roles = () => {
     if (server?.not_grantable?.length) {
       list.push({
         error: true,
-        message: `You don't hold ${permissionLabels(server.not_grantable, ', ')} yourself, so you can't grant ${
-          server.not_grantable.length === 1 ? 'it' : 'them'
-        }.`,
+        message: t('roles.notGrantable', {
+          labels: permissionLabels(server.not_grantable, t('permJoin.list')),
+          count: server.not_grantable.length,
+        }),
       });
     }
     return { errors, list, invalid: server?.valid === false };
@@ -747,7 +760,7 @@ const Roles = () => {
       // Changing roles can change what the signed-in user holds.
       useAuthStore.getState().refreshUser();
       loadCatalog();
-      toast.success(`${savedCount} role${savedCount === 1 ? '' : 's'} saved.`);
+      toast.success(t('roles.savedCount', { count: savedCount }));
     }
     // Keep only what didn't save, so it can be fixed and retried.
     setDrafts((prev) => Object.fromEntries(Object.entries(prev).filter(([code]) => failed[code])));
@@ -760,6 +773,7 @@ const Roles = () => {
       );
     }
   };
+
 
   const afterWrite = () => {
     setEditing(null);
@@ -797,19 +811,19 @@ const Roles = () => {
     <div className="space-y-5 pb-24">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-xl font-bold text-ink">Roles &amp; Permissions</h1>
+          <h1 className="text-xl font-bold text-ink">{t('roles.title')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            What each role can see and do. Pages, buttons and AI agents all follow from these ticks.
+            {t('roles.intro')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 focus-within:border-line-accent">
-            <Search className="h-4 w-4 shrink-0 text-ink-subtle" />
+            <Search className="h-4 w-4 shrink-0 text-ink-subtle" aria-hidden="true" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Find a permission"
-              aria-label="Find a permission"
+              placeholder={t('roles.find')}
+              aria-label={t('roles.find')}
               className="w-40 bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle sm:w-48"
             />
           </label>
@@ -820,30 +834,30 @@ const Roles = () => {
               loadCatalog();
             }}
             disabled={loading}
-            aria-label="Refresh"
-            title="Refresh"
+            aria-label={t('roles.refresh')}
+            title={t('roles.refresh')}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
           </Button>
           {canManage && (
             <Button startIcon={Plus} onClick={() => setEditing({ role: null })} disabled={!catalog}>
-              New role
+              {t('roleEditor.newTitle')}
             </Button>
           )}
         </div>
       </div>
 
       {catalogError && (
-        <Alert variant="error" title="Couldn't load the permission catalog">
+        <Alert variant="error" title={t('roles.catalogError')}>
           {catalogError}
         </Alert>
       )}
 
       {error && !loading && (
-        <Alert variant="error" title="Couldn't load roles">
+        <Alert variant="error" title={t('roleSelect.error')}>
           {errorSummary(error)}{' '}
           <button type="button" onClick={reload} className="font-medium text-link hover:underline">
-            Try again
+            {t('common:actions.retry')}
           </button>
         </Alert>
       )}
@@ -851,9 +865,8 @@ const Roles = () => {
       <SavedWarnings warnings={savedWarnings} orgSlug={orgSlug} onDismiss={() => setSavedWarnings([])} />
 
       {shown && unplacedRoles.length > 0 && (
-        <Alert variant="warning" title={`${unplacedRoles.length === 1 ? '1 role has' : `${unplacedRoles.length} roles have`} no level`}>
-          Nobody holding {unplacedRoles.map((r) => r.name).join(', ')} can be placed in the org chart, so escalation can’t
-          route a report around them. Select the role and give it a level.
+        <Alert variant="warning" title={t('roles.unplaced.title', { count: unplacedRoles.length })}>
+          {t('roles.unplaced.body', { roles: unplacedRoles.map((r) => r.name).join(t('permJoin.list')) })}
         </Alert>
       )}
 
@@ -885,21 +898,21 @@ const Roles = () => {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-ink-muted">
             <span className="flex items-center gap-1.5">
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-on-accent">
-                <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                <Check className="h-2.5 w-2.5" strokeWidth={3.5} aria-hidden="true" />
               </span>
-              Allowed
+              {t('roles.legend.allowed')}
             </span>
             <span className="flex items-center gap-1.5">
               <span className="h-4 w-4 rounded-full border-[1.5px] border-line-strong" />
-              Not allowed
+              {t('roles.legend.notAllowed')}
             </span>
             {canManage && (
               <span className="flex items-center gap-1.5">
                 <span className="h-4 w-4 rounded-full border-[1.5px] border-dashed border-accent bg-accent-soft" />
-                Unsaved change
+                {t('roles.legend.unsaved')}
               </span>
             )}
-            <span className="hidden sm:inline">Select a role's name to see its summary.</span>
+            <span className="hidden sm:inline">{t('roles.legend.selectHint')}</span>
             <label className="ms-auto flex cursor-pointer items-center gap-2 text-ink-secondary">
               <input
                 type="checkbox"
@@ -907,7 +920,7 @@ const Roles = () => {
                 onChange={(event) => setShowInactive(event.target.checked)}
                 className="h-4 w-4 rounded border-line-strong"
               />
-              Show inactive roles
+              {t('roles.showInactive')}
             </label>
           </div>
 
@@ -921,7 +934,7 @@ const Roles = () => {
                     scope="col"
                     className="sticky start-0 z-10 w-40 min-w-40 sm:w-72 sm:min-w-52 bg-subtle-solid px-3 sm:px-4 py-3 align-bottom text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle"
                   >
-                    Permission
+                    {t('roles.permission')}
                   </th>
                   {roles.map((role) => {
                     const on = selected?.code === role.code;
@@ -941,25 +954,25 @@ const Roles = () => {
                           className="flex w-full flex-col items-center gap-0.5 px-2 py-3 transition-colors hover:bg-hover"
                         >
                           <span className="flex items-center gap-1 text-sm font-semibold text-ink">
-                            {role.is_fixed && <Lock className="h-3 w-3 text-ink-subtle" aria-label="Fixed role" />}
-                            {role.name}
+                            {role.is_fixed && <Lock className="h-3 w-3 text-ink-subtle" aria-label={t('roleEditor.fixed.title')} />}
+                            <span dir="auto">{role.name}</span>
                           </span>
                           {role.level_code ? (
                             <span className="text-[11px] font-medium text-ink-muted">{role.level_title || role.level_code}</span>
                           ) : (
                             <span
                               className="rounded-full bg-warning-soft px-1.5 py-px text-[10px] font-semibold text-warning-fg"
-                              title="Nobody holding this role can be placed in the org chart until it has a level."
+                              title={t('roles.noLevelTitle')}
                             >
-                              No level
+                              {t('users.placement.noLevel')}
                             </span>
                           )}
                           <span className="text-[11px] font-normal text-ink-subtle">
-                            {heldBy(role.code).size} of {total}
+                            {t('permPicker.selectedOf', { count: heldBy(role.code).size, total })}
                           </span>
                           {dirty && (
                             <span className="mt-0.5 rounded-full bg-accent px-1.5 py-px text-[10px] font-semibold text-on-accent">
-                              Unsaved
+                              {t('roles.unsavedBadge')}
                             </span>
                           )}
                         </button>
@@ -981,7 +994,7 @@ const Roles = () => {
                           aria-expanded={open}
                           className="flex w-full items-center gap-2 px-3 sm:px-4 py-2.5 text-start text-xs font-bold uppercase tracking-wider text-ink-secondary"
                         >
-                          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? '' : '-rotate-90'}`} />
+                          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? '' : '-rotate-90 rtl:rotate-90'}`} aria-hidden="true" />
                           {group.label}
                           <span className="font-medium normal-case tracking-normal text-ink-subtle">
                             {group.permissions.length}
@@ -998,7 +1011,7 @@ const Roles = () => {
                               selected?.code === role.code ? 'bg-accent-soft/40' : ''
                             }`}
                           >
-                            {count}/{group.permissions.length}
+                            <bdi dir="ltr">{count}/{group.permissions.length}</bdi>
                           </td>
                         );
                       })}
@@ -1039,7 +1052,7 @@ const Roles = () => {
                 <tbody>
                   <tr>
                     <td colSpan={colCount} className="px-4 py-10 text-center text-sm text-ink-muted">
-                      No permission matches "{query}".
+                      {t('roles.noMatch', { query })}
                     </td>
                   </tr>
                 </tbody>
@@ -1048,9 +1061,8 @@ const Roles = () => {
           </div>
 
           <p className="text-xs text-ink-subtle">
-            Locked columns are fixed roles: admin's and reporter's permissions can't change, only their level. Columns run
-            most senior level first.
-            {canManage && ' Greyed-out ticks are permissions you don\'t hold yourself, so you can\'t grant them.'}
+            {t('roles.footnote')}
+            {canManage && ` ${t('roles.footnoteManage')}`}
           </p>
         </>
       )}
@@ -1072,20 +1084,21 @@ const Roles = () => {
           <div className="min-w-0 flex-1 text-sm">
             {confirmEscalation ? (
               <p>
-                <span className="font-semibold">A role will be able to manage roles.</span> Anyone holding it can
-                rewrite every role's permissions, including their own.
+                <Trans t={t} i18nKey="roles.saveBar.escalation" components={{ b: <span className="font-semibold" /> }} />
               </p>
             ) : saveError ? (
               <p>
-                <span className="font-semibold">Couldn't save:</span> {saveError}
+                <span className="font-semibold">{t('roles.saveBar.couldNotSave')}</span> {saveError}
               </p>
             ) : (
               <p>
-                Unsaved changes to{' '}
-                <span className="font-semibold">
-                  {changedCodes.map((code) => roles.find((r) => r.code === code)?.name).join(', ')}
-                </span>
-                {blocked && <span className="opacity-80"> — fix the marked ticks before saving</span>}
+                <Trans
+                  t={t}
+                  i18nKey="roles.saveBar.unsaved"
+                  values={{ roles: changedCodes.map((code) => roles.find((r) => r.code === code)?.name).join(t('permJoin.list')) }}
+                  components={{ b: <span className="font-semibold" /> }}
+                />
+                {blocked && <span className="opacity-80">{t('roles.saveBar.fixFirst')}</span>}
               </p>
             )}
           </div>
@@ -1096,7 +1109,7 @@ const Roles = () => {
               disabled={saving}
               className="h-9 rounded-lg border border-canvas/25 px-3.5 text-sm font-medium transition-colors hover:bg-canvas/10 disabled:opacity-50"
             >
-              {confirmEscalation ? 'Back' : 'Discard'}
+              {confirmEscalation ? t('common:actions.back') : t('roles.saveBar.discard')}
             </button>
             <button
               type="button"
@@ -1104,7 +1117,7 @@ const Roles = () => {
               disabled={saving || blocked}
               className="h-9 rounded-lg bg-canvas px-4 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : confirmEscalation ? 'Save anyway' : 'Save changes'}
+              {saving ? t('common:status.saving') : confirmEscalation ? t('roleEditor.saveAnyway') : t('roleEditor.saveChanges')}
             </button>
           </div>
         </div>

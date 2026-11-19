@@ -47,6 +47,17 @@ for (const lang of langs.filter((l) => l !== 'en')) {
   }
 }
 
+// 1b. <Trans> tags named after HTML void elements (<link>, <br>, <img>…) lose
+//     their content: the parser treats them as self-closing. Use <lnk> etc.
+const VOID = /<(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)>/;
+for (const lang of langs) {
+  for (const file of fs.readdirSync(path.join(localesDir, lang)).filter((f) => f.endsWith('.json'))) {
+    const text = fs.readFileSync(path.join(localesDir, lang, file), 'utf8');
+    const m = text.match(VOID);
+    if (m) report(`${lang}/${file}: <${m[1]}> is an HTML void element; <Trans> drops its content. Rename the tag.`);
+  }
+}
+
 // 2. Keys used in code
 const exists = (ns, key) => {
   const set = base[ns];

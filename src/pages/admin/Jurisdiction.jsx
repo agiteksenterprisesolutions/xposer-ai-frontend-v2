@@ -7,6 +7,7 @@
 //
 // No pack, or a pack with no active version, means deadlines, retention and
 // calendars work exactly as before.
+import { Trans, useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, CalendarDays, CheckCircle2, Landmark, Lock } from 'lucide-react';
@@ -19,52 +20,69 @@ import { useCan } from '../../hooks/useCan';
 import { ACCESS } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
 import { formatDate } from '../../utils/formatters';
+import { intlLocale } from '../../utils/locale';
 import useSEO from '../../hooks/useSEO';
 
-const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const TIMERS = [
-  ['acknowledge', 'Acknowledge the reporter'],
-  ['triage', 'Triage'],
-  ['feedback', 'Feedback to the reporter'],
-];
-const CADENCE = { monthly: 'Monthly', quarterly: 'Quarterly', semi_annual: 'Every six months', annual: 'Yearly' };
-const STATUS = {
-  active: ['success', 'Active'],
-  draft: ['warning', 'Draft'],
-  superseded: ['default', 'Superseded'],
-};
+// Weekday names in the interface language; the API counts Monday as 0
+// (1 January 2024 was a Monday).
+const weekdayName = (index) =>
+  new Intl.DateTimeFormat(intlLocale(), { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + index)));
+const TIMERS = ['acknowledge', 'triage', 'feedback'];
+const CADENCES = ['monthly', 'quarterly', 'semi_annual', 'annual'];
+const STATUS_VARIANT = { active: 'success', draft: 'warning', superseded: 'default' };
 
-const LegalReview = ({ review }) =>
-  review?.reviewer_name ? (
+const LegalReview = ({ review }) => {
+  const { t } = useTranslation('admin');
+  return review?.reviewer_name ? (
     <span className="inline-flex items-center gap-1 text-xs text-ink-secondary">
-      <CheckCircle2 className="h-3.5 w-3.5 text-success-fg" />
-      Signed off by <span className="font-medium text-ink">{review.reviewer_name}</span>
-      {review.reviewed_on && <> on {formatDate(review.reviewed_on)}</>}
+      <CheckCircle2 className="h-3.5 w-3.5 text-success-fg" aria-hidden="true" />
+      <span>
+        <Trans
+          t={t}
+          i18nKey={review.reviewed_on ? 'jurisdiction.signedOffOn' : 'jurisdiction.signedOff'}
+          values={{ name: review.reviewer_name, date: review.reviewed_on ? formatDate(review.reviewed_on) : '' }}
+          components={{ b: <span className="font-medium text-ink" dir="auto" /> }}
+        />
+      </span>
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 text-xs font-medium text-warning-fg">
-      <AlertTriangle className="h-3.5 w-3.5" /> No legal sign-off yet
+      <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" /> {t('jurisdiction.noSignOff')}
     </span>
   );
+};
 
-const Row = ({ label, children }) => (
-  <>
-    <dt className="text-ink-muted">{label}</dt>
-    <dd className="min-w-0 text-ink">{children || <span className="text-ink-subtle">Not set</span>}</dd>
-  </>
-);
+const Row = ({ label, children }) => {
+  const { t } = useTranslation('admin');
+  return (
+    <>
+      <dt className="text-ink-muted">{label}</dt>
+      <dd className="min-w-0 text-ink">{children || <span className="text-ink-subtle">{t('jurisdiction.notSet')}</span>}</dd>
+    </>
+  );
+};
+
+const StatusBadge = ({ status }) => {
+  const { t } = useTranslation('admin');
+  if (!status) return null;
+  return (
+    <Badge variant={STATUS_VARIANT[status] || 'default'} size="small" dot>
+      {t(`jurisdiction.status.${status}`, { defaultValue: status })}
+    </Badge>
+  );
+};
 
 const Named = ({ items, nameKey = 'name' }) =>
   items?.length ? (
     <ul className="space-y-1">
       {items.map((item) => (
         <li key={item.code}>
-          <span className="font-medium">{localized(item[nameKey]) || item.code}</span>
+          <span className="font-medium" dir="auto">{localized(item[nameKey]) || item.code}</span>
           {localized(item[nameKey]) && <span className="ms-1 font-mono text-xs text-ink-muted">{item.code}</span>}
           {item.regulator && <span className="text-xs text-ink-muted"> · {item.regulator}</span>}
-          {localized(item.description) && <span className="block text-xs text-ink-muted">{localized(item.description)}</span>}
+          {localized(item.description) && <span className="block text-xs text-ink-muted" dir="auto">{localized(item.description)}</span>}
           {item.url && (
-            <a href={item.url} target="_blank" rel="noreferrer" className="block text-xs text-link hover:underline">
+            <a href={item.url} target="_blank" rel="noreferrer" dir="ltr" className="block text-xs text-link hover:underline">
               {item.url}
             </a>
           )}
@@ -74,7 +92,8 @@ const Named = ({ items, nameKey = 'name' }) =>
   ) : null;
 
 const Jurisdiction = () => {
-  useSEO({ title: 'Jurisdiction', description: 'Your organization’s region and jurisdiction pack.', noIndex: true });
+  const { t } = useTranslation('admin');
+  useSEO({ title: t('jurisdiction.title'), description: t('jurisdiction.seoDescription'), noIndex: true });
   const { orgSlug } = useParams();
   const can = useCan();
   const { loading, organization, pack, versions, active } = useOrgJurisdiction();
@@ -118,44 +137,43 @@ const Jurisdiction = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">Jurisdiction</h1>
-        <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          The rules your organization’s cases follow: deadlines, business days, minimum retention and regulators. Set
-          up by Xposer; contact us to change them.
-        </p>
+        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">{t('jurisdiction.title')}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-ink-muted">{t('jurisdiction.intro')}</p>
       </div>
 
       <Card>
         <dl className="grid grid-cols-[minmax(9rem,auto)_minmax(0,1fr)] gap-x-6 gap-y-2.5 text-sm">
-          <Row label="Region">
+          <Row label={t('jurisdiction.region')}>
             {organization?.region ? (
               <span className="inline-flex items-center gap-2">
                 <Badge variant="info" size="small">
                   {organization.region}
                 </Badge>
                 <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                  <Lock className="h-3 w-3" /> Fixed
-                  {organization.region_pinned_at && ` since ${formatDate(organization.region_pinned_at)}`}
+                  <Lock className="h-3 w-3" aria-hidden="true" />
+                  {organization.region_pinned_at
+                    ? t('jurisdiction.fixedSince', { date: formatDate(organization.region_pinned_at) })
+                    : t('jurisdiction.fixed')}
                 </span>
               </span>
             ) : (
-              <span className="text-ink-muted">Not set yet</span>
+              <span className="text-ink-muted">{t('jurisdiction.notSetYet')}</span>
             )}
           </Row>
-          <Row label="Currency">{organization?.default_currency}</Row>
-          <Row label="Jurisdiction pack">
+          <Row label={t('jurisdiction.currency')}>{organization?.default_currency}</Row>
+          <Row label={t('jurisdiction.pack')}>
             {code ? (
               <span className="font-mono">{code}</span>
             ) : (
-              <span className="text-ink-muted">None. Deadlines and retention follow each report type.</span>
+              <span className="text-ink-muted">{t('jurisdiction.noPack')}</span>
             )}
           </Row>
         </dl>
         {can(ACCESS.entities) && (
           <p className="mt-4 border-t border-line-subtle pt-3 text-xs text-ink-muted">
-            A legal entity can follow a different pack from the same region.{' '}
+            {t('jurisdiction.entityNote')}{' '}
             <Link to={staffPath(orgSlug, 'entities')} className="font-medium text-link hover:underline">
-              See legal entities
+              {t('jurisdiction.seeEntities')}
             </Link>
           </p>
         )}
@@ -163,7 +181,7 @@ const Jurisdiction = () => {
 
       {code && !pack && (
         <Card>
-          <p className="text-sm text-ink-muted">Couldn’t load the {code} pack.</p>
+          <p className="text-sm text-ink-muted">{t('jurisdiction.packLoadError', { code })}</p>
         </Card>
       )}
 
@@ -171,11 +189,8 @@ const Jurisdiction = () => {
         <>
           {!active && (
             <div className="flex items-start gap-3 rounded-xl border border-warning-line bg-warning-soft px-4 py-3 text-sm text-warning-fg">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>
-                {code} has no active version yet, so it doesn’t apply to cases. Below is the latest draft; cases work as
-                before until it’s signed off and activated.
-              </p>
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{t('jurisdiction.noActiveVersion', { code })}</p>
             </div>
           )}
 
@@ -183,68 +198,71 @@ const Jurisdiction = () => {
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <Card.Title className="flex items-center gap-2 text-base">
-                  <Landmark className="h-4 w-4 text-accent-fg" />
-                  {localized(pack.name) || code}
+                  <Landmark className="h-4 w-4 text-accent-fg" aria-hidden="true" />
+                  <span dir="auto">{localized(pack.name) || code}</span>
                 </Card.Title>
                 <p className="mt-1">
                   <LegalReview review={pack.legal_review} />
                 </p>
               </div>
               <span className="text-sm text-ink-secondary">
-                Version {pack.version}{' '}
-                {(() => {
-                  const [variant, label] = STATUS[versions.find((v) => v.version === pack.version)?.status] || ['default', ''];
-                  return label ? (
-                    <Badge variant={variant} size="small" dot>
-                      {label}
-                    </Badge>
-                  ) : null;
-                })()}
+                {t('jurisdiction.version', { version: pack.version })}{' '}
+                <StatusBadge status={versions.find((v) => v.version === pack.version)?.status} />
               </span>
             </div>
 
             <dl className="grid grid-cols-[minmax(9rem,auto)_minmax(0,1fr)] gap-x-6 gap-y-3 text-sm">
-              <Row label="Deadlines">
+              <Row label={t('jurisdiction.deadlines')}>
                 <ul className="space-y-0.5">
-                  {TIMERS.map(([key, label]) => {
-                    const t = pack.timers?.[key];
+                  {TIMERS.map((key) => {
+                    const timer = pack.timers?.[key];
                     return (
                       <li key={key}>
-                        {label}:{' '}
-                        {t?.days != null ? (
+                        {t(`jurisdiction.timers.${key}`)}:{' '}
+                        {timer?.days != null ? (
                           <span className="font-medium">
-                            {t.days} {t.basis === 'business' ? 'business' : 'calendar'} days
+                            {timer.basis === 'business'
+                              ? t('jurisdiction.businessDays', { count: timer.days })
+                              : t('jurisdiction.calendarDays', { count: timer.days })}
                           </span>
                         ) : (
-                          <span className="text-ink-subtle">not set</span>
+                          <span className="text-ink-subtle">{t('jurisdiction.timerNotSet')}</span>
                         )}
                       </li>
                     );
                   })}
                 </ul>
               </Row>
-              <Row label="Minimum retention">
+              <Row label={t('jurisdiction.minRetention')}>
                 {pack.retention?.min_years != null &&
-                  `${pack.retention.min_years} years from ${pack.retention.starts_from === 'submission' ? 'submission' : 'when the case is closed'}. A report type can keep cases longer, never shorter.`}
+                  t(pack.retention.starts_from === 'submission' ? 'jurisdiction.retentionFromSubmission' : 'jurisdiction.retentionFromClosure', {
+                    count: pack.retention.min_years,
+                  })}
               </Row>
-              <Row label="Board reporting">{CADENCE[pack.board_reporting_cadence]}</Row>
-              <Row label="Reporting channels">{(pack.required_channels || []).join(', ')}</Row>
-              <Row label="Regulators">
+              <Row label={t('jurisdiction.boardReporting')}>
+                {CADENCES.includes(pack.board_reporting_cadence) ? t(`jurisdiction.cadence.${pack.board_reporting_cadence}`) : pack.board_reporting_cadence}
+              </Row>
+              <Row label={t('jurisdiction.channels')}>
+                {(pack.required_channels || [])
+                  .map((channel) => t(`jurisdiction.channel.${channel}`, { defaultValue: channel }))
+                  .join(t('jurisdiction.listSeparator'))}
+              </Row>
+              <Row label={t('jurisdiction.regulators')}>
                 <Named items={pack.regulators} />
               </Row>
-              <Row label="Regulatory triggers">
+              <Row label={t('jurisdiction.triggers')}>
                 <Named items={pack.regulatory_triggers} nameKey="label" />
               </Row>
-              <Row label="External routes">
+              <Row label={t('jurisdiction.externalRoutes')}>
                 <Named items={pack.external_routes} />
               </Row>
-              <Row label="Not a whistleblowing report?">
+              <Row label={t('jurisdiction.deflection')}>
                 <Named items={pack.deflection_exits} nameKey="label" />
               </Row>
-              <Row label="AI notice">
+              <Row label={t('jurisdiction.aiNotice')}>
                 {(pack.ai_notice?.en || pack.ai_notice?.ar) && (
                   <span className="block space-y-1">
-                    {pack.ai_notice.en && <span className="block whitespace-pre-wrap">{pack.ai_notice.en}</span>}
+                    {pack.ai_notice.en && <span className="block whitespace-pre-wrap" dir="ltr" lang="en">{pack.ai_notice.en}</span>}
                     {pack.ai_notice.ar && (
                       <span className="block whitespace-pre-wrap" dir="rtl" lang="ar">
                         {pack.ai_notice.ar}
@@ -258,32 +276,32 @@ const Jurisdiction = () => {
 
           <Card>
             <Card.Title className="mb-1 flex items-center gap-2 text-base">
-              <CalendarDays className="h-4 w-4 text-accent-fg" /> Business days
+              <CalendarDays className="h-4 w-4 text-accent-fg" aria-hidden="true" /> {t('jurisdiction.businessDaysTitle')}
             </Card.Title>
-            <p className="mb-4 text-xs text-ink-muted">
-              Business-day deadlines skip these. When a holiday is added, deadlines still running move later.
-            </p>
+            <p className="mb-4 text-xs text-ink-muted">{t('jurisdiction.businessDaysIntro')}</p>
             {calendar === null ? (
               <Skeleton.Lines lines={3} />
             ) : calendar === false ? (
-              <p className="text-sm text-ink-muted">Couldn’t load the calendar.</p>
+              <p className="text-sm text-ink-muted">{t('jurisdiction.calendarLoadError')}</p>
             ) : (
               <div className="space-y-4">
                 <dl className="grid grid-cols-[minmax(9rem,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-sm">
-                  <Row label="Weekend">{(calendar.weekend_days || []).map((d) => WEEKDAYS[d]).join(' and ')}</Row>
-                  <Row label="Time zone">{calendar.timezone}</Row>
+                  <Row label={t('jurisdiction.weekend')}>
+                    {new Intl.ListFormat(intlLocale(), { type: 'conjunction' }).format((calendar.weekend_days || []).map(weekdayName))}
+                  </Row>
+                  <Row label={t('jurisdiction.timeZone')}>{calendar.timezone}</Row>
                 </dl>
                 {holidays.length ? (
                   <ul className="divide-y divide-line-subtle rounded-lg border border-line">
                     {holidays.map((h) => (
                       <li key={h.date} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm">
-                        <span className="text-ink">{localized(h.name) || 'Public holiday'}</span>
+                        <span className="text-ink" dir="auto">{localized(h.name) || t('jurisdiction.publicHoliday')}</span>
                         <span className="text-xs text-ink-muted tabular-nums">{formatDate(h.date)}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-ink-muted">No public holidays listed.</p>
+                  <p className="text-sm text-ink-muted">{t('jurisdiction.noHolidays')}</p>
                 )}
               </div>
             )}
@@ -291,17 +309,14 @@ const Jurisdiction = () => {
 
           {versions.length > 1 && (
             <Card>
-              <Card.Title className="mb-3 text-base">Versions</Card.Title>
+              <Card.Title className="mb-3 text-base">{t('jurisdiction.versions')}</Card.Title>
               <ul className="divide-y divide-line-subtle">
                 {versions.map((v) => {
-                  const [variant, label] = STATUS[v.status] || ['default', v.status];
                   return (
                     <li key={v.version} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                       <span className="text-sm font-medium text-ink">
-                        Version {v.version}{' '}
-                        <Badge variant={variant} size="small" dot>
-                          {label}
-                        </Badge>
+                        {t('jurisdiction.version', { version: v.version })}{' '}
+                        <StatusBadge status={v.status} />
                       </span>
                       <LegalReview review={v.legal_review} />
                     </li>
@@ -315,24 +330,26 @@ const Jurisdiction = () => {
 
       {regionPacks?.length > 0 && (
         <Card>
-          <Card.Title className="mb-1 text-base">Packs for {organization?.region || 'your region'}</Card.Title>
-          <p className="mb-3 text-xs text-ink-muted">The packs a legal entity can follow.</p>
+          <Card.Title className="mb-1 text-base">
+            {organization?.region ? t('jurisdiction.packsFor', { region: organization.region }) : t('jurisdiction.packsForYours')}
+          </Card.Title>
+          <p className="mb-3 text-xs text-ink-muted">{t('jurisdiction.packsIntro')}</p>
           <ul className="divide-y divide-line-subtle">
             {regionPacks.map((p) => (
               <li key={p.code} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                 <span className="text-sm text-ink">
-                  <span className="font-mono">{p.code}</span> · {localized(p.name)}
-                  {p.code === code && <span className="ms-2 text-xs text-ink-muted">(yours)</span>}
+                  <span className="font-mono">{p.code}</span> · <span dir="auto">{localized(p.name)}</span>
+                  {p.code === code && <span className="ms-2 text-xs text-ink-muted">{t('jurisdiction.yours')}</span>}
                 </span>
                 <span className="flex items-center gap-3">
                   {p.active_version ? (
                     <Badge variant="success" size="small" dot>
-                      v{p.active_version} active
+                      {t('jurisdiction.activeVersion', { version: p.active_version })}
                     </Badge>
                   ) : (
                     <>
                       <Badge variant="warning" size="small" dot>
-                        Not active yet
+                        {t('jurisdiction.notActiveYet')}
                       </Badge>
                       {/* Why it isn't active: a version needs a sign-off first. */}
                       <LegalReview review={p.latest_legal_review} />

@@ -22,6 +22,7 @@ import {
   getVoiceAnswers,
 } from '../../utils/questionSets';
 import { MaskedValue } from './CaseGovernance';
+import { useTranslation } from 'react-i18next';
 
 const Chips = ({ values }) => (
   <div className="flex flex-wrap gap-1.5">
@@ -40,7 +41,8 @@ const Chips = ({ values }) => (
  * `masked` – answer keys hidden from this viewer (`masked_fields`); their
  * values arrive as "••••" and are shown with a lock instead of as an answer.
  */
-const VoiceAnswers = ({ report, title = 'Answers from the call', className = '', masked = new Set() }) => {
+const VoiceAnswers = ({ report, title, className = '', masked = new Set() }) => {
+  const { t } = useTranslation('dashboards');
   const answers = getVoiceAnswers(report);
   const version = report?.question_set?.version ?? report?.question_set_version ?? null;
 
@@ -51,11 +53,11 @@ const VoiceAnswers = ({ report, title = 'Answers from the call', className = '',
   return (
     <div className={className}>
       <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
-        <Mic className="h-4 w-4 text-accent-fg" />
-        {title}
+        <Mic className="h-4 w-4 text-accent-fg" aria-hidden="true" />
+        {title ?? t('voice.title')}
       </h4>
 
-      <dl className="space-y-3">
+      <dl className="flex flex-col gap-3">
         {rows.map((row, index) => {
           // The answer is a string, an array, a bool or a number depending on
           // the type it was collected as — formatVoiceAnswer flattens all of it.
@@ -67,20 +69,20 @@ const VoiceAnswers = ({ report, title = 'Answers from the call', className = '',
               key={row.key || index}
               className="rounded-lg border border-line-subtle bg-subtle p-3"
             >
-              <dt className="text-xs font-medium text-ink-muted">{row.label}</dt>
+              <dt className="text-xs font-medium text-ink-muted" dir="auto">{row.label}</dt>
               <dd className="mt-1 min-w-0">
                 {masked.has(row.key) ? (
                   <MaskedValue value={row.answer} />
                 ) : row.skipped || value === null ? (
                   <span className="inline-flex items-center gap-1.5 text-sm italic text-ink-subtle">
-                    <MessageSquareOff className="h-3.5 w-3.5 shrink-0" />
+                    <MessageSquareOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     {/* Asked and refused is not the same as never asked. */}
-                    {row.skipped ? 'Declined to answer' : 'Not answered'}
+                    {row.skipped ? t('voice.declined') : t('voice.notAnswered')}
                   </span>
                 ) : asChips ? (
                   <Chips values={Array.isArray(row.answer) ? row.answer : [row.answer]} />
                 ) : (
-                  <p className="whitespace-pre-wrap wrap-break-word text-sm text-ink">{value}</p>
+                  <p className="whitespace-pre-wrap wrap-break-word text-sm text-ink" dir="auto">{value}</p>
                 )}
               </dd>
             </div>
@@ -91,7 +93,7 @@ const VoiceAnswers = ({ report, title = 'Answers from the call', className = '',
       {/* The first thing anyone wants when two reports disagree about what
           was asked. */}
       {version > 0 && (
-        <p className="mt-2 text-xs text-ink-subtle">Collected under question set v{version}</p>
+        <p className="mt-2 text-xs text-ink-subtle">{t('voice.version', { version })}</p>
       )}
     </div>
   );

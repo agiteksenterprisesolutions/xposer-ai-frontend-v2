@@ -12,6 +12,7 @@
 //
 // Layout: a searchable list of agents on the left, the selected one's detail
 // on the right (?agent=<code> keeps the selection in the URL).
+import { Trans, useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -54,8 +55,10 @@ import { parseServerDate } from '../../utils/formatters';
 import { AGENT_KIND_INFO, CAPABILITY_INFO, SUMMARIZER_CAPABILITIES, capabilityLabel, isSummarizer as isSummarizerAgent } from '../../utils/agents';
 import { EXECUTOR_AGENT } from '../../utils/workflows';
 import useSEO from '../../hooks/useSEO';
+import { intlLocale } from '../../utils/locale';
 
 const DeleteAgentModal = ({ agent, onClose, onDeleted }) => {
+  const { t } = useTranslation('agents');
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -64,7 +67,7 @@ const DeleteAgentModal = ({ agent, onClose, onDeleted }) => {
     setError(null);
     try {
       await orgAgentsAPI.remove(agent.id);
-      toast.success(`Agent "${agent.name}" deleted.`);
+      toast.success(t('page.delete.done', { name: agent.name }));
       onDeleted?.();
     } catch (err) {
       setError(describeError(err));
@@ -77,16 +80,16 @@ const DeleteAgentModal = ({ agent, onClose, onDeleted }) => {
     <Modal
       isOpen
       onClose={deleting ? () => {} : onClose}
-      title={`Delete ${agent.name}?`}
+      title={t('page.delete.title', { name: agent.name })}
       size="sm"
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button variant="secondary" onClick={onClose} disabled={deleting}>
-            {error ? 'Close' : 'Cancel'}
+            {error ? t('common:actions.close') : t('common:actions.cancel')}
           </Button>
           {!error && (
             <Button variant="danger" onClick={handleDelete} isLoading={deleting}>
-              Delete agent
+              {t('page.delete.action')}
             </Button>
           )}
         </div>
@@ -94,14 +97,13 @@ const DeleteAgentModal = ({ agent, onClose, onDeleted }) => {
     >
       {!error ? (
         <p className="text-sm leading-relaxed text-ink-secondary">
-          The <span className="font-mono text-ink">{agent.code}</span> agent and its token will be removed. This cannot be
-          undone. To stop it for now instead, edit it and turn off Active.
+          <Trans t={t} i18nKey="page.delete.body" values={{ code: agent.code }} components={{ code: <span className="font-mono text-ink" dir="ltr" /> }} />
         </p>
       ) : (
-        <Alert variant={error.status === 409 ? 'warning' : 'error'} title="This agent can't be deleted yet">
+        <Alert variant={error.status === 409 ? 'warning' : 'error'} title={t('page.delete.blockedTitle')}>
           <p>{error.summary}</p>
           {error.status === 409 && (
-            <p className="mt-2">Remove it from every workflow stage that runs it first, then delete it.</p>
+            <p className="mt-2">{t('page.delete.blockedBody')}</p>
           )}
         </Alert>
       )}
@@ -110,18 +112,10 @@ const DeleteAgentModal = ({ agent, onClose, onDeleted }) => {
 };
 
 
-const FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'analyst', label: 'Analysts' },
-  { value: 'summarizer', label: 'Summarizers' },
-  { value: 'attention', label: 'Needs attention' },
-];
+// Labels: page.filters.<value> and page.tabs.<value>.
+const FILTERS = ['all', 'analyst', 'summarizer', 'attention'];
 
-const TABS = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'instructions', label: 'Instructions' },
-  { value: 'token', label: 'Access token' },
-];
+const TABS = ['overview', 'instructions', 'token'];
 
 /**
  * Inactive, or something ticked that its permissions won't allow. Never the
@@ -133,7 +127,7 @@ const needsAttention = (agent) =>
 
 const formatDate = (value) => {
   const date = parseServerDate(value);
-  return date ? date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  return date ? date.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : null;
 };
 
 const AgentIcon = ({ agent, size = 'md' }) => {
@@ -174,6 +168,7 @@ const Section = ({ title, aside, children, className = '' }) => (
 
 /** Every capability there is, marked as what this agent will do, can't do, or hasn't been given. */
 const CapabilityList = ({ agent, capabilityCatalog, roleLink, nameFor }) => {
+  const { t } = useTranslation('agents');
   const effective = new Set(agent.effective_capabilities || []);
   const blocked = new Map((agent.disabled_capabilities || []).map((d) => [d.capability, d.requires]));
   const forbidden = new Map();
@@ -220,22 +215,22 @@ const CapabilityList = ({ agent, capabilityCatalog, roleLink, nameFor }) => {
               </p>
               <p className={`text-xs ${isBlocked ? 'text-warning-fg' : 'text-ink-subtle'}`}>
                 {isBlocked ? (
-                  <>
-                    Turned on, but {fromRole ? `the ${nameFor(agent.role_code)} role doesn't` : "its custom permissions don't"}{' '}
-                    include “{permissionLabel(requires)}”.
-                  </>
+                  fromRole
+                    ? t('page.capability.blockedRole', { role: nameFor(agent.role_code), permission: permissionLabel(requires) })
+                    : t('page.capability.blockedCustom', { permission: permissionLabel(requires) })
                 ) : reason ? (
-                  `Not for summarizers: ${reason}.`
+                  t('page.capability.notForSummarizers', { reason })
                 ) : on ? (
                   CAPABILITY_INFO[capability]?.description || ''
                 ) : (
-                  'Not turned on for this agent.'
+                  t('page.capability.off')
                 )}
               </p>
             </div>
             {isBlocked && fromRole && roleLink && (
-              <Link to={roleLink} className="shrink-0 text-xs font-semibold text-link hover:underline">
-                Fix in Roles →
+              <Link to={roleLink} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-link hover:underline">
+                {t('page.capability.fixInRoles')}
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
               </Link>
             )}
           </li>
@@ -246,10 +241,12 @@ const CapabilityList = ({ agent, capabilityCatalog, roleLink, nameFor }) => {
 };
 
 /** Stats, list and detail while the agents load — same frames, data stubbed. */
-const AgentsSkeleton = () => (
+const AgentsSkeleton = () => {
+  const { t } = useTranslation('agents');
+  return (
   <div className="space-y-5" aria-busy="true">
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {['Agents', 'Active', 'Needs attention', 'In the running workflow'].map((label) => (
+      {[t('page.stats.agents'), t('page.stats.active'), t('page.stats.attention'), t('page.stats.running')].map((label) => (
         <div key={label} className="rounded-xl border border-line bg-surface px-4 py-3.5">
           <p className="text-xs font-medium text-ink-subtle">{label}</p>
           <Skeleton.Text size="2xl" className="mt-1 w-8" />
@@ -263,7 +260,7 @@ const AgentsSkeleton = () => (
         <div className="space-y-2.5 border-b border-line-subtle p-3">
           <div className="flex items-center gap-2 rounded-lg border border-line bg-subtle px-3 py-2">
             <Search className="h-4 w-4 shrink-0 text-ink-subtle" />
-            <span className="text-sm text-ink-subtle">Search agents</span>
+            <span className="text-sm text-ink-subtle">{t('page.search')}</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {['w-12', 'w-20', 'w-24'].map((w) => (
@@ -338,7 +335,8 @@ const AgentsSkeleton = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 /**
  * Which confidentiality levels an agent can read: its role's clearance (or its
@@ -347,15 +345,16 @@ const AgentsSkeleton = () => (
  * the permissions aren't known.
  */
 const readableTiers = (agent, byCode) => {
-  if (agent.kind === 'summarizer') return ['Standard', 'Confidential', 'Restricted'];
+  // Codes; shown through page.tiers.<code>.
+  if (agent.kind === 'summarizer') return ['standard', 'confidential', 'restricted'];
   const permissions =
     agent.effective_permissions ||
     (agent.role_source === 'org_role' ? byCode?.get(agent.role_code)?.permissions : agent.permissions);
   if (!Array.isArray(permissions)) return null;
-  const tiers = ['Standard'];
+  const tiers = ['standard'];
   if (permissions.includes(PERM.reportReadConfidential)) {
-    tiers.push('Confidential');
-    if (permissions.includes(PERM.reportReadRestricted)) tiers.push('Restricted');
+    tiers.push('confidential');
+    if (permissions.includes(PERM.reportReadRestricted)) tiers.push('restricted');
   }
   return tiers;
 };
@@ -376,6 +375,7 @@ const AgentDetail = ({
   onDelete,
   onToggleSummarizer,
 }) => {
+  const { t } = useTranslation('agents');
   const [switching, setSwitching] = useState(false);
   const kind = AGENT_KIND_INFO[agent.kind];
   const fromRole = agent.role_source === 'org_role';
@@ -393,12 +393,12 @@ const AgentDetail = ({
           <AgentIcon agent={agent} size="lg" />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="truncate text-lg font-bold text-ink">{agent.name}</h2>
+              <h2 className="truncate text-lg font-bold text-ink" dir="auto">{agent.name}</h2>
               {agent.is_active === false ? (
-                <Badge size="small">Inactive</Badge>
+                <Badge size="small">{t('page.inactive')}</Badge>
               ) : (
                 <Badge variant="success" size="small" dot>
-                  Active
+                  {t('page.active')}
                 </Badge>
               )}
               <Badge variant={isSummarizer ? 'info' : 'default'} size="small">
@@ -406,37 +406,35 @@ const AgentDetail = ({
               </Badge>
             </div>
             <p className="mt-1 text-xs text-ink-muted">
-              <span className="font-mono">{agent.code}</span>
+              <span className="font-mono" dir="ltr">{agent.code}</span>
               {' · '}
               {isSummarizer ? (
-                'Fixed permissions'
+                t('page.fixedPermissions')
               ) : fromRole ? (
-                <>
-                  Acts as the{' '}
-                  {roleLink ? (
-                    <Link to={roleLink} className="font-medium text-link hover:underline">
-                      {nameFor(agent.role_code)} role
-                    </Link>
-                  ) : (
-                    <span className="font-medium text-ink">{nameFor(agent.role_code)} role</span>
-                  )}
-                </>
+                <Trans
+                  t={t}
+                  i18nKey="page.actsAs"
+                  values={{ role: nameFor(agent.role_code) }}
+                  components={{
+                    role: roleLink ? (
+                      <Link to={roleLink} className="font-medium text-link hover:underline" />
+                    ) : (
+                      <span className="font-medium text-ink" />
+                    ),
+                  }}
+                />
               ) : (
-                `Custom permissions (${(agent.effective_permissions || agent.permissions || []).length})`
+                t('page.customPermissions', { count: (agent.effective_permissions || agent.permissions || []).length })
               )}
-              {updated && ` · Updated ${updated}`}
+              {updated && ` · ${t('page.updated', { date: updated })}`}
             </p>
             {readableTiers(agent, byCode) && (
               <p
                 className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted"
-                title={
-                  isSummarizer
-                    ? 'The summarizer is cleared for every level. Its summary is a note on the same case, which only cleared staff can read.'
-                    : "An agent can read only the case levels its role is cleared for. Change that on the role's confidentiality permissions."
-                }
+                title={isSummarizer ? t('page.readsSummarizerTitle') : t('page.readsTitle')}
               >
                 <Lock className="h-3 w-3 shrink-0" aria-hidden="true" />
-                Reads: {readableTiers(agent, byCode).join(', ')} cases{isSummarizer ? ' (fixed)' : ''}
+                {t(isSummarizer ? 'page.readsFixed' : 'page.reads', { tiers: readableTiers(agent, byCode).map((tier) => t(`page.tiers.${tier}`)).join(t('listSeparator')) })}
               </p>
             )}
           </div>
@@ -459,11 +457,11 @@ const AgentDetail = ({
                 }
               }}
             >
-              {agent.is_active === false ? 'Switch on' : 'Switch off'}
+              {agent.is_active === false ? t('page.switchOn') : t('page.switchOff')}
             </Button>
           )}
           <Button variant={canManage ? 'secondary' : 'outline'} size="small" startIcon={Pencil} onClick={onEdit}>
-            {canManage ? 'Edit agent' : 'View settings'}
+            {canManage ? t('page.edit') : t('page.viewSettings')}
           </Button>
           {canManage && (
             <Dropdown
@@ -471,7 +469,7 @@ const AgentDetail = ({
               trigger={
                 <button
                   type="button"
-                  aria-label={`More actions for ${agent.name}`}
+                  aria-label={t('page.moreActions', { name: agent.name })}
                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-ink-muted transition-colors hover:bg-hover hover:text-ink"
                 >
                   <MoreHorizontal className="h-4 w-4" />
@@ -480,7 +478,7 @@ const AgentDetail = ({
             >
               <Dropdown.Item onClick={() => onToken(agent.has_token ? 'rotate' : 'mint')}>
                 <KeyRound className="h-4 w-4 shrink-0" />
-                {agent.has_token ? 'Rotate access token' : 'Create access token'}
+                {agent.has_token ? t('page.rotateToken') : t('page.createToken')}
               </Dropdown.Item>
               {/* One summarizer per organization, recreated by the platform:
                   deleting it is refused, so it isn't offered. */}
@@ -489,7 +487,7 @@ const AgentDetail = ({
                   <Dropdown.Divider />
                   <Dropdown.Item onClick={onDelete} className="text-danger-fg hover:text-danger-fg">
                     <Trash2 className="h-4 w-4 shrink-0" />
-                    Delete agent
+                    {t('page.delete.action')}
                   </Dropdown.Item>
                 </>
               )}
@@ -498,14 +496,14 @@ const AgentDetail = ({
         </div>
       </div>
 
-      {agent.description && <p className="px-5 pt-3 text-sm text-ink-muted sm:px-6">{agent.description}</p>}
+      {agent.description && <p className="px-5 pt-3 text-sm text-ink-muted sm:px-6" dir="auto">{agent.description}</p>}
 
       {/* Tabs */}
       <div
         className="mt-4 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line-subtle px-5 scrollbar-none sm:px-6"
         role="tablist"
       >
-        {TABS.map(({ value, label }) => (
+        {TABS.map((value) => (
           <button
             key={value}
             type="button"
@@ -518,7 +516,7 @@ const AgentDetail = ({
                 : 'border-transparent font-medium text-ink-muted hover:text-ink'
             }`}
           >
-            {label}
+            {t(`page.tabs.${value}`)}
           </button>
         ))}
       </div>
@@ -527,10 +525,10 @@ const AgentDetail = ({
         <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <div className="space-y-3">
             <div className="flex items-baseline justify-between gap-2">
-              <h3 className="text-sm font-semibold text-ink">What it can do</h3>
+              <h3 className="text-sm font-semibold text-ink">{t('page.whatItCanDo')}</h3>
               {totalCount > 0 && (
                 <span className="text-xs text-ink-subtle">
-                  {effectiveCount} of {totalCount} capabilities
+                  {t('page.capabilityCount', { count: effectiveCount, total: totalCount })}
                 </span>
               )}
             </div>
@@ -539,22 +537,21 @@ const AgentDetail = ({
 
           <div className="space-y-4">
             {isSummarizer ? (
-              <Section title="Summaries">
-                <p className="text-sm leading-relaxed text-ink-muted">
-                  Your organization's one summarizer. It runs automatically before the first step of every workflow and
-                  its digest is given to every agent step — it is never a step itself.
-                </p>
-                <Link to={paths.summarizer} className="inline-block text-sm font-semibold text-link hover:underline">
-                  Summarizer settings →
+              <Section title={t('page.summaries')}>
+                <p className="text-sm leading-relaxed text-ink-muted">{t('page.summariesBody')}</p>
+                <Link to={paths.summarizer} className="inline-flex items-center gap-1 text-sm font-semibold text-link hover:underline">
+                  {t('page.summarizerSettings')}
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
               </Section>
             ) : (
-              <Section title="Decisions it can reach">
+              <Section title={t('page.decisions')}>
                 {agent.decisions?.length ? (
                   <div className="flex flex-wrap gap-1.5">
                     {agent.decisions.map((decision) => (
                       <span
                         key={decision}
+                        dir="ltr"
                         className="rounded-md bg-accent-soft px-2 py-1 font-mono text-xs font-medium text-accent-fg"
                       >
                         {decision}
@@ -564,29 +561,28 @@ const AgentDetail = ({
                 ) : (
                   <p className="flex items-start gap-1.5 text-sm text-warning-fg">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    None yet — workflows can't branch on this agent, so every run just moves on to the next step.
+                    {t('page.noDecisions')}
                   </p>
                 )}
                 <p className="text-xs leading-relaxed text-ink-subtle">
-                  Workflows can send a report somewhere different for each decision. Anything not branched on continues
-                  to the next step.
+                  {t('page.decisionsHint')}
                 </p>
               </Section>
             )}
 
             <Section
-              title="Used in workflows"
+              title={t('page.usedIn')}
               aside={usage.length > 0 && <span className="text-xs text-ink-subtle">{usage.length}</span>}
             >
               {isSummarizer && usage.length > 0 && (
                 <p className="flex items-start gap-1.5 text-xs text-warning-fg">
                   <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
-                  The summarizer can't be a step — these are skipped when a report runs. Remove them from the workflow.
+                  {t('page.summarizerAsStep')}
                 </p>
               )}
               {usage.length === 0 ? (
                 <p className="text-sm text-ink-muted">
-                  {isSummarizer ? 'Not a step in any workflow, as it should be.' : 'Not a step in any workflow yet.'}
+                  {isSummarizer ? t('page.notAStepSummarizer') : t('page.notAStep')}
                 </p>
               ) : (
                 <ul className="space-y-1.5">
@@ -606,10 +602,10 @@ const AgentDetail = ({
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-semibold text-ink">{workflow.name}</span>
                           <span className="block truncate text-xs text-ink-subtle">
-                            Step {index + 1} · {stage.name || stage.key} · {workflow.is_active ? 'Running' : 'Standby'}
+                            {t('page.stepLine', { step: index + 1, stage: stage.name || stage.key, state: workflow.is_active ? t('page.running') : t('page.standby') })}
                           </span>
                         </span>
-                        <ArrowRight className="h-4 w-4 shrink-0 text-ink-subtle transition-transform group-hover:translate-x-0.5" />
+                        <ArrowRight className="h-4 w-4 shrink-0 text-ink-subtle transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
                       </Link>
                     </li>
                   ))}
@@ -623,7 +619,7 @@ const AgentDetail = ({
                 className="flex items-center gap-3 rounded-xl border border-dashed border-line-strong px-4 py-3 text-sm transition-colors hover:border-line-accent hover:bg-hover"
               >
                 <Activity className="h-4 w-4 shrink-0 text-ink-subtle" />
-                <span className="flex-1 text-ink-muted">See what agents have done in AI Activity</span>
+                <span className="flex-1 text-ink-muted">{t('page.seeActivity')}</span>
                 <ArrowRight className="h-4 w-4 shrink-0 text-ink-subtle" />
               </Link>
             )}
@@ -634,19 +630,19 @@ const AgentDetail = ({
       {tab === 'instructions' && (
         <div className="space-y-3 p-5 sm:p-6">
           <p className="text-xs text-ink-subtle">
-            Extra direction this agent follows on top of its built-in role. The Knowledge Base adds your policy documents.
+            {t('page.instructionsIntro')}
           </p>
           {agent.instructions ? (
-            <div className="whitespace-pre-wrap rounded-xl border border-line-subtle bg-subtle p-4 text-sm leading-relaxed text-ink-secondary">
+            <div dir="auto" className="whitespace-pre-wrap rounded-xl border border-line-subtle bg-subtle p-4 text-sm leading-relaxed text-ink-secondary">
               {agent.instructions}
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-line-strong px-4 py-8 text-center">
-              <p className="text-sm font-medium text-ink">No instructions</p>
-              <p className="mt-1 text-xs text-ink-muted">The agent works from its built-in behaviour and your policy documents.</p>
+              <p className="text-sm font-medium text-ink">{t('page.noInstructions')}</p>
+              <p className="mt-1 text-xs text-ink-muted">{t('page.noInstructionsBody')}</p>
               {canManage && (
                 <Button className="mt-3" variant="outline" size="small" startIcon={Pencil} onClick={onEdit}>
-                  Write instructions
+                  {t('page.writeInstructions')}
                 </Button>
               )}
             </div>
@@ -665,21 +661,23 @@ const AgentDetail = ({
               <KeyRound className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-ink">{agent.has_token ? 'Token issued' : 'No token'}</p>
+              <p className="text-sm font-semibold text-ink">{agent.has_token ? t('page.tokenIssued') : t('page.noToken')}</p>
               <p className="text-xs text-ink-muted">
                 {agent.has_token
-                  ? `Issued ${issued || 'earlier'}. It is shown once when created; rotate it if it may have leaked.`
-                  : 'The agent runtime signs in with a token. Create one when you connect a runtime.'}
+                  ? issued
+                    ? t('page.tokenIssuedOn', { date: issued })
+                    : t('page.tokenIssuedEarlier')
+                  : t('page.noTokenBody')}
               </p>
             </div>
             {canManage && (
               <div className="flex shrink-0 gap-2">
                 <Button variant="secondary" size="small" onClick={() => onToken(agent.has_token ? 'rotate' : 'mint')}>
-                  {agent.has_token ? 'Rotate' : 'Create token'}
+                  {agent.has_token ? t('page.rotate') : t('token.mint.action')}
                 </Button>
                 {agent.has_token && (
                   <Button variant="ghost" size="small" className="text-danger-fg" onClick={() => onToken('revoke')}>
-                    Revoke
+                    {t('page.revoke')}
                   </Button>
                 )}
               </div>
@@ -692,9 +690,10 @@ const AgentDetail = ({
 };
 
 const Agents = () => {
+  const { t } = useTranslation('agents');
   useSEO({
-    title: 'AI Agents',
-    description: "Define the AI agents that work your organization's reports.",
+    title: t('page.seoTitle'),
+    description: t('page.seoDescription'),
     noIndex: true,
   });
   const can = useCan();
@@ -836,41 +835,41 @@ const Agents = () => {
     <div className="space-y-6 pb-12">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-xl font-bold text-ink">AI Agents</h1>
+          <h1 className="text-xl font-bold text-ink">{t('page.title')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            Each agent acts with the permissions of one of your roles and reaches the decisions your workflows branch on.
+            {t('page.intro')}
           </p>
           <p className="mt-1.5 flex max-w-2xl items-center gap-1.5 text-xs text-ink-muted">
             <EyeOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            AI agents never see answers marked sensitive; they see •••• instead.
+            {t('page.sensitiveNote')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={loadAll} disabled={loading} aria-label="Refresh" title="Refresh">
+          <Button variant="outline" onClick={loadAll} disabled={loading} aria-label={t('page.refresh')} title={t('page.refresh')}>
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           <Button variant="outline" startIcon={GitBranch} to={paths.workflows}>
-              Workflows
+              {t('page.workflows')}
             </Button>
           {canManage && (
             <Button startIcon={Plus} onClick={() => setEditing({ agent: null })} disabled={!capabilityCatalog}>
-              New agent
+              {t('editor.newTitle')}
             </Button>
           )}
         </div>
       </div>
 
       {!canManage && (
-        <Alert variant="info" title="View only">
-          Your role can see the agents but not change them. Changing them needs permission to configure AI agents.
+        <Alert variant="info" title={t('page.viewOnly')}>
+          {t('page.viewOnlyBody')}
         </Alert>
       )}
 
       {error && (
-        <Alert variant="error" title="Couldn't load the agents">
+        <Alert variant="error" title={t('page.loadFailed')}>
           {error}{' '}
           <button type="button" onClick={loadAll} className="font-medium text-link hover:underline">
-            Try again
+            {t('common:actions.retry')}
           </button>
         </Alert>
       )}
@@ -880,13 +879,13 @@ const Agents = () => {
       {!loading && !error && agents.length === 0 && (
         <div className="rounded-2xl border border-line bg-surface py-14 text-center">
           <Bot className="mx-auto h-8 w-8 text-ink-subtle" />
-          <p className="mt-3 text-sm font-semibold text-ink">No agents yet</p>
+          <p className="mt-3 text-sm font-semibold text-ink">{t('page.empty')}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
-            Define an analyst to triage a report and reach a decision your workflows can branch on.
+            {t('page.emptyBody')}
           </p>
           {canManage && capabilityCatalog && (
             <Button className="mt-4" startIcon={Plus} onClick={() => setEditing({ agent: null })}>
-              Create your first agent
+              {t('page.createFirst')}
             </Button>
           )}
         </div>
@@ -896,27 +895,25 @@ const Agents = () => {
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatTile
-              label="Agents"
+              label={t('page.stats.agents')}
               value={counts.all}
-              hint={`${counts.analyst} analyst${counts.analyst === 1 ? '' : 's'}, ${counts.summarizer} summarizer${
-                counts.summarizer === 1 ? '' : 's'
-              }`}
+              hint={`${t('page.stats.analysts', { count: counts.analyst })}${t('listSeparator')}${t('page.stats.summarizers', { count: counts.summarizer })}`}
             />
             <StatTile
-              label="Active"
+              label={t('page.stats.active')}
               value={activeCount}
-              hint={activeCount === counts.all ? 'All switched on' : `${counts.all - activeCount} switched off`}
+              hint={activeCount === counts.all ? t('page.stats.allOn') : t('page.stats.someOff', { count: counts.all - activeCount })}
             />
             <StatTile
-              label="Needs attention"
+              label={t('page.stats.attention')}
               value={counts.attention}
               tone={counts.attention ? 'text-warning-fg' : undefined}
-              hint={counts.attention ? 'Switched off, or a capability is blocked' : 'Nothing to fix'}
+              hint={counts.attention ? t('page.stats.attentionHint') : t('page.stats.nothingToFix')}
             />
             <StatTile
-              label="In the running workflow"
+              label={t('page.stats.running')}
               value={running ? inRunning : '—'}
-              hint={running ? running.name : 'No workflow is running'}
+              hint={running ? running.name : t('page.stats.noneRunning')}
             />
           </div>
 
@@ -929,13 +926,13 @@ const Agents = () => {
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search agents"
-                    aria-label="Search agents"
+                    placeholder={t('page.search')}
+                    aria-label={t('page.search')}
                     className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
                   />
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {FILTERS.filter((f) => f.value === 'all' || counts[f.value] > 0).map(({ value, label }) => {
+                  {FILTERS.filter((value) => value === 'all' || counts[value] > 0).map((value) => {
                     const on = filter === value;
                     const warn = value === 'attention';
                     return (
@@ -952,14 +949,14 @@ const Agents = () => {
                               : 'border-line text-ink-secondary hover:bg-hover'
                         }`}
                       >
-                        {label} {counts[value]}
+                        {t(`page.filters.${value}`)} {counts[value]}
                       </button>
                     );
                   })}
                 </div>
               </div>
               <ul className="max-h-[32rem] space-y-0.5 overflow-y-auto p-1.5">
-                {visible.length === 0 && <li className="px-3 py-6 text-center text-sm text-ink-muted">No agents match.</li>}
+                {visible.length === 0 && <li className="px-3 py-6 text-center text-sm text-ink-muted">{t('page.noMatch')}</li>}
                 {visible.map((agent) => {
                   const on = selected?.id === agent.id;
                   return (
@@ -975,23 +972,23 @@ const Agents = () => {
                         <AgentIcon agent={agent} />
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5">
-                            <span className="truncate text-sm font-semibold text-ink">{agent.name}</span>
+                            <span className="truncate text-sm font-semibold text-ink" dir="auto">{agent.name}</span>
                             {needsAttention(agent) && (
-                              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning-fg" aria-label="Needs attention" />
+                              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning-fg" aria-label={t('page.stats.attention')} />
                             )}
                           </span>
                           <span className="block truncate text-xs text-ink-subtle">
                             {AGENT_KIND_INFO[agent.kind]?.label || agent.kind} ·{' '}
                             {isSummarizerAgent(agent)
-                              ? 'runs before every workflow'
+                              ? t('page.list.runsBefore')
                               : agent.role_source === 'org_role'
-                                ? `acts as ${nameFor(agent.role_code)}`
-                                : 'custom permissions'}
+                                ? t('page.list.actsAs', { role: nameFor(agent.role_code) })
+                                : t('page.list.custom')}
                           </span>
                         </span>
                         <span
                           className={`h-2 w-2 shrink-0 rounded-full ${agent.is_active === false ? 'bg-line-strong' : 'bg-success-solid'}`}
-                          aria-label={agent.is_active === false ? 'Inactive' : 'Active'}
+                          aria-label={agent.is_active === false ? t('page.inactive') : t('page.active')}
                         />
                       </button>
                     </li>
@@ -1020,9 +1017,7 @@ const Agents = () => {
                   try {
                     await orgAgentsAPI.updateSummarizer({ enabled: on });
                     toast.success(
-                      on
-                        ? 'Summaries switched on.'
-                        : 'Summaries switched off. The other agents still run, on the report text alone.',
+                      on ? t('page.summariesOn') : t('page.summariesOff'),
                     );
                   } catch (err) {
                     toast.error(errorSummary(err));

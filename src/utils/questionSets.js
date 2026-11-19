@@ -3,6 +3,10 @@
 // Shared vocabulary for the voice agent's question set, plus a client-side
 // mirror of the server's 422 rules so an admin sees a problem next to the
 // offending field instead of as one toast after a rejected save.
+import i18n from '../i18n';
+
+// Translated when read, so labels follow the interface language.
+const tr = (key, options) => i18n.t(key, { ns: 'reportTypes', ...options });
 
 /**
  * The type does not change how a question is asked — everything is asked
@@ -10,14 +14,17 @@
  * answer is normalized into for storage, which is what makes the dashboard
  * able to filter and chart it.
  */
-export const QUESTION_TYPES = [
-  { value: 'text', label: 'Text', hint: 'Free-form answer in the caller\'s own words' },
-  { value: 'date', label: 'Date', hint: 'Stored as 2026-08-20' },
-  { value: 'choice', label: 'Single choice', hint: 'Exactly one of the options' },
-  { value: 'multi_choice', label: 'Multiple choice', hint: 'Any number of the options' },
-  { value: 'boolean', label: 'Yes / No', hint: 'Stored as true or false' },
-  { value: 'number', label: 'Number', hint: 'Stored as a number' },
-];
+const questionType = (value) => ({
+  value,
+  get label() {
+    return tr(`voice.types.${value}.label`);
+  },
+  get hint() {
+    return tr(`voice.types.${value}.hint`);
+  },
+});
+
+export const QUESTION_TYPES = ['text', 'date', 'choice', 'multi_choice', 'boolean', 'number'].map(questionType);
 
 /** Only these two carry options; the server rejects options on anything else. */
 export const CHOICE_TYPES = ['choice', 'multi_choice'];
@@ -99,28 +106,28 @@ export const validateQuestionSet = (questions = []) => {
     const label = (question.label || '').trim();
 
     if (!key) {
-      issues.key = 'This question has no key — remove it and add it again';
+      issues.key = tr('voice.validation.noKey');
     } else if (!isValidQuestionKey(key)) {
-      issues.key = 'This question has an invalid key — remove it and add it again';
+      issues.key = tr('voice.validation.invalidKey');
     } else if (seenKeys.has(key)) {
-      issues.key = `Shares a key with question ${seenKeys.get(key) + 1}`;
+      issues.key = tr('voice.validation.sharedKey', { number: seenKeys.get(key) + 1 });
     } else {
       seenKeys.set(key, index);
     }
 
-    if (!label) issues.label = 'Label cannot be empty';
+    if (!label) issues.label = tr('voice.validation.emptyLabel');
 
     if (hasOptions(question.type)) {
       const options = (question.options || []).map((option) => option.trim()).filter(Boolean);
       if (options.length < 2) {
-        issues.options = `A '${question.type}' question needs at least two options`;
+        issues.options = tr('voice.validation.twoOptions', { type: getTypeLabel(question.type) });
       } else {
         // The server compares case-insensitively: "High" and "high" collide.
         const seen = new Set(options.map((option) => option.toLowerCase()));
-        if (seen.size !== options.length) issues.options = 'Options must be unique';
+        if (seen.size !== options.length) issues.options = tr('voice.validation.uniqueOptions');
       }
     } else if ((question.options || []).length > 0) {
-      issues.options = 'Options are only valid on choice or multi-choice questions';
+      issues.options = tr('voice.validation.optionsNotAllowed');
     }
 
     if (Object.keys(issues).length > 0) errors[index] = issues;
@@ -163,9 +170,9 @@ export const hydrateQuestions = (questions = []) =>
 export const formatVoiceAnswer = (answer) => {
   if (answer === null || answer === undefined || answer === '') return null;
   if (Array.isArray(answer)) {
-    return answer.length > 0 ? answer.join(', ') : null;
+    return answer.length > 0 ? answer.join(tr('voice.listSeparator')) : null;
   }
-  if (typeof answer === 'boolean') return answer ? 'Yes' : 'No';
+  if (typeof answer === 'boolean') return answer ? tr('voice.yes') : tr('voice.no');
   return String(answer);
 };
 
@@ -180,7 +187,7 @@ export const getCapturedQuestions = (report) =>
 /** Last-resort label for an answer whose question is nowhere to be found. */
 export const humaniseKey = (key = '') => {
   const words = String(key).replace(/[_-]+/g, ' ').trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'Question';
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : tr('voice.questionFallback');
 };
 
 /**

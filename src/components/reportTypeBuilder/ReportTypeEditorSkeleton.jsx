@@ -3,12 +3,14 @@
 // The report type editor while its type loads: the same top bar, outline,
 // canvas and settings panel, with the data stubbed, so nothing moves when the
 // type arrives.
+import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Skeleton from '../ui/Skeleton';
 import { useUIStore } from '../../store/uiStore';
 
 const ReportTypeEditorSkeleton = () => {
+  const { t } = useTranslation('builder');
   useEffect(() => {
     useUIStore.setState({ fullBleed: true });
     return () => useUIStore.setState({ fullBleed: false });
@@ -30,7 +32,7 @@ const ReportTypeEditorSkeleton = () => {
           </div>
         </div>
         <nav className="order-last flex w-full gap-1 rounded-xl bg-active p-1 sm:order-none sm:w-auto" aria-hidden="true">
-          {['Questions', 'Handling', 'Review'].map((label, i) => (
+          {[t('steps.questions'), t('steps.handling'), t('steps.review')].map((label, i) => (
             <span
               key={label}
               className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3.5 py-1.5 text-sm sm:flex-none ${

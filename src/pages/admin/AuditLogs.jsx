@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   ClipboardList,
   Search,
@@ -17,27 +18,29 @@ import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
 import { analyticsAPI } from '../../api';
 import { parseServerDate } from '../../utils/formatters';
+import { intlLocale } from '../../utils/locale';
 import useSEO from '../../hooks/useSEO';
 import TableSortControl from '../../components/ui/TableSortControl';
 import { useTableSort, byDate, byText } from '../../hooks/useTableSort';
 
-// Column order here is the column order in the table.
+// Column order here is the column order in the table. Labels are filled in
+// at render, in the interface language.
 const SORT_COLUMNS = {
-  created_at: { label: 'Time', defaultOrder: 'desc', value: byDate('created_at') },
+  created_at: { defaultOrder: 'desc', value: byDate('created_at') },
   user: {
-    label: 'User',
     defaultOrder: 'asc',
     value: (log) => (log.user_email || log.username || 'System').toLowerCase(),
   },
-  action: { label: 'Action', defaultOrder: 'asc', value: byText('action') },
-  entity_type: { label: 'Entity', defaultOrder: 'asc', value: (log) => (log.entity_type || 'System').toLowerCase() },
-  details: { label: 'Details', defaultOrder: 'asc', value: byText('details') },
+  action: { defaultOrder: 'asc', value: byText('action') },
+  entity_type: { defaultOrder: 'asc', value: (log) => (log.entity_type || 'System').toLowerCase() },
+  details: { defaultOrder: 'asc', value: byText('details') },
 };
 
 const AuditLogs = () => {
+  const { t } = useTranslation('admin');
   useSEO({
-    title: 'Audit Logs',
-    description: 'A record of every significant action taken across the platform.',
+    title: t('audit.title'),
+    description: t('audit.seoDescription'),
     noIndex: true,
   });
   const [logs, setLogs] = useState([]);
@@ -68,7 +71,11 @@ const AuditLogs = () => {
 
   // Ordering the current page: the endpoint paginates server-side, so this
   // sorts the rows on screen rather than the whole log.
-  const sort = useTableSort(logs, SORT_COLUMNS, { defaultSortBy: 'created_at' });
+  const columns = useMemo(
+    () => Object.fromEntries(Object.entries(SORT_COLUMNS).map(([field, column]) => [field, { ...column, label: t(`audit.columns.${field}`) }])),
+    [t],
+  );
+  const sort = useTableSort(logs, columns, { defaultSortBy: 'created_at' });
   const { sortedRows: sortedLogs, getHeaderProps } = sort;
 
   const getLogVariant = (action) => {
@@ -84,16 +91,17 @@ const AuditLogs = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="relative w-full sm:w-96">
           <Input
-            placeholder="Search logs by user or action..."
+            placeholder={t('audit.search')}
+            aria-label={t('audit.search')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            startAdornment={<Search className="h-4 w-4 text-ink-subtle" />}
+            startAdornment={<Search className="h-4 w-4 text-ink-subtle" aria-hidden="true" />}
           />
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <TableSortControl {...sort} id="audit-logs" className="shrink-0" />
-          <Button variant="secondary" startIcon={Download}>Export CSV</Button>
-          <Button variant="ghost" startIcon={Filter}>Filters</Button>
+          <Button variant="secondary" startIcon={Download}>{t('audit.export')}</Button>
+          <Button variant="ghost" startIcon={Filter}>{t('audit.filters')}</Button>
         </div>
       </div>
 
@@ -101,7 +109,7 @@ const AuditLogs = () => {
         <Table>
           <Table.Header>
             <Table.Row hover={false}>
-              {Object.entries(SORT_COLUMNS).map(([field, column]) => (
+              {Object.entries(columns).map(([field, column]) => (
                 <Table.Head key={field} {...getHeaderProps(field)}>
                   {column.label}
                 </Table.Head>
@@ -114,7 +122,7 @@ const AuditLogs = () => {
                 rows={8}
                 cells={[
                   <Skeleton.Text key="t" size="xs" className="w-36" />,
-                  <div key="u" className="flex items-center space-x-2">
+                  <div key="u" className="flex items-center gap-2">
                     <Skeleton.Circle size="h-6 w-6" />
                     <Skeleton.Text className="w-36" />
                   </div>,
@@ -125,8 +133,8 @@ const AuditLogs = () => {
               />
             ) : sortedLogs.length === 0 ? (
               <Table.Empty
-                message="No activity logs found"
-                description="Activity within the system will appear here"
+                message={t('audit.emptyTitle')}
+                description={t('audit.emptyDescription')}
                 icon={Activity}
               />
             ) : (
@@ -134,30 +142,31 @@ const AuditLogs = () => {
                 <Table.Row key={log.id || idx}>
                   <Table.Cell className="whitespace-nowrap">
                     <div className="flex items-center text-xs text-ink-muted">
-                      <Calendar className="h-3 w-3 me-1.5" />
-                      {parseServerDate(log.created_at)?.toLocaleString() || 'N/A'}
+                      <Calendar className="h-3 w-3 me-1.5" aria-hidden="true" />
+                      {parseServerDate(log.created_at)?.toLocaleString(intlLocale()) || t('audit.noDate')}
                     </div>
                   </Table.Cell>
                   <Table.Cell>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <div className="h-6 w-6 rounded-full bg-active flex items-center justify-center">
-                        <User className="h-3 w-3 text-ink-muted" />
+                        <User className="h-3 w-3 text-ink-muted" aria-hidden="true" />
                       </div>
-                      <span className="text-sm font-medium text-ink">{log.user_email || log.username || 'System'}</span>
+                      <span className="text-sm font-medium text-ink">{log.user_email || log.username || t('audit.system')}</span>
                     </div>
                   </Table.Cell>
                   <Table.Cell>
                     <Badge variant={getLogVariant(log.action)} size="small">
-                      {log.action}
+                      {/* Codes stay as they are unless a translation exists for them. */}
+                      {t(`audit.actions.${log.action}`, { defaultValue: log.action })}
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>
                     <span className="text-xs font-mono bg-subtle px-1.5 py-0.5 rounded border border-line-subtle">
-                      {log.entity_type || 'System'}
+                      {log.entity_type || t('audit.system')}
                     </span>
                   </Table.Cell>
                   <Table.Cell>
-                    <p className="text-sm text-ink-muted max-w-md truncate" title={log.details}>
+                    <p className="text-sm text-ink-muted max-w-md truncate" title={log.details} dir="auto">
                       {log.details}
                     </p>
                   </Table.Cell>

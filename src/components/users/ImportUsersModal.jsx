@@ -16,6 +16,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Download, FileSpreadsheet, Upload } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
@@ -26,6 +27,8 @@ import UndeliveredCredentials from './UndeliveredCredentials';
 import { useAuthStore } from '../../store/authStore';
 import { staffPath } from '../../utils/navigation';
 
+// English hints, by problem code; the translations live under
+// people:importUsers.hints.<code> and fall back to these.
 const PROBLEM_HINTS = {
   'row.unknown_manager': 'Their manager needs an Employee ID on another row.',
   'row.role_escalates': "You can't grant a role carrying permissions you don't hold.",
@@ -49,73 +52,90 @@ const countsOf = (result) =>
 
 const humanize = (key) => key.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
-const ProblemTable = ({ problems, tone = 'error' }) => (
+/** The hint for a problem code in the interface language, or undefined. */
+const hintFor = (t, code) =>
+  PROBLEM_HINTS[code] ? t(`importUsers.hints.${code}`, { defaultValue: PROBLEM_HINTS[code] }) : undefined;
+
+/** "Created: 3 · Linked: 2" — server count keys, translated where we know them. */
+const countsText = (t, result) =>
+  countsOf(result)
+    .map(([key, value]) => `${t(`importUsers.counts.${key}`, { defaultValue: humanize(key) })}: ${value}`)
+    .join(' · ');
+
+const ProblemTable = ({ problems, tone = 'error' }) => {
+  const { t } = useTranslation('people');
+  return (
   <div className={`max-h-72 overflow-auto rounded-lg border ${tone === 'warning' ? 'border-warning-line' : 'border-line'}`}>
     <table className="w-full text-start text-xs">
       <thead className="sticky top-0 bg-subtle-solid text-ink-subtle">
         <tr>
-          <th className="px-3 py-2 font-semibold">Where</th>
-          <th className="px-3 py-2 font-semibold">Problem</th>
+          <th className="px-3 py-2 font-semibold">{t('importUsers.where')}</th>
+          <th className="px-3 py-2 font-semibold">{t('importUsers.problem')}</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-line-subtle">
         {problems.map((problem, index) => (
           <tr key={index} className={`align-top ${tone === 'warning' ? 'bg-warning-soft/40' : ''}`}>
             <td className="whitespace-nowrap px-3 py-2 text-ink-muted">
-              {problem.row != null ? `Row ${problem.row}` : 'File'}
+              {problem.row != null ? t('importUsers.row', { row: problem.row }) : t('importUsers.file')}
               {problem.column && <span className="block text-ink-subtle">{problem.column}</span>}
             </td>
             <td className="px-3 py-2 text-ink">
               {problem.message}
               {problem.value != null && problem.value !== '' && (
-                <span className="ms-1 font-mono text-ink-muted">“{String(problem.value)}”</span>
+                <span className="ms-1 font-mono text-ink-muted" dir="auto">“{String(problem.value)}”</span>
               )}
-              {PROBLEM_HINTS[problem.code] && <span className="block text-ink-subtle">{PROBLEM_HINTS[problem.code]}</span>}
+              {hintFor(t, problem.code) && <span className="block text-ink-subtle">{hintFor(t, problem.code)}</span>}
             </td>
           </tr>
         ))}
       </tbody>
     </table>
   </div>
-);
+  );
+};
 
 /** Reporting lines the file didn't state and the backend worked out. */
-const InferredManagers = ({ items }) =>
-  items?.length > 0 ? (
+const InferredManagers = ({ items }) => {
+  const { t } = useTranslation('people');
+  return items?.length > 0 ? (
     <div className="space-y-2 rounded-xl border border-line bg-subtle p-4">
       <p className="text-sm font-semibold text-ink">
-        {items.length === 1 ? '1 manager was' : `${items.length} managers were`} filled in from the hierarchy
+        {t('importUsers.inferred.title', { count: items.length })}
       </p>
       <p className="text-xs text-ink-muted">
-        These rows named no manager, and exactly one person sat one level above them in the same department. Reporting
-        lines decide who hears about an allegation, so check they're right.
+        {t('importUsers.inferred.body')}
       </p>
       <ul className="max-h-48 space-y-1 overflow-auto text-sm">
         {items.map((item, index) => (
           <li key={index} className="flex flex-wrap gap-x-2">
-            {item.row != null && <span className="text-ink-subtle">Row {item.row}</span>}
+            {item.row != null && <span className="text-ink-subtle">{t('importUsers.row', { row: item.row })}</span>}
             <span className="font-medium text-ink">{item.full_name}</span>
             <span className="text-ink-muted">
-              reports to <span className="font-mono">{item.manager_name || item.manager_external_id}</span>
+              <Trans t={t} i18nKey="importUsers.inferred.reportsTo" values={{ manager: item.manager_name || item.manager_external_id }} components={{ m: <span className="font-mono" /> }} />
             </span>
           </li>
         ))}
       </ul>
     </div>
   ) : null;
+};
 
 /** Non-blocking: amber, apart from the red problems that stop an import. */
-const Warnings = ({ warnings }) =>
-  warnings?.length > 0 ? (
+const Warnings = ({ warnings }) => {
+  const { t } = useTranslation('people');
+  return warnings?.length > 0 ? (
     <div className="space-y-2">
       <p className="text-sm font-semibold text-warning-fg">
-        {warnings.length === 1 ? '1 thing to check' : `${warnings.length} things to check`} — these won't stop the import
+        {t('importUsers.warnings', { count: warnings.length })}
       </p>
       <ProblemTable problems={warnings} tone="warning" />
     </div>
   ) : null;
+};
 
 const ImportUsersModal = ({ onClose, onImported }) => {
+  const { t } = useTranslation('people');
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const inputRef = useRef(null);
   const [file, setFile] = useState(null);
@@ -168,16 +188,16 @@ const ImportUsersModal = ({ onClose, onImported }) => {
     <Modal
       isOpen
       onClose={importing ? () => {} : onClose}
-      title="Import people"
+      title={t('importUsers.title')}
       size="lg"
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button variant="secondary" onClick={onClose} disabled={importing}>
-            {done ? 'Close' : 'Cancel'}
+            {done ? t('common:actions.close') : t('common:actions.cancel')}
           </Button>
           {!done && (
             <Button onClick={runImport} isLoading={importing} disabled={!file || checking || !check?.ok}>
-              Import
+              {t('importUsers.import')}
             </Button>
           )}
         </div>
@@ -187,17 +207,13 @@ const ImportUsersModal = ({ onClose, onImported }) => {
         {done ? (
           <>
           <div className="py-4 text-center">
-            <CheckCircle2 className="mx-auto h-10 w-10 text-success-fg" />
-            <p className="mt-3 text-base font-semibold text-ink">Imported</p>
+            <CheckCircle2 className="mx-auto h-10 w-10 text-success-fg" aria-hidden="true" />
+            <p className="mt-3 text-base font-semibold text-ink">{t('importUsers.imported')}</p>
             <p className="mx-auto mt-1 max-w-md text-sm text-ink-secondary">
-              {done.message ||
-                countsOf(done)
-                  .map(([key, value]) => `${humanize(key)}: ${value}`)
-                  .join(' · ')}
+              {done.message || countsText(t, done)}
             </p>
             <p className="mx-auto mt-2 max-w-md text-xs text-ink-muted">
-              New password accounts start on a temporary password and must set their own when they first sign in. Google
-              and Microsoft accounts have no password; they sign in with that account.
+              {t('importUsers.doneHelp')}
             </p>
           </div>
           <InferredManagers items={done.managers_inferred} />
@@ -209,18 +225,14 @@ const ImportUsersModal = ({ onClose, onImported }) => {
             <ol className="space-y-3 text-sm text-ink-secondary">
               <li className="flex items-start justify-between gap-3">
                 <span>
-                  <span className="font-medium text-ink">1. Fill in the template.</span> It comes with a working
-                  example — read it before replacing it. The template changed: download a fresh copy rather than reusing
-                  an old one. The Role column now places each person (there's no level column), and Sign-in Method
-                  chooses Password, Google or Microsoft.
+                  <Trans t={t} i18nKey="importUsers.step1" components={{ b: <span className="font-medium text-ink" /> }} />
                 </span>
                 <Button variant="outline" size="small" startIcon={Download} onClick={downloadTemplate} className="shrink-0">
-                  Template
+                  {t('importUsers.template')}
                 </Button>
               </li>
               <li>
-                <span className="font-medium text-ink">2. Upload it.</span> It's checked first; nothing is created
-                until every row is valid.
+                <Trans t={t} i18nKey="importUsers.step2" components={{ b: <span className="font-medium text-ink" /> }} />
               </li>
             </ol>
 
@@ -229,9 +241,9 @@ const ImportUsersModal = ({ onClose, onImported }) => {
               onClick={() => inputRef.current?.click()}
               className="flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-line-strong px-4 py-8 text-center transition-colors hover:border-line-accent hover:bg-hover"
             >
-              {file ? <FileSpreadsheet className="h-6 w-6 text-accent-fg" /> : <Upload className="h-6 w-6 text-ink-subtle" />}
-              <span className="text-sm font-medium text-ink">{file ? file.name : 'Choose an .xlsx file'}</span>
-              {file && <span className="text-xs text-ink-subtle">Choose another to replace it</span>}
+              {file ? <FileSpreadsheet className="h-6 w-6 text-accent-fg" aria-hidden="true" /> : <Upload className="h-6 w-6 text-ink-subtle" aria-hidden="true" />}
+              <span className="text-sm font-medium text-ink">{file ? file.name : t('importUsers.choose')}</span>
+              {file && <span className="text-xs text-ink-subtle">{t('importUsers.chooseAnother')}</span>}
             </button>
             <input
               ref={inputRef}
@@ -244,15 +256,11 @@ const ImportUsersModal = ({ onClose, onImported }) => {
               }}
             />
 
-            {checking && <p className="text-sm text-ink-muted">Checking the file…</p>}
+            {checking && <p className="text-sm text-ink-muted">{t('importUsers.checking')}</p>}
 
             {check?.ok && (
-              <Alert variant="success" title="The file is valid">
-                {countsOf(check.result).length > 0
-                  ? countsOf(check.result)
-                      .map(([key, value]) => `${humanize(key)}: ${value}`)
-                      .join(' · ')
-                  : 'Ready to import.'}
+              <Alert variant="success" title={t('importUsers.valid')}>
+                {countsOf(check.result).length > 0 ? countsText(t, check.result) : t('importUsers.ready')}
               </Alert>
             )}
             {check?.ok && <Warnings warnings={check.result?.warnings} />}
@@ -260,15 +268,15 @@ const ImportUsersModal = ({ onClose, onImported }) => {
             {check && !check.ok && (
               <div className="space-y-3">
                 <Alert variant="error" title={check.error.summary}>
-                  Fix these in the file and upload it again — nothing was imported.
+                  {t('importUsers.fix')}
                 </Alert>
                 {fileProblems.length > 0 && (
                   <ul className="list-disc space-y-1 ps-5 text-sm text-danger-fg">
                     {fileProblems.map((problem, index) => (
                       <li key={index}>
                         {problem.message}
-                        {PROBLEM_HINTS[problem.code] && (
-                          <span className="block text-xs text-ink-muted">{PROBLEM_HINTS[problem.code]}</span>
+                        {hintFor(t, problem.code) && (
+                          <span className="block text-xs text-ink-muted">{hintFor(t, problem.code)}</span>
                         )}
                       </li>
                     ))}
@@ -277,7 +285,7 @@ const ImportUsersModal = ({ onClose, onImported }) => {
                 {rowProblems.length > 0 && <ProblemTable problems={rowProblems} />}
                 {rowProblems.some((p) => p.code === 'row.role_has_no_level' || p.code === 'row.unknown_role') && (
                   <Link to={staffPath(orgSlug, 'roles')} className="inline-block text-sm font-semibold text-link hover:underline">
-                    Open Roles &amp; Permissions →
+                    {t('importUsers.openRoles')}
                   </Link>
                 )}
               </div>

@@ -9,6 +9,7 @@
 // that isn't on file reads "(not in directory)".
 import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, Loader2, Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { orgHierarchyAPI } from '../../api/orgHierarchy';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useMemberNames } from '../../hooks/useMemberNames';
@@ -20,10 +21,12 @@ const MemberPicker = ({
   value,
   onChange,
   excludeId = null,
-  emptyLabel = 'No manager on file',
+  emptyLabel,
   disabled = false,
   className = '',
 }) => {
+  const { t } = useTranslation('hierarchy');
+  emptyLabel ??= t('picker.noManager');
   const [open, setOpen] = useState(false);
   const [term, setTerm] = useState('');
   const debounced = useDebounce(term, 400);
@@ -85,7 +88,7 @@ const MemberPicker = ({
 
   const label = !value
     ? emptyLabel
-    : nameOf(value) || (lookup.pending ? 'Loading…' : `${value} (not in directory)`);
+    : nameOf(value) || (lookup.pending ? t('common:status.loading') : t('picker.notInDirectory', { id: value }));
 
   return (
     <div ref={rootRef} className="relative">
@@ -99,20 +102,20 @@ const MemberPicker = ({
         className={`flex w-full items-center justify-between gap-2 text-start ${className}`}
       >
         <span className={`truncate ${value ? '' : 'text-ink-muted'}`}>{label}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-ink-subtle" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-ink-subtle" aria-hidden="true" />
       </button>
 
       {open && (
         <div className="absolute start-0 end-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-line bg-surface shadow-lg">
           <label className="flex items-center gap-2 border-b border-line-subtle px-3 py-2">
-            <Search className="h-4 w-4 shrink-0 text-ink-subtle" />
+            <Search className="h-4 w-4 shrink-0 text-ink-subtle" aria-hidden="true" />
             <input
               autoFocus
               value={term}
               onChange={(event) => setTerm(event.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Search name, email, title, employee id"
-              aria-label="Search the directory"
+              placeholder={t('picker.searchPlaceholder')}
+              aria-label={t('picker.searchLabel')}
               aria-controls={listId}
               className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
             />
@@ -126,14 +129,14 @@ const MemberPicker = ({
                   onClick={() => choose(null)}
                   className="flex w-full items-center gap-2 px-3 py-2 text-start text-sm text-ink-muted transition-colors hover:bg-hover"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
                   {emptyLabel}
                 </button>
               </li>
             )}
-            {failed && <li className="px-3 py-2 text-xs text-danger-fg">Couldn't search the directory.</li>}
+            {failed && <li className="px-3 py-2 text-xs text-danger-fg">{t('picker.searchFailed')}</li>}
             {!failed && !loading && results.length === 0 && (
-              <li className="px-3 py-2 text-xs text-ink-muted">No one matches.</li>
+              <li className="px-3 py-2 text-xs text-ink-muted">{t('picker.noMatches')}</li>
             )}
             {results.map((member, i) => (
               <li key={member.external_id} role="option" aria-selected={member.external_id === value}>

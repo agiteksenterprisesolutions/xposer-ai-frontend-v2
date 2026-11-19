@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Tabs from '../../components/ui/Tabs';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
@@ -38,21 +39,23 @@ import useSEO from '../../hooks/useSEO';
 // Non-admins with org_hierarchy:read get the org chart — levels and people,
 // read-only — and nothing else; every other tab is admin only, viewing
 // included (coverage, the queue, sync and escalation are admin-only reads).
+// Labels are `tabs.<value>` in the hierarchy namespace.
 const TABS = [
-  { value: 'coverage', label: 'Coverage', adminOnly: true },
-  { value: 'chart', label: 'Org chart' },
-  { value: 'levels', label: 'Levels', adminOnly: true },
-  { value: 'directory', label: 'Directory', adminOnly: true },
-  { value: 'escalation', label: 'Escalation policy', adminOnly: true },
+  { value: 'coverage', adminOnly: true },
+  { value: 'chart' },
+  { value: 'levels', adminOnly: true },
+  { value: 'directory', adminOnly: true },
+  { value: 'escalation', adminOnly: true },
   // People an HR sync found, waiting for a level, a role and a login decision.
-  { value: 'approvals', label: 'Approvals', adminOnly: true },
-  { value: 'hr', label: 'HR connection', adminOnly: true },
+  { value: 'approvals', adminOnly: true },
+  { value: 'hr', adminOnly: true },
 ];
 
 const Hierarchy = () => {
+  const { t } = useTranslation('hierarchy');
   useSEO({
-    title: 'Reporting Hierarchy',
-    description: 'Who a report escalates to: levels, the staff directory, and whether it all resolves.',
+    title: t('page.title'),
+    description: t('page.seoDescription'),
     noIndex: true,
   });
   const canManage = useCan()(PERM.hierarchyManage);
@@ -169,28 +172,27 @@ const Hierarchy = () => {
     <div className="space-y-6 pb-12">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-xl font-bold text-ink">Reporting Hierarchy</h1>
+          <h1 className="text-xl font-bold text-ink">{t('page.title')}</h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Who a report escalates to — someone above the person it names, never their peers or themselves.
+            {t('page.intro')}
           </p>
         </div>
         <Button variant="outline" startIcon={RefreshCw} onClick={load} disabled={loading}>
-          Refresh
+          {t('page.refresh')}
         </Button>
       </div>
 
       {!canManage && (
-        <Alert variant="info" title="View only">
-          Your role can see the org chart — its levels and the people in it. Everything else here, and any change, is
-          for admins.
+        <Alert variant="info" title={t('page.viewOnlyTitle')}>
+          {t('page.viewOnlyBody')}
         </Alert>
       )}
 
       {error && (
-        <Alert variant="error" title="Couldn't load the hierarchy">
+        <Alert variant="error" title={t('page.loadError')}>
           {error}{' '}
           <button type="button" onClick={load} className="font-medium text-link hover:underline">
-            Try again
+            {t('common:actions.retry')}
           </button>
         </Alert>
       )}
@@ -198,9 +200,9 @@ const Hierarchy = () => {
       {!error && (
           <Tabs value={tab} onChange={setTab}>
             <Tabs.List className="mb-5">
-              {tabs.map(({ value, label }) => (
+              {tabs.map(({ value }) => (
                 <Tabs.Trigger key={value} value={value}>
-                  {label}
+                  {t(`tabs.${value}`)}
                   {/* Counts arrive with the data; hold their space meanwhile. */}
                   {initialLoad && (value === 'levels' || value === 'directory') && <span className="invisible"> (0)</span>}
                   {!initialLoad && value === 'levels' && ` (${activeLevels.length})`}
@@ -271,10 +273,10 @@ const Hierarchy = () => {
           switchTab(leavingTo);
           setLeavingTo(null);
         }}
-        title="Leave without saving?"
-        message="Your changes to the escalation policy haven't been saved. They will be lost."
-        confirmText="Leave"
-        cancelText="Keep editing"
+        title={t('leave.title')}
+        message={t('leave.message')}
+        confirmText={t('leave.confirm')}
+        cancelText={t('leave.cancel')}
       />
     </div>
   );

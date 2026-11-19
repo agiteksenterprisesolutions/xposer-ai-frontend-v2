@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,12 +23,13 @@ import Button from "../../components/ui/Button";
 import Badge, { StatusBadge, PriorityBadge } from "../../components/ui/Badge";
 import { Textarea } from "../../components/ui/Input";
 import { reportsAPI, messagesAPI, usersAPI } from "../../api";
-import { NO_TYPE_LABEL, useReportTypeNames } from "../../hooks/useReportTypeNames";
+import { noTypeLabel, useReportTypeNames } from "../../hooks/useReportTypeNames";
 import { useCan } from "../../hooks/useCan";
 import { useDialogFocus } from "../../hooks/useDialogFocus";
 import { useOrgRoles, roleCanWorkReports } from "../../hooks/useOrgRoles";
 import { PERM } from "../../utils/permissions";
 import { parseServerDate } from "../../utils/formatters";
+import { intlLocale } from "../../utils/locale";
 import VoiceAnswers from '../../components/reports/VoiceAnswers';
 import DigestPanel from '../../components/reports/DigestPanel';
 import EscalationPreview from '../../components/reports/EscalationPreview';
@@ -52,26 +54,23 @@ const TIER_CLEARANCE = {
   restricted: PERM.reportReadRestricted,
 };
 
-const STATUS_OPTIONS = [
-  // { value: "draft", label: "Draft" },
-  { value: "pending", label: "Pending" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "resolved", label: "Resolved" },
-  { value: "closed", label: "Closed" },
-];
+// Labels come from common:reportStatus.<value>.
+const STATUS_OPTIONS = ["pending", "in_progress", "resolved", "closed"];
 
 /** The case page while it loads: the same cards and grid, data stubbed. */
-const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack }) => (
+const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack }) => {
+  const { t } = useTranslation("cases");
+  return (
   <div className="space-y-6" aria-busy="true">
     <Button variant="ghost" size="small" onClick={onBack}>
-      <ArrowLeft className="h-4 w-4 me-1" /> Back
+      <ArrowLeft className="h-4 w-4 me-1" aria-hidden="true" /> {t("common:actions.back")}
     </Button>
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div className="flex flex-col">
         <Skeleton.Text size="xl" className="w-44" />
         <Skeleton.Text className="w-28" />
       </div>
-      <div className="flex space-x-2">
+      <div className="flex gap-2">
         {showActions && <Skeleton.Button className="w-24" />}
         <Skeleton className="h-9 w-32 rounded-lg" />
       </div>
@@ -81,7 +80,7 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
       <div className="lg:col-span-2 space-y-6">
         <Card>
           <Card.Header>
-            <Card.Title>Original Submission</Card.Title>
+            <Card.Title>{t("detail.originalSubmission")}</Card.Title>
             <Skeleton.Text className="w-56" />
           </Card.Header>
           <Card.Content className="space-y-4">
@@ -103,8 +102,8 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
         <Card>
           <Card.Header>
             <Card.Title className="flex items-center">
-              <FileText className="h-5 w-5 me-2 text-accent-fg" />
-              Evidence & Files
+              <FileText className="h-5 w-5 me-2 text-accent-fg" aria-hidden="true" />
+              {t("detail.evidence")}
             </Card.Title>
           </Card.Header>
           <Card.Content className="space-y-4">
@@ -122,12 +121,12 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
         <Card>
           <Card.Header className="flex items-center justify-between border-b border-line-subtle">
             <Card.Title className="flex items-center">
-              <Clock className="h-5 w-5 me-2 text-accent-fg" />
-              Case Timeline
+              <Clock className="h-5 w-5 me-2 text-accent-fg" aria-hidden="true" />
+              {t("detail.timeline")}
             </Card.Title>
           </Card.Header>
           <Card.Content className="pt-6">
-            <div className="flex space-x-3">
+            <div className="flex gap-3">
               <Skeleton.Circle size="h-8 w-8" />
               <div className="flex-1">
                 <Skeleton.Text className="w-32" />
@@ -142,10 +141,10 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
       <div className="space-y-6">
         <Card>
           <Card.Header>
-            <Card.Title>Case Details</Card.Title>
+            <Card.Title>{t("detail.caseDetails")}</Card.Title>
           </Card.Header>
           <Card.Content className="space-y-6">
-            {['Status', 'Priority', 'Assigned To'].map((label, index) => (
+            {[t("detail.status"), t("detail.priority"), t("detail.assignedTo")].map((label, index) => (
               <div key={label} className="space-y-1">
                 <p className="text-xs font-semibold text-ink-muted uppercase">{label}</p>
                 {index < 2 ? <Skeleton.Badge className="w-20" /> : <Skeleton.Text className="w-28" />}
@@ -158,12 +157,10 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
           <Card>
             <Card.Header>
               <Card.Title className="flex items-center gap-2">
-                <Route className="h-4 w-4 text-accent-fg" />
-                Escalation route
+                <Route className="h-4 w-4 text-accent-fg" aria-hidden="true" />
+                {t("escalationPreview.title")}
               </Card.Title>
-              <Card.Description>
-                Who this report would go to, based on the people it names and your reporting hierarchy. Nothing is changed.
-              </Card.Description>
+              <Card.Description>{t("escalationPreview.description")}</Card.Description>
             </Card.Header>
             <Card.Content>
               <div className="flex flex-col gap-2">
@@ -178,9 +175,11 @@ const CaseDetailSkeleton = ({ showDigest, showEscalation, showActions, onBack })
       </div>
     </div>
   </div>
-);
+  );
+};
 
 const CaseDetail = () => {
+  const { t } = useTranslation("cases");
   const { id, orgSlug } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
@@ -224,13 +223,13 @@ const CaseDetail = () => {
       // Unknown for a non-admin (trimmed role list): the server decides.
       const rolePermissions = orgRoles.find((role) => role.code === person.role)?.permissions;
       if (needs && Array.isArray(rolePermissions) && !rolePermissions.includes(needs)) {
-        return `Their role isn't cleared for ${report.confidentiality_tier} cases.`;
+        return t(`assign.notCleared.${report.confidentiality_tier}`, { defaultValue: t("assign.notClearedOther", { tier: report.confidentiality_tier }) });
       }
       const reporterId = report?.reporter_id || report?.user_id || report?.submitted_by?.id;
-      if (reporterId && String(reporterId) === String(person.id)) return 'They reported this case.';
+      if (reporterId && String(reporterId) === String(person.id)) return t("assign.isReporter");
       return null;
     },
-    [orgRoles, report],
+    [orgRoles, report, t],
   );
 
   const fetchReport = useCallback(async () => {
@@ -260,7 +259,7 @@ const CaseDetail = () => {
         setNotFound(true);
       } else {
         console.error("Error fetching report detail:", error);
-        toast.error("Failed to load case details");
+        toast.error(t("detail.loadFailed"));
       }
     } finally {
       setLoading(false);
@@ -278,11 +277,11 @@ const CaseDetail = () => {
 
   const handleUpdateStatus = async (newStatus) => {
     if (!canUpdateStatus) {
-      toast.error("You are not allowed to update status");
+      toast.error(t("detail.statusNotAllowed"));
       return;
     }
-    if (!STATUS_OPTIONS.some((status) => status.value === newStatus)) {
-      toast.error("Invalid status");
+    if (!STATUS_OPTIONS.includes(newStatus)) {
+      toast.error(t("detail.statusInvalid"));
       return;
     }
     if (report?.status === newStatus) {
@@ -292,7 +291,7 @@ const CaseDetail = () => {
     setUpdating(true);
     try {
       await reportsAPI.updateReport(report?.id || id, { status: newStatus }, { quiet: true });
-      toast.success("Status updated");
+      toast.success(t("detail.statusUpdated"));
       fetchReport();
     } catch (error) {
       toast.error(errorSummary(error));
@@ -302,13 +301,13 @@ const CaseDetail = () => {
   };
 
   const getUserNameFromRef = useCallback((userRef) => {
-    if (!userRef) return "Unassigned";
+    if (!userRef) return t("owner.unassigned");
     if (typeof userRef === "object") {
-      return userRef.full_name || userRef.username || userRef.email || "Unknown User";
+      return userRef.full_name || userRef.username || userRef.email || t("detail.unknownUser");
     }
     const foundUser = users.find((user) => String(user.id) === String(userRef));
     return foundUser?.full_name || foundUser?.username || String(userRef);
-  }, [users]);
+  }, [users, t]);
 
   const resolveMessageTimestamp = (msg) => {
     const raw =
@@ -330,11 +329,11 @@ const CaseDetail = () => {
       if (result?.download_url) {
         window.open(result.download_url, "_blank", "noopener,noreferrer");
       } else {
-        toast.error("Download URL not available");
+        toast.error(t("detail.downloadUnavailable"));
       }
     } catch (error) {
       console.error("Failed to download attachment:", error);
-      toast.error("Failed to download file");
+      toast.error(t("detail.downloadFailed"));
     } finally {
       setDownloadingKey(null);
     }
@@ -343,7 +342,7 @@ const CaseDetail = () => {
   const handleSendMessage = async () => {
     if (!messageText.trim()) return;
     if (!report?.report_number) {
-      toast.error("Report number not available");
+      toast.error(t("detail.noReportNumber"));
       return;
     }
 
@@ -361,7 +360,7 @@ const CaseDetail = () => {
         ),
       );
       setMessageText("");
-      toast.success(isInternal ? "Internal note added" : "Message sent");
+      toast.success(isInternal ? t("timeline.noteAdded") : t("timeline.messageSent"));
       // The first reply to the reporter records the acknowledgement; fetch
       // the case again so the deadline shows as met.
       if (!isInternal && !slaClock(report, "acknowledge")?.done_at) fetchReport();
@@ -379,12 +378,12 @@ const CaseDetail = () => {
 
   const handleAssign = async (userId) => {
     if (!canAssignReports) {
-      toast.error("You are not allowed to assign cases");
+      toast.error(t("assign.notAllowed"));
       return;
     }
 
     if (!assignableUsers.some((user) => String(user.id) === String(userId))) {
-      toast.error("You cannot assign this case to the selected role");
+      toast.error(t("assign.wrongRole"));
       return;
     }
 
@@ -392,7 +391,7 @@ const CaseDetail = () => {
     try {
       await reportsAPI.updateReport(report?.id || id, { assigned_to: userId }, { quiet: true });
       setShowAssignModal(false);
-      toast.success("Case assigned");
+      toast.success(t("assign.assigned"));
       fetchReport();
     } catch (error) {
       // Not cleared for the case's level, excluded from it, or its reporter —
@@ -408,7 +407,7 @@ const CaseDetail = () => {
   useSEO({
     enabled: !loading && !!report,
     title: report
-      ? [`Case #${report.report_number || id}`, getReportTitle(report)].filter(Boolean).join(' — ')
+      ? [t("disposed.caseNumber", { number: report.report_number || id }), getReportTitle(report)].filter(Boolean).join(' — ')
       : '',
     description: report?.description,
     noIndex: true, // authenticated case data must never be indexed
@@ -430,16 +429,16 @@ const CaseDetail = () => {
   if (!report) {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
-        <p className="text-base font-semibold text-ink">{notFound ? "Case not found" : "This case couldn't be loaded"}</p>
+        <p className="text-base font-semibold text-ink">{notFound ? t("detail.notFound") : t("detail.couldNotLoad")}</p>
         <p className="mt-1 text-sm text-ink-muted">
-          {notFound ? "Check the link, or find the case from the reports list." : "Try again in a moment."}
+          {notFound ? t("detail.notFoundHint") : t("detail.couldNotLoadHint")}
         </p>
         <button
           type="button"
           onClick={() => navigate(-1)}
           className="mt-4 text-sm font-semibold text-link hover:underline"
         >
-          Go back
+          {t("detail.goBack")}
         </button>
       </div>
     );
@@ -449,7 +448,7 @@ const CaseDetail = () => {
   const typeName = typeNameOf(report);
 
   if (isDisposed(report)) {
-    return <DisposedCase report={report} typeName={typeName || 'Report'} onBack={() => navigate(-1)} />;
+    return <DisposedCase report={report} typeName={typeName || t("detail.reportFallback")} onBack={() => navigate(-1)} />;
   }
 
   // Both optional: written by the voice agent when it files a report, absent
@@ -470,43 +469,43 @@ const CaseDetail = () => {
     <div className="space-y-6">
       {/* Header */}
       <Button variant="ghost" size="small" onClick={() => navigate(-1)}>
-        <ArrowLeft className="h-4 w-4 me-1" /> Back
+        <ArrowLeft className="h-4 w-4 me-1" aria-hidden="true" /> {t("common:actions.back")}
       </Button>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-4">
           <div className="flex flex-col">
             <h2 className="flex flex-wrap items-center gap-2 text-xl font-bold text-ink">
-              Case #{report.report_number}
+              {t("disposed.caseNumber", { number: report.report_number })}
               <TierBadge tier={report.confidentiality_tier} size="medium" />
             </h2>
             <p className="text-sm text-ink-muted">
-              {typeName ?? <Skeleton.Text className="w-32" />}
-              {typeName && typeName !== NO_TYPE_LABEL && isAiReport(report) && (
-                <span className="text-ink-subtle"> · via AI Assistant</span>
+              {typeName ? <span dir="auto">{typeName}</span> : <Skeleton.Text className="w-32" />}
+              {typeName && typeName !== noTypeLabel() && isAiReport(report) && (
+                <span className="text-ink-subtle"> · {t("detail.viaAi")}</span>
               )}
             </p>
           </div>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex gap-2">
           {canAssignReports && (
             <Button
               variant="secondary"
               startIcon={UserPlus}
               onClick={() => setShowAssignModal(true)}
             >
-              Assign
+              {t("assign.button")}
             </Button>
           )}
           <select
-            aria-label="Case status"
+            aria-label={t("detail.caseStatus")}
             className="border-line-strong rounded-lg shadow-sm focus:ring-accent-ring focus:border-line-accent text-sm px-3 py-2"
             value={report.status}
             onChange={(e) => handleUpdateStatus(e.target.value)}
             disabled={updating || !canUpdateStatus}
           >
-            {STATUS_OPTIONS.map((statusOption) => (
-              <option key={statusOption.value} value={statusOption.value}>
-                {statusOption.label}
+            {STATUS_OPTIONS.map((value) => (
+              <option key={value} value={value}>
+                {t(`common:reportStatus.${value}`)}
               </option>
             ))}
           </select>
@@ -521,21 +520,21 @@ const CaseDetail = () => {
           {/* Report Summary */}
           <Card>
             <Card.Header>
-              <Card.Title>Original Submission</Card.Title>
+              <Card.Title>{t("detail.originalSubmission")}</Card.Title>
               <Card.Description>
-                Submitted on {parseServerDate(report.created_at)?.toLocaleString() || 'N/A'}
+                {t("detail.submittedOn", { date: parseServerDate(report.created_at)?.toLocaleString(intlLocale()) || t("detail.notAvailable") })}
               </Card.Description>
             </Card.Header>
             <Card.Content className="space-y-4">
               {reportTitle && (
-                <h3 className="text-base font-semibold text-ink wrap-break-word">
+                <h3 className="text-base font-semibold text-ink wrap-break-word" dir="auto">
                   {reportTitle}
                 </h3>
               )}
 
               {reportDescription && (
                 <div className="bg-subtle p-4 rounded-lg border border-line-subtle">
-                  <p className="text-ink whitespace-pre-wrap wrap-break-word">
+                  <p className="text-ink whitespace-pre-wrap wrap-break-word" dir="auto">
                     {reportDescription}
                   </p>
                 </div>
@@ -550,30 +549,30 @@ const CaseDetail = () => {
               {report.form_data && Object.keys(report.form_data).length > 0 && (
                 <div className="mt-6 space-y-4">
                   <h4 className="text-sm font-semibold text-ink">
-                    Additional Details
+                    {t("detail.additionalDetails")}
                   </h4>
                   {viewingLogged && (
                     <p className="flex items-center gap-1.5 text-xs text-ink-muted">
                       <ShieldAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                      Some answers here are marked sensitive. Viewing this is logged.
+                      {t("detail.sensitiveLogged")}
                     </p>
                   )}
                   {masked.size > 0 && (
                     <p className="flex items-center gap-1.5 text-xs text-ink-muted">
                       <EyeOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                      Answers marked sensitive are hidden. You need the View sensitive answers permission to see them.
+                      {t("detail.sensitiveHidden")}
                     </p>
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {orderedAnswers(report.form_data, reportForm).map(({ key, value, label, question }) => (
                       <div key={key} className="space-y-1">
-                        <p className="text-xs font-medium text-ink-muted uppercase">
+                        <p className="text-xs font-medium text-ink-muted uppercase" dir="auto">
                           {label}
                         </p>
                         {masked.has(key) ? (
                           <MaskedValue value={value} />
                         ) : (
-                          <p className="text-sm text-ink wrap-break-word">{formatAnswer(value, question)}</p>
+                          <p className="text-sm text-ink wrap-break-word" dir="auto">{formatAnswer(value, question)}</p>
                         )}
                       </div>
                     ))}
@@ -591,8 +590,8 @@ const CaseDetail = () => {
           <Card>
             <Card.Header>
               <Card.Title className="flex items-center">
-                <FileText className="h-5 w-5 me-2 text-accent-fg" />
-                Evidence & Files
+                <FileText className="h-5 w-5 me-2 text-accent-fg" aria-hidden="true" />
+                {t("detail.evidence")}
                 {report.attachments?.length > 0 && (
                   <span className="ms-2 text-sm font-normal text-ink-muted">{report.attachments.length}</span>
                 )}
@@ -619,12 +618,12 @@ const CaseDetail = () => {
                           <FileText className="h-4 w-4 text-ink-muted" />
                         </div>
                         <div className="flex min-w-0 flex-col">
-                          <span className="truncate text-sm font-medium text-ink-secondary" title={file.filename}>
-                            {file.filename || "Unnamed file"}
+                          <span className="truncate text-sm font-medium text-ink-secondary" title={file.filename} dir="auto">
+                            {file.filename || t("detail.unnamedFile")}
                           </span>
                           <span className="text-xs text-ink-muted">
                             {formatFileSize(file.size || 0)}
-                            {file.uploaded_at && ` · uploaded ${formatRelativeTime(file.uploaded_at)}`}
+                            {file.uploaded_at && ` · ${t("detail.uploaded", { when: formatRelativeTime(file.uploaded_at) })}`}
                           </span>
                         </div>
                       </div>
@@ -633,7 +632,7 @@ const CaseDetail = () => {
                         size="small"
                         onClick={() => handleDownloadAttachment(file)}
                         disabled={downloadingKey === file.key}
-                        aria-label={`Download ${file.filename || "file"}`}
+                        aria-label={t("detail.download", { name: file.filename || t("detail.file") })}
                       >
                         {downloadingKey === file.key ? (
                           <Loader className="h-4 w-4 animate-spin" />
@@ -646,8 +645,8 @@ const CaseDetail = () => {
                 </ul>
               ) : (
                 <p className="py-2 text-sm text-ink-muted">
-                  No evidence attached.
-                  {can(PERM.agentSummaryRead) && " AI summaries are written from attached files, so there's nothing to summarize."}
+                  {t("detail.noEvidence")}
+                  {can(PERM.agentSummaryRead) && ` ${t("detail.noEvidenceSummary")}`}
                 </p>
               )}
             </Card.Content>
@@ -657,15 +656,15 @@ const CaseDetail = () => {
           <Card>
             <Card.Header className="flex items-center justify-between border-b border-line-subtle">
               <Card.Title className="flex items-center">
-                <Clock className="h-5 w-5 me-2 text-accent-fg" />
-                Case Timeline
+                <Clock className="h-5 w-5 me-2 text-accent-fg" aria-hidden="true" />
+                {t("detail.timeline")}
               </Card.Title>
             </Card.Header>
             <Card.Content className="pt-6">
               <div className="flow-root">
                 <ul className="-mb-8">
                   {messages.length === 0 ? (
-                    <li className="text-center py-4 text-ink-muted text-sm italic">No timeline events yet.</li>
+                    <li className="text-center py-4 text-ink-muted text-sm italic">{t("timeline.empty")}</li>
                   ) : (
                     messages.map((msg, idx) => (
                       <li key={msg.id || idx}>
@@ -673,7 +672,7 @@ const CaseDetail = () => {
                           {idx !== messages.length - 1 && (
                             <span className="absolute top-4 start-4 -ms-px h-full w-0.5 bg-active" aria-hidden="true" />
                           )}
-                          <div className="relative flex space-x-3">
+                          <div className="relative flex gap-3">
                             <div>
                               <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-surface ${msg.is_internal ? 'bg-warning-soft' : 'bg-accent-soft'
                                 }`}>
@@ -688,16 +687,16 @@ const CaseDetail = () => {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <div className="text-sm">
-                                    <span className="font-medium text-ink">
+                                    <span className="font-medium text-ink" dir="auto">
                                       {msg?.sender?.name ||
                                         msg?.sender_name ||
                                         msg?.sender?.email ||
                                         msg?.sender?.id ||
-                                        "System"}
+                                        t("timeline.system")}
                                     </span>
                                     {msg.is_internal && (
                                       <span className="ms-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-warning-soft text-warning-fg">
-                                        INTERNAL
+                                        {t("timeline.internalBadge")}
                                       </span>
                                     )}
                                   </div>
@@ -707,8 +706,8 @@ const CaseDetail = () => {
                                 </div>
                               </div>
                               <div className="mt-2 text-sm text-ink-secondary">
-                                <p className="whitespace-pre-wrap wrap-break-word">
-                                  {msg.content || msg.text || "No message content"}
+                                <p className="whitespace-pre-wrap wrap-break-word" dir="auto">
+                                  {msg.content || msg.text || t("timeline.noContent")}
                                 </p>
                               </div>
                             </div>
@@ -722,10 +721,10 @@ const CaseDetail = () => {
 
               {/* Add Note Input */}
               <div className="mt-8 pt-6 border-t border-line-subtle">
-                <div className="flex items-start space-x-4">
+                <div className="flex items-start gap-4">
                   <div className="flex-1">
                     {can(PERM.messageReadInternal) && (
-                      <div className="flex items-center space-x-4 mb-2">
+                      <div className="flex items-center gap-4 mb-2" role="radiogroup" aria-label={t("timeline.messageKind")}>
                         <label className="flex items-center text-xs font-medium text-ink-secondary cursor-pointer">
                           <input
                             type="radio"
@@ -733,7 +732,7 @@ const CaseDetail = () => {
                             checked={isInternal}
                             onChange={() => setIsInternal(true)}
                           />
-                          Internal Note
+                          {t("timeline.internalNote")}
                         </label>
                         <label className="flex items-center text-xs font-medium text-ink-secondary cursor-pointer">
                           <input
@@ -742,23 +741,21 @@ const CaseDetail = () => {
                             checked={!isInternal}
                             onChange={() => setIsInternal(false)}
                           />
-                          Public Message
+                          {t("timeline.publicMessage")}
                         </label>
                       </div>
                     )}
                     <Textarea
-                      placeholder={
-                        isInternal
-                          ? "Add an internal note (only visible to team)..."
-                          : "Send a message to the reporter..."
-                      }
+                      placeholder={isInternal ? t("timeline.notePlaceholder") : t("timeline.messagePlaceholder")}
+                      aria-label={isInternal ? t("timeline.internalNote") : t("timeline.publicMessage")}
+                      dir="auto"
                       rows={3}
                       value={messageText}
                       onChange={(e) => setMessageText(e.target.value)}
                     />
                     {!isInternal && ackOutstanding && (
                       <p className="mt-1.5 text-xs text-ink-muted">
-                        Your first reply to the reporter counts as the acknowledgement.
+                        {t("timeline.firstReplyAck")}
                       </p>
                     )}
                     <div className="flex justify-between items-center mt-3">
@@ -770,7 +767,7 @@ const CaseDetail = () => {
                         disabled={sendingMessage || !messageText.trim()}
                         isLoading={sendingMessage}
                       >
-                        {isInternal ? 'Add Note' : 'Send Message'}
+                        {isInternal ? t("timeline.addNote") : t("timeline.sendMessage")}
                       </Button>
                     </div>
                   </div>
@@ -784,61 +781,58 @@ const CaseDetail = () => {
         <div className="space-y-6">
           <Card>
             <Card.Header>
-              <Card.Title>Case Details</Card.Title>
+              <Card.Title>{t("detail.caseDetails")}</Card.Title>
             </Card.Header>
             <Card.Content className="space-y-6">
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-ink-muted uppercase">
-                  Status
+                  {t("detail.status")}
                 </p>
                 <StatusBadge status={report.status} />
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-ink-muted uppercase">
-                  Priority
+                  {t("detail.priority")}
                 </p>
                 <PriorityBadge priority={report.priority} />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-ink-muted uppercase">Assigned To</p>
+                <p className="text-xs font-semibold text-ink-muted uppercase">{t("detail.assignedTo")}</p>
                 <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink wrap-break-word">
                   {report.assigned_to || report.assigned_to_user
                     ? getUserNameFromRef(report.assigned_to || report.assigned_to_user)
                     : report.routed_to_role
-                      ? `Waiting for ${nameFor(report.routed_to_role)}`
-                      : "Unassigned"}
+                      ? t("detail.waitingFor", { role: nameFor(report.routed_to_role) })
+                      : t("owner.unassigned")}
                   {isAutoAssigned(report) && (
                     <span className="rounded bg-active px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
-                      auto
+                      {t("owner.auto")}
                     </span>
                   )}
                 </p>
                 {report.assigned_at && (
                   <p className="text-xs text-ink-muted">
                     {isAutoAssigned(report)
-                      ? `Assigned automatically ${formatRelativeTime(report.assigned_at)}`
-                      : `Assigned ${formatRelativeTime(report.assigned_at)}`}
-                    {!isAutoAssigned(report) && (report.assigned_by || report.assigned_by_user)
-                      ? ` by ${getUserNameFromRef(report.assigned_by || report.assigned_by_user)}`
-                      : ""}
+                      ? t("detail.assignedAuto", { when: formatRelativeTime(report.assigned_at) })
+                      : report.assigned_by || report.assigned_by_user
+                        ? t("detail.assignedBy", {
+                            when: formatRelativeTime(report.assigned_at),
+                            name: getUserNameFromRef(report.assigned_by || report.assigned_by_user),
+                          })
+                        : t("detail.assigned", { when: formatRelativeTime(report.assigned_at) })}
                   </p>
                 )}
                 {/* Why routing did what it did — unassigned, or sent to the backup owner. */}
-                {report.routing_note && <p className="text-xs text-ink-muted">{report.routing_note}</p>}
+                {report.routing_note && <p className="text-xs text-ink-muted" dir="auto">{report.routing_note}</p>}
               </div>
 
               {/* The type that governs this case, linked; for an AI report,
                   with what it asked against that type's questions. */}
               <GoverningType report={report} orgSlug={report?.organization_slug || orgSlug} />
 
-              {/* The company the case is about: set by the AI, correctable by staff
-                  who can update any case. Re-read afterwards: another entity's
-                  pack can change the deadlines and retention. */}
-              <CaseEntity
-                report={report}
-                canChange={can(PERM.reportUpdateAll) && can(PERM.entityRead)}
-                onChanged={fetchReport}
-              />
+              {/* The legal entity, fixed by the portal address the reporter
+                  used (ENTITIES.md §3); read-only. */}
+              <CaseEntity report={report} />
 
             </Card.Content>
             {/* <Card.Footer>
@@ -886,17 +880,15 @@ const CaseDetail = () => {
         >
           <Card className="w-full max-w-md shadow-2xl">
             <Card.Header>
-              <Card.Title id="assign-case-title">Assign Case</Card.Title>
-              <Card.Description>
-                Select an assignee. Only people whose role can open reports are listed; those who can't take this case are greyed out.
-              </Card.Description>
+              <Card.Title id="assign-case-title">{t("assign.title")}</Card.Title>
+              <Card.Description>{t("assign.description")}</Card.Description>
             </Card.Header>
             <Card.Content className="space-y-4">
               <div className="max-h-60 overflow-y-auto divide-y divide-line-subtle">
                 {assigneesLoading && (
-                  <div aria-busy="true" aria-label="Loading assignees">
+                  <div aria-busy="true" aria-label={t("assign.loading")}>
                     {[0, 1, 2].map((i) => (
-                      <div key={i} className="flex items-center space-x-3 p-3">
+                      <div key={i} className="flex items-center gap-3 p-3">
                         <Skeleton.Circle size="h-10 w-10" />
                         <div className="space-y-1.5">
                           <Skeleton.Text size="sm" className="w-36" />
@@ -908,7 +900,7 @@ const CaseDetail = () => {
                 )}
                 {!assigneesLoading && assignableUsers.length === 0 && (
                   <div className="p-3 text-sm text-ink-muted">
-                    No eligible assignees available.
+                    {t("assign.none")}
                   </div>
                 )}
                 {!assigneesLoading && assignableUsers.map((user) => {
@@ -921,13 +913,13 @@ const CaseDetail = () => {
                     title={blocked || undefined}
                     className="w-full flex items-center justify-between p-3 hover:bg-subtle rounded-lg transition-colors group disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-accent-soft flex items-center justify-center text-accent-fg font-bold">
                         {user.full_name?.charAt(0) ||
                           user.username?.charAt(0)}
                       </div>
                       <div className="text-start">
-                        <p className="text-sm font-semibold text-ink group-hover:text-accent-fg transition-colors">
+                        <p className="text-sm font-semibold text-ink group-hover:text-accent-fg transition-colors" dir="auto">
                           {user.full_name || user.username}
                         </p>
                         <p className="text-xs text-ink-muted">
@@ -935,15 +927,15 @@ const CaseDetail = () => {
                         </p>
                       </div>
                     </div>
-                    {!blocked && <ArrowRight className="h-4 w-4 text-ink-subtle group-hover:text-accent-fg" />}
+                    {!blocked && <ArrowRight className="h-4 w-4 text-ink-subtle group-hover:text-accent-fg" aria-hidden="true" />}
                   </button>
                   );
                 })}
               </div>
             </Card.Content>
-            <Card.Footer className="flex justify-end space-x-3 bg-subtle p-4">
+            <Card.Footer className="flex justify-end gap-3 bg-subtle p-4">
               <Button variant="ghost" onClick={() => setShowAssignModal(false)}>
-                Cancel
+                {t("common:actions.cancel")}
               </Button>
             </Card.Footer>
           </Card>

@@ -15,6 +15,7 @@
 //   · a manager reference to someone not in the directory
 //   · a manager who is not more senior than their report
 //   · a person with no level, or only a stale one from an old sync
+import i18n from '../i18n';
 
 export const PERSON_WIDTH = 232;
 export const PERSON_HEIGHT = 92;
@@ -161,21 +162,19 @@ export const flagsFor = ({ member, manager, atTop, rankOf }) => {
   return flags;
 };
 
+// Getters, so the text is in the interface language when it's read.
+const flagInfo = (key) => ({
+  get label() {
+    return i18n.t(`flags.${key}.label`, { ns: 'hierarchy' });
+  },
+  get description() {
+    return i18n.t(`flags.${key}.description`, { ns: 'hierarchy' });
+  },
+});
+
 export const FLAG_INFO = {
-  no_level: {
-    label: 'Not placed',
-    description: 'Has no role, or a role with no level, so a report naming them cannot be escalated by rank. Give them a role, or give their role a level.',
-  },
-  legacy_level: {
-    label: 'Old level, needs a role',
-    description: 'Has no role; the level shown is left over from an old sync, so escalation can’t place them reliably. Give them a role.',
-  },
-  manager_missing: {
-    label: 'Manager not on file',
-    description: 'Their manager is not in the directory — usually someone who was removed — so they sit at the top of the chart.',
-  },
-  manager_not_senior: {
-    label: 'Manager not more senior',
-    description: 'Their manager sits at the same level or below them.',
-  },
+  no_level: flagInfo('no_level'),
+  legacy_level: flagInfo('legacy_level'),
+  manager_missing: flagInfo('manager_missing'),
+  manager_not_senior: flagInfo('manager_not_senior'),
 };

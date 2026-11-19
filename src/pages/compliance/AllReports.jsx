@@ -20,6 +20,8 @@ import Pagination from '../../components/ui/Pagination';
 import { reportsAPI, usersAPI } from '../../api';
 import { useReportTypeNames } from '../../hooks/useReportTypeNames';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { intlLocale, isRtl } from '../../utils/locale';
 import { useAuthStore } from '../../store/authStore';
 import DashboardTour from '../../components/tour/DashboardTour';
 import { parseServerDate } from '../../utils/formatters';
@@ -43,10 +45,8 @@ const ALL_REPORTS_TOUR_KEY = 'xposer_all_reports_tour_seen';
 
 // Who filed: ?anonymous=true (no account behind it) or false (filed from an
 // account), sent to the API as is_anonymous.
-const FILED_BY = [
-  { value: 'true', label: 'Anonymous', chip: 'Anonymous only' },
-  { value: 'false', label: 'From an account', chip: 'Filed from an account' },
-];
+// Labels: cases:list.filedBy.<value> and cases:list.filedByChip.<value>.
+const FILED_BY = [{ value: 'true' }, { value: 'false' }];
 
 /**
  * A report on a phone: what it is, where it stands and when it came in. A
@@ -64,13 +64,13 @@ const ReportSummary = ({ report, typeName }) => {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-ink">#{report.report_number}</span>
+        <span className="font-medium text-ink" dir="ltr">#{report.report_number}</span>
         <StatusBadge status={report.status} />
       </div>
       <div className="flex items-baseline justify-between gap-3 text-sm">
-        <span className="min-w-0 truncate text-ink-secondary">{typeName ?? <Skeleton.Text className="w-32" />}</span>
+        <span className="min-w-0 truncate text-ink-secondary" dir="auto">{typeName ?? <Skeleton.Text className="w-32" />}</span>
         <span className="shrink-0 text-xs text-ink-muted">
-          {parseServerDate(report.created_at)?.toLocaleDateString() || ''}
+          {parseServerDate(report.created_at)?.toLocaleDateString(intlLocale()) || ''}
         </span>
       </div>
       {(urgentPriority || urgentClocks.length > 0) && (
@@ -86,33 +86,34 @@ const ReportSummary = ({ report, typeName }) => {
 };
 
 // Column order here is the column order in the table.
-const buildSortColumns = (typeNameFor, nameFor) => ({
-  report_number: { label: 'Report ID', defaultOrder: 'desc', value: byText('report_number') },
-  created_at: { label: 'Submitted On', defaultOrder: 'desc', value: byDate('created_at') },
+const buildSortColumns = (typeNameFor, nameFor, t) => ({
+  report_number: { label: t('list.col.reportId'), defaultOrder: 'desc', value: byText('report_number') },
+  created_at: { label: t('list.col.submittedOn'), defaultOrder: 'desc', value: byDate('created_at') },
   report_type_name: {
-    label: 'Category',
+    label: t('list.col.category'),
     defaultOrder: 'asc',
     value: (report) => (typeNameFor(report) || '').toLowerCase(),
   },
-  priority: { label: 'Priority', defaultOrder: 'desc', value: byRank('priority', PRIORITY_RANK) },
+  priority: { label: t('list.col.priority'), defaultOrder: 'desc', value: byRank('priority', PRIORITY_RANK) },
   assigned_to: {
-    label: 'Owner',
+    label: t('list.col.owner'),
     defaultOrder: 'asc',
     value: (report) => ownerName(report, nameFor).toLowerCase(),
   },
   sla: {
-    label: 'Deadlines',
+    label: t('list.col.deadlines'),
     defaultOrder: 'asc',
     // Overdue first, then due soon, then everything else.
     value: slaUrgency,
   },
-  status: { label: 'Status', defaultOrder: 'asc', value: byRank('status', STATUS_RANK) },
+  status: { label: t('list.col.status'), defaultOrder: 'asc', value: byRank('status', STATUS_RANK) },
 });
 
 const AllReports = () => {
+  const { t } = useTranslation('cases');
   useSEO({
-    title: 'All Reports',
-    description: 'Browse, filter, and open every report submitted to your organization.',
+    title: t('list.seoTitle'),
+    description: t('list.seoDescription'),
     noIndex: true,
   });
   const [reports, setReports] = useState([]);
@@ -201,7 +202,7 @@ const AllReports = () => {
 
   // The Category column sorts on the resolved type name, so the columns are
   // rebuilt whenever that resolver changes.
-  const sortColumns = useMemo(() => buildSortColumns(typeNameFor, nameFor), [typeNameFor, nameFor]);
+  const sortColumns = useMemo(() => buildSortColumns(typeNameFor, nameFor, t), [typeNameFor, nameFor, t]);
 
   // The API filters and paginates; re-filtering here would hide rows that
   // matched on fields this page doesn't render. Sorting is different:
@@ -261,57 +262,52 @@ const AllReports = () => {
     setCurrentPage(1);
   }, [activeStatus, resolvedTypeId, priorityParam, filedBy, slaParam, assigneeParam, sortBy, sortOrder]);
 
-  const statusTabs = [
-    { id: 'all', label: 'All Reports' },
-    { id: 'pending', label: 'Pending Review' },
-    { id: 'in_progress', label: 'In Progress' },
-    { id: 'resolved', label: 'Resolved' },
-    { id: 'closed', label: 'Closed' }
-  ];
+  const statusTabs = ['all', 'pending', 'in_progress', 'resolved', 'closed'].map((id) => ({
+    id,
+    label: t(`list.tab.${id}`),
+  }));
 
   const activeFilterChips = useMemo(() => {
     const chips = [];
     if (activeTypeName) {
       chips.push({
         key: 'category',
-        label: `Category: ${activeTypeName}`,
+        label: t('list.chip.category', { value: activeTypeName }),
         clear: () => updateFilters({ report_type_id: '', report_type: '' }),
       });
     }
     if (priorityParam) {
       chips.push({
         key: 'priority',
-        label: `Priority: ${priorityParam}`,
+        label: t('list.chip.priority', { value: t(`common:priority.${priorityParam}`, { defaultValue: priorityParam }) }),
         clear: () => updateFilters({ priority: '' }),
       });
     }
     if (assigneeParam) {
       chips.push({
         key: 'assignee',
-        label: `Assigned to: ${assigneeName || 'one person'}`,
+        label: t('list.chip.assignee', { value: assigneeName || t('list.chip.onePerson') }),
         clear: () => updateFilters({ assigned_to: '', assignee: '' }),
       });
     }
     if (filedBy) {
       chips.push({
         key: 'anonymous',
-        label: filedBy.chip,
+        label: t(`list.filedByChip.${filedBy.value}`),
         clear: () => updateFilters({ anonymous: '' }),
       });
     }
     return chips;
-  }, [activeTypeName, priorityParam, assigneeParam, assigneeName, filedBy, updateFilters]);
-
-  const slaLabel = SLA_FILTERS.find((f) => f.value === slaParam)?.label;
+  }, [activeTypeName, priorityParam, assigneeParam, assigneeName, filedBy, updateFilters, t]);
 
   const tourSteps = useMemo(() => {
     const steps = [];
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-all-reports"]',
-        title: 'All Reports',
-        content: 'Every report submitted to your organization lives here, in one place.',
-        placement: 'right',
+        title: t('list.tour.allTitle'),
+        content: t('list.tour.allBody'),
+        placement: isRtl() ? 'left' : 'right',
         skipBeacon: true,
       });
     }
@@ -319,40 +315,40 @@ const AllReports = () => {
     steps.push(
       {
         target: '[data-tour="reports-search"]',
-        title: 'Search reports',
-        content: 'Look up a report by ID, category, or the reporter/assignee username.',
+        title: t('list.tour.searchTitle'),
+        content: t('list.tour.searchBody'),
         placement: 'bottom',
         skipBeacon: !isDesktop,
       },
       {
         target: '[data-tour="reports-sort"]',
-        title: 'Order the list',
-        content: 'Sort by date, report ID, category, priority, assignee, or status — or click a column header.',
+        title: t('list.tour.sortTitle'),
+        content: t('list.tour.sortBody'),
         placement: 'bottom',
       },
       {
         target: '[data-tour="reports-tabs"]',
-        title: 'Filter by status',
-        content: 'Quickly narrow the list to pending, in-progress, resolved, or closed reports.',
+        title: t('list.tour.tabsTitle'),
+        content: t('list.tour.tabsBody'),
         placement: 'bottom',
       },
       {
         target: '[data-tour="reports-table"]',
-        title: 'Report list',
-        content: 'Click any row to open the full case, review details, and take action.',
+        title: t('list.tour.tableTitle'),
+        content: t('list.tour.tableBody'),
         placement: 'top',
       }
     );
 
     steps.push({
       target: '[data-tour="tour-user-menu"]',
-      title: 'Your account',
-      content: 'Manage your profile or log out from here.',
+      title: t('list.tour.accountTitle'),
+      content: t('list.tour.accountBody'),
       placement: 'bottom',
     });
 
     return steps;
-  }, [isDesktop]);
+  }, [isDesktop, t]);
 
   return (
     <div className="space-y-6">
@@ -363,7 +359,8 @@ const AllReports = () => {
       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 lg:gap-4">
         <div className="relative w-full lg:w-96" data-tour="reports-search">
           <Input
-            placeholder="Search by ID, category, or reporter..."
+            placeholder={t('list.searchPlaceholder')}
+            aria-label={t('list.search')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           // startAdornment={<Search className="h-4 w-4 text-ink-subtle" />}
@@ -375,14 +372,14 @@ const AllReports = () => {
         </div> */}
         <div className="flex flex-wrap items-center lg:justify-end gap-2 sm:gap-3 min-w-0">
           <select
-            aria-label="Deadlines"
+            aria-label={t('list.col.deadlines')}
             value={slaParam}
             onChange={(e) => updateFilters({ sla: e.target.value })}
             className={`h-9 shrink-0 rounded-lg border bg-surface px-2.5 text-sm outline-none focus:border-line-accent ${
               slaParam ? 'border-line-accent text-accent-fg' : 'border-line-strong text-ink-secondary'
             }`}
           >
-            <option value="">Any deadline</option>
+            <option value="">{t('list.anyDeadline')}</option>
             {SLA_FILTERS.map((f) => (
               <option key={f.value} value={f.value}>
                 {f.label}
@@ -390,17 +387,17 @@ const AllReports = () => {
             ))}
           </select>
           <select
-            aria-label="Filed by"
+            aria-label={t('list.filedByLabel')}
             value={filedBy?.value || ''}
             onChange={(e) => updateFilters({ anonymous: e.target.value })}
             className={`h-9 shrink-0 rounded-lg border bg-surface px-2.5 text-sm outline-none focus:border-line-accent ${
               filedBy ? 'border-line-accent text-accent-fg' : 'border-line-strong text-ink-secondary'
             }`}
           >
-            <option value="">Anyone</option>
+            <option value="">{t('list.anyone')}</option>
             {FILED_BY.map((f) => (
               <option key={f.value} value={f.value}>
-                {f.label}
+                {t(`list.filedBy.${f.value}`)}
               </option>
             ))}
           </select>
@@ -409,7 +406,7 @@ const AllReports = () => {
             <Skeleton.Text className="w-20" />
           ) : (
             <span className="ms-auto lg:ms-0 text-sm text-ink-muted whitespace-nowrap tabular-nums">
-              {totalReports} report{totalReports === 1 ? '' : 's'}
+              {t('list.count', { count: totalReports })}
             </span>
           )}
         </div>
@@ -419,16 +416,17 @@ const AllReports = () => {
           row, so only the extra filters need a chip. */}
       {activeFilterChips.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-ink-muted">Filtered by</span>
+          <span className="text-sm text-ink-muted">{t('list.filteredBy')}</span>
           {activeFilterChips.map((chip) => (
             <button
               key={chip.key}
               type="button"
               onClick={chip.clear}
-              className="inline-flex items-center gap-1.5 rounded-full border border-line-accent bg-accent-soft px-3 py-1 text-xs font-medium text-accent-fg capitalize hover:bg-hover"
+              aria-label={t('list.removeFilter', { filter: chip.label })}
+              className="inline-flex items-center gap-1.5 rounded-full border border-line-accent bg-accent-soft px-3 py-1 text-xs font-medium text-accent-fg hover:bg-hover"
             >
-              {chip.label}
-              <X className="h-3 w-3" />
+              <span dir="auto">{chip.label}</span>
+              <X className="h-3 w-3" aria-hidden="true" />
             </button>
           ))}
           <button
@@ -436,7 +434,7 @@ const AllReports = () => {
             onClick={() => updateFilters({ report_type_id: '', report_type: '', priority: '', anonymous: '', assigned_to: '', assignee: '' })}
             className="text-xs font-medium text-ink-muted underline underline-offset-4 hover:text-ink"
           >
-            Clear all
+            {t('list.clearAll')}
           </button>
         </div>
       )}
@@ -489,8 +487,8 @@ const AllReports = () => {
               />
             ) : filteredReports.length === 0 ? (
               <Table.Empty
-                message={searchTerm ? 'No matching reports' : slaLabel ? `No cases ${slaLabel.toLowerCase()}` : 'No reports found'}
-                description={searchTerm ? 'Try a different search term.' : 'Try adjusting your filters.'}
+                message={searchTerm ? t('list.emptySearch') : slaParam ? t(`list.emptySla.${slaParam}`, { defaultValue: t('list.empty') }) : t('list.empty')}
+                description={searchTerm ? t('list.emptySearchHint') : t('list.emptyHint')}
                 icon={FileText}
               />
             ) : (
@@ -503,26 +501,26 @@ const AllReports = () => {
                 >
                   <Table.Cell className="font-medium text-ink">
                     <div className="flex flex-col items-start gap-1">
-                      <span>#{report.report_number}</span>
+                      <span dir="ltr">#{report.report_number}</span>
                       <TierBadge tier={report.confidentiality_tier} />
                       {report.is_anonymous && (
                         <span className="inline-flex items-center gap-1 text-xs font-normal text-ink-muted">
                           <EyeOff className="h-3 w-3" aria-hidden="true" />
-                          Anonymous
+                          {t('list.anonymous')}
                         </span>
                       )}
                     </div>
                   </Table.Cell>
                   <Table.Cell className="text-ink-muted">
                     <div className="flex items-center">
-                      <Calendar className="h-3 w-3 me-1.5" />
-                      {parseServerDate(report.created_at)?.toLocaleDateString() || 'N/A'}
+                      <Calendar className="h-3 w-3 me-1.5" aria-hidden="true" />
+                      {parseServerDate(report.created_at)?.toLocaleDateString(intlLocale()) || t('detail.notAvailable')}
                     </div>
                   </Table.Cell>
                   <Table.Cell>
-                    <div className="flex items-center space-x-2">
-                      <Layers className="h-3 w-3 text-ink-subtle" />
-                      <span className="text-sm text-ink-secondary">
+                    <div className="flex items-center gap-2">
+                      <Layers className="h-3 w-3 text-ink-subtle" aria-hidden="true" />
+                      <span className="text-sm text-ink-secondary" dir="auto">
                         {typeNameFor(report) ?? <Skeleton.Text className="w-24" />}
                       </span>
                     </div>

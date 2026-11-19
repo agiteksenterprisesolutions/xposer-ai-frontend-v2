@@ -14,6 +14,7 @@
 // agent service is unreachable); a 404 only means the report isn't found.
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, Sparkles } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
@@ -43,6 +44,7 @@ const summarizerEntry = (run) =>
   ) || null;
 
 const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, embedded = false }) => {
+  const { t } = useTranslation('cases');
   const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // { message, fault }
@@ -67,10 +69,10 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, emb
       setDigest(null);
       const status = err?.response?.status;
       if (status === 503) {
-        setError({ message: "The AI service can't be reached right now, so the summary can't be loaded. Try again shortly.", fault: true });
+        setError({ messageKey: 'digest.unreachable', fault: true });
       } else if (status === 404) {
         // Only means the report isn't in this organization.
-        setError({ message: 'No summary is available for this report.', fault: false });
+        setError({ messageKey: 'digest.notFound', fault: false });
       } else {
         setError({ message: errorSummary(err), fault: true });
       }
@@ -91,8 +93,8 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, emb
       size="small"
       onClick={load}
       isLoading={loading}
-      aria-label="Refresh the summary"
-      title="Refresh — a summary can arrive a little after the evidence does"
+      aria-label={t('digest.refresh')}
+      title={t('digest.refreshTitle')}
     >
       {!loading && <RefreshCw className="h-4 w-4" />}
     </Button>
@@ -108,24 +110,28 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, emb
         </div>
       )}
 
-      {error && <p className={`text-sm ${error.fault ? 'text-danger-fg' : 'text-ink-muted'}`}>{error.message}</p>}
+      {error && (
+        <p className={`text-sm ${error.fault ? 'text-danger-fg' : 'text-ink-muted'}`}>
+          {error.messageKey ? t(error.messageKey) : error.message}
+        </p>
+      )}
 
       {digest && !available && (
         <div className="space-y-1">
-          <p className="text-sm text-ink-muted">
+          <p className="text-sm text-ink-muted" dir="auto">
             {/* The server's reason, verbatim: it separates "switched off" from
                 "no attachments" from "not run yet", each needing a different
                 response. Our own wording only when it sends none. */}
             {digest.reason ||
               why ||
               (attachmentCount === 0
-                ? 'No evidence files were attached, so there is nothing to summarize. Summaries are written from attachments only.'
-                : 'No summary for this report yet. One can arrive a little after the evidence does.')}
+                ? t('digest.noFiles')
+                : t('digest.notYet'))}
           </p>
           {(digest.problems || [])
             .filter((problem) => problem?.message && problem.message !== digest.reason)
             .map((problem, index) => (
-              <p key={index} className="text-xs text-ink-subtle">
+              <p key={index} className="text-xs text-ink-subtle" dir="auto">
                 {problem.message}
               </p>
             ))}
@@ -134,19 +140,18 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, emb
 
       {available && (
         <div className="space-y-4">
-          <div className="text-sm text-ink-secondary">
+          <div className="text-sm text-ink-secondary" dir="auto">
             <MarkdownMessage content={digest.summary || ''} />
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-subtle pt-3 text-xs text-ink-subtle">
             {digest.agent_code && (
               <span>
-                By <span className="font-mono text-ink-muted">{digest.agent_code}</span>
-                {digest.stage && (
-                  <>
-                    {' '}
-                    at stage <span className="font-mono text-ink-muted">{digest.stage}</span>
-                  </>
-                )}
+                <Trans
+                  t={t}
+                  i18nKey={digest.stage ? 'digest.byAtStage' : 'digest.by'}
+                  values={{ agent: digest.agent_code, stage: digest.stage }}
+                  components={{ code: <span className="font-mono text-ink-muted" dir="ltr" /> }}
+                />
               </span>
             )}
             {digest.workflow?.name && (
@@ -159,9 +164,7 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, emb
               <span title={formatDateTime(digest.generated_at)}>· {formatRelativeTime(digest.generated_at)}</span>
             )}
           </div>
-          <p className="text-xs text-ink-subtle">
-            Written by an AI agent from the evidence files. Check it against the originals before relying on it.
-          </p>
+          <p className="text-xs text-ink-subtle">{t('digest.disclaimer')}</p>
         </div>
       )}
     </>
@@ -169,19 +172,19 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, emb
 
   if (embedded) {
     return (
-      <section aria-label="AI summary of the evidence" className="rounded-xl border border-line-accent/40 bg-accent-soft/30 p-4">
+      <section aria-label={t('digest.title')} className="rounded-xl border border-line-accent/40 bg-accent-soft/30 p-4">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
-              <Sparkles className="h-4 w-4 text-accent-fg" />
-              AI summary of the evidence
+              <Sparkles className="h-4 w-4 text-accent-fg" aria-hidden="true" />
+              {t('digest.title')}
               {available && (
                 <Badge variant="primary" size="small">
-                  AI-generated
+                  {t('digest.aiGenerated')}
                 </Badge>
               )}
             </h4>
-            <p className="mt-0.5 text-xs text-ink-muted">A factual digest of the files below — not of the report as a whole.</p>
+            <p className="mt-0.5 text-xs text-ink-muted">{t('digest.embeddedDescription')}</p>
           </div>
           {refreshButton}
         </div>
@@ -195,15 +198,15 @@ const DigestPanel = ({ reportId, attachmentCount = null, canReadRun = false, emb
       <Card.Header className="flex items-start justify-between gap-3">
         <div>
           <Card.Title className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-accent-fg" />
-            AI summary of the evidence
+            <Sparkles className="h-4 w-4 text-accent-fg" aria-hidden="true" />
+            {t('digest.title')}
             {available && (
               <Badge variant="primary" size="small">
-                AI-generated
+                {t('digest.aiGenerated')}
               </Badge>
             )}
           </Card.Title>
-          <Card.Description>A factual digest of the evidence files on this report.</Card.Description>
+          <Card.Description>{t('digest.description')}</Card.Description>
         </div>
         {refreshButton}
       </Card.Header>

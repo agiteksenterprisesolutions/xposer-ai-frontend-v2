@@ -31,6 +31,8 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
+import { intlLocale } from '../../utils/locale';
 import Button from '../../components/ui/Button';
 import Skeleton from '../../components/ui/Skeleton';
 import Alert from '../../components/ui/Alert';
@@ -61,15 +63,7 @@ const TYPE_ICONS = {
   number: Hash,
 };
 
-// Shorter than the stored-as hints in utils, to fit a tile.
-const TYPE_TILE_HINTS = {
-  text: 'Their own words',
-  date: 'Stored as a date',
-  choice: 'One of your options',
-  multi_choice: 'Any of your options',
-  boolean: 'Stored as yes or no',
-  number: 'Stored as a number',
-};
+// Shorter than the stored-as hints in utils, to fit a tile: voice.tileHints.<type>.
 
 const fieldClass = (error) =>
   `w-full rounded-lg border bg-subtle px-3.5 py-2.5 text-sm text-ink outline-none transition-colors placeholder:text-ink-subtle focus:ring-2 focus:ring-accent-ring disabled:opacity-50 ${
@@ -90,28 +84,30 @@ const Switch = ({ checked, onChange, label, disabled }) => (
   >
     <span
       className={`inline-block h-4.5 w-4.5 rounded-full bg-surface shadow-sm transition-transform ${
-        checked ? 'translate-x-5.25' : 'translate-x-0.75'
+        checked ? 'translate-x-5.25 rtl:-translate-x-5.25' : 'translate-x-0.75 rtl:-translate-x-0.75'
       }`}
     />
   </button>
 );
 
 /** One stop on the call timeline: a marker, the line down to the next, and its content. */
-const PAGE_TITLE = (
-  <div>
-    <h1 className="text-xl font-bold text-ink">Voice Questions</h1>
-    <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-      What the voice agent finds out on every call, in order. It asks conversationally, in the caller's own
-      language — changes apply from the next call.
-    </p>
-  </div>
-);
+const PageTitle = () => {
+  const { t } = useTranslation('reportTypes');
+  return (
+    <div>
+      <h1 className="text-xl font-bold text-ink">{t('voice.title')}</h1>
+      <p className="mt-1 max-w-2xl text-sm text-ink-muted">{t('voice.intro')}</p>
+    </div>
+  );
+};
 
 /** The page while the question set loads: the call timeline and the editor. */
-const QuestionSetsSkeleton = () => (
+const QuestionSetsSkeleton = () => {
+  const { t } = useTranslation('reportTypes');
+  return (
   <div className="space-y-5 pb-24" aria-busy="true">
     <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-      {PAGE_TITLE}
+      <PageTitle />
       <div className="flex flex-wrap items-center gap-3">
         <Skeleton.Text size="xs" className="w-36" />
         <Skeleton.Button className="w-36" />
@@ -121,7 +117,7 @@ const QuestionSetsSkeleton = () => (
     <div className="grid items-start gap-5 lg:grid-cols-[26rem_minmax(0,1fr)]">
       <section className="overflow-hidden rounded-2xl border border-line bg-surface">
         <header className="flex items-center justify-between gap-3 border-b border-line-subtle px-4 py-3.5">
-          <h2 className="text-sm font-semibold text-ink">The call, in order</h2>
+          <h2 className="text-sm font-semibold text-ink">{t('voice.timelineTitle')}</h2>
           <Skeleton.Text size="xs" className="w-32" />
         </header>
         <div className="p-3.5">
@@ -203,7 +199,8 @@ const QuestionSetsSkeleton = () => (
       </section>
     </div>
   </div>
-);
+  );
+};
 
 const Stop = ({ marker, last = false, children }) => (
   <div className="flex gap-3">
@@ -236,6 +233,7 @@ const Marker = ({ children, tone = 'neutral' }) => {
 // ─── The selected question ────────────────────────────────────────────────
 
 const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChange, onMove, onRemove }) => {
+  const { t } = useTranslation('reportTypes');
   const showOptions = hasOptions(question.type);
 
   // Checked as they type rather than only on save, so a duplicate option is
@@ -252,9 +250,9 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
   const liveOptionError = !showOptions
     ? null
     : filledOptions.length < 2
-      ? 'Add at least two options.'
+      ? t('voice.editor.atLeastTwo')
       : new Set(lowered).size !== lowered.length
-        ? 'Options must be different from each other.'
+        ? t('voice.editor.mustDiffer')
         : null;
 
   const setField = (field, value) => onChange({ ...question, [field]: value });
@@ -275,9 +273,9 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line-subtle px-5 py-4 sm:px-6">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
-            Question {index + 1} of {total}
+            {t('voice.editor.position', { number: index + 1, total })}
           </p>
-          <h2 className="truncate text-base font-bold text-ink">{question.label.trim() || 'New question'}</h2>
+          <h2 className="truncate text-base font-bold text-ink">{question.label.trim() || t('voice.newQuestion')}</h2>
         </div>
         <div className="flex shrink-0 gap-1.5">
           <Button
@@ -285,8 +283,8 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
             size="small"
             disabled={disabled || index === 0}
             onClick={() => onMove(-1)}
-            aria-label="Ask this earlier"
-            title="Ask this earlier"
+            aria-label={t('voice.editor.earlier')}
+            title={t('voice.editor.earlier')}
           >
             <ArrowUp className="h-4 w-4" />
           </Button>
@@ -295,26 +293,26 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
             size="small"
             disabled={disabled || index === total - 1}
             onClick={() => onMove(1)}
-            aria-label="Ask this later"
-            title="Ask this later"
+            aria-label={t('voice.editor.later')}
+            title={t('voice.editor.later')}
           >
             <ArrowDown className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="small" disabled={disabled} onClick={onRemove} className="text-danger-fg">
             <Trash2 className="h-4 w-4" />
-            Remove
+            {t('voice.editor.remove')}
           </Button>
         </div>
       </header>
 
       <div className="space-y-6 p-5 sm:p-6">
         <label className="block space-y-2">
-          <span className="text-sm font-semibold text-ink-secondary">What to find out</span>
+          <span className="text-sm font-semibold text-ink-secondary">{t('voice.editor.whatLabel')}</span>
           <input
             value={question.label}
             disabled={disabled}
             autoFocus={!question.label}
-            placeholder="e.g. When did this happen?"
+            placeholder={t('voice.editor.whatPlaceholder')}
             onChange={(event) => setField('label', event.target.value)}
             aria-invalid={errors.label || errors.key ? 'true' : undefined}
             className={`${fieldClass(errors.label || errors.key)} text-[15px]`}
@@ -322,13 +320,13 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
           <span className={`block text-xs ${errors.label || errors.key ? 'text-danger-fg' : 'text-ink-subtle'}`}>
             {errors.label ||
               errors.key ||
-              'Write it as something to find out, not a form prompt — the agent phrases the question itself, in the caller\'s language.'}
+              t('voice.editor.whatHint')}
           </span>
         </label>
 
         <div className="space-y-2.5">
-          <p className="text-sm font-semibold text-ink-secondary">Kind of answer</p>
-          <div role="radiogroup" aria-label="Kind of answer" className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+          <p id="voice-kind-label" className="text-sm font-semibold text-ink-secondary">{t('voice.editor.kind')}</p>
+          <div role="radiogroup" aria-labelledby="voice-kind-label" className="grid grid-cols-2 gap-2 xl:grid-cols-3">
             {QUESTION_TYPES.map((type) => {
               const Icon = TYPE_ICONS[type.value] || AlignLeft;
               const on = question.type === type.value;
@@ -353,21 +351,18 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[13px] font-semibold text-ink">{type.label}</span>
-                    <span className="block truncate text-[11px] text-ink-subtle">{TYPE_TILE_HINTS[type.value]}</span>
+                    <span className="block truncate text-[11px] text-ink-subtle">{t(`voice.tileHints.${type.value}`)}</span>
                   </span>
                 </button>
               );
             })}
           </div>
-          <p className="text-xs text-ink-subtle">
-            This doesn't change how the agent asks — only how the answer is stored, so reports can be filtered and
-            charted by it.
-          </p>
+          <p className="text-xs text-ink-subtle">{t('voice.editor.kindHint')}</p>
         </div>
 
         {showOptions && (
           <div className="space-y-2.5">
-            <p className="text-sm font-semibold text-ink-secondary">Options</p>
+            <p className="text-sm font-semibold text-ink-secondary">{t('voice.editor.options')}</p>
             <div className="space-y-2">
               {(question.options || []).map((option, optionIndex) => (
                 <div key={optionIndex} className="flex items-center gap-2">
@@ -381,8 +376,8 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
                         setField('options', [...(question.options || []), '']);
                       }
                     }}
-                    placeholder={`Option ${optionIndex + 1}`}
-                    aria-label={`Option ${optionIndex + 1}`}
+                    placeholder={t('voice.editor.option', { number: optionIndex + 1 })}
+                    aria-label={t('voice.editor.option', { number: optionIndex + 1 })}
                     aria-invalid={duplicateOption(option, optionIndex) ? 'true' : undefined}
                     className={fieldClass(duplicateOption(option, optionIndex))}
                   />
@@ -390,7 +385,7 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
                     type="button"
                     disabled={disabled}
                     onClick={() => setField('options', question.options.filter((_, i) => i !== optionIndex))}
-                    aria-label={`Remove option ${optionIndex + 1}`}
+                    aria-label={t('voice.editor.removeOption', { number: optionIndex + 1 })}
                     className="rounded-md p-2 text-ink-muted transition-colors hover:bg-hover hover:text-danger-fg"
                   >
                     <X className="h-4 w-4" />
@@ -404,45 +399,43 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
                 disabled={disabled}
                 onClick={() => setField('options', [...(question.options || []), ''])}
               >
-                Add option
+                {t('voice.editor.addOption')}
               </Button>
             </div>
             {/* Read aloud as natural alternatives — past about six, a call
                 starts to feel like a phone menu. */}
             <p className={`text-xs ${errors.options || liveOptionError ? 'text-danger-fg' : 'text-ink-subtle'}`}>
-              {errors.options || liveOptionError || 'Keep them short and distinct — the agent reads them out.'}
+              {errors.options || liveOptionError || t('voice.editor.optionsHint')}
             </p>
           </div>
         )}
 
         <div className="flex items-center gap-4 rounded-xl bg-subtle px-4 py-3.5">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-ink">Required</p>
+            <p className="text-sm font-semibold text-ink">{t('voice.required')}</p>
             <p className="text-xs text-ink-muted">
-              {question.required !== false
-                ? 'The caller must answer it, or say they would rather not.'
-                : 'The agent asks, but the caller can skip it.'}
+              {question.required !== false ? t('voice.editor.requiredOn') : t('voice.editor.requiredOff')}
             </p>
           </div>
           <Switch
             checked={question.required !== false}
             disabled={disabled}
             onChange={() => setField('required', question.required === false)}
-            label="Required"
+            label={t('voice.required')}
           />
         </div>
 
         <label className="block space-y-2">
           <span className="flex items-baseline justify-between gap-3">
-            <span className="text-sm font-semibold text-ink-secondary">Guidance for the agent</span>
-            <span className="text-xs text-ink-subtle">Optional · never read out</span>
+            <span className="text-sm font-semibold text-ink-secondary">{t('voice.editor.guidance')}</span>
+            <span className="text-xs text-ink-subtle">{t('voice.editor.guidanceNote')}</span>
           </span>
           <textarea
             rows={3}
             value={question.help_text}
             disabled={disabled}
             onChange={(event) => setField('help_text', event.target.value)}
-            placeholder="How the agent should probe, e.g. an estimate is fine."
+            placeholder={t('voice.editor.guidancePlaceholder')}
             className={`${fieldClass(false)} resize-y`}
           />
         </label>
@@ -454,9 +447,10 @@ const QuestionEditor = ({ question, index, total, errors = {}, disabled, onChang
 // ─── The page ─────────────────────────────────────────────────────────────
 
 const QuestionSets = () => {
+  const { t, i18n } = useTranslation('reportTypes');
   useSEO({
-    title: 'Voice Questions',
-    description: 'Choose what the AI agent finds out on every reporting call.',
+    title: t('voice.title'),
+    description: t('voice.seoDescription'),
     noIndex: true,
   });
 
@@ -505,7 +499,7 @@ const QuestionSets = () => {
       setServiceError(null);
     } catch (error) {
       console.error('Error fetching question set:', error);
-      setServiceError(agentErrorMessage(error, 'The question set could not be loaded.'));
+      setServiceError(agentErrorMessage(error, t('voice.loadFailed')));
     } finally {
       setLoading(false);
     }
@@ -582,7 +576,7 @@ const QuestionSets = () => {
     const firstBad = Object.keys(validation)[0];
     if (firstBad !== undefined) {
       setSelected(questions[Number(firstBad)].id);
-      toast.error('Fix the highlighted questions before saving.');
+      toast.error(t('voice.fixFirst'));
       return;
     }
     setSaving(true);
@@ -598,12 +592,12 @@ const QuestionSets = () => {
       // Rows are re-created from the response, so reselect by position.
       if (keepIndex >= 0) setPendingSelectIndex(keepIndex);
       setServiceError(null);
-      toast.success('Saved — the next call uses these questions.');
+      toast.success(t('voice.saved'));
     } catch (error) {
       console.error('Error saving question set:', error);
       // The interceptor toasts 4xx detail; 422 lands here with the specific
       // rule that failed, which is worth keeping on screen.
-      setServiceError(agentErrorMessage(error, 'The question set could not be saved.'));
+      setServiceError(agentErrorMessage(error, t('voice.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -619,7 +613,7 @@ const QuestionSets = () => {
     try {
       applySet(await questionSetsAPI.resetQuestionSet());
       setConfirmReset(false);
-      toast.success('Reset to the default questions.');
+      toast.success(t('voice.resetDone'));
     } catch (error) {
       console.error('Error resetting question set:', error);
     } finally {
@@ -639,17 +633,17 @@ const QuestionSets = () => {
     if (!questionSet?.updated_at) return null;
     const date = new Date(questionSet.updated_at);
     if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-  }, [questionSet?.updated_at]);
+    return date.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
+  }, [questionSet?.updated_at, i18n.resolvedLanguage]);
 
   if (missingOrganization) {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="text-xl font-bold text-ink">Voice Questions</h1>
-          <p className="text-sm text-ink-muted">What the AI agent finds out on every call.</p>
+          <h1 className="text-xl font-bold text-ink">{t('voice.title')}</h1>
+          <p className="text-sm text-ink-muted">{t('voice.shortIntro')}</p>
         </div>
-        <Alert variant="warning" title="No organization on this account">
+        <Alert variant="warning" title={t('voice.noOrg')}>
           {AGENT_ORG_REQUIRED_MESSAGE}
         </Alert>
       </div>
@@ -661,40 +655,41 @@ const QuestionSets = () => {
   return (
     <div className="space-y-5 pb-24">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        {PAGE_TITLE}
+        <PageTitle />
         <div className="flex flex-wrap items-center gap-3">
           {questionSet?.version > 0 && (
             <span className="text-xs text-ink-subtle">
-              Version {questionSet.version}
-              {savedLabel && ` · saved ${savedLabel}`}
+              {savedLabel
+                ? t('voice.versionSaved', { version: questionSet.version, date: savedLabel })
+                : t('voice.version', { version: questionSet.version })}
             </span>
           )}
           <Button
             variant="outline"
             onClick={() => setConfirmReset(true)}
             disabled={saving || isDefaultSet}
-            title={isDefaultSet ? 'Already using the default questions' : 'Discard your questions and use the defaults'}
+            title={isDefaultSet ? t('voice.resetTitleDefault') : t('voice.resetTitle')}
           >
-            Reset to defaults
+            {t('voice.reset')}
           </Button>
         </div>
       </div>
 
       {serviceError && (
-        <Alert variant="error" title="Something went wrong">
+        <Alert variant="error" title={t('voice.errorTitle')}>
           {serviceError}
         </Alert>
       )}
 
       {isDefaultSet && (
-        <Alert variant="info" title="Using the default questions">
-          Edit them and save to make them yours. Nothing here is live for your organization until you do.
+        <Alert variant="info" title={t('voice.defaultsTitle')}>
+          {t('voice.defaultsBody')}
         </Alert>
       )}
 
       {errorCount > 0 && (
-        <Alert variant="error" title={`${errorCount} question${errorCount === 1 ? '' : 's'} need attention`}>
-          Nothing is saved until every question is valid — saving replaces the whole list at once.
+        <Alert variant="error" title={t('voice.needAttention', { count: errorCount })}>
+          {t('voice.needAttentionBody')}
         </Alert>
       )}
 
@@ -702,9 +697,9 @@ const QuestionSets = () => {
         {/* The call, in order */}
         <section className="overflow-hidden rounded-2xl border border-line bg-surface lg:sticky lg:top-20">
           <header className="flex items-center justify-between gap-3 border-b border-line-subtle px-4 py-3.5">
-            <h2 className="text-sm font-semibold text-ink">The call, in order</h2>
+            <h2 className="text-sm font-semibold text-ink">{t('voice.timelineTitle')}</h2>
             <span className="text-xs text-ink-subtle">
-              {questions.length} question{questions.length === 1 ? '' : 's'} · {requiredCount} required
+              {t('voice.questionCount', { count: questions.length })} · {t('voice.requiredCount', { count: requiredCount })}
             </span>
           </header>
 
@@ -726,12 +721,12 @@ const QuestionSets = () => {
                 }`}
               >
                 <span className="block text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
-                  Opening remark
+                  {t('voice.opening.title')}
                 </span>
-                <span className={`mt-0.5 block text-sm ${intro.trim() ? 'text-ink' : 'text-ink-subtle'}`}>
-                  {intro.trim() ? `“${intro.trim()}”` : 'The default opening'}
+                <span className={`mt-0.5 block text-sm ${intro.trim() ? 'text-ink' : 'text-ink-subtle'}`} dir="auto">
+                  {intro.trim() ? t('voice.opening.quoted', { text: intro.trim() }) : t('voice.opening.default')}
                 </span>
-                <span className="mt-0.5 block text-xs text-ink-subtle">Said after the greeting from Voice Profile</span>
+                <span className="mt-0.5 block text-xs text-ink-subtle">{t('voice.opening.afterGreeting')}</span>
               </button>
             </Stop>
 
@@ -773,7 +768,7 @@ const QuestionSets = () => {
                         setDragIndex(index);
                       }}
                       onDragEnd={endDrag}
-                      title="Drag to reorder"
+                      title={t('voice.dragToReorder')}
                       aria-hidden="true"
                       className="mt-0.5 cursor-grab text-ink-subtle hover:text-ink active:cursor-grabbing"
                     >
@@ -786,7 +781,7 @@ const QuestionSets = () => {
                       className="min-w-0 flex-1 text-start"
                     >
                       <span className={`block text-sm font-semibold ${question.label.trim() ? 'text-ink' : 'text-ink-subtle'}`}>
-                        {question.label.trim() || 'New question'}
+                        {question.label.trim() || t('voice.newQuestion')}
                       </span>
                       <span className="mt-1.5 flex flex-wrap gap-1.5">
                         <span className="inline-flex items-center gap-1 rounded-md bg-active px-1.5 py-0.5 text-[11px] font-semibold text-ink-secondary">
@@ -798,11 +793,11 @@ const QuestionSets = () => {
                             question.required !== false ? 'bg-warning-soft text-warning-fg' : 'bg-subtle text-ink-subtle'
                           }`}
                         >
-                          {question.required !== false ? 'Required' : 'Optional'}
+                          {question.required !== false ? t('voice.required') : t('voice.optional')}
                         </span>
                         {question.help_text?.trim() && (
                           <span className="rounded-md bg-info-soft px-1.5 py-0.5 text-[11px] font-semibold text-info-fg">
-                            Has guidance
+                            {t('voice.hasGuidance')}
                           </span>
                         )}
                       </span>
@@ -826,7 +821,7 @@ const QuestionSets = () => {
                 disabled={saving}
                 className="mb-3 flex h-10 w-full items-center rounded-xl border-[1.5px] border-dashed border-line-strong px-3.5 text-[13px] font-semibold text-accent-fg transition-colors hover:border-line-accent hover:bg-accent-soft disabled:opacity-50"
               >
-                Add a question
+                {t('voice.addQuestion')}
               </button>
             </Stop>
 
@@ -841,18 +836,16 @@ const QuestionSets = () => {
             >
               <div className="mb-3 flex items-center gap-3 px-1 py-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-ink">Ask for supporting files</p>
+                  <p className="text-sm font-semibold text-ink">{t('voice.evidence.title')}</p>
                   <p className="text-xs text-ink-subtle">
-                    {askForEvidence
-                      ? 'The agent invites photos, documents or recordings.'
-                      : "The agent won't bring it up; callers can still upload."}
+                    {askForEvidence ? t('voice.evidence.on') : t('voice.evidence.off')}
                   </p>
                 </div>
                 <Switch
                   checked={askForEvidence}
                   disabled={saving}
                   onChange={() => setAskForEvidence((value) => !value)}
-                  label="Ask for supporting files"
+                  label={t('voice.evidence.title')}
                 />
               </div>
             </Stop>
@@ -865,7 +858,7 @@ const QuestionSets = () => {
                 </Marker>
               }
             >
-              <p className="px-1 pt-1.5 text-xs text-ink-subtle">The report is filed and the caller gets their tracking details.</p>
+              <p className="px-1 pt-1.5 text-xs text-ink-subtle">{t('voice.end')}</p>
             </Stop>
           </div>
         </section>
@@ -873,35 +866,30 @@ const QuestionSets = () => {
         {/* Editor */}
         {selected === OPENING || !selectedQuestion ? (
           <section className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">Before the questions</p>
-            <h2 className="text-base font-bold text-ink">Opening remark</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">{t('voice.opening.eyebrow')}</p>
+            <h2 className="text-base font-bold text-ink">{t('voice.opening.title')}</h2>
             <label className="mt-5 block space-y-2">
               <span className="flex items-baseline justify-between gap-3">
-                <span className="text-sm font-semibold text-ink-secondary">What the agent says after its greeting</span>
-                <span className="text-xs text-ink-subtle">Optional</span>
+                <span className="text-sm font-semibold text-ink-secondary">{t('voice.opening.label')}</span>
+                <span className="text-xs text-ink-subtle">{t('voice.optional')}</span>
               </span>
               <input
                 value={intro}
                 disabled={saving}
                 onChange={(event) => setIntro(event.target.value)}
-                placeholder="Leave blank for the default opening"
+                placeholder={t('voice.opening.placeholder')}
                 className={fieldClass(false)}
+                dir="auto"
               />
-              <span className="block text-xs text-ink-subtle">
-                The greeting itself is set on the Voice Profile page. Leave this blank and the agent opens in its own
-                words.
-              </span>
+              <span className="block text-xs text-ink-subtle">{t('voice.opening.hint')}</span>
             </label>
             {questions.length === 0 && (
               <div className="mt-6 rounded-xl border border-dashed border-line-strong px-4 py-8 text-center">
                 <ListChecks className="mx-auto h-6 w-6 text-ink-subtle" />
-                <p className="mt-2 text-sm font-semibold text-ink">No questions</p>
-                <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
-                  This is allowed — the agent simply has a free-form conversation and writes up whatever the caller tells
-                  it. Add a question to steer it.
-                </p>
+                <p className="mt-2 text-sm font-semibold text-ink">{t('voice.empty.title')}</p>
+                <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">{t('voice.empty.body')}</p>
                 <Button className="mt-3" variant="outline" size="small" startIcon={Plus} onClick={addQuestion}>
-                  Add a question
+                  {t('voice.addQuestion')}
                 </Button>
               </div>
             )}
@@ -924,7 +912,7 @@ const QuestionSets = () => {
       {/* Save bar */}
       {dirty && (
         <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:ps-5">
-          <p className="min-w-0 flex-1 text-sm">Unsaved changes · they apply from the next call</p>
+          <p className="min-w-0 flex-1 text-sm">{t('voice.unsaved')}</p>
           <div className="flex shrink-0 gap-2">
             <button
               type="button"
@@ -932,7 +920,7 @@ const QuestionSets = () => {
               disabled={saving}
               className="h-9 rounded-lg border border-canvas/25 px-3.5 text-sm font-medium transition-colors hover:bg-canvas/10 disabled:opacity-50"
             >
-              Discard
+              {t('voice.discard')}
             </button>
             <button
               type="button"
@@ -940,7 +928,7 @@ const QuestionSets = () => {
               disabled={saving}
               className="h-9 rounded-lg bg-canvas px-4 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save questions'}
+              {saving ? t('common:status.saving') : t('voice.save')}
             </button>
           </div>
         </div>
@@ -950,9 +938,9 @@ const QuestionSets = () => {
         isOpen={confirmReset}
         onClose={() => setConfirmReset(false)}
         onConfirm={handleReset}
-        title="Reset to the default questions?"
-        message="Your questions will be discarded and the defaults restored. Reports already submitted keep the answers they were collected with."
-        confirmText="Reset to defaults"
+        title={t('voice.resetConfirmTitle')}
+        message={t('voice.resetConfirmBody')}
+        confirmText={t('voice.reset')}
         destructive
         isLoading={resetting}
       />

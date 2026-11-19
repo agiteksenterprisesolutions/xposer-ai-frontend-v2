@@ -1,6 +1,7 @@
 // src/components/workflows/TerminalNode.jsx
 //
 // The two fixed ends of every workflow: a report arriving, and the run ending.
+import { useTranslation } from 'react-i18next';
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Flag, Inbox } from 'lucide-react';
@@ -18,6 +19,7 @@ const TerminalNode = ({ data }) => {
   const isStart = data.kind === 'start';
   const { horizontal } = data;
   const Icon = isStart ? Inbox : Flag;
+  const { t } = useTranslation('admin');
   return (
     <div
       style={{ width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }}
@@ -25,8 +27,8 @@ const TerminalNode = ({ data }) => {
         isStart ? 'border-line-accent bg-accent-soft text-accent-fg' : 'border-line bg-surface text-ink-muted'
       }`}
     >
-      <Icon className="h-4 w-4" />
-      {isStart ? 'Report submitted' : 'End of workflow'}
+      <Icon className="h-4 w-4" aria-hidden="true" />
+      {isStart ? t('workflow.node.start') : t('workflow.node.end')}
       {isStart ? (
         <Handle
           type="source"

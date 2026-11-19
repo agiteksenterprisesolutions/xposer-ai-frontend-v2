@@ -4,6 +4,7 @@
 // right when the builder runs left to right) is "what happens next"; each
 // outcome the step can reach has its own connector on the right, and an
 // outcome with nothing attached simply continues to the next step.
+import { useTranslation } from 'react-i18next';
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { AlertCircle, ArrowRight, Bot, Flag, Plus, UserRound } from 'lucide-react';
@@ -21,12 +22,13 @@ const dot = (color) => ({
 export const NEW_OUTCOME_PORT = 'new';
 
 const StageNode = ({ data, selected }) => {
+  const { t } = useTranslation('admin');
   const { stage, index, executor, ports, problems, readOnly, horizontal } = data;
   const header = { top: STAGE_HEADER_CENTER };
   const isHuman = stage.executor_type === EXECUTOR_HUMAN;
   const Icon = isHuman ? UserRound : Bot;
   const hasProblems = problems.length > 0;
-  const title = stage.name || executor.label || 'New step';
+  const title = stage.name || executor.label || t('workflow.node.newStep');
 
   const frame = hasProblems
     ? 'border-danger-line'
@@ -65,12 +67,12 @@ const StageNode = ({ data, selected }) => {
         </span>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">
-            Step {index + 1}
+            {t('workflow.node.stepN', { n: index + 1 })}
             <span aria-hidden="true">·</span>
             {executor.kindLabel}
-            {stage.optional && <span className="rounded bg-active px-1 py-px normal-case tracking-normal">Optional</span>}
+            {stage.optional && <span className="rounded bg-active px-1 py-px normal-case tracking-normal">{t('workflow.node.optional')}</span>}
           </p>
-          <p className="truncate text-sm font-semibold text-ink">{title}</p>
+          <p className="truncate text-sm font-semibold text-ink" dir="auto">{title}</p>
           <p className={`truncate text-xs ${executor.warning ? 'text-warning-fg' : 'text-ink-muted'}`}>{executor.detail}</p>
         </div>
         {hasProblems && (
@@ -89,11 +91,11 @@ const StageNode = ({ data, selected }) => {
           {ports.map((port) => (
             <div key={port.id} className="relative flex h-[30px] items-center justify-between gap-2 ps-3.5 pe-5 text-xs">
               <span className={`truncate font-mono ${port.declared ? 'text-ink-secondary' : 'text-danger-fg'}`}>
-                {port.decision || 'unnamed'}
+                {port.decision || t('workflow.node.unnamed')}
               </span>
               <span className={`flex shrink-0 items-center gap-1 ${port.goto ? 'text-accent-fg' : 'text-ink-subtle'}`}>
-                {port.isEnd ? <Flag className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
-                <span className="max-w-[7.5rem] truncate">{port.targetLabel}</span>
+                {port.isEnd ? <Flag className="h-3 w-3" aria-hidden="true" /> : <ArrowRight className="h-3 w-3" aria-hidden="true" style={{ transform: 'none' }} />}
+                <span className="max-w-[7.5rem] truncate" dir="auto">{port.targetLabel}</span>
               </span>
               <Handle
                 type="source"
@@ -106,8 +108,8 @@ const StageNode = ({ data, selected }) => {
           ))}
           {isHuman && !readOnly && (
             <div className="relative flex h-[30px] items-center gap-1.5 ps-3.5 pe-5 text-xs text-ink-subtle">
-              <Plus className="h-3 w-3" />
-              Drag to add an outcome
+              <Plus className="h-3 w-3" aria-hidden="true" />
+              {t('workflow.node.dragOutcome')}
               <Handle type="source" id={NEW_OUTCOME_PORT} position={Position.Right} style={dot('var(--color-line-strong)')} />
             </div>
           )}

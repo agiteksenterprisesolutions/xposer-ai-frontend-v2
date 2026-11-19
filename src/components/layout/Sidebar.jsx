@@ -26,6 +26,7 @@ const Sidebar = ({ onClose }) => {
   const { user } = useAuthStore();
   const { sidebarOpen, mobileSidebarOpen, toggleMobileSidebar } = useUIStore();
   const { t } = useTranslation('reporter');
+  const { t: tc } = useTranslation('common');
 
   if (!user) return null;
   const basePath = user ? `${user?.organization_slug}` : '';
@@ -49,8 +50,13 @@ const Sidebar = ({ onClose }) => {
   // Staff see every page their permissions open, in one menu; anyone who can
   // open no staff page is a reporter account and gets the portal menu.
   // Analytics now lives on the overview dashboard, so it has no entry.
+  // `tour` keeps the English-derived data-tour id the staff tours target;
+  // only the visible name and heading follow the language.
   const staffMenu = staffNavFor(user).map((item) => ({
     ...item,
+    tour: slugify(item.name),
+    name: tc(`staffNav.${item.path}`, { defaultValue: item.name }),
+    section: tc(`staffNav.section.${slugify(item.section)}`, { defaultValue: item.section }),
     path: staffPath(user?.organization_slug, item.path),
   }));
 
@@ -160,22 +166,22 @@ const Sidebar = ({ onClose }) => {
             to={`/${basePath}/help`}
             onClick={handleLinkClick}
             className={({ isActive }) => linkClass(isActive)}
-            title={!showLabels ? 'Help & Support' : undefined}
+            title={!showLabels ? tc('staffNav.help') : undefined}
             data-tour="sidebar-help"
           >
             <HelpCircle className="h-4.5 w-4.5 shrink-0" />
-            {showLabels && <span className={labelClass}>Help &amp; Support</span>}
+            {showLabels && <span className={labelClass}>{tc('staffNav.help')}</span>}
           </NavLink> */}
           {/* {user?.role === "reporter" && (
             <NavLink
               to={`/${basePath}/submit-anonymous`}
               onClick={handleLinkClick}
               className={({ isActive }) => linkClass(isActive)}
-              title={!showLabels ? 'Anonymous Report' : undefined}
+              title={!showLabels ? tc('staffNav.anonymousReport') : undefined}
               data-tour="sidebar-anonymous"
             >
               <Lock className="h-4.5 w-4.5 shrink-0" />
-              {showLabels && <span className={labelClass}>Anonymous Report</span>}
+              {showLabels && <span className={labelClass}>{tc('staffNav.anonymousReport')}</span>}
             </NavLink>
           )} */}
         </div>

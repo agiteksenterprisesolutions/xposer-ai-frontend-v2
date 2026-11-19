@@ -7,26 +7,33 @@
 // The backend computes each deadline's state on read (`sla_status`), so these
 // only display it — no clock arithmetic happens here.
 import { Check, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
+import { intlLocale } from '../../utils/locale';
 import Badge from '../ui/Badge';
 import { parseServerDate } from '../../utils/formatters';
+
+// Labels built outside components are translated when read, not at load.
+const tc = (key, options) => i18n.t(key, { ns: 'cases', ...options });
 
 // ─── Confidentiality ─────────────────────────────────────────────────────
 
 /** Nothing for standard (and for old cases, which have no level). */
 export const TierBadge = ({ tier, size = 'small' }) => {
+  const { t } = useTranslation('cases');
   if (tier === 'confidential') {
     return (
-      <Badge variant="warning" size={size} title="Only staff cleared for confidential cases can see this">
+      <Badge variant="warning" size={size} title={t('tier.confidentialTitle')}>
         <Lock className="h-2.5 w-2.5" aria-hidden="true" />
-        Confidential
+        {t('tier.confidential')}
       </Badge>
     );
   }
   if (tier === 'restricted') {
     return (
-      <Badge variant="danger" size={size} title="Only staff cleared for restricted cases can see this">
+      <Badge variant="danger" size={size} title={t('tier.restrictedTitle')}>
         <Lock className="h-2.5 w-2.5" aria-hidden="true" />
-        Restricted
+        {t('tier.restricted')}
       </Badge>
     );
   }
@@ -35,26 +42,26 @@ export const TierBadge = ({ tier, size = 'small' }) => {
 
 // ─── Deadlines ───────────────────────────────────────────────────────────
 
-export const SLA_CLOCKS = [
-  { key: 'acknowledge', label: 'Acknowledge', short: 'Ack' },
-  { key: 'triage', label: 'Triage', short: 'Triage' },
-];
+// `label` and `short` are getters so they follow the interface language.
+const clockDef = (key) => ({
+  key,
+  get label() { return tc(`sla.clock.${key}`); },
+  get short() { return tc(`sla.clockShort.${key}`); },
+});
+export const SLA_CLOCKS = [clockDef('acknowledge'), clockDef('triage')];
 
 /** The `?sla=` filter values, in the order the filter offers them. */
-export const SLA_FILTERS = [
-  { value: 'breached', label: 'Overdue' },
-  { value: 'due_soon', label: 'Due soon' },
-  { value: 'on_track', label: 'On track' },
-  { value: 'met', label: 'Met' },
-  { value: 'met_late', label: 'Met late' },
-];
+export const SLA_FILTERS = ['breached', 'due_soon', 'on_track', 'met', 'met_late'].map((value) => ({
+  value,
+  get label() { return tc(`sla.filter.${value}`); },
+}));
 
 export const slaClock = (report, key) => report?.sla_status?.[key] || null;
 
 export const formatWhen = (value, { time = true } = {}) => {
   const date = parseServerDate(value);
   if (!date) return '';
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(intlLocale(), {
     day: 'numeric',
     month: 'short',
     ...(date.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}),
@@ -63,25 +70,19 @@ export const formatWhen = (value, { time = true } = {}) => {
 };
 
 const SLA_STATES = {
-  on_track: { variant: 'default', label: (clock) => `Due ${formatWhen(clock.due_at, { time: false })}` },
-  due_soon: { variant: 'warning', label: () => 'Due soon' },
-  breached: { variant: 'danger', label: () => 'Overdue' },
-  met: { variant: 'success', label: () => 'Met', icon: true },
-  met_late: { variant: 'default', label: () => 'Late' },
-  stopped: { variant: 'default', label: () => 'Not recorded' },
+  on_track: { variant: 'default', label: (clock) => tc('sla.state.dueOn', { date: formatWhen(clock.due_at, { time: false }) }) },
+  due_soon: { variant: 'warning', label: () => tc('sla.state.due_soon') },
+  breached: { variant: 'danger', label: () => tc('sla.state.breached') },
+  met: { variant: 'success', label: () => tc('sla.state.met'), icon: true },
+  met_late: { variant: 'default', label: () => tc('sla.state.met_late') },
+  stopped: { variant: 'default', label: () => tc('sla.state.stopped') },
 };
 
-const SLA_EXPLAIN = {
-  on_track: 'Open, due in more than 24 hours',
-  due_soon: 'Open, due within 24 hours',
-  breached: 'Open, and the deadline has passed',
-  met: 'Done on time',
-  met_late: 'Done after the deadline',
-  stopped: 'Resolved or closed without this step being recorded',
-};
+const slaExplain = (state) => tc(`sla.explain.${state}`);
 
 /** One clock's state. Nothing when the type sets no deadline. */
 export const SlaBadge = ({ clock, prefix, size = 'small' }) => {
+  useTranslation('cases'); // re-render on a language change
   const state = SLA_STATES[clock?.state];
   if (!state) return null;
   const due = formatWhen(clock.due_at);
@@ -89,7 +90,7 @@ export const SlaBadge = ({ clock, prefix, size = 'small' }) => {
     <Badge
       variant={state.variant}
       size={size}
-      title={`${SLA_EXPLAIN[clock.state]}${due ? ` · due ${due}` : ''}`}
+      title={due ? tc('sla.explainDue', { explain: slaExplain(clock.state), due }) : slaExplain(clock.state)}
     >
       {state.icon && <Check className="h-2.5 w-2.5" aria-hidden="true" />}
       {prefix && <span className="font-medium">{prefix}</span>}
@@ -132,20 +133,21 @@ export const ownerName = (report, nameFor = (code) => code) =>
 
 /** The assignee, else the role the case was routed to; "auto" when routing chose. */
 export const OwnerCell = ({ report, nameFor }) => {
+  const { t } = useTranslation('cases');
   const name = ownerName(report, nameFor);
-  if (!name) return <span className="text-ink-subtle">Unassigned</span>;
+  if (!name) return <span className="text-ink-subtle">{t('owner.unassigned')}</span>;
   const waiting = !report?.assigned_to && report?.routed_to_role;
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={waiting ? 'text-ink-muted' : ''} title={waiting ? 'Waiting for someone in this role' : undefined}>
+      <span className={waiting ? 'text-ink-muted' : ''} title={waiting ? t('owner.waitingRole') : undefined}>
         {name}
       </span>
       {isAutoAssigned(report) && (
         <span
           className="rounded bg-active px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-ink-muted"
-          title="Assigned automatically from the report type's owner role"
+          title={t('owner.autoTitle')}
         >
-          auto
+          {t('owner.auto')}
         </span>
       )}
     </span>
@@ -154,16 +156,20 @@ export const OwnerCell = ({ report, nameFor }) => {
 
 // ─── Sensitive answers ───────────────────────────────────────────────────
 
-export const MASKED_HINT = 'Hidden: you need the View sensitive answers permission.';
+export const maskedHint = () => tc('masked.hint');
 
 /** Answer keys the server hid from this viewer. */
 export const maskedKeys = (report) => new Set(Array.isArray(report?.masked_fields) ? report.masked_fields : []);
 
 /** A hidden answer: "••••" or "••••1234", with a lock and the reason on hover. */
-export const MaskedValue = ({ value }) => (
-  <span className="inline-flex items-center gap-1.5 font-mono text-sm text-ink-muted" title={MASKED_HINT}>
-    <Lock className="h-3.5 w-3.5 shrink-0 text-ink-subtle" aria-hidden="true" />
-    {typeof value === 'string' && value ? value : '••••'}
-    <span className="sr-only">{MASKED_HINT}</span>
-  </span>
-);
+export const MaskedValue = ({ value }) => {
+  const { t } = useTranslation('cases');
+  const hint = t('masked.hint');
+  return (
+    <span className="inline-flex items-center gap-1.5 font-mono text-sm text-ink-muted" title={hint}>
+      <Lock className="h-3.5 w-3.5 shrink-0 text-ink-subtle" aria-hidden="true" />
+      <span dir="ltr">{typeof value === 'string' && value ? value : '••••'}</span>
+      <span className="sr-only">{hint}</span>
+    </span>
+  );
+};

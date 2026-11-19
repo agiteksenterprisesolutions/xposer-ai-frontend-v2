@@ -1,5 +1,6 @@
 // src/components/forms/ReportTypeBuilder.jsx
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Plus,
   Trash2,
@@ -86,6 +87,7 @@ const ReportTypeBuilder = ({
   onEdit,
   onBack,
 }) => {
+  const { t } = useTranslation('builder');
   const [formData, setFormData] = useState(() => {
     const governance = Object.fromEntries(
       Object.entries(GOVERNANCE_DEFAULTS).map(([key, fallback]) => [key, initialData?.[key] ?? fallback]),
@@ -1764,7 +1766,7 @@ const ReportTypeBuilder = ({
           <div className="bg-sunken px-4 sm:px-8 py-4 sm:py-6 text-ink">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold">{formData.name || 'Untitled Report'}</h3>
+                <h3 className="text-xl font-bold">{formData.name || t('editor.untitledType')}</h3>
                 {formData.description && (
                   <p className="text-ink-subtle mt-1 text-sm">{formData.description}</p>
                 )}
@@ -1772,15 +1774,15 @@ const ReportTypeBuilder = ({
                   <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
                     {[
                       formData.code && { label: formData.code, mono: true },
-                      formData.status && formData.status !== 'active' && { label: formData.status === 'draft' ? 'Draft' : 'Inactive' },
+                      formData.status && formData.status !== 'active' && { label: formData.status === 'draft' ? t('editor.pill.draft') : t('editor.pill.inactive') },
                       formData.category && { label: formData.category },
                       formData.confidentiality_tier &&
                         formData.confidentiality_tier !== 'standard' && {
-                          label: formData.confidentiality_tier === 'restricted' ? 'Restricted' : 'Confidential',
+                          label: formData.confidentiality_tier === 'restricted' ? t('tiers.restricted.label') : t('tiers.confidential.label'),
                         },
-                      formData.allows_anonymous === false && { label: 'No anonymous reports' },
-                      formData.ack_sla_days && { label: `Acknowledge in ${formData.ack_sla_days}d` },
-                      formData.triage_sla_days && { label: `Triage in ${formData.triage_sla_days}d` },
+                      formData.allows_anonymous === false && { label: t('legacy.noAnonymous') },
+                      formData.ack_sla_days && { label: t('legacy.ackIn', { count: Number(formData.ack_sla_days) }) },
+                      formData.triage_sla_days && { label: t('legacy.triageIn', { count: Number(formData.triage_sla_days) }) },
                     ]
                       .filter(Boolean)
                       .map((chip) => (
@@ -1801,8 +1803,8 @@ const ReportTypeBuilder = ({
                     onClick={onEdit}
                     className="flex items-center gap-2 px-4 py-2 bg-accent text-on-accent hover:bg-accent-hover rounded-lg text-sm font-medium transition-all"
                   >
-                    <Settings className="w-4 h-4" />
-                    Edit
+                    <Settings className="w-4 h-4" aria-hidden="true" />
+                    {t('common:actions.edit')}
                   </button>
                 )
               ) : (
@@ -1812,14 +1814,14 @@ const ReportTypeBuilder = ({
                   className="flex items-center gap-2 px-4 py-2 bg-subtle hover:bg-subtle rounded-lg text-sm font-medium transition-all"
                 >
                   <Settings className="w-4 h-4" />
-                  Edit Form
+                  {t('legacy.editForm')}
                 </button>
               )}
             </div>
           </div>
 
           {/* Preview Content */}
-          <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
+          <div className="p-4 sm:p-8 flex flex-col gap-6 sm:gap-8">
             {formData.sections.map((section, sectionIndex) => (
               <div key={section.id} className="relative">
                 {sectionIndex > 0 && <div className="absolute -top-4 start-0 end-0 h-px bg-active" />}
@@ -1832,7 +1834,7 @@ const ReportTypeBuilder = ({
                     <h4 className="text-lg font-bold text-ink">{section.title}</h4>
                     {section.conditional_logic && section.conditional_logic.rules.length > 0 && (
                       <span className="bg-warning-soft text-warning-fg px-2 py-1 rounded-full text-xs font-medium">
-                        Conditional
+                        {t('legacy.conditional')}
                       </span>
                     )}
                   </div>
@@ -1841,11 +1843,11 @@ const ReportTypeBuilder = ({
                   )}
                 </div>
 
-                <div className="space-y-5 ms-11">
+                <div className="flex flex-col gap-5 ms-11">
                   {section.questions.map((question) => {
                     const normalizedType = normalizeQuestionType(question.type);
                     return (
-                      <div key={question.id} className="space-y-2">
+                      <div key={question.id} className="flex flex-col gap-2">
                         <div className="flex items-start justify-between">
                           <label htmlFor={`preview-${question.id}`} className="block text-sm font-medium text-ink">
                             {question.label}
@@ -1853,7 +1855,7 @@ const ReportTypeBuilder = ({
                           </label>
                           {question.conditional_logic && question.conditional_logic.rules.length > 0 && (
                             <span className="bg-accent-soft text-accent-fg px-2 py-0.5 rounded text-xs font-medium">
-                              Conditional
+                              {t('legacy.conditional')}
                             </span>
                           )}
                         </div>
@@ -1888,7 +1890,7 @@ const ReportTypeBuilder = ({
                             className="w-full border border-line-strong rounded-lg px-4 py-2.5 text-sm bg-subtle"
                             disabled
                           >
-                            <option value="">{question.placeholder || 'Select an option'}</option>
+                            <option value="">{question.placeholder || t('common:select.placeholder')}</option>
                             {question.options?.map((option, i) => (
                               <option key={i} value={normalizeOption(option).value}>{normalizeOption(option).label}</option>
                             ))}
@@ -1910,11 +1912,11 @@ const ReportTypeBuilder = ({
                           <div className="flex gap-6">
                             <label className="flex items-center gap-2">
                               <div className="w-4 h-4 rounded-full border border-line-strong bg-surface" />
-                              <span className="text-sm text-ink-secondary">Yes</span>
+                              <span className="text-sm text-ink-secondary">{t('logic.yes')}</span>
                             </label>
                             <label className="flex items-center gap-2">
                               <div className="w-4 h-4 rounded-full border border-line-strong bg-surface" />
-                              <span className="text-sm text-ink-secondary">No</span>
+                              <span className="text-sm text-ink-secondary">{t('logic.no')}</span>
                             </label>
                           </div>
                         )}
@@ -1991,7 +1993,7 @@ const ReportTypeBuilder = ({
                         {normalizedType === 'file' && (
                           <div className="border-2 border-dashed border-line-strong rounded-lg p-6 text-center bg-subtle">
                             <Upload className="w-8 h-8 text-ink-subtle mx-auto mb-2" />
-                            <p className="text-sm text-ink-muted">Click to upload or drag and drop</p>
+                            <p className="text-sm text-ink-muted">{t('legacy.uploadHint')}</p>
                           </div>
                         )}
                       </div>
@@ -2004,7 +2006,7 @@ const ReportTypeBuilder = ({
             {formData.sections.length === 0 && (
               <div className="text-center py-12 text-ink-muted">
                 <LayoutTemplate className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No sections added yet</p>
+                <p>{t('legacy.noSections')}</p>
               </div>
             )}
           </div>
@@ -2012,10 +2014,10 @@ const ReportTypeBuilder = ({
           {/* Preview Footer */}
           <div className="bg-subtle px-4 sm:px-8 py-4 border-t border-line flex justify-end gap-3">
             <button className="px-4 py-2 text-ink-secondary font-medium hover:bg-active rounded-lg transition-all" disabled>
-              Cancel
+              {t('common:actions.cancel')}
             </button>
             <button type="button" disabled className="px-6 py-2 bg-sunken text-ink font-medium rounded-lg opacity-50 cursor-not-allowed">
-              Submit Report
+              {t('preview.submitReport')}
             </button>
           </div>
         </div>
@@ -2035,10 +2037,10 @@ const ReportTypeBuilder = ({
               </div>
               <div className="min-w-0">
                 <h1 className="text-base sm:text-xl font-bold text-ink truncate">
-                  {readOnly ? 'View Report Type' : initialData ? 'Edit Report Type' : 'New Report Type'}
+                  {readOnly ? t('legacy.viewTitle') : initialData ? t('legacy.editTitle') : t('editor.newType')}
                 </h1>
                 <p className="text-xs text-ink-muted hidden sm:block">
-                  {formData.name || 'Untitled'} • {formData.sections.length} section{formData.sections.length !== 1 ? 's' : ''}
+                  {formData.name || t('editor.untitledType')} • {t('legacy.sectionCount', { count: formData.sections.length })}
                 </p>
               </div>
             </div>
@@ -2053,7 +2055,7 @@ const ReportTypeBuilder = ({
                     onClick={onBack || (() => window.history.back())}
                     className="px-3 sm:px-4 py-2 text-sm font-medium text-ink-secondary hover:bg-active rounded-lg transition-all"
                   >
-                    Back
+                    {t('common:actions.back')}
                   </button>
                   {onEdit && (
                     <button
@@ -2061,9 +2063,9 @@ const ReportTypeBuilder = ({
                       onClick={onEdit}
                       className="flex items-center gap-2 px-3 sm:px-5 py-2 bg-accent text-on-accent text-sm font-medium rounded-lg shadow-md hover:bg-accent-hover hover:shadow-lg transition-all whitespace-nowrap"
                     >
-                      <Settings className="w-4 h-4" />
-                      <span className="hidden sm:inline">Edit Report Type</span>
-                      <span className="sm:hidden">Edit</span>
+                      <Settings className="w-4 h-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">{t('legacy.editTitle')}</span>
+                      <span className="sm:hidden">{t('common:actions.edit')}</span>
                     </button>
                   )}
                 </>

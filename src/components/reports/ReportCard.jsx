@@ -14,6 +14,7 @@ import Skeleton from '../ui/Skeleton';
 import Badge, { StatusBadge, PriorityBadge } from '../ui/Badge';
 import Button from '../ui/Button';
 import { formatDate, truncateText } from '../../utils/formatters';
+import { useTranslation } from 'react-i18next';
 
 const ReportCard = ({
   report,
@@ -22,6 +23,7 @@ const ReportCard = ({
   className = '',
   compact = false,
 }) => {
+  const { t } = useTranslation('dashboards');
   const {
     id,
     report_number,
@@ -49,7 +51,7 @@ const ReportCard = ({
     if (assigned_to?.username) {
       return assigned_to.username;
     }
-    return 'Unassigned';
+    return t('card.unassigned');
   };
 
   if (compact) {
@@ -61,18 +63,18 @@ const ReportCard = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 mb-1">
+            <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-mono text-ink-muted">
                 #{report_number}
               </span>
               <StatusBadge status={status} />
               <PriorityBadge priority={priority} />
             </div>
-            <h4 className="text-sm font-medium text-ink truncate">
+            <h4 className="text-sm font-medium text-ink truncate" dir="auto">
               {title}
             </h4>
           </div>
-          <ChevronRight className="w-5 h-5 text-ink-subtle" />
+          <ChevronRight className="w-5 h-5 text-ink-subtle" aria-hidden="true" />
         </div>
       </Card>
     );
@@ -82,7 +84,7 @@ const ReportCard = ({
     <Card className={`${className}`} hover>
       <div className="flex flex-col sm:flex-row sm:items-start justify-between">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2 mb-2">
+          <div className="flex items-center gap-2 mb-2">
             <span className="text-sm font-mono font-semibold text-accent-fg">
               #{report_number}
             </span>
@@ -90,11 +92,11 @@ const ReportCard = ({
             <PriorityBadge priority={priority} />
           </div>
           
-          <h3 className="text-lg font-semibold text-ink mb-2">
+          <h3 className="text-lg font-semibold text-ink mb-2" dir="auto">
             {title}
           </h3>
           
-          <p className="text-ink-muted text-sm mb-4 line-clamp-2">
+          <p className="text-ink-muted text-sm mb-4 line-clamp-2" dir="auto">
             {truncateText(description, 150)}
           </p>
           
@@ -106,7 +108,7 @@ const ReportCard = ({
             ))}
             {tags.length > 3 && (
               <Badge variant="default" size="small">
-                +{tags.length - 3} more
+                {t('card.moreTags', { count: tags.length - 3 })}
               </Badge>
             )}
           </div>
@@ -124,20 +126,20 @@ const ReportCard = ({
             
             <div className="flex items-center">
               <MessageSquare className="w-4 h-4 me-1" />
-              {messages_count} messages
+              {t('card.messages', { count: messages_count })}
             </div>
           </div>
         </div>
         
         {showActions && (
-          <div className="mt-4 sm:mt-0 sm:ms-4 flex flex-col space-y-2">
+          <div className="mt-4 sm:mt-0 sm:ms-4 flex flex-col gap-2">
             <Button
               variant="secondary"
               size="small"
               onClick={handleClick}
               startIcon={Eye}
             >
-              View Details
+              {t('card.viewDetails')}
             </Button>
             {status === 'pending' && (
               <Button
@@ -148,7 +150,7 @@ const ReportCard = ({
                   // Handle assign action
                 }}
               >
-                Assign to Me
+                {t('card.assignToMe')}
               </Button>
             )}
           </div>
@@ -198,7 +200,7 @@ export const ReportGridCard = ({ report, onClick }) => {
           </span>
         </div>
         
-        <h4 className="text-sm font-semibold text-ink mb-2 line-clamp-2">
+        <h4 className="text-sm font-semibold text-ink mb-2 line-clamp-2" dir="auto">
           {title}
         </h4>
         
@@ -215,6 +217,7 @@ export const ReportGridCard = ({ report, onClick }) => {
 
 // Minimal card for dashboard
 export const ReportMiniCard = ({ report, onClick }) => {
+  const { t } = useTranslation('dashboards');
   const { report_number, title, status, priority } = report;
 
   return (
@@ -224,7 +227,7 @@ export const ReportMiniCard = ({ report, onClick }) => {
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-1">
+          <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono text-ink-muted">
               #{report_number}
             </span>
@@ -233,19 +236,19 @@ export const ReportMiniCard = ({ report, onClick }) => {
               status === 'in_progress' ? 'primary' :
               status === 'resolved' ? 'success' : 'default'
             }>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {t(`common:reportStatus.${status}`, { defaultValue: status.charAt(0).toUpperCase() + status.slice(1) })}
             </Badge>
           </div>
-          <h5 className="text-sm font-medium text-ink line-clamp-2">
+          <h5 className="text-sm font-medium text-ink line-clamp-2" dir="auto">
             {title}
           </h5>
         </div>
         {priority === 'critical' && (
-          <AlertCircle className="w-4 h-4 text-danger-fg shrink-0" />
+          <AlertCircle className="w-4 h-4 text-danger-fg shrink-0" role="img" aria-label={t('common:priority.critical')} />
         )}
       </div>
     </div>
   );
 };
 
-export default ReportCard;
+export default ReportCard;

@@ -24,25 +24,27 @@ import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
 import { ACCESS } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
+import { useTranslation } from 'react-i18next';
 
 // Only Member and Role are sortable: Workload, Avg. Time and Status are still
 // hardcoded placeholders in the row markup, so ordering by them would sort
 // every row by the same constant and imply data that isn't there yet.
+// Labels are filled in by the page, in the interface language.
 const SORT_COLUMNS = {
   member: {
-    label: 'Member',
     defaultOrder: 'asc',
     value: (m) => `${m.last_name || ''} ${m.first_name || ''} ${m.email || ''}`.trim().toLowerCase(),
   },
   // Roles have no rank any more; the page swaps in their display names.
-  role: { label: 'Role', defaultOrder: 'asc', value: byText('role') },
-  email: { label: 'Email', defaultOrder: 'asc', value: byText('email') },
+  role: { defaultOrder: 'asc', value: byText('role') },
+  email: { defaultOrder: 'asc', value: byText('email') },
 };
 
 const ComplianceTeam = () => {
+  const { t } = useTranslation('dashboards');
   useSEO({
-    title: 'Team',
-    description: 'Members of your compliance team, their roles, and current case load.',
+    title: t('team.seo.title'),
+    description: t('team.seo.description'),
     noIndex: true,
   });
   const can = useCan();
@@ -68,7 +70,7 @@ const ComplianceTeam = () => {
 
         // Mock stats
         setStats({
-          avg_resolution: '4.2 days',
+          avg_resolution: 4.2,
           total_active: 12,
           cases_resolved: 45
         });
@@ -82,9 +84,10 @@ const ComplianceTeam = () => {
   }, []);
 
   const sortColumns = useMemo(() => ({
-    ...SORT_COLUMNS,
-    role: { ...SORT_COLUMNS.role, value: (member) => nameFor(member.role).toLowerCase() },
-  }), [nameFor]);
+    member: { ...SORT_COLUMNS.member, label: t('team.columns.member') },
+    role: { ...SORT_COLUMNS.role, label: t('team.columns.role'), value: (member) => nameFor(member.role).toLowerCase() },
+    email: { ...SORT_COLUMNS.email, label: t('team.columns.email') },
+  }), [nameFor, t]);
   const sort = useTableSort(team, sortColumns, { defaultSortBy: 'member' });
   const { sortedRows: sortedTeam, getHeaderProps } = sort;
 
@@ -92,40 +95,40 @@ const ComplianceTeam = () => {
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-accent! text-on-accent border-none text-start">
-          <div className="flex items-center space-x-3 opacity-80">
+          <div className="flex items-center gap-3 opacity-80">
             <TrendingUp className="h-5 w-5" />
-            <span className="text-sm font-medium">Avg. Resolution Time</span>
+            <span className="text-sm font-medium">{t('team.stats.avgResolution')}</span>
           </div>
           {stats ? (
-            <p className="text-3xl font-bold mt-2">{stats.avg_resolution}</p>
+            <p className="text-3xl font-bold mt-2">{t('team.days', { count: stats.avg_resolution })}</p>
           ) : (
             <Skeleton.Text size="3xl" className="mt-2 w-24" />
           )}
-          <p className="text-xs mt-4 opacity-70 text-start">↓ 12% from last month</p>
+          <p className="text-xs mt-4 opacity-70 text-start">{t('team.stats.trend', { percent: 12 })}</p>
         </Card>
         <Card>
-          <div className="flex items-center space-x-3 text-ink-muted">
+          <div className="flex items-center gap-3 text-ink-muted">
             <Activity className="h-5 w-5" />
-            <span className="text-sm font-medium">Active Investigations</span>
+            <span className="text-sm font-medium">{t('team.stats.active')}</span>
           </div>
           {stats ? (
             <p className="text-3xl font-bold text-ink mt-2">{stats.total_active}</p>
           ) : (
             <Skeleton.Text size="3xl" className="mt-2 w-24" />
           )}
-          <p className="text-xs text-success-fg mt-4 font-medium text-start">Optimal Distribution</p>
+          <p className="text-xs text-success-fg mt-4 font-medium text-start">{t('team.stats.optimal')}</p>
         </Card>
         <Card>
-          <div className="flex items-center space-x-3 text-ink-muted">
+          <div className="flex items-center gap-3 text-ink-muted">
             <Award className="h-5 w-5" />
-            <span className="text-sm font-medium">Cases Resolved (YTD)</span>
+            <span className="text-sm font-medium">{t('team.stats.resolved')}</span>
           </div>
           {stats ? (
             <p className="text-3xl font-bold text-ink mt-2">{stats.cases_resolved}</p>
           ) : (
             <Skeleton.Text size="3xl" className="mt-2 w-24" />
           )}
-          <p className="text-xs text-ink-muted mt-4 leading-relaxed text-start">System-wide resolution count</p>
+          <p className="text-xs text-ink-muted mt-4 leading-relaxed text-start">{t('team.stats.resolvedHint')}</p>
         </Card>
       </div>
 
@@ -133,24 +136,24 @@ const ComplianceTeam = () => {
         <Card.Header className="p-4 sm:p-6 border-b border-line-subtle flex flex-wrap items-center justify-between gap-3">
           <Card.Title className="flex items-center">
             <Users className="h-5 w-5 me-2 text-accent-fg" />
-            Compliance Personnel
+            {t('team.title')}
           </Card.Title>
           <div className="flex flex-wrap items-center gap-2">
             <TableSortControl {...sort} id="team" className="shrink-0" />
             {can(ACCESS.roles) && (
-              <Button variant="secondary" size="small" to={staffPath(orgSlug, 'roles')}>Manage Roles</Button>
+              <Button variant="secondary" size="small" to={staffPath(orgSlug, 'roles')}>{t('team.manageRoles')}</Button>
             )}
           </div>
         </Card.Header>
         <Table>
           <Table.Header>
             <Table.Row hover={false}>
-              <Table.Head {...getHeaderProps('member')}>Member</Table.Head>
-              <Table.Head {...getHeaderProps('role')}>Role</Table.Head>
-              <Table.Head>Workload</Table.Head>
-              <Table.Head>Avg. Time</Table.Head>
-              <Table.Head>Status</Table.Head>
-              <Table.Head></Table.Head>
+              <Table.Head {...getHeaderProps('member')}>{t('team.columns.member')}</Table.Head>
+              <Table.Head {...getHeaderProps('role')}>{t('team.columns.role')}</Table.Head>
+              <Table.Head>{t('team.columns.workload')}</Table.Head>
+              <Table.Head>{t('team.columns.avgTime')}</Table.Head>
+              <Table.Head>{t('team.columns.status')}</Table.Head>
+              <Table.Head><span className="sr-only">{t('team.columns.actions')}</span></Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -158,7 +161,7 @@ const ComplianceTeam = () => {
               <TableLoading
                 rows={8}
                 cells={[
-                  <div key="m" className="flex items-center space-x-3">
+                  <div key="m" className="flex items-center gap-3">
                     <Skeleton.Circle />
                     <div className="space-y-0.5">
                       <Skeleton.Text className="w-28" />
@@ -176,12 +179,12 @@ const ComplianceTeam = () => {
                 ]}
               />
             ) : sortedTeam.length === 0 ? (
-              <Table.Empty message="No team members found" description="Personnel will appear here once assigned roles." icon={Users} />
+              <Table.Empty message={t('team.emptyTitle')} description={t('team.emptyDescription')} icon={Users} />
             ) : (
               sortedTeam.map((member) => (
                 <Table.Row key={member.id}>
                   <Table.Cell>
-                    <div className="flex items-center space-x-3 text-start">
+                    <div className="flex items-center gap-3 text-start">
                       <div className="h-10 w-10 rounded-full bg-active flex items-center justify-center text-ink-muted font-bold uppercase shrink-0">
                         {member.first_name?.charAt(0)}{member.last_name?.charAt(0)}
                       </div>
@@ -197,9 +200,9 @@ const ComplianceTeam = () => {
                     <Badge variant="purple" size="small">{nameFor(member.role)}</Badge>
                   </Table.Cell>
                   <Table.Cell>
-                    <div className="flex flex-col space-y-1 w-24">
+                    <div className="flex flex-col gap-1 w-24">
                       <div className="flex justify-between text-[10px] text-ink-muted">
-                        <span>3 Active</span>
+                        <span>{t('team.activeCount', { count: 3 })}</span>
                         <span>75%</span>
                       </div>
                       <div className="w-full bg-active rounded-full h-1">
@@ -208,17 +211,17 @@ const ComplianceTeam = () => {
                     </div>
                   </Table.Cell>
                   <Table.Cell className="text-sm text-ink-muted font-medium">
-                    3.8 days
+                    {t('team.days', { count: 3.8 })}
                   </Table.Cell>
                   <Table.Cell>
                     <div className="flex items-center text-xs text-success-fg font-medium whitespace-nowrap">
                       <span className="h-1.5 w-1.5 rounded-full bg-success-solid me-2" />
-                      Online
+                      {t('team.online')}
                     </div>
                   </Table.Cell>
                   <Table.Cell className="text-end">
-                    <Button variant="ghost" size="small">
-                      <ChevronRight className="h-4 w-4" />
+                    <Button variant="ghost" size="small" aria-label={t('team.openMember', { name: `${member.first_name || ''} ${member.last_name || ''}`.trim() || member.email })}>
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </Table.Cell>
                 </Table.Row>

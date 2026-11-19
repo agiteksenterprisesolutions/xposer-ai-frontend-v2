@@ -6,6 +6,7 @@
 // Citations are rendered according to their verification flags. Those flags
 // are the whole point of the feature: an unverified citation reads exactly
 // like a real quote, so rendering them unstyled would defeat it.
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -28,10 +29,14 @@ import { AGENT_LABELS, DECISION_LABELS, agentErrorMessage, citationVerdict, isMa
 import { agentRunsAPI } from '../../api';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { parseServerDate } from '../../utils/formatters';
+import { intlLocale } from '../../utils/locale';
+import i18n from '../../i18n';
+
+const tr = (key, options) => i18n.t(key, { ns: 'agents', ...options });
 
 const VERDICT_ICONS = { success: ShieldCheck, warning: ShieldAlert, danger: ShieldX };
 
-const agentLabel = (type) => AGENT_LABELS[type] || (type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Agent');
+const agentLabel = (type) => AGENT_LABELS[type] || (type ? type.charAt(0).toUpperCase() + type.slice(1) : tr('run.agent'));
 
 export const AgentMark = ({ type, manual = false, size = 'md' }) => {
   const Icon = manual ? UserCog : type === 'summarizer' ? ScrollText : Bot;
@@ -54,18 +59,19 @@ const since = (start, value) => {
   const b = parseServerDate(value);
   if (!a || !b) return null;
   const seconds = Math.max(0, Math.round((b - a) / 1000));
-  if (seconds < 60) return `+${seconds}s`;
-  return `+${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`;
+  if (seconds < 60) return tr('run.sinceSeconds', { s: seconds });
+  return tr('run.sinceMinutes', { m: Math.floor(seconds / 60), s: String(seconds % 60).padStart(2, '0') });
 };
 
 const formatWhen = (value) => {
   const date = parseServerDate(value);
   return date
-    ? date.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    ? date.toLocaleString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '—';
 };
 
 const Citation = ({ citation }) => {
+  const { t } = useTranslation('agents');
   const [open, setOpen] = useState(false);
   const verdict = citationVerdict(citation);
   const Icon = VERDICT_ICONS[verdict.variant] || ShieldCheck;
@@ -82,9 +88,9 @@ const Citation = ({ citation }) => {
           <Icon className="h-3 w-3" />
           {verdict.label}
         </Badge>
-        {citation.source && <span className="min-w-0 truncate text-[11px] text-ink-muted">{citation.source}</span>}
+        {citation.source && <span className="min-w-0 truncate text-[11px] text-ink-muted" dir="auto">{citation.source}</span>}
       </div>
-      {citation.quote && <p className="mt-2 text-sm italic leading-relaxed text-ink">“{citation.quote}”</p>}
+      {citation.quote && <p className="mt-2 text-sm italic leading-relaxed text-ink" dir="auto">“{citation.quote}”</p>}
       {verdict.variant !== 'success' && <p className="mt-2 text-[11px] font-medium text-ink-muted">{verdict.note}</p>}
       {(citation.application || citation.requirement || citation.assessment) && (
         <>
@@ -94,20 +100,20 @@ const Citation = ({ citation }) => {
             aria-expanded={open}
             className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-link hover:underline"
           >
-            Why it applies
+            {t('run.whyApplies')}
             <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
           {open && (
             <div className="mt-2 space-y-1.5 text-xs leading-relaxed text-ink-secondary">
               {citation.requirement && (
                 <p>
-                  <span className="font-semibold text-ink">What the policy says: </span>
+                  <span className="font-semibold text-ink">{t('run.policySays')} </span>
                   {citation.requirement}
                 </p>
               )}
               {(citation.application || citation.assessment) && (
                 <p>
-                  <span className="font-semibold text-ink">How it applies here: </span>
+                  <span className="font-semibold text-ink">{t('run.appliesHere')} </span>
                   {citation.application || citation.assessment}
                 </p>
               )}
@@ -120,6 +126,7 @@ const Citation = ({ citation }) => {
 };
 
 const Step = ({ action, start, last }) => {
+  const { t } = useTranslation('agents');
   const manual = isManualAction(action.action);
   const decision = action.decision ? DECISION_LABELS[action.decision] : null;
   const consulted = action.kb_documents?.length
@@ -140,10 +147,10 @@ const Step = ({ action, start, last }) => {
         </div>
         {manual ? (
           <Badge variant="warning" size="small">
-            Handed to a person
+            {t('run.handedToPerson')}
           </Badge>
         ) : (
-          action.action && <p className="text-sm leading-relaxed text-ink-secondary">{action.action}</p>
+          action.action && <p className="text-sm leading-relaxed text-ink-secondary" dir="auto">{action.action}</p>
         )}
         {(decision || action.decision || action.priority) && (
           <div className="flex flex-wrap gap-1.5">
@@ -159,7 +166,7 @@ const Step = ({ action, start, last }) => {
           </div>
         )}
         {action.note && (
-          <p className="rounded-lg border border-line-subtle bg-subtle p-2.5 text-sm leading-relaxed text-ink-secondary">
+          <p className="rounded-lg border border-line-subtle bg-subtle p-2.5 text-sm leading-relaxed text-ink-secondary" dir="auto">
             {action.note}
           </p>
         )}
@@ -173,8 +180,8 @@ const Step = ({ action, start, last }) => {
           <p className="flex items-start gap-1.5 text-xs text-ink-muted">
             <BookOpen className="mt-px h-3.5 w-3.5 shrink-0" />
             <span>
-              Consulted {consulted.map((doc) => doc.filename).join(', ')}
-              {consulted[0]?.passages_used ? ` · ${consulted.reduce((n, d) => n + (d.passages_used || 0), 0)} passages` : ''}
+              {t('run.consulted', { names: consulted.map((doc) => doc.filename).join(t('listSeparator')) })}
+              {consulted[0]?.passages_used ? ` · ${t('run.passages', { count: consulted.reduce((n, d) => n + (d.passages_used || 0), 0) })}` : ''}
             </span>
           </p>
         )}
@@ -210,6 +217,7 @@ const cleanPassage = (text = '') =>
     .trim();
 
 const Passages = ({ excerpts }) => {
+  const { t } = useTranslation('agents');
   const [open, setOpen] = useState(false);
   if (!excerpts.length) return null;
   return (
@@ -220,7 +228,7 @@ const Passages = ({ excerpts }) => {
         aria-expanded={open}
         className="inline-flex items-center gap-1 text-xs font-semibold text-link hover:underline"
       >
-        {open ? 'Hide' : 'Show'} the {excerpts.length} passage{excerpts.length === 1 ? '' : 's'} retrieved
+        {open ? t('run.hidePassages', { count: excerpts.length }) : t('run.showPassages', { count: excerpts.length })}
         <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
@@ -228,11 +236,11 @@ const Passages = ({ excerpts }) => {
           {excerpts.map((excerpt) => (
             <li key={`${excerpt.chunk_index}-${excerpt.ref}`} className="rounded-lg border border-line-subtle bg-subtle p-2.5">
               <p className="flex justify-between gap-2 text-[11px] text-ink-subtle">
-                <span>Passage {excerpt.ref}</span>
-                {typeof excerpt.score === 'number' && <span>match {excerpt.score.toFixed(2)}</span>}
+                <span>{t('run.passage', { ref: excerpt.ref })}</span>
+                {typeof excerpt.score === 'number' && <span>{t('run.match', { score: excerpt.score.toFixed(2) })}</span>}
               </p>
-              <p className="mt-1 line-clamp-4 whitespace-pre-line text-xs leading-relaxed text-ink-secondary">
-                {cleanPassage(excerpt.text) || 'Formatting only — no readable text in this passage.'}
+              <p className="mt-1 line-clamp-4 whitespace-pre-line text-xs leading-relaxed text-ink-secondary" dir="auto">
+                {cleanPassage(excerpt.text) || t('run.formattingOnly')}
               </p>
             </li>
           ))}
@@ -242,11 +250,7 @@ const Passages = ({ excerpts }) => {
   );
 };
 
-const TABS = [
-  { value: 'timeline', label: 'Timeline' },
-  { value: 'policies', label: 'Policies' },
-  { value: 'outcome', label: 'Outcome' },
-];
+const TABS = ['timeline', 'policies', 'outcome'];
 
 /**
  * Props:
@@ -255,6 +259,7 @@ const TABS = [
  *   onClose
  */
 const RunDrawer = ({ run, casePath, onClose }) => {
+  const { t } = useTranslation('agents');
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -273,7 +278,7 @@ const RunDrawer = ({ run, casePath, onClose }) => {
     agentRunsAPI
       .getRun(reportId, { quiet: true })
       .then((data) => !cancelled && setDetail(data))
-      .catch((err) => !cancelled && setError(agentErrorMessage(err, 'This run could not be loaded.')))
+      .catch((err) => !cancelled && setError(agentErrorMessage(err, t('run.loadFailed'))))
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
@@ -309,25 +314,25 @@ const RunDrawer = ({ run, casePath, onClose }) => {
   const unverified = kb?.unverified_citation_count ?? 0;
 
   return (
-    <div className="fixed inset-0 z-120" role="dialog" aria-modal="true" aria-label={`Agent run for report ${run.report_number}`}>
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-ink/30 animate-fade-in" />
+    <div className="fixed inset-0 z-120" role="dialog" aria-modal="true" aria-label={t('run.dialogLabel', { number: run.report_number })}>
+      <button type="button" aria-label={t('common:actions.close')} onClick={onClose} className="absolute inset-0 bg-ink/30 animate-fade-in" />
       <aside
         ref={panelRef}
         tabIndex={-1}
-        className="absolute inset-y-0 end-0 flex w-full max-w-xl flex-col bg-surface shadow-2xl outline-none animate-slide-in-right"
+        className="absolute inset-y-0 end-0 flex w-full max-w-xl flex-col bg-surface shadow-2xl outline-none animate-slide-in-right rtl:animate-fade-in"
       >
         <header className="flex items-start justify-between gap-3 border-b border-line-subtle px-5 py-5 sm:px-6">
           <div className="min-w-0 space-y-1.5">
             <p className="font-mono text-xs text-ink-subtle">#{run.report_number}</p>
-            <h2 className="text-lg font-bold leading-snug text-ink">{run.title || 'Untitled report'}</h2>
+            <h2 className="text-lg font-bold leading-snug text-ink" dir="auto">{run.title || t('run.untitled')}</h2>
             <div className="flex flex-wrap items-center gap-2">
               {run.report_status && <StatusBadge status={run.report_status} />}
               {(run.report_priority || run.priority) && <PriorityBadge priority={run.report_priority || run.priority} />}
-              <span className="text-xs text-ink-subtle">Submitted {formatWhen(start)}</span>
+              <span className="text-xs text-ink-subtle">{t('run.submitted', { when: formatWhen(start) })}</span>
             </div>
             {casePath && (
               <Link to={casePath} className="inline-flex items-center gap-1 text-sm font-semibold text-link hover:underline">
-                Open case
+                {t('run.openCase')}
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             )}
@@ -335,7 +340,7 @@ const RunDrawer = ({ run, casePath, onClose }) => {
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('common:actions.close')}
             className="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-hover hover:text-ink"
           >
             <X className="h-5 w-5" />
@@ -343,7 +348,7 @@ const RunDrawer = ({ run, casePath, onClose }) => {
         </header>
 
         <div className="flex gap-1 border-b border-line-subtle px-5 sm:px-6" role="tablist">
-          {TABS.map(({ value, label }) => (
+          {TABS.map((value) => (
             <button
               key={value}
               type="button"
@@ -354,7 +359,7 @@ const RunDrawer = ({ run, casePath, onClose }) => {
                 tab === value ? 'border-accent font-semibold text-accent-fg' : 'border-transparent font-medium text-ink-muted hover:text-ink'
               }`}
             >
-              {label}
+              {t(`run.tabs.${value}`)}
               {value === 'policies' && documents.length > 0 && ` (${documents.length})`}
             </button>
           ))}
@@ -392,7 +397,7 @@ const RunDrawer = ({ run, casePath, onClose }) => {
           {!loading && !error && tab === 'timeline' && (
             <>
               {actions.length === 0 ? (
-                <p className="py-8 text-center text-sm text-ink-muted">No agent steps were recorded for this report.</p>
+                <p className="py-8 text-center text-sm text-ink-muted">{t('run.noSteps')}</p>
               ) : (
                 <ol>
                   {actions.map((action, index) => (
@@ -402,8 +407,8 @@ const RunDrawer = ({ run, casePath, onClose }) => {
               )}
               {detail?.final_output && (
                 <div className="mt-1 rounded-xl bg-subtle p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">Outcome</p>
-                  <p className="mt-1 text-sm leading-relaxed text-ink">{detail.final_output}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">{t('run.tabs.outcome')}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-ink" dir="auto">{detail.final_output}</p>
                 </div>
               )}
             </>
@@ -418,16 +423,16 @@ const RunDrawer = ({ run, casePath, onClose }) => {
               >
                 {unverified > 0 ? <ShieldX className="h-5 w-5 shrink-0" /> : <ShieldCheck className="h-5 w-5 shrink-0" />}
                 <p className="text-sm font-semibold">
-                  {citations} citation{citations === 1 ? '' : 's'}
+                  {t('run.citations', { count: citations })}
                   {unverified > 0
-                    ? ` · ${unverified} not found in the cited document`
+                    ? ` · ${t('run.unverified', { count: unverified })}`
                     : citations > 0
-                      ? ', all verified'
+                      ? t('run.allVerified')
                       : ''}
                 </p>
               </div>
               {documents.length === 0 ? (
-                <p className="py-6 text-center text-sm text-ink-muted">No policy documents were consulted on this run.</p>
+                <p className="py-6 text-center text-sm text-ink-muted">{t('run.noDocuments')}</p>
               ) : (
                 <ul className="space-y-3">
                   {documents.map((doc) => (
@@ -437,10 +442,10 @@ const RunDrawer = ({ run, casePath, onClose }) => {
                           <FileText className="h-4 w-4" />
                         </span>
                         <div className="min-w-0">
-                          <p className="break-words text-sm font-semibold text-ink">{doc.filename}</p>
+                          <p className="break-words text-sm font-semibold text-ink" dir="auto">{doc.filename}</p>
                           <p className="text-xs text-ink-subtle">
-                            Read by {(doc.read_by || []).map(agentLabel).join(', ') || '—'}
-                            {doc.passages_used ? ` · ${doc.passages_used} passages` : ''}
+                            {t('run.readBy', { names: (doc.read_by || []).map(agentLabel).join(t('listSeparator')) || '—' })}
+                            {doc.passages_used ? ` · ${t('run.passages', { count: doc.passages_used })}` : ''}
                           </p>
                         </div>
                       </div>
@@ -455,15 +460,15 @@ const RunDrawer = ({ run, casePath, onClose }) => {
           {!loading && !error && tab === 'outcome' && (
             <div className="space-y-4">
               <div className="rounded-xl bg-ink p-4 text-canvas">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] opacity-60">Outcome</p>
-                <p className="mt-1.5 text-sm leading-relaxed">{detail?.final_output || 'No outcome was recorded.'}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.06em] opacity-60">{t('run.tabs.outcome')}</p>
+                <p className="mt-1.5 text-sm leading-relaxed" dir="auto">{detail?.final_output || t('run.noOutcome')}</p>
               </div>
               <dl className="grid grid-cols-2 gap-3">
                 {[
-                  ['Decision', decision ? decision.label : run.decision || '—'],
-                  ['Priority', run.priority || '—'],
-                  ['Agents', actions.length || '—'],
-                  ['Took', took || '—'],
+                  [t('run.decision'), decision ? decision.label : run.decision || '—'],
+                  [t('run.priority'), run.priority ? t(`common:priority.${run.priority}`, { defaultValue: run.priority }) : '—'],
+                  [t('run.agents'), actions.length || '—'],
+                  [t('run.took'), took || '—'],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-xl bg-subtle px-3.5 py-3">
                     <dt className="text-xs text-ink-subtle">{label}</dt>

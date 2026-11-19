@@ -7,6 +7,7 @@
 // cases to it as Owner or Backup owner (offer the report types page); or an
 // escalation policy routes senior cases to it (offer the hierarchy page).
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Modal from '../ui/Modal';
@@ -25,6 +26,7 @@ const OwnsReportTypes = /report types?\b/i;
 const EscalationTarget = /escalation/i;
 
 const DeleteRoleModal = ({ role, onClose, onDeleted }) => {
+  const { t } = useTranslation('people');
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const can = useCan();
   const [deleting, setDeleting] = useState(false);
@@ -35,7 +37,7 @@ const DeleteRoleModal = ({ role, onClose, onDeleted }) => {
     setError(null);
     try {
       await orgRolesAPI.remove(role.id);
-      toast.success(`Role "${role.name}" deleted.`);
+      toast.success(t('deleteRole.done', { name: role.name }));
       invalidateOrgRoles();
       useAuthStore.getState().refreshUser();
       onDeleted?.(role);
@@ -55,16 +57,16 @@ const DeleteRoleModal = ({ role, onClose, onDeleted }) => {
     <Modal
       isOpen
       onClose={deleting ? () => {} : onClose}
-      title={`Delete ${role.name}?`}
+      title={t('deleteRole.title', { name: role.name })}
       size="sm"
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button variant="secondary" onClick={onClose} disabled={deleting}>
-            {error ? 'Close' : 'Cancel'}
+            {error ? t('common:actions.close') : t('common:actions.cancel')}
           </Button>
           {!error && (
             <Button variant="danger" onClick={handleDelete} isLoading={deleting}>
-              Delete role
+              {t('deleteRole.submit')}
             </Button>
           )}
         </div>
@@ -72,28 +74,27 @@ const DeleteRoleModal = ({ role, onClose, onDeleted }) => {
     >
       {!error ? (
         <p className="text-sm leading-relaxed text-ink-secondary">
-          The <span className="font-mono text-ink">{role.code}</span> role will be removed from your organization.
-          This cannot be undone.
+          <Trans t={t} i18nKey="deleteRole.body" values={{ code: role.code }} components={{ code: <span className="font-mono text-ink" dir="ltr" /> }} />
         </p>
       ) : (
-        <Alert variant={error.status === 409 ? 'warning' : 'error'} title="This role can't be deleted yet">
+        <Alert variant={error.status === 409 ? 'warning' : 'error'} title={t('deleteRole.blockedTitle')}>
           <p>{error.summary}</p>
           {assignedUsersBlock && can(ACCESS.users) && (
             <Link
               to={`${staffPath(orgSlug, 'users')}?role=${encodeURIComponent(role.code)}`}
               className="mt-2 inline-block font-medium text-link hover:underline"
             >
-              See who has this role →
+              {t('deleteRole.seeUsers')}
             </Link>
           )}
           {ownerBlock && can(ACCESS.reportTypes) && (
             <Link to={staffPath(orgSlug, 'report-types')} className="mt-2 block font-medium text-link hover:underline">
-              Choose another owner on those report types →
+              {t('deleteRole.chooseOwner')}
             </Link>
           )}
           {escalationBlock && can(ACCESS.hierarchy) && (
             <Link to={`${staffPath(orgSlug, 'hierarchy')}?tab=escalation`} className="mt-2 block font-medium text-link hover:underline">
-              Change the escalation policy →
+              {t('deleteRole.changeEscalation')}
             </Link>
           )}
         </Alert>

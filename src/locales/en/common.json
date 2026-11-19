@@ -133,5 +133,47 @@
     "divider": "or continue with",
     "continueWith": "Continue with {{provider}}",
     "failed": "Sign-in failed. Please try again."
-  }
+  },
+  "staffNav": {
+    "dashboard": "Dashboard",
+    "reports": "All reports",
+    "report-types": "Report types",
+    "question-sets": "Voice questions",
+    "voice-profile": "Voice profile",
+    "agents": "AI agents",
+    "workflows": "Workflows",
+    "summarizer": "Summarizer",
+    "agent-kb": "Knowledge base",
+    "agent-runs": "AI activity",
+    "users": "User management",
+    "roles": "Roles & permissions",
+    "hierarchy": "Reporting hierarchy",
+    "entities": "Legal entities",
+    "jurisdiction": "Jurisdiction",
+    "account": "My account",
+    "section": {
+      "overview": "Overview",
+      "reporting": "Reporting",
+      "ai-automation": "AI & Automation",
+      "organization": "Organization",
+      "account": "Account"
+    },
+    "help": "Help & support",
+    "anonymousReport": "Anonymous report",
+    "portal": "Portal & branding",
+    "posters": "QR posters",
+    "tenant-settings": "Organization defaults"
+  },
+  "tags": {
+    "placeholder": "Type and press Enter",
+    "empty": "None yet.",
+    "remove": "Remove {{tag}}"
+  },
+  "reportType": {
+    "none": "AI Assistant"
+  },
+  "authProvider": {
+    "password": "Password"
+  },
+  "codeHint": "Use lowercase letters, numbers and underscores, starting with a letter."
 }

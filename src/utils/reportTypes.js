@@ -7,6 +7,21 @@
 // builder doesn't edit must still survive a round trip, or saving a type
 // silently strips it (core-field flags, option labels, section keys).
 import { intlLocale } from './locale';
+import i18n from '../i18n';
+
+// Display text on the lists below is read through getters, so every screen
+// that shows `.label` / `.hint` gets the current interface language while the
+// `value`s sent to the API stay fixed.
+const shown = (entry, key, fields = ['label']) => {
+  fields.forEach((field) =>
+    Object.defineProperty(entry, field, {
+      get: () => i18n.t(`${key}.${field}`, { ns: 'builder' }),
+      enumerable: true,
+      configurable: true,
+    }),
+  );
+  return entry;
+};
 
 /**
  * A report type's availability — the whole of it. There is no separate
@@ -16,9 +31,9 @@ import { intlLocale } from './locale';
  * returns it, so it is not offered here.
  */
 export const REPORT_TYPE_STATUSES = [
-  { value: 'draft', label: 'Draft', hint: 'Not available to reporters. Use while the type is being written or reviewed.' },
-  { value: 'active', label: 'Active', hint: 'Reporters can file reports of this type.' },
-  { value: 'inactive', label: 'Inactive', hint: 'Withdrawn. Existing cases are unaffected.' },
+  shown({ value: 'draft' }, 'typeStatus.draft', ['label', 'hint']),
+  shown({ value: 'active' }, 'typeStatus.active', ['label', 'hint']),
+  shown({ value: 'inactive' }, 'typeStatus.inactive', ['label', 'hint']),
 ];
 
 /** A type's status, reading older payloads that still say "retired". */
@@ -28,18 +43,18 @@ export const reportTypeStatus = (type) => {
 };
 
 export const CONFIDENTIALITY_TIERS = [
-  { value: 'standard', label: 'Standard' },
-  { value: 'confidential', label: 'Confidential' },
-  { value: 'restricted', label: 'Restricted' },
+  shown({ value: 'standard' }, 'tiers.standard'),
+  shown({ value: 'confidential' }, 'tiers.confidential'),
+  shown({ value: 'restricted' }, 'tiers.restricted'),
 ];
 
 /** How an answer is classed; drives masking and logging on the server. */
 export const SENSITIVE_DATA_CLASSES = [
-  { value: 'none', label: 'Not sensitive' },
-  { value: 'pii', label: 'Personal information' },
-  { value: 'special_category', label: 'Special category' },
-  { value: 'financial', label: 'Financial' },
-  { value: 'government_id', label: 'Government ID' },
+  shown({ value: 'none' }, 'sensitive.none'),
+  shown({ value: 'pii' }, 'sensitive.pii'),
+  shown({ value: 'special_category' }, 'sensitive.special_category'),
+  shown({ value: 'financial' }, 'sensitive.financial'),
+  shown({ value: 'government_id' }, 'sensitive.government_id'),
 ];
 
 export const DEFAULT_CURRENCY = 'SAR';

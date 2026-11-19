@@ -23,6 +23,8 @@ import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'r
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ChevronDown, Info, Lock, Play, ShieldAlert } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { Trans, useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
@@ -39,11 +41,8 @@ import { useAuthStore } from '../../store/authStore';
 const fieldClass =
   'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors hover:border-line-strong focus:border-line-accent disabled:cursor-not-allowed disabled:opacity-60';
 
-const ROUTES = [
-  { value: 'triage_queue', label: 'Triage', hint: 'Held for a person to place by hand.' },
-  { value: 'role', label: 'A role' },
-  { value: 'level', label: 'A level' },
-];
+// Labels: escalation.routes.<value> (and triage_queueHint).
+const ROUTES = [{ value: 'triage_queue' }, { value: 'role' }, { value: 'level' }];
 
 const tierLabel = (tier) => CONFIDENTIALITY_TIERS.find((t) => t.value === tier)?.label || tier;
 
@@ -97,7 +96,7 @@ const Toggle = ({ checked, onChange, disabled, label }) => (
   >
     <span
       className={`inline-block h-4.5 w-4.5 rounded-full bg-surface shadow-sm transition-transform ${
-        checked ? 'translate-x-5.25' : 'translate-x-0.75'
+        checked ? 'translate-x-5.25 rtl:-translate-x-5.25' : 'translate-x-0.75 rtl:-translate-x-0.75'
       }`}
     />
   </button>
@@ -151,15 +150,19 @@ Select.displayName = 'Select';
 
 // ── Preview ───────────────────────────────────────────────────────────────────
 
+// Labels: escalation.outcomes.<key>.
 const OUTCOMES = {
-  normal: { label: 'Usual owner', variant: 'default' },
-  escalated: { label: 'Up the reporting line', variant: 'info' },
-  senior_route: { label: 'Senior route', variant: 'purple' },
-  triage: { label: 'Triage', variant: 'warning' },
+  normal: { variant: 'default' },
+  escalated: { variant: 'info' },
+  senior_route: { variant: 'purple' },
+  triage: { variant: 'warning' },
 };
 
 const OutcomeBadge = ({ outcome }) => {
-  const info = OUTCOMES[outcome] || { label: outcome, variant: 'default' };
+  const { t } = useTranslation('hierarchy');
+  const info = OUTCOMES[outcome]
+    ? { ...OUTCOMES[outcome], label: t(`escalation.outcomes.${outcome}`) }
+    : { label: outcome, variant: 'default' };
   // Badge has no purple; draw it here so the four outcomes stay apart.
   if (info.variant === 'purple') {
     return (
@@ -174,12 +177,13 @@ const OutcomeBadge = ({ outcome }) => {
 const destinationOf = (result, roleName) => {
   const member = result.escalate_to_member;
   if (member) return [member.name, member.designation].filter(Boolean).join(' · ');
-  if (result.escalate_to_role) return `Anyone with the ${roleName(result.escalate_to_role)} role`;
-  if (result.outcome === 'triage') return 'Triage, where a person places it';
-  return "The report type's usual owner";
+  if (result.escalate_to_role) return i18n.t('hierarchy:escalation.dest.role', { role: roleName(result.escalate_to_role) });
+  if (result.outcome === 'triage') return i18n.t('hierarchy:escalation.dest.triage');
+  return i18n.t('hierarchy:escalation.dest.usualOwner');
 };
 
 const PreviewResult = ({ label, result, roleName }) => {
+  const { t } = useTranslation('hierarchy');
   const [open, setOpen] = useState(false);
   const subjects = result.subjects || [];
   const exclusions = result.exclusions || [];
@@ -191,56 +195,56 @@ const PreviewResult = ({ label, result, roleName }) => {
       <p className="text-xs font-medium text-ink-subtle">{label}</p>
       <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
         <OutcomeBadge outcome={result.outcome} />
-        {result.raise_tier_to && <span className="text-xs font-medium text-ink-secondary">Tier → {tierLabel(result.raise_tier_to)}</span>}
+        {result.raise_tier_to && <span className="text-xs font-medium text-ink-secondary">{t('escalation.preview.tierTo', { tier: tierLabel(result.raise_tier_to) })}</span>}
       </div>
       {result.reason && <p className="mt-2 text-sm text-ink">{result.reason}</p>}
       {result.hint && <p className="mt-1 text-xs text-ink-muted">{result.hint}</p>}
       {result.escalate_on_subject === false && (
         <p className="mt-1 text-xs text-ink-muted">
-          This report's type has escalation turned off, so it stays with the usual owner.
+          {t('escalation.preview.typeOff')}
         </p>
       )}
 
       {result.oversight_gap && (
         <p className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-sm font-medium text-danger-fg">
-          Nobody with organization-wide access could open this case.
+          {t('escalation.preview.oversightGap')}
         </p>
       )}
       {result.needs_review && (
         <p className="mt-3 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning-fg">
-          A name is uncertain. A handler must confirm who is meant.
+          {t('escalation.preview.needsReview')}
         </p>
       )}
 
       <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm">
-        <dt className="text-ink-muted">About</dt>
+        <dt className="text-ink-muted">{t('escalation.preview.about')}</dt>
         <dd className="text-ink">
           {subjects.length === 0
-            ? 'Nobody in the directory'
+            ? t('escalation.preview.nobodyInDirectory')
             : subjects.map((s, i) => (
                 <span key={s.member_id || i}>
                   {i > 0 && ' · '}
                   <span title={(s.evidence || []).join('\n') || undefined} className={s.evidence?.length ? 'cursor-help underline decoration-dotted underline-offset-2' : ''}>
                     {s.name}
                   </span>
-                  {s.status === 'possible' && <span className="text-ink-muted"> (uncertain)</span>}
+                  {s.status === 'possible' && <span className="text-ink-muted"> {t('escalation.preview.uncertain')}</span>}
                 </span>
               ))}
         </dd>
-        <dt className="text-ink-muted">Kept off</dt>
+        <dt className="text-ink-muted">{t('escalation.preview.keptOff')}</dt>
         <dd className="text-ink">
           {exclusions.length === 0
-            ? 'Nobody'
+            ? t('escalation.preview.nobody')
             : exclusions.map((e, i) => (
                 <span key={`${e.name}-${i}`}>
                   {i > 0 && ' · '}
                   {e.name}
-                  {e.reason === 'direct_report' && <span className="text-ink-muted"> (reports to {subjectName(e.of)})</span>}
-                  {e.reason === 'possible_subject' && <span className="text-ink-muted"> (uncertain)</span>}
+                  {e.reason === 'direct_report' && <span className="text-ink-muted"> {t('escalation.preview.reportsTo', { name: subjectName(e.of) })}</span>}
+                  {e.reason === 'possible_subject' && <span className="text-ink-muted"> {t('escalation.preview.uncertain')}</span>}
                 </span>
               ))}
         </dd>
-        <dt className="text-ink-muted">Goes to</dt>
+        <dt className="text-ink-muted">{t('escalation.preview.goesTo')}</dt>
         <dd className="font-medium text-ink">{destinationOf(result, roleName)}</dd>
       </dl>
 
@@ -253,7 +257,7 @@ const PreviewResult = ({ label, result, roleName }) => {
             className="inline-flex items-center gap-1 text-sm font-medium text-link hover:underline"
           >
             <ChevronDown className={`h-4 w-4 transition-transform ${open ? '' : '-rotate-90'}`} aria-hidden="true" />
-            How this was decided ({steps.length} step{steps.length === 1 ? '' : 's'})
+            {t('escalation.preview.howDecided', { count: steps.length })}
           </button>
           {open && (
             <ol className="mt-2 list-decimal space-y-1 ps-6 text-sm text-ink-secondary">
@@ -264,7 +268,7 @@ const PreviewResult = ({ label, result, roleName }) => {
           )}
         </div>
       )}
-      <p className="mt-3 text-xs text-ink-subtle">Nothing was changed on the report.</p>
+      <p className="mt-3 text-xs text-ink-subtle">{t('escalation.preview.nothingChanged')}</p>
     </div>
   );
 };
@@ -272,16 +276,18 @@ const PreviewResult = ({ label, result, roleName }) => {
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 /** The panel while the settings load: the same two cards, data stubbed. */
-export const EscalationSkeleton = () => (
+export const EscalationSkeleton = () => {
+  const { t } = useTranslation('hierarchy');
+  return (
   <div className="space-y-5 pb-20" aria-busy="true">
     <Card>
       <Card.Content className="space-y-6">
         <div className="flex items-start gap-4">
           <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning-soft text-warning-fg sm:flex">
-            <ShieldAlert className="h-5 w-5" />
+            <ShieldAlert className="h-5 w-5" aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold text-ink">Escalation policy</p>
+            <p className="text-base font-semibold text-ink">{t('tabs.escalation')}</p>
             <Skeleton.Text className="mt-0.5 w-96 max-w-full" />
           </div>
         </div>
@@ -308,11 +314,13 @@ export const EscalationSkeleton = () => (
       </Card.Content>
     </Card>
   </div>
-);
+  );
+};
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
 
 const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
+  const { t } = useTranslation('hierarchy');
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const [settings, setSettings] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -390,7 +398,7 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
       const described = describeError(error);
       // The old card would read as this report's result.
       setPreview(null);
-      setPreviewError(described.status === 404 ? 'No report with that number in your organization.' : described.summary);
+      setPreviewError(described.status === 404 ? t('escalation.preview.notFound') : described.summary);
     } finally {
       setPreviewing(false);
     }
@@ -399,10 +407,10 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
   if (loading && !settings) return <EscalationSkeleton />;
   if (loadError && !settings) {
     return (
-      <Alert variant="error" title="Couldn't load the escalation policy">
+      <Alert variant="error" title={t('escalation.loadError')}>
         {loadError}{' '}
         <button type="button" onClick={load} className="font-medium text-link hover:underline">
-          Try again
+          {t('common:actions.retry')}
         </button>
       </Alert>
     );
@@ -422,20 +430,18 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
   const routeWarnings = [];
   if (draft.senior_level && route.target === 'role' && route.target_ref) {
     const role = roleByCode.get(route.target_ref);
-    if (role && role.can_handle_cases === false) routeWarnings.push(`${role.name} can't be assigned cases.`);
+    if (role && role.can_handle_cases === false) routeWarnings.push(t('escalation.warn.roleNoCases', { role: role.name }));
     if (role && !(role.cleared_tiers || []).includes(draft.senior_tier)) {
-      routeWarnings.push(
-        `${role.name} can't open ${tierLabel(draft.senior_tier)} cases, which is the tier senior cases are raised to. Every senior case would end up in triage. Pick another role, or a lower tier.`,
-      );
+      routeWarnings.push(t('escalation.warn.roleNotCleared', { role: role.name, tier: tierLabel(draft.senior_tier) }));
     }
   }
   if (draft.senior_level && route.target === 'level' && route.target_ref) {
     const level = levelByCode.get(route.target_ref);
     if (level && level.can_receive_escalations === false) {
-      routeWarnings.push(`${level.title} is set not to receive escalations, so senior cases would end up in triage.`);
+      routeWarnings.push(t('escalation.warn.levelNoEscalations', { level: level.title }));
     }
     if (level && seniorLevel && level.rank < seniorLevel.rank) {
-      routeWarnings.push('This sends cases about senior people to a more junior level.');
+      routeWarnings.push(t('escalation.warn.juniorLevel'));
     }
   }
   // A role or level route needs its choice before it can be saved.
@@ -456,13 +462,13 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
       const data = await orgEscalationAPI.update(changesOf(saved, draft));
       setSettings(data);
       setDraft(editableOf(data));
-      toast.success('Saved.');
+      toast.success(t('escalation.saved'));
     } catch (error) {
       const described = describeError(error);
       const code = (error?.response?.data ?? error)?.detail?.code;
       if (described.status === 403) {
         setForbidden(true);
-        setSaveError({ summary: "You don't have permission to change the escalation policy.", problems: [] });
+        setSaveError({ summary: t('escalation.forbidden'), problems: [] });
       } else if (code === 'unknown_level') {
         setFieldErrors({ [route.target === 'level' && levelByCode.has(draft.senior_level) ? 'route_ref' : 'senior_level']: described.summary });
         load();
@@ -487,13 +493,13 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
       case 'empty_directory':
         return onGoTo ? (
           <button type="button" onClick={() => onGoTo('directory')} className={linkClass}>
-            Add people
+            {t('coverage.addPeople')}
           </button>
         ) : null;
       case 'no_senior_level':
         return readOnly ? null : (
           <button type="button" onClick={() => focus(levelRef)} className={linkClass}>
-            Set a senior level
+            {t('escalation.fix.setSeniorLevel')}
           </button>
         );
       case 'unknown_level':
@@ -503,13 +509,13 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
             onClick={() => focus(draft.senior_level && !levelByCode.has(draft.senior_level) ? levelRef : routeLevelRef)}
             className={linkClass}
           >
-            Fix the level
+            {t('escalation.fix.level')}
           </button>
         );
       case 'unknown_role':
         return (
           <button type="button" onClick={() => focus(roleRef)} className={linkClass}>
-            Fix the role
+            {t('escalation.fix.role')}
           </button>
         );
       case 'senior_route_not_cleared':
@@ -518,7 +524,7 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
             to={`${staffPath(orgSlug, 'roles')}${route.target === 'role' && route.target_ref ? `?role=${encodeURIComponent(route.target_ref)}` : ''}`}
             className={linkClass}
           >
-            Roles &amp; permissions
+            {t('escalation.fix.rolesPermissions')}
           </Link>
         );
       default:
@@ -535,25 +541,24 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
         <Card.Content className="space-y-6">
           <div className="flex items-start gap-4">
             <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning-soft text-warning-fg sm:flex">
-              <ShieldAlert className="h-5 w-5" />
+              <ShieldAlert className="h-5 w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-base font-semibold text-ink">Escalation policy</p>
+              <p className="text-base font-semibold text-ink">{t('tabs.escalation')}</p>
               {directorySize === 0 ? (
                 <p className="mt-0.5 text-sm text-ink-muted">
-                  Nobody is in the directory yet, so no report can be matched to a person.{' '}
+                  {t('escalation.emptyDirectory')}{' '}
                   {onGoTo && (
                     <button type="button" onClick={() => onGoTo('directory')} className="font-medium text-link hover:underline">
-                      Open the directory
+                      {t('coverage.openDirectory')}
                     </button>
                   )}
                 </p>
               ) : (
                 <p className="mt-0.5 text-sm text-ink-muted">
-                  When a report is about someone in your directory, they never see it, and it goes to someone independent of
-                  them.
+                  {t('escalation.intro')}
                   {directorySize != null && (
-                    <span className="font-semibold text-ink"> {directorySize} {directorySize === 1 ? 'person' : 'people'} in the directory.</span>
+                    <span className="font-semibold text-ink"> {t('escalation.directorySize', { count: directorySize })}</span>
                   )}
                 </p>
               )}
@@ -588,10 +593,10 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
 
           {/* A. Finding who a report is about */}
           <section className="space-y-3 border-t border-line-subtle pt-5">
-            <SectionTitle letter="A">Finding who a report is about</SectionTitle>
+            <SectionTitle letter={t('escalation.letters.a')}>{t('escalation.a.title')}</SectionTitle>
             <SwitchRow
-              label="Look for names in what reporters write"
-              help="When a reporter writes the full name of someone in the directory, the report is treated as being about that person. When this is off, people are identified only when a reporter picks “My line manager” or a handler adds them."
+              label={t('escalation.a.detectLabel')}
+              help={t('escalation.a.detectHelp')}
               checked={draft.detect_named_people}
               onChange={(value) => set({ detect_named_people: value })}
               disabled={readOnly}
@@ -600,18 +605,16 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
 
           {/* B. Keeping them off the case */}
           <section className="space-y-3 border-t border-line-subtle pt-5">
-            <SectionTitle letter="B">Keeping them off the case</SectionTitle>
+            <SectionTitle letter={t('escalation.letters.b')}>{t('escalation.b.title')}</SectionTitle>
             <Fixed>
-              The person a report is about never sees it: not in lists, search, exports or through a direct link, whatever
-              their role.
+              {t('escalation.b.neverSees')}
             </Fixed>
             <Fixed>
-              If a name could belong to more than one person, all of them are kept off the case until a handler decides who
-              is meant.
+              {t('escalation.b.ambiguous')}
             </Fixed>
             <SwitchRow
-              label="Also keep their direct reports off the case"
-              help="Nobody should investigate their own manager. This only goes one level down. The person who filed the report is never kept off it."
+              label={t('escalation.b.directReportsLabel')}
+              help={t('escalation.b.directReportsHelp')}
               checked={draft.exclude_direct_reports}
               onChange={(value) => set({ exclude_direct_reports: value })}
               disabled={readOnly}
@@ -620,27 +623,27 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
 
           {/* C. Where the case goes */}
           <section className="space-y-4 border-t border-line-subtle pt-5">
-            <SectionTitle letter="C">Where the case goes</SectionTitle>
+            <SectionTitle letter={t('escalation.letters.c')}>{t('escalation.c.title')}</SectionTitle>
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
                 id="esc-senior-level"
                 ref={levelRef}
-                label="Senior from"
+                label={t('escalation.c.seniorFrom')}
                 value={draft.senior_level || ''}
                 onChange={(e) => {
                   set({ senior_level: e.target.value || null });
                   setFieldErrors((prev) => ({ ...prev, senior_level: undefined }));
                 }}
                 disabled={readOnly || levels.length === 0}
-                help="People at this level or above are treated as senior. A report about them goes to the senior route below, not to their own manager."
+                help={t('escalation.c.seniorFromHelp')}
                 after={
                   <>
                     {levels.length === 0 && (
                       <p className="mt-1.5 text-xs text-warning-fg">
-                        Define levels first.{' '}
+                        {t('escalation.c.defineLevels')}{' '}
                         {onGoTo && (
                           <button type="button" onClick={() => onGoTo('levels')} className="font-semibold underline underline-offset-2">
-                            Open Levels
+                            {t('escalation.c.openLevels')}
                           </button>
                         )}
                       </p>
@@ -649,25 +652,25 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
                   </>
                 }
               >
-                <option value="">Nobody is treated as senior</option>
+                <option value="">{t('escalation.c.nobodySenior')}</option>
                 {levels.map((level) => (
                   <option key={level.code} value={level.code}>
-                    {level.title} (rank {level.rank}) and above
+                    {t('escalation.c.levelAndAbove', { level: level.title, rank: level.rank })}
                   </option>
                 ))}
                 {draft.senior_level && !levelByCode.has(draft.senior_level) && (
-                  <option value={draft.senior_level}>{draft.senior_level} (no longer exists)</option>
+                  <option value={draft.senior_level}>{t('escalation.c.noLongerExists', { code: draft.senior_level })}</option>
                 )}
               </Select>
 
               {draft.senior_level && (
                 <Select
                   id="esc-senior-tier"
-                  label="Raise senior cases to"
+                  label={t('escalation.c.raiseTo')}
                   value={draft.senior_tier}
                   onChange={(e) => set({ senior_tier: e.target.value })}
                   disabled={readOnly}
-                  help="A case about a senior person is raised to at least this confidentiality. It is never lowered."
+                  help={t('escalation.c.raiseToHelp')}
                 >
                   {tiers.map((tier) => (
                     <option key={tier} value={tier}>
@@ -680,8 +683,8 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
 
             {draft.senior_level && (
               <fieldset className="space-y-2">
-                <legend className="mb-1 text-xs font-medium text-ink-secondary">Senior cases go to</legend>
-                <div role="radiogroup" className="flex flex-wrap gap-2">
+                <legend id="esc-route-legend" className="mb-1 text-xs font-medium text-ink-secondary">{t('escalation.c.seniorGoTo')}</legend>
+                <div role="radiogroup" aria-labelledby="esc-route-legend" className="flex flex-wrap gap-2">
                   {ROUTES.map((option) => {
                     const on = route.target === option.value;
                     return (
@@ -703,19 +706,19 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
                           }}
                           className="accent-accent"
                         />
-                        {option.label}
+                        {t(`escalation.routes.${option.value}`)}
                       </label>
                     );
                   })}
                 </div>
-                {route.target === 'triage_queue' && <p className="text-[11px] text-ink-subtle">{ROUTES[0].hint}</p>}
+                {route.target === 'triage_queue' && <p className="text-[11px] text-ink-subtle">{t('escalation.routes.triage_queueHint')}</p>}
 
                 {route.target === 'role' && (
                   <div className="sm:max-w-sm">
                     <Select
                       id="esc-route-role"
                       ref={roleRef}
-                      label="Role"
+                      label={t('member.role')}
                       value={route.target_ref || ''}
                       onChange={(e) => {
                         setRoute({ target_ref: e.target.value || null });
@@ -724,7 +727,7 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
                       disabled={readOnly}
                       after={
                         <>
-                          {missingRef && <p className="mt-1.5 text-xs text-ink-muted">Choose a role to save.</p>}
+                          {missingRef && <p className="mt-1.5 text-xs text-ink-muted">{t('escalation.c.chooseRoleToSave')}</p>}
                           <FieldError>{fieldErrors.route_ref}</FieldError>
                           {routeWarnings.map((w) => (
                             <Warning key={w}>{w}</Warning>
@@ -732,14 +735,14 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
                         </>
                       }
                     >
-                      <option value="">Choose a role…</option>
+                      <option value="">{t('coverage.chooseRole')}</option>
                       {roles.map((role) => (
                         <option key={role.code} value={role.code}>
                           {role.name}
                         </option>
                       ))}
                       {route.target_ref && !roleByCode.has(route.target_ref) && (
-                        <option value={route.target_ref}>{route.target_ref} (no longer available)</option>
+                        <option value={route.target_ref}>{t('escalation.c.noLongerAvailable', { code: route.target_ref })}</option>
                       )}
                     </Select>
                   </div>
@@ -750,17 +753,17 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
                     <Select
                       id="esc-route-level"
                       ref={routeLevelRef}
-                      label="Level"
+                      label={t('directory.cols.level')}
                       value={route.target_ref || ''}
                       onChange={(e) => {
                         setRoute({ target_ref: e.target.value || null });
                         setFieldErrors((prev) => ({ ...prev, route_ref: undefined }));
                       }}
                       disabled={readOnly}
-                      help="Someone at this level who isn't kept off the case. If nobody is free, it goes to triage."
+                      help={t('escalation.c.levelHelp')}
                       after={
                         <>
-                          {missingRef && <p className="mt-1.5 text-xs text-ink-muted">Choose a level to save.</p>}
+                          {missingRef && <p className="mt-1.5 text-xs text-ink-muted">{t('escalation.c.chooseLevelToSave')}</p>}
                           <FieldError>{fieldErrors.route_ref}</FieldError>
                           {routeWarnings.map((w) => (
                             <Warning key={w}>{w}</Warning>
@@ -768,14 +771,14 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
                         </>
                       }
                     >
-                      <option value="">Choose a level…</option>
+                      <option value="">{t('coverage.chooseLevel')}</option>
                       {levels.map((level) => (
                         <option key={level.code} value={level.code}>
-                          {level.title} (rank {level.rank})
+                          {t('escalation.c.levelRank', { level: level.title, rank: level.rank })}
                         </option>
                       ))}
                       {route.target_ref && !levelByCode.has(route.target_ref) && (
-                        <option value={route.target_ref}>{route.target_ref} (no longer exists)</option>
+                        <option value={route.target_ref}>{t('escalation.c.noLongerExists', { code: route.target_ref })}</option>
                       )}
                     </Select>
                   </div>
@@ -784,20 +787,16 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
             )}
 
             <p className="rounded-lg bg-subtle px-3 py-2.5 text-sm text-ink-secondary">
-              For anyone <span className="font-semibold text-ink">below</span> the senior level, the case goes up their own
-              reporting line to the nearest person who can take it. If nobody above them can, it goes to the report type's
-              usual owner, and they are still kept off it.
+              <Trans t={t} i18nKey="escalation.c.belowSenior" components={{ b: <span className="font-semibold text-ink" /> }} />
             </p>
             <p className="text-xs text-ink-muted">
-              Each report type can also turn escalation off (in the report type builder, under Handling). Its reports still
-              keep the person they're about off the case, but never go up the reporting line or to the senior route. If a type
-              doesn't escalate, look there.
+              {t('escalation.c.perType')}
             </p>
           </section>
 
           {readOnly && (
             <p className="text-xs text-ink-subtle">
-              <Badge size="small">View only</Badge> Changing the policy needs permission to manage the hierarchy.
+              <Badge size="small">{t('page.viewOnlyTitle')}</Badge> {t('escalation.viewOnly')}
             </p>
           )}
         </Card.Content>
@@ -806,9 +805,9 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
       {/* D. Try it on a report — against the SAVED policy, so outside the form. */}
       <Card>
         <Card.Header>
-          <Card.Title>D. Try it on a report</Card.Title>
+          <Card.Title>{t('escalation.d.title', { letter: t('escalation.letters.d') })}</Card.Title>
           <Card.Description>
-            Shows where a real report would go under the saved policy. Nothing on the report changes.
+            {t('escalation.d.description')}
           </Card.Description>
         </Card.Header>
         <Card.Content className="space-y-3">
@@ -823,8 +822,8 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
               value={reportRef}
               onChange={(e) => setReportRef(e.target.value)}
               list="esc-recent-reports"
-              placeholder="Report number, e.g. ACME-12345678"
-              aria-label="Report number"
+              placeholder={t('escalation.d.placeholder')}
+              aria-label={t('escalation.d.reportNumber')}
               className={`${fieldClass} font-mono sm:flex-1`}
             />
             <datalist id="esc-recent-reports">
@@ -833,10 +832,10 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
               ))}
             </datalist>
             <Button type="submit" startIcon={Play} isLoading={previewing} disabled={!reportRef.trim() || dirty}>
-              Preview
+              {t('escalation.d.preview')}
             </Button>
           </form>
-          {dirty && <p className="text-xs text-ink-muted">Save your changes to preview them.</p>}
+          {dirty && <p className="text-xs text-ink-muted">{t('escalation.d.saveFirst')}</p>}
           {previewError && <p className="text-sm text-danger-fg">{previewError}</p>}
           {preview && <PreviewResult label={preview.label} result={preview.result} roleName={roleName} />}
         </Card.Content>
@@ -857,7 +856,7 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
           )}
           <div className="flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas shadow-xl sm:flex-row sm:items-center sm:ps-5">
             <p className="min-w-0 flex-1 text-sm">
-              {missingRef ? `Choose a ${route.target} for senior cases before saving.` : 'Unsaved changes to the escalation policy.'}
+              {missingRef ? (route.target === 'role' ? t('escalation.bar.chooseRole') : t('escalation.bar.chooseLevel')) : t('escalation.bar.unsaved')}
             </p>
             <div className="flex shrink-0 gap-2">
               <button
@@ -870,7 +869,7 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
                 disabled={saving}
                 className="h-9 rounded-lg border border-canvas/25 px-3.5 text-sm font-medium transition-colors hover:bg-canvas/10 disabled:opacity-50"
               >
-                Discard
+                {t('escalation.bar.discard')}
               </button>
               <button
                 type="button"
@@ -878,7 +877,7 @@ const EscalationPanel = ({ canManage, onGoTo, onDirtyChange }) => {
                 disabled={saving || missingRef}
                 className="h-9 rounded-lg bg-canvas px-4 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {saving ? 'Saving…' : 'Save changes'}
+                {saving ? t('common:status.saving') : t('levelEditor.save')}
               </button>
             </div>
           </div>

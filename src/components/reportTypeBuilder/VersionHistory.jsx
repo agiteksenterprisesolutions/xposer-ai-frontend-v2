@@ -4,6 +4,7 @@
 // read-only view of any one. Each report is filed against one of these, so an
 // edited type never changes the questions of a report already started.
 // GET /report-types/{id}/versions needs report_type:manage, as does the editor.
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ChevronRight, History } from 'lucide-react';
 import Modal from '../layout/Modal';
@@ -17,6 +18,7 @@ import { typeInfo } from './model';
 const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
 
 const VersionForm = ({ typeId, version }) => {
+  const { t } = useTranslation('builder');
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
@@ -31,16 +33,16 @@ const VersionForm = ({ typeId, version }) => {
     };
   }, [typeId, version]);
 
-  if (error) return <p className="text-sm text-ink-muted">Couldn't load version {version}. {error}</p>;
+  if (error) return <p className="text-sm text-ink-muted">{t('versions.loadOneFailed', { version })} {error}</p>;
   if (!data) return <Skeleton.Lines size="sm" lines={6} />;
 
   const sections = [...(data.sections || [])].sort(byOrder);
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {sections.map((section, s) => (
         <section key={section.id || s} className="rounded-xl border border-line">
           <h4 className="border-b border-line px-4 py-2.5 text-sm font-semibold text-ink">
-            {s + 1}. {section.title || 'Untitled step'}
+            {s + 1}. {section.title || t('preview.untitledStep')}
           </h4>
           <ol className="divide-y divide-line-subtle">
             {[...(section.questions || [])].sort(byOrder).map((question, q) => {
@@ -63,7 +65,7 @@ const VersionForm = ({ typeId, version }) => {
           </ol>
         </section>
       ))}
-      {sections.length === 0 && <p className="text-sm text-ink-muted">This version has no questions.</p>}
+      {sections.length === 0 && <p className="text-sm text-ink-muted">{t('versions.noQuestions')}</p>}
     </div>
   );
 };
@@ -72,6 +74,7 @@ const VersionHistory = ({ isOpen, onClose, typeId, currentVersion }) => {
   const [versions, setVersions] = useState(null);
   const [error, setError] = useState(null);
   const [open, setOpen] = useState(null); // a version number
+  const { t } = useTranslation('builder');
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -94,19 +97,19 @@ const VersionHistory = ({ isOpen, onClose, typeId, currentVersion }) => {
       size="large"
       title={
         open == null ? (
-          'Version history'
+          t('versions.title')
         ) : (
           <span className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setOpen(null)}
-              aria-label="Back to version history"
+              aria-label={t('versions.back')}
               className="rounded-md p-1 text-ink-muted hover:bg-hover hover:text-ink"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            Version {open}
-            {open === currentVersion && <span className="text-sm font-normal text-ink-muted">(current)</span>}
+            {t('versions.version', { version: open })}
+            {open === currentVersion && <span className="text-sm font-normal text-ink-muted">{t('versions.currentParen')}</span>}
           </span>
         )
       }
@@ -114,14 +117,11 @@ const VersionHistory = ({ isOpen, onClose, typeId, currentVersion }) => {
       {open != null ? (
         <VersionForm typeId={typeId} version={open} />
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-ink-muted">
-            Each change to the questions saves a new version. A report keeps the version it was started on, so its
-            questions never change under it. Name, handling and deadlines aren&apos;t versioned.
-          </p>
-          {error && <p className="text-sm text-ink-muted">Couldn&apos;t load the history. {error}</p>}
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-ink-muted">{t('versions.intro')}</p>
+          {error && <p className="text-sm text-ink-muted">{t('versions.loadFailed')} {error}</p>}
           {!error && !versions && <Skeleton.Lines size="sm" lines={3} />}
-          {versions?.length === 0 && <p className="text-sm text-ink-muted">No versions saved yet.</p>}
+          {versions?.length === 0 && <p className="text-sm text-ink-muted">{t('versions.none')}</p>}
           {versions?.length > 0 && (
             <ul className="divide-y divide-line-subtle rounded-xl border border-line">
               {versions.map((v) => (
@@ -134,11 +134,11 @@ const VersionHistory = ({ isOpen, onClose, typeId, currentVersion }) => {
                     <History className="h-4 w-4 shrink-0 text-ink-subtle" aria-hidden="true" />
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-medium text-ink">
-                        Version {v.version}
-                        {v.version === currentVersion && <span className="ms-2 text-xs font-normal text-ink-muted">Current</span>}
+                        {t('versions.version', { version: v.version })}
+                        {v.version === currentVersion && <span className="ms-2 text-xs font-normal text-ink-muted">{t('versions.current')}</span>}
                       </span>
                       {v.created_at && (
-                        <span className="block text-xs text-ink-muted">Saved {formatDateTime(v.created_at)}</span>
+                        <span className="block text-xs text-ink-muted">{t('versions.saved', { date: formatDateTime(v.created_at) })}</span>
                       )}
                     </span>
                     <ChevronRight className="h-4 w-4 text-ink-subtle" aria-hidden="true" />

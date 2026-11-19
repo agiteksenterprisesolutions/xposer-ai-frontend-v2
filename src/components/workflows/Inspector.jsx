@@ -6,6 +6,7 @@
 // An agent's branches are chosen from the decisions it declares, never typed,
 // because a rule on a verdict the agent never returns can't fire. A decision
 // left on "Continue to the next step" has no rule written for it at all.
+import { Trans, useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Bot, CheckCircle2, Plus, Trash2, UserRound, X, XCircle } from 'lucide-react';
 import { suggestCode } from '../../utils/codes';
 import { AGENT_KIND_INFO } from '../../utils/agents';
@@ -50,7 +51,7 @@ const Switch = ({ checked, onChange, disabled, label, description }) => (
       }`}
     >
       <span
-        className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-[left] ${checked ? 'start-[18px]' : 'start-0.5'}`}
+        className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-[inset-inline-start] ${checked ? 'start-[18px]' : 'start-0.5'}`}
       />
     </button>
   </div>
@@ -67,37 +68,42 @@ const ProblemList = ({ problems }) => (
   <ul className="space-y-1.5 rounded-lg bg-danger-soft px-3 py-2.5">
     {problems.map((problem, i) => (
       <li key={i} className="flex items-start gap-1.5 text-xs text-danger-fg">
-        <XCircle className="mt-px h-3.5 w-3.5 shrink-0" />
+        <XCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {problem.message}
       </li>
     ))}
   </ul>
 );
 
-const Shell = ({ title, eyebrow, onClose, children, footer }) => (
+const Shell = ({ title, eyebrow, onClose, children, footer }) => {
+  const { t } = useTranslation('admin');
+  return (
   <aside className="flex max-h-full w-[22rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
     <header className="flex items-start justify-between gap-2 border-b border-line-subtle px-4 py-3">
       <div className="min-w-0">
         {eyebrow && <p className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-subtle">{eyebrow}</p>}
-        <h2 className="truncate text-sm font-semibold text-ink">{title}</h2>
+        <h2 className="truncate text-sm font-semibold text-ink" dir="auto">{title}</h2>
       </div>
       <button
         type="button"
         onClick={onClose}
-        aria-label="Close panel"
+        aria-label={t('workflow.inspector.closePanel')}
         className="rounded-md p-1 text-ink-muted transition-colors hover:bg-hover hover:text-ink"
       >
-        <X className="h-4 w-4" />
+        <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </header>
     <div className="flex-1 overflow-y-auto">{children}</div>
     {footer}
   </aside>
-);
+  );
+};
 
 // ─── A step ──────────────────────────────────────────────────────────────
 
-const GotoSelect = ({ value, onChange, targets, disabled, allowContinue, label }) => (
+const GotoSelect = ({ value, onChange, targets, disabled, allowContinue, label }) => {
+  const { t } = useTranslation('admin');
+  return (
   <select
     value={value}
     onChange={(event) => onChange(event.target.value)}
@@ -105,18 +111,19 @@ const GotoSelect = ({ value, onChange, targets, disabled, allowContinue, label }
     aria-label={label}
     className={`${fieldClass} py-1.5 text-[13px]`}
   >
-    {allowContinue ? <option value="">Continue to the next step</option> : <option value={NEXT}>Continue to the next step</option>}
-    <option value={END}>End the workflow</option>
+    {allowContinue ? <option value="">{t('workflow.inspector.continueNext')}</option> : <option value={NEXT}>{t('workflow.inspector.continueNext')}</option>}
+    <option value={END}>{t('workflow.inspector.endWorkflow')}</option>
     {targets.map((target) => (
       <option key={target._id} value={target.key}>
-        Go to: {target.name || target.key}
+        {t('workflow.inspector.goTo', { name: target.name || target.key })}
       </option>
     ))}
-    {value && ![NEXT, END].includes(value) && !targets.some((t) => t.key === value) && (
-      <option value={value}>{value} (missing)</option>
+    {value && ![NEXT, END].includes(value) && !targets.some((target) => target.key === value) && (
+      <option value={value}>{t('workflow.goto.missing', { key: value })}</option>
     )}
   </select>
-);
+  );
+};
 
 export const StageInspector = ({
   stage,
@@ -132,6 +139,7 @@ export const StageInspector = ({
   onRemove,
   onClose,
 }) => {
+  const { t } = useTranslation('admin');
   const isAgent = stage.executor_type === EXECUTOR_AGENT;
   const agent = isAgent ? agentsByCode.get(stage.executor_ref) : null;
   const role = !isAgent ? roles.find((r) => r.code === stage.executor_ref) : null;
@@ -152,12 +160,12 @@ export const StageInspector = ({
   };
 
   const setTransition = (i, patch) =>
-    onChange({ transitions: stage.transitions.map((t, j) => (j === i ? { ...t, ...patch } : t)) });
+    onChange({ transitions: stage.transitions.map((tr, j) => (j === i ? { ...tr, ...patch } : tr)) });
 
   return (
     <Shell
-      eyebrow={`Step ${index + 1} of ${stages.length}`}
-      title={stage.name || agent?.name || role?.name || 'New step'}
+      eyebrow={t('workflow.inspector.stepOf', { n: index + 1, total: stages.length })}
+      title={stage.name || agent?.name || role?.name || t('workflow.node.newStep')}
       onClose={onClose}
       footer={
         !readOnly && (
@@ -167,21 +175,21 @@ export const StageInspector = ({
                 type="button"
                 disabled={index === 0}
                 onClick={() => onMove(-1)}
-                title="Run this step earlier"
-                aria-label="Run this step earlier"
+                title={t('workflow.inspector.earlier')}
+                aria-label={t('workflow.inspector.earlier')}
                 className="rounded-md border border-line p-1.5 text-ink-muted transition-colors hover:bg-hover hover:text-ink disabled:opacity-40"
               >
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-4 w-4" aria-hidden="true" />
               </button>
               <button
                 type="button"
                 disabled={index === stages.length - 1}
                 onClick={() => onMove(1)}
-                title="Run this step later"
-                aria-label="Run this step later"
+                title={t('workflow.inspector.later')}
+                aria-label={t('workflow.inspector.later')}
                 className="rounded-md border border-line p-1.5 text-ink-muted transition-colors hover:bg-hover hover:text-ink disabled:opacity-40"
               >
-                <ArrowDown className="h-4 w-4" />
+                <ArrowDown className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
             <button
@@ -189,8 +197,8 @@ export const StageInspector = ({
               onClick={onRemove}
               className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-danger-fg transition-colors hover:bg-danger-soft"
             >
-              <Trash2 className="h-4 w-4" />
-              Delete step
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              {t('workflow.inspector.deleteStep')}
             </button>
           </footer>
         )
@@ -202,12 +210,12 @@ export const StageInspector = ({
         </div>
       )}
 
-      <Section title="Details">
-        <Field label="Name">
+      <Section title={t('workflow.inspector.details')}>
+        <Field label={t('workflow.inspector.name')}>
           <input
             value={stage.name}
             readOnly={readOnly}
-            placeholder="e.g. Triage"
+            placeholder={t('workflow.inspector.namePlaceholder')}
             onChange={(event) => {
               const name = event.target.value;
               onChange(
@@ -219,7 +227,7 @@ export const StageInspector = ({
             className={fieldClass}
           />
         </Field>
-        <Field label="Key" hint="Identifies this step in run logs. Renaming it keeps its incoming branches.">
+        <Field label={t('workflow.inspector.key')} hint={t('workflow.inspector.keyHint')}>
           <input
             value={stage.key}
             readOnly={readOnly}
@@ -229,11 +237,11 @@ export const StageInspector = ({
         </Field>
       </Section>
 
-      <Section title="Run by">
-        <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-subtle p-1" role="radiogroup" aria-label="Who runs this step">
+      <Section title={t('workflow.inspector.runBy')}>
+        <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-subtle p-1" role="radiogroup" aria-label={t('workflow.inspector.whoRuns')}>
           {[
-            { value: EXECUTOR_AGENT, label: 'AI agent', icon: Bot },
-            { value: EXECUTOR_HUMAN, label: 'A person', icon: UserRound },
+            { value: EXECUTOR_AGENT, label: t('workflow.inspector.aiAgent'), icon: Bot },
+            { value: EXECUTOR_HUMAN, label: t('workflow.inspector.aPerson'), icon: UserRound },
           ].map(({ value, label, icon: Icon }) => (
             <button
               key={value}
@@ -246,7 +254,7 @@ export const StageInspector = ({
                 stage.executor_type === value ? 'bg-surface text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
               {label}
             </button>
           ))}
@@ -256,15 +264,15 @@ export const StageInspector = ({
           value={stage.executor_ref}
           onChange={(event) => chooseExecutor(event.target.value)}
           disabled={readOnly}
-          aria-label={isAgent ? 'Agent' : 'Role'}
+          aria-label={isAgent ? t('workflow.inspector.agent') : t('workflow.inspector.role')}
           className={fieldClass}
         >
-          <option value="">{isAgent ? 'Choose an agent…' : 'Choose a role…'}</option>
+          <option value="">{isAgent ? t('workflow.inspector.chooseAgent') : t('workflow.inspector.chooseRole')}</option>
           {isAgent
             ? agents.map((a) => (
                 <option key={a.code} value={a.code}>
                   {a.name} — {AGENT_KIND_INFO[a.kind]?.label || a.kind}
-                  {a.is_active === false ? ' (inactive)' : ''}
+                  {a.is_active === false ? ` (${t('workflow.palette.inactive')})` : ''}
                 </option>
               ))
             : roles.map((r) => (
@@ -273,54 +281,46 @@ export const StageInspector = ({
                 </option>
               ))}
           {isSummarizer && (
-            <option value={stage.executor_ref}>{agent.name} — Summarizer (can't be a step)</option>
+            <option value={stage.executor_ref}>{t('workflow.inspector.summarizerOption', { name: agent.name })}</option>
           )}
-          {stage.executor_ref && !executorFound && <option value={stage.executor_ref}>{stage.executor_ref} (not found)</option>}
+          {stage.executor_ref && !executorFound && <option value={stage.executor_ref}>{t('workflow.inspector.notFound', { ref: stage.executor_ref })}</option>}
         </select>
 
         {isSummarizer && (
           <div className="space-y-2 rounded-lg border border-warning-line bg-warning-soft p-3 text-xs text-warning-fg">
-            <p>
-              The summarizer runs automatically before the first step and its digest goes to every agent below, so it
-              can't be a step. This step is skipped when a report runs.
-            </p>
+            <p>{t('workflow.inspector.summarizerNote')}</p>
             {!readOnly && (
               <button type="button" onClick={onRemove} className="font-semibold underline">
-                Remove this step
+                {t('workflow.inspector.removeStep')}
               </button>
             )}
           </div>
         )}
 
         {!isAgent && stage.executor_ref && (
-          <p className="text-xs text-ink-muted">
-            The run pauses here until someone holding this role acts on the report. Steps are assigned to a role, not to a
-            named person.
-          </p>
+          <p className="text-xs text-ink-muted">{t('workflow.inspector.humanNote')}</p>
         )}
         {agent?.is_active === false && (
-          <p className="text-xs text-warning-fg">This agent is inactive, so the step won't run until it is reactivated.</p>
+          <p className="text-xs text-warning-fg">{t('workflow.inspector.inactiveAgent')}</p>
         )}
       </Section>
 
-      <Section title="Branches">
+      <Section title={t('workflow.inspector.branches')}>
         {isSummarizer ? (
-          <p className="text-xs text-ink-muted">Nothing to branch on — this step is skipped.</p>
+          <p className="text-xs text-ink-muted">{t('workflow.inspector.nothingToBranchSkipped')}</p>
         ) : isAgent ? (
           <>
-            {!stage.executor_ref && <p className="text-xs text-ink-muted">Choose an agent to see the decisions it can reach.</p>}
+            {!stage.executor_ref && <p className="text-xs text-ink-muted">{t('workflow.inspector.chooseAgentForDecisions')}</p>}
             {agent && ports.length === 0 && (
-              <p className="text-xs text-ink-muted">
-                This agent declares no decisions, so there is nothing to branch on. Add some on the AI Agents page.
-              </p>
+              <p className="text-xs text-ink-muted">{t('workflow.inspector.noDecisions')}</p>
             )}
             {ports.map((port) => (
               <div key={port.id} className="space-y-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className={`truncate font-mono text-xs ${port.declared ? 'text-ink-secondary' : 'text-danger-fg'}`}>
-                    When it decides <span className="font-semibold">{port.decision}</span>
+                    <Trans t={t} i18nKey="workflow.inspector.whenDecides" values={{ decision: port.decision }} components={{ b: <span className="font-semibold" /> }} />
                   </span>
-                  {!port.declared && <span className="shrink-0 text-[11px] text-danger-fg">not a decision of this agent</span>}
+                  {!port.declared && <span className="shrink-0 text-[11px] text-danger-fg">{t('workflow.inspector.notDeclared')}</span>}
                 </div>
                 <GotoSelect
                   value={port.goto === NEXT ? '' : port.goto || ''}
@@ -328,7 +328,7 @@ export const StageInspector = ({
                   targets={targets}
                   disabled={readOnly}
                   allowContinue
-                  label={`Where ${port.decision} goes`}
+                  label={t('workflow.inspector.whereDecisionGoes', { decision: port.decision })}
                 />
               </div>
             ))}
@@ -336,7 +336,7 @@ export const StageInspector = ({
         ) : (
           <>
             {stage.transitions.length === 0 && (
-              <p className="text-xs text-ink-muted">No outcomes — once the person acts, the report continues to the next step.</p>
+              <p className="text-xs text-ink-muted">{t('workflow.inspector.noOutcomes')}</p>
             )}
             {stage.transitions.map((transition, i) => (
               <div key={i} className="space-y-1 rounded-lg border border-line-subtle p-2">
@@ -345,18 +345,18 @@ export const StageInspector = ({
                     value={transition.when_decision}
                     onChange={(event) => setTransition(i, { when_decision: suggestCode(event.target.value, 'd') })}
                     readOnly={readOnly}
-                    placeholder="outcome, e.g. approve"
-                    aria-label="Outcome"
+                    placeholder={t('workflow.inspector.outcomePlaceholder')}
+                    aria-label={t('workflow.inspector.outcome')}
                     className={`${fieldClass} py-1.5 font-mono text-[13px]`}
                   />
                   {!readOnly && (
                     <button
                       type="button"
                       onClick={() => onChange({ transitions: stage.transitions.filter((_, j) => j !== i) })}
-                      aria-label="Remove outcome"
+                      aria-label={t('workflow.inspector.removeOutcome')}
                       className="shrink-0 rounded-md p-1.5 text-ink-muted transition-colors hover:bg-hover hover:text-danger-fg"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -365,7 +365,7 @@ export const StageInspector = ({
                   onChange={(goto) => setTransition(i, { goto })}
                   targets={targets}
                   disabled={readOnly}
-                  label="Where this outcome goes"
+                  label={t('workflow.inspector.whereOutcomeGoes')}
                 />
               </div>
             ))}
@@ -375,22 +375,20 @@ export const StageInspector = ({
                 onClick={() => onChange({ transitions: [...stage.transitions, { when_decision: '', goto: END }] })}
                 className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[13px] font-medium text-accent-fg transition-colors hover:bg-accent-soft"
               >
-                <Plus className="h-3.5 w-3.5" />
-                Add an outcome
+                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                {t('workflow.inspector.addOutcome')}
               </button>
             )}
           </>
         )}
         {!isSummarizer && !readOnly && (isAgent ? ports.length > 0 : true) && (
-          <p className="text-[11px] text-ink-subtle">
-            You can also drag from an outcome's dot on the canvas to the step it should go to.
-          </p>
+          <p className="text-[11px] text-ink-subtle">{t('workflow.inspector.dragHint')}</p>
         )}
       </Section>
 
-      <Section title="Options">
+      <Section title={t('workflow.inspector.options')}>
         <Switch
-          label="Optional step"
+          label={t('workflow.inspector.optionalStep')}
           checked={stage.optional}
           disabled={readOnly}
           onChange={(optional) => onChange({ optional })}
@@ -423,32 +421,33 @@ export const WorkflowInspector = ({
   onSelectStage,
   onClose,
 }) => {
+  const { t } = useTranslation('admin');
   const humanSteps = stages.filter((s) => s.executor_type === EXECUTOR_HUMAN).length;
-  const branches = stages.reduce((n, s) => n + s.transitions.filter((t) => t.when_decision).length, 0);
+  const branches = stages.reduce((n, s) => n + s.transitions.filter((tr) => tr.when_decision).length, 0);
 
   return (
-    <Shell eyebrow="Workflow" title={name || 'Untitled workflow'} onClose={onClose}>
-      <Section title="Details">
-        <Field label="Name">
+    <Shell eyebrow={t('workflow.inspector.workflow')} title={name || t('workflow.inspector.untitled')} onClose={onClose}>
+      <Section title={t('workflow.inspector.details')}>
+        <Field label={t('workflow.inspector.name')}>
           <input value={name} readOnly={readOnly} onChange={(event) => onName(event.target.value)} className={fieldClass} />
         </Field>
-        <Field label="Description">
+        <Field label={t('workflow.inspector.description')}>
           <textarea
             value={description}
             readOnly={readOnly}
             rows={3}
-            placeholder="What this workflow is for"
+            placeholder={t('workflow.inspector.descriptionPlaceholder')}
             onChange={(event) => onDescription(event.target.value)}
             className={`${fieldClass} resize-y`}
           />
         </Field>
       </Section>
 
-      <Section title="Checks">
+      <Section title={t('workflow.inspector.checks')}>
         {problems.length === 0 && !blockedReason ? (
           <p className="flex items-center gap-1.5 text-[13px] font-medium text-success-fg">
-            <CheckCircle2 className="h-4 w-4" />
-            Ready to run
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            {t('workflow.inspector.ready')}
           </p>
         ) : problems.length === 0 ? (
           <p className="text-[13px] text-ink-muted">{blockedReason}</p>
@@ -464,7 +463,7 @@ export const WorkflowInspector = ({
                     onClick={() => target && onSelectStage(target._id)}
                     className="flex w-full items-start gap-1.5 rounded-lg bg-danger-soft px-2.5 py-2 text-start text-xs text-danger-fg enabled:hover:brightness-95"
                   >
-                    <XCircle className="mt-px h-3.5 w-3.5 shrink-0" />
+                    <XCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     <span>
                       {target && <span className="font-semibold">{target.name || target.key}: </span>}
                       {!target && problem.stage && <span className="font-semibold">{problem.stage}: </span>}
@@ -478,31 +477,31 @@ export const WorkflowInspector = ({
         )}
       </Section>
 
-      <Section title="Properties">
+      <Section title={t('workflow.inspector.properties')}>
         <div className="space-y-2">
-          <Row label="Status">{isCreate ? 'Not saved yet' : workflow?.is_active ? 'Running' : 'Standby'}</Row>
-          {workflow?.version != null && <Row label="Version">v{workflow.version}</Row>}
-          <Row label="Steps">{stages.length}</Row>
-          <Row label="Handled by people">{humanSteps}</Row>
-          <Row label="Branches">{branches}</Row>
+          <Row label={t('workflow.inspector.status')}>{isCreate ? t('workflow.status.notSaved') : workflow?.is_active ? t('workflow.status.running') : t('workflow.status.standby')}</Row>
+          {workflow?.version != null && <Row label={t('workflow.inspector.version')}>v{workflow.version}</Row>}
+          <Row label={t('workflow.inspector.steps')}>{stages.length}</Row>
+          <Row label={t('workflow.inspector.byPeople')}>{humanSteps}</Row>
+          <Row label={t('workflow.inspector.branches')}>{branches}</Row>
         </div>
       </Section>
 
-      <Section title="Run settings">
+      <Section title={t('workflow.inspector.runSettings')}>
         <Switch
-          label="Use for new reports"
+          label={t('workflow.inspector.useForNew')}
           description={
             isActive && activeOther && !workflow?.is_active
-              ? `Only one workflow runs at a time. Saving stands down "${activeOther.name}".`
-              : 'Only one workflow runs at a time.'
+              ? t('workflow.inspector.oneAtATimeOther', { name: activeOther.name })
+              : t('workflow.inspector.oneAtATime')
           }
           checked={isActive}
           disabled={readOnly}
           onChange={onActive}
         />
         <Field
-          label="Max visits per step"
-          hint="How many times one step may run for a single report. Bounds send-back loops."
+          label={t('workflow.inspector.maxVisits')}
+          hint={t('workflow.inspector.maxVisitsHint')}
           error={visitsError}
         >
           <input

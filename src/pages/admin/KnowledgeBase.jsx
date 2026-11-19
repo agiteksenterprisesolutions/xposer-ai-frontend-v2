@@ -7,6 +7,7 @@
 //
 // Documents and each agent's instructions on the AI Agents page are
 // independent and additive: either, both, or neither is a supported setup.
+import { Trans, useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -18,6 +19,7 @@ import {
   RefreshCw,
   X,
   AlertTriangle,
+  ArrowRight,
   Terminal,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -41,6 +43,7 @@ import useSEO from '../../hooks/useSEO';
 import { useCan } from '../../hooks/useCan';
 import { PERM } from '../../utils/permissions';
 import { formatFileSize, parseServerDate } from '../../utils/formatters';
+import { intlLocale, isRtl } from '../../utils/locale';
 import {
   KB_ACCEPT_ATTR,
   KB_ACCEPTED_EXTENSIONS,
@@ -51,7 +54,7 @@ import {
   validateKbUpload,
   agentErrorMessage,
   isServiceUnavailable,
-  AGENT_ORG_REQUIRED_MESSAGE,
+  agentOrgRequiredMessage,
 } from '../../utils/agents';
 
 const KNOWLEDGE_BASE_TOUR_KEY = 'xposer_knowledge_base_tour_seen';
@@ -63,7 +66,7 @@ const POLL_INTERVAL_MS = 4000;
 const formatUploadedAt = (dateString) => {
   const date = parseServerDate(dateString);
   if (!date) return '—';
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(intlLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -84,16 +87,17 @@ const StatusCell = ({ document: doc }) => {
       {doc.status === 'failed' && doc.error && (
         // Shown verbatim: the backend's message is the only thing that tells
         // the admin whether to re-upload as .txt or fix the file itself.
-        <p className="max-w-xs text-[11px] leading-snug text-danger-fg">{doc.error}</p>
+        <p className="max-w-xs text-[11px] leading-snug text-danger-fg" dir="auto">{doc.error}</p>
       )}
     </div>
   );
 };
 
 const KnowledgeBase = () => {
+  const { t, i18n } = useTranslation('agents');
   useSEO({
-    title: 'Agent Knowledge Base',
-    description: 'Upload the policy documents your AI agents may quote when handling reports.',
+    title: t('kb.title'),
+    description: t('kb.seoDescription'),
     noIndex: true,
   });
 
@@ -143,12 +147,12 @@ const KnowledgeBase = () => {
       console.error('Error fetching knowledge base documents:', error);
       // The interceptor already toasts; the panel explains what it means.
       if (isServiceUnavailable(error)) {
-        setServiceError(agentErrorMessage(error, 'The AI agent service is not available right now.'));
+        setServiceError(agentErrorMessage(error, t('activity.serviceDown')));
       }
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [missingOrganization]);
+  }, [missingOrganization, t]);
 
   // Agents come from the API, not a fixed list: an agent the organization
   // invents appears as soon as it can consult the knowledge base, and drops
@@ -166,10 +170,10 @@ const KnowledgeBase = () => {
     } catch (error) {
       console.error('Error fetching knowledge base agents:', error);
       if (isServiceUnavailable(error)) {
-        setServiceError(agentErrorMessage(error, 'The AI agent service is not available right now.'));
+        setServiceError(agentErrorMessage(error, t('activity.serviceDown')));
       }
     }
-  }, [missingOrganization]);
+  }, [missingOrganization, t]);
 
   useEffect(() => {
     loadAgents();
@@ -245,14 +249,14 @@ const KnowledgeBase = () => {
     setValidationErrors([]);
     try {
       const result = await agentKbAPI.uploadDocuments(pendingFiles, selectedRoles);
-      toast.success(result?.message || `${pendingFiles.length} document(s) accepted for ingestion`);
+      toast.success(result?.message || t('kb.accepted', { count: pendingFiles.length }));
       setPendingFiles([]);
       // 202 means "queued", not "indexed" — refresh so the new rows appear and
       // the poller picks them up.
       await fetchDocuments({ silent: true });
     } catch (error) {
       console.error('Error uploading knowledge base documents:', error);
-      setValidationErrors([errorSummary(error) || 'Upload failed. Nothing was saved.']);
+      setValidationErrors([errorSummary(error) || t('kb.uploadFailed')]);
       // The usual 400 is "no agent can consult the knowledge base" — refresh
       // the agent list so the page shows that as its empty state.
       loadAgents();
@@ -287,7 +291,7 @@ const KnowledgeBase = () => {
     try {
       await agentKbAPI.deleteDocument(documentToDelete.id);
       setDocuments((prev) => prev.filter((d) => d.id !== documentToDelete.id));
-      toast.success('Document deleted');
+      toast.success(t('kb.deleted'));
       setDocumentToDelete(null);
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -308,9 +312,9 @@ const KnowledgeBase = () => {
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-knowledge-base"]',
-        title: 'Knowledge Base',
-        content: 'Upload the policies your AI agents should quote when they handle a report.',
-        placement: 'right',
+        title: t('kb.tour.sidebarTitle'),
+        content: t('kb.tour.sidebar'),
+        placement: isRtl() ? 'left' : 'right',
         skipBeacon: true,
       });
     }
@@ -318,38 +322,39 @@ const KnowledgeBase = () => {
     steps.push(
       {
         target: '[data-tour="kb-upload"]',
-        title: 'Add documents',
-        content: 'Drop policy files here, choose which agents may read them, then upload. Parsing and indexing takes up to a minute.',
+        title: t('kb.tour.uploadTitle'),
+        content: t('kb.tour.upload'),
         placement: 'bottom',
         skipBeacon: !isDesktop,
       },
       {
         target: '[data-tour="kb-table"]',
-        title: 'Your documents',
-        content: 'Watch each document move from queued to ready. Change which agents can use it, or delete it, at any time.',
+        title: t('kb.tour.tableTitle'),
+        content: t('kb.tour.table'),
         placement: 'top',
       }
     );
 
     steps.push({
       target: '[data-tour="tour-user-menu"]',
-      title: 'Your account',
-      content: 'Manage your profile or log out from here.',
+      title: t('kb.tour.accountTitle'),
+      content: t('kb.tour.account'),
       placement: 'bottom',
     });
 
     return steps;
-  }, [isDesktop]);
+    // i18n.language: rebuild the steps when the language changes.
+  }, [isDesktop, t, i18n.language]);
 
   if (missingOrganization) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Agent Knowledge Base</h1>
-          <p className="text-sm text-ink-muted">Policy documents your AI agents may quote.</p>
+          <h1 className="text-2xl font-bold text-ink">{t('kb.title')}</h1>
+          <p className="text-sm text-ink-muted">{t('kb.subtitleShort')}</p>
         </div>
-        <Alert variant="warning" title="No organization on this account">
-          {AGENT_ORG_REQUIRED_MESSAGE}
+        <Alert variant="warning" title={t('activity.noOrg')}>
+          {agentOrgRequiredMessage()}
         </Alert>
       </div>
     );
@@ -361,10 +366,8 @@ const KnowledgeBase = () => {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Agent Knowledge Base</h1>
-          <p className="text-sm text-ink-muted">
-            Policy documents your AI agents may quote when they triage and investigate reports.
-          </p>
+          <h1 className="text-2xl font-bold text-ink">{t('kb.title')}</h1>
+          <p className="text-sm text-ink-muted">{t('kb.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -373,51 +376,48 @@ const KnowledgeBase = () => {
             onClick={() => fetchDocuments()}
             isLoading={loading}
           >
-            Refresh
+            {t('page.refresh')}
           </Button>
         </div>
       </div>
 
       {serviceError && (
-        <Alert variant="warning" title="AI knowledge base unavailable">
-          {serviceError} Reports are still processed normally — the knowledge base is an
-          enhancement, not a dependency.
+        <Alert variant="warning" title={t('kb.unavailable')}>
+          {serviceError} {t('kb.unavailableBody')}
         </Alert>
       )}
 
       {/* Instructions and documents are additive, and admins routinely assume
           it is one or the other. */}
-      <Alert variant="info" title="Documents and instructions work together">
+      <Alert variant="info" title={t('kb.togetherTitle')}>
         <span className="block">
-          Agents combine what you upload here with each agent's own instructions on the{' '}
-          <Link to={`/${user?.organization_slug}/staff/agents`} className="text-link hover:underline">
-            AI Agents
-          </Link>{' '}
-          page. With neither, agents work from the report alone and say so plainly. Where the
-          two conflict, your instructions win.
+          <Trans
+            t={t}
+            i18nKey="kb.together"
+            components={{ lnk: <Link to={`/${user?.organization_slug}/staff/agents`} className="text-link hover:underline" /> }}
+          />
         </span>
       </Alert>
 
       {!canManage && (
-        <Alert variant="info" title="View only">
-          Your role can see the knowledge base but not change it. Uploading, reassigning and deleting documents
-          needs permission to configure AI agents.
+        <Alert variant="info" title={t('page.viewOnly')}>
+          {t('kb.viewOnlyBody')}
         </Alert>
       )}
 
       {noConsultingAgents && (
-        <Alert variant="warning" title="No agent can consult the knowledge base yet">
-          Documents are only useful once an agent can read them. Give an agent the "Consult the knowledge base"
-          capability — and a role that allows “Consult policy documents” — then upload here.{' '}
-          <Link to={staffPath(user?.organization_slug, 'agents')} className="font-medium text-link hover:underline">
-            Open AI Agents →
+        <Alert variant="warning" title={t('kb.noConsultingTitle')}>
+          {t('kb.noConsulting')}{' '}
+          <Link to={staffPath(user?.organization_slug, 'agents')} className="inline-flex items-center gap-1 font-medium text-link hover:underline">
+            {t('summarizer.openInAgents')}
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </Alert>
       )}
 
       {/* Upload panel */}
       {canManage && !noConsultingAgents && (
-      <Card title="Upload documents" icon={UploadCloud} data-tour="kb-upload">
+      <Card title={t('kb.uploadTitle')} icon={UploadCloud} data-tour="kb-upload">
         <div className="space-y-4">
           <div
             onDragOver={(e) => {
@@ -429,6 +429,7 @@ const KnowledgeBase = () => {
             onClick={() => !uploadDisabled && fileInputRef.current?.click()}
             role="button"
             tabIndex={0}
+            aria-label={t('kb.dropLabel')}
             onKeyDown={(e) => {
               if ((e.key === 'Enter' || e.key === ' ') && !uploadDisabled) {
                 e.preventDefault();
@@ -446,16 +447,14 @@ const KnowledgeBase = () => {
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-accent-soft text-accent-fg">
               <UploadCloud className="h-5 w-5" />
             </span>
-            <p className="text-sm font-semibold text-ink">
-              Drop files here, or click to browse
-            </p>
+            <p className="text-sm font-semibold text-ink">{t('kb.drop')}</p>
             <p className="max-w-md text-xs text-ink-muted">
-              Up to {KB_MAX_FILES_PER_REQUEST} files per upload, 10 MB each.{' '}
+              {t('kb.limits', { max: KB_MAX_FILES_PER_REQUEST })}{' '}
               <span className={loading ? 'invisible' : undefined}>
-                {remainingSlots} of {KB_MAX_DOCUMENTS_PER_ORG} document slots remaining.
+                {t('kb.slots', { count: remainingSlots, max: KB_MAX_DOCUMENTS_PER_ORG })}
               </span>
             </p>
-            <p className="max-w-lg text-[11px] text-ink-subtle">
+            <p className="max-w-lg text-[11px] text-ink-subtle" dir="ltr">
               {KB_ACCEPTED_EXTENSIONS.join('  ')}
             </p>
           </div>
@@ -472,7 +471,7 @@ const KnowledgeBase = () => {
           {pendingFiles.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-[0.04em] text-ink-subtle">
-                Ready to upload ({pendingFiles.length})
+                {t('kb.readyToUpload', { count: pendingFiles.length })}
               </p>
               <ul className="space-y-1.5">
                 {pendingFiles.map((file, index) => (
@@ -482,7 +481,7 @@ const KnowledgeBase = () => {
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <FileText className="h-4 w-4 shrink-0 text-ink-subtle" />
-                      <span className="truncate text-sm text-ink">{file.name}</span>
+                      <span className="truncate text-sm text-ink" dir="auto">{file.name}</span>
                       <span className="shrink-0 text-xs text-ink-subtle">
                         {formatFileSize(file.size)}
                       </span>
@@ -491,7 +490,7 @@ const KnowledgeBase = () => {
                       type="button"
                       onClick={() => removePendingFile(index)}
                       disabled={uploading}
-                      aria-label={`Remove ${file.name}`}
+                      aria-label={t('editor.decisions.remove', { name: file.name })}
                       className="shrink-0 rounded-md p-1 text-ink-subtle transition-colors hover:bg-hover hover:text-ink disabled:opacity-50"
                     >
                       <X className="h-4 w-4" />
@@ -504,7 +503,7 @@ const KnowledgeBase = () => {
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.04em] text-ink-subtle">
-              Agents allowed to use these documents
+              {t('kb.allowedAgents')}
             </p>
             <AgentAssignmentPicker
               agents={agents}
@@ -514,13 +513,12 @@ const KnowledgeBase = () => {
               disabled={uploading || uploadDisabled}
             />
             <p className="mt-2 text-[11px] text-ink-muted">
-              Only agents that can consult the knowledge base are listed. Keep "every agent" unless a policy is only
-              relevant to some of them.
+              {t('kb.allowedHint')}
             </p>
           </div>
 
           {validationErrors.length > 0 && (
-            <Alert variant="error" title="Nothing was uploaded">
+            <Alert variant="error" title={t('kb.nothingUploaded')}>
               <ul className="list-disc space-y-1 ps-4">
                 {validationErrors.map((message) => (
                   <li key={message}>{message}</li>
@@ -531,8 +529,7 @@ const KnowledgeBase = () => {
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-[11px] text-ink-subtle">
-              Parsing and indexing a document takes 20–40 seconds. You can leave this page —
-              ingestion continues on the server.
+              {t('kb.timing')}
             </p>
             <Button
               startIcon={UploadCloud}
@@ -540,7 +537,7 @@ const KnowledgeBase = () => {
               isLoading={uploading}
               disabled={pendingFiles.length === 0 || uploadDisabled}
             >
-              Upload {pendingFiles.length > 0 ? `${pendingFiles.length} file(s)` : 'documents'}
+              {pendingFiles.length > 0 ? t('kb.uploadFiles', { count: pendingFiles.length }) : t('kb.uploadDocuments')}
             </Button>
           </div>
         </div>
@@ -553,24 +550,20 @@ const KnowledgeBase = () => {
       {(staleCount > 0 || orphanedCount > 0) && (
         <Alert
           variant={orphanedCount > 0 ? 'error' : 'warning'}
-          title={staleCount > 0 ? "Some documents are assigned to agents that can't read them" : 'Some documents are read by no agent'}
+          title={staleCount > 0 ? t('kb.staleTitle') : t('kb.orphanedTitle')}
         >
           <span className="block">
             {staleCount > 0 && (
               <>
-                {staleCount} document{staleCount === 1 ? '' : 's'} {staleCount === 1 ? 'is' : 'are'} assigned to agents
-                that no longer exist or can no longer consult the knowledge base
-                {orphanedCount > 0 && `, and ${orphanedCount} ${orphanedCount === 1 ? 'is' : 'are'} read by no agent at all`}.
+                {t('kb.stale', { count: staleCount })}
+                {orphanedCount > 0 && ` ${t('kb.alsoOrphaned', { count: orphanedCount })}`}
               </>
             )}
-            {staleCount === 0 &&
-              `${orphanedCount} document${orphanedCount === 1 ? ' is' : 's are'} ready but read by no agent, so ${
-                orphanedCount === 1 ? 'it' : 'they'
-              } will never be quoted.`}
+            {staleCount === 0 && t('kb.orphaned', { count: orphanedCount })}
           </span>
           {canManage && (
             <Button className="mt-3" variant="outline" size="small" onClick={() => setReconciling(true)}>
-              Review and fix
+              {t('kb.reviewFix')}
             </Button>
           )}
         </Alert>
@@ -579,19 +572,19 @@ const KnowledgeBase = () => {
       {/* Document table */}
       <Card padding="none" data-tour="kb-table">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line-subtle px-4 py-3 sm:px-5">
-          <h3 className="text-base font-semibold tracking-[-0.01em] text-ink">Documents</h3>
+          <h3 className="text-base font-semibold tracking-[-0.01em] text-ink">{t('kb.documents')}</h3>
           <div className="flex items-center gap-2 text-xs text-ink-muted">
             {isPolling && (
               <span className="inline-flex items-center gap-1.5 text-accent-fg">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Indexing in progress
+                {t('kb.indexing')}
               </span>
             )}
             {loading ? (
               <Skeleton.Text size="xs" className="w-28" />
             ) : (
               <span>
-                {readyCount} ready · {documents.length} of {KB_MAX_DOCUMENTS_PER_ORG} used
+                {t('kb.usage', { ready: readyCount, used: documents.length, max: KB_MAX_DOCUMENTS_PER_ORG })}
               </span>
             )}
           </div>
@@ -600,13 +593,13 @@ const KnowledgeBase = () => {
         <Table>
           <Table.Header>
             <Table.Row hover={false}>
-              <Table.Head>Document</Table.Head>
-              <Table.Head>Size</Table.Head>
-              <Table.Head>Agents</Table.Head>
-              <Table.Head>Status</Table.Head>
-              <Table.Head>Chunks</Table.Head>
-              <Table.Head>Uploaded</Table.Head>
-              <Table.Head className="text-end">Actions</Table.Head>
+              <Table.Head>{t('kb.columns.document')}</Table.Head>
+              <Table.Head>{t('kb.columns.size')}</Table.Head>
+              <Table.Head>{t('run.agents')}</Table.Head>
+              <Table.Head>{t('kb.columns.status')}</Table.Head>
+              <Table.Head>{t('kb.columns.chunks')}</Table.Head>
+              <Table.Head>{t('kb.columns.uploaded')}</Table.Head>
+              <Table.Head className="text-end">{t('kb.columns.actions')}</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -630,8 +623,8 @@ const KnowledgeBase = () => {
               />
             ) : documents.length === 0 ? (
               <Table.Empty
-                message="No documents uploaded"
-                description="Agents will work from the report and your written instructions alone."
+                message={t('kb.emptyTitle')}
+                description={t('kb.emptyBody')}
                 icon={BookOpen}
                 action={
                   canManage && !uploadDisabled && (
@@ -640,7 +633,7 @@ const KnowledgeBase = () => {
                       startIcon={UploadCloud}
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      Upload your first policy
+                      {t('kb.uploadFirst')}
                     </Button>
                   )
                 }
@@ -651,7 +644,7 @@ const KnowledgeBase = () => {
                   <Table.Cell>
                     <div className="flex min-w-0 items-center gap-2">
                       <FileText className="h-4 w-4 shrink-0 text-ink-subtle" />
-                      <span className="truncate text-sm font-semibold text-ink">
+                      <span className="truncate text-sm font-semibold text-ink" dir="auto">
                         {doc.filename}
                       </span>
                     </div>
@@ -678,9 +671,9 @@ const KnowledgeBase = () => {
                         variant="danger"
                         size="small"
                         className="mt-1"
-                        title="Indexed fine, but no agent can retrieve it."
+                        title={t('kb.orphanedTip')}
                       >
-                        Orphaned — no agent reads it
+                        {t('kb.orphanedBadge')}
                       </Badge>
                     )}
                   </Table.Cell>
@@ -693,7 +686,8 @@ const KnowledgeBase = () => {
                           scanned, image-only PDF. */}
                       {doc.status === 'ready' && doc.chunk_count <= 1 && (
                         <span
-                          title="Very few searchable chunks — the file may be a scanned or image-only document."
+                          title={t('kb.fewChunks')}
+                          aria-label={t('kb.fewChunks')}
                           className="text-warning-fg"
                         >
                           <AlertTriangle className="h-3.5 w-3.5" />
@@ -712,8 +706,8 @@ const KnowledgeBase = () => {
                         <Button
                           variant="ghost"
                           size="small"
-                          title="Delete document"
-                          aria-label={`Delete ${doc.filename}`}
+                          title={t('kb.deleteDocument')}
+                          aria-label={t('kb.deleteNamed', { name: doc.filename })}
                           onClick={() => setDocumentToDelete(doc)}
                         >
                           <Trash2 className="h-4 w-4 text-danger-fg" />
@@ -729,13 +723,11 @@ const KnowledgeBase = () => {
       </Card>
 
       {documents.some((doc) => doc.status === 'failed') && (
-        <Alert variant="warning" title="Some documents could not be indexed" showIcon>
+        <Alert variant="warning" title={t('kb.failedTitle')} showIcon>
           <span className="flex items-start gap-2">
             <Terminal className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              A failed document is not used by any agent. If a PDF or Office file failed to
-              parse, uploading a plain-text (.txt or .md) version of the same policy always
-              works.
+              {t('kb.failedBody')}
             </span>
           </span>
         </Alert>
@@ -756,13 +748,9 @@ const KnowledgeBase = () => {
         isOpen={Boolean(documentToDelete)}
         onClose={() => setDocumentToDelete(null)}
         onConfirm={handleDelete}
-        title="Delete this document?"
-        message={
-          documentToDelete
-            ? `"${documentToDelete.filename}" and every search index built from it will be removed permanently. Agents will stop quoting it immediately. This cannot be undone.`
-            : ''
-        }
-        confirmText="Delete document"
+        title={t('kb.confirmTitle')}
+        message={documentToDelete ? t('kb.confirmBody', { name: documentToDelete.filename }) : ''}
+        confirmText={t('kb.deleteDocument')}
         destructive
         isLoading={deleting}
       />

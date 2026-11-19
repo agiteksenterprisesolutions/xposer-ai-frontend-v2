@@ -1,0 +1,316 @@
+{
+  "compliance": {
+    "seo": {
+      "title": "Compliance Dashboard",
+      "description": "Case volume, pending reviews, and recent submissions across your organization."
+    },
+    "cards": {
+      "ariaLabel": "{{title}}: {{value}}. Open the filtered list.",
+      "total": {
+        "title": "Total reports",
+        "description": "Total number of reports submitted"
+      },
+      "pending": {
+        "title": "Pending review",
+        "description": "Awaiting initial review"
+      },
+      "active": {
+        "title": "Active cases",
+        "description": "Currently being investigated"
+      },
+      "resolved": {
+        "title": "Resolved/Closed",
+        "description": "Resolved or closed"
+      }
+    },
+    "tour": {
+      "welcome": {
+        "title": "Welcome to Compliance",
+        "content": "This sidebar is where you navigate between your dashboard and all reports."
+      },
+      "stats": {
+        "title": "Case overview",
+        "content": "Track total, pending, active, and resolved reports at a glance — click a card to open that slice of the list."
+      },
+      "allReports": {
+        "title": "All reports",
+        "content": "Browse, filter, and open every report submitted to your organization."
+      },
+      "recent": {
+        "title": "Recent submissions",
+        "content": "The newest reports land here first — click any row to open the case."
+      },
+      "category": {
+        "title": "Reports by category",
+        "content": "See how reports break down by type, so you can spot trends quickly."
+      },
+      "account": {
+        "title": "Your account",
+        "content": "Manage your profile or log out from here."
+      }
+    },
+    "recent": {
+      "title": "Recent submissions",
+      "viewAll": "View all",
+      "columns": {
+        "idDate": "ID & date",
+        "category": "Category",
+        "priority": "Priority",
+        "status": "Status"
+      },
+      "emptyTitle": "No reports found",
+      "emptyDescription": "New reports will appear here."
+    },
+    "category": {
+      "title": "Reports by category",
+      "countPercent": "{{count}} ({{percent}}%)"
+    }
+  },
+  "shared": {
+    "notAvailable": "N/A",
+    "noData": "No data available"
+  },
+  "admin": {
+    "seo": {
+      "title": "Admin Dashboard",
+      "description": "Platform-wide reporting activity, user counts, and category analytics."
+    },
+    "loadFailed": "Failed to fetch analytics data",
+    "cards": {
+      "total": "Total reports",
+      "activeUsers": "Active users",
+      "pending": "Pending cases",
+      "anonymous": "Anonymous reports",
+      "openList": "Open the filtered list."
+    },
+    "tour": {
+      "welcome": {
+        "title": "Welcome, Admin",
+        "content": "This sidebar is your control center for managing the whole platform."
+      },
+      "stats": {
+        "title": "Platform overview",
+        "content": "A snapshot of total reports, active users, pending cases, and anonymous submissions — click any card to open the matching, pre-filtered list."
+      },
+      "filters": {
+        "title": "Filter the period",
+        "content": "Narrow every figure on this page to a date range and interval, then press Apply."
+      },
+      "allReports": {
+        "title": "All reports",
+        "content": "Review every report submitted across the organization."
+      },
+      "users": {
+        "title": "User management",
+        "content": "Create, edit, and deactivate user accounts."
+      },
+      "roles": {
+        "title": "Roles & permissions",
+        "content": "Build your organization's roles and choose what each one is allowed to do."
+      },
+      "agents": {
+        "title": "AI agents",
+        "content": "Define the AI agents that triage and summarize incoming reports, and what each may do."
+      },
+      "workflows": {
+        "title": "Workflows",
+        "content": "Choose the stages a new report runs through, and where an agent hands over to a person."
+      },
+      "categories": {
+        "title": "Reports by category",
+        "content": "See which report types are driving volume over the selected period. Click a category to list its reports."
+      },
+      "distribution": {
+        "title": "Category distribution",
+        "content": "The same breakdown as a share of the total — click a slice to drill into that category."
+      },
+      "account": {
+        "title": "Your account",
+        "content": "Manage your profile or log out from here."
+      }
+    },
+    "filters": {
+      "startDate": "Start date",
+      "endDate": "End date",
+      "interval": "Interval",
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "remove": "Remove filter",
+      "apply": "Apply"
+    },
+    "categories": {
+      "title": "Reports by category",
+      "viewReports": "View {{name}} reports",
+      "cases_one": "{{count}} case",
+      "cases_other": "{{count}} cases"
+    },
+    "distribution": {
+      "title": "Category distribution",
+      "chartLabel": "Category distribution, pie chart: {{items}}",
+      "tooltipName": "Reports",
+      "emptyTitle": "No chart data available",
+      "emptyText": "Submit more reports to visualize category distribution."
+    }
+  },
+  "reviewer": {
+    "seo": {
+      "title": "Reviewer Dashboard",
+      "description": "Reports assigned to you for review, with status and category breakdowns."
+    },
+    "cards": {
+      "total": {
+        "title": "Total assigned",
+        "description": "Total reports assigned to you"
+      },
+      "pending": {
+        "description": "Awaiting your initial review"
+      }
+    },
+    "tour": {
+      "welcome": {
+        "title": "Welcome, Reviewer"
+      },
+      "stats": {
+        "content": "Track total, pending, active, and resolved reports assigned to you."
+      },
+      "allReports": {
+        "content": "Browse and open every report you have access to review."
+      },
+      "help": {
+        "title": "Help & Support",
+        "content": "Have a question? Find guidance and support resources here."
+      }
+    }
+  },
+  "analytics": {
+    "seo": {
+      "title": "Analytics",
+      "description": "Trends, resolution times, and category breakdowns across your reports."
+    },
+    "filter": "Filter",
+    "hideFilters": "Hide filters",
+    "reset": "Reset",
+    "export": {
+      "success": "Analytics report downloaded.",
+      "failed": "Failed to download report"
+    },
+    "metrics": {
+      "total": "Total reports",
+      "registered": "Registered reporters",
+      "anonymous": "Anonymous",
+      "activeUsers": "Active users"
+    }
+  },
+  "team": {
+    "seo": {
+      "title": "Team",
+      "description": "Members of your compliance team, their roles, and current case load."
+    },
+    "title": "Compliance personnel",
+    "manageRoles": "Manage roles",
+    "stats": {
+      "avgResolution": "Avg. resolution time",
+      "trend": "↓ {{percent}}% from last month",
+      "active": "Active investigations",
+      "optimal": "Optimal distribution",
+      "resolved": "Cases resolved (YTD)",
+      "resolvedHint": "System-wide resolution count"
+    },
+    "columns": {
+      "member": "Member",
+      "role": "Role",
+      "email": "Email",
+      "workload": "Workload",
+      "avgTime": "Avg. time",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "emptyTitle": "No team members found",
+    "emptyDescription": "Personnel will appear here once assigned roles.",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "activeCount_one": "{{count}} active",
+    "activeCount_other": "{{count}} active",
+    "online": "Online",
+    "openMember": "Open {{name}}"
+  },
+  "card": {
+    "unassigned": "Unassigned",
+    "moreTags_one": "+{{count}} more",
+    "moreTags_other": "+{{count}} more",
+    "messages_one": "{{count}} message",
+    "messages_other": "{{count}} messages",
+    "viewDetails": "View details",
+    "assignToMe": "Assign to me"
+  },
+  "timeline": {
+    "emptyTitle": "No activity yet",
+    "emptyText": "There hasn't been any activity on this report yet.",
+    "system": "System",
+    "internalNote": "Internal note",
+    "title": {
+      "created": "Report created",
+      "assigned": "Assigned to {{assignee}}",
+      "status_changed": "Status changed to {{status}}",
+      "message_sent": "Message sent",
+      "note_added": "Internal note added",
+      "file_uploaded": "File uploaded: {{file}}",
+      "viewed": "Viewed by {{viewer}}",
+      "reopened": "Report reopened",
+      "closed": "Report closed",
+      "rejected": "Report rejected",
+      "escalated": "Report escalated",
+      "tagged": "Tag added: {{tag}}",
+      "priority_changed": "Priority changed to {{priority}}",
+      "default": "Activity"
+    },
+    "description": {
+      "created": "{{name}} submitted a new report",
+      "assigned": "{{name}} assigned this report",
+      "status_changed": "{{name}} changed the status from {{from}} to {{to}}",
+      "message_sent": "{{name}} sent a message",
+      "message_sent_internal": "{{name}} added an internal message",
+      "note_added": "{{name}} added an internal note",
+      "file_uploaded": "{{name}} uploaded a file",
+      "viewed": "{{name}} viewed the report",
+      "reopened": "{{name}} reopened the report",
+      "closed": "{{name}} closed the report",
+      "rejected": "{{name}} rejected the report",
+      "escalated": "{{name}} escalated the report",
+      "tagged": "{{name}} added a tag",
+      "priority_changed": "{{name}} changed priority from {{from}} to {{to}}",
+      "default": "{{name}} performed an action"
+    }
+  },
+  "chat": {
+    "unknownSender": "Unknown",
+    "you": "(You)",
+    "read": "Read",
+    "emptyTitle": "No messages yet",
+    "emptyReporter": "Send a message to the compliance team to provide additional information or ask questions about your report.",
+    "emptyStaff": "Start a conversation with the reporter or add internal notes for your team.",
+    "title": "Communication",
+    "hideInternal": "Hide internal",
+    "showInternal": "Show internal",
+    "sendAsInternal": "Send as internal note",
+    "onlyCompliance": "Only visible to the compliance team",
+    "kb": "{{size}} KB",
+    "remove": "Remove",
+    "placeholderInternal": "Add an internal note…",
+    "placeholderReporter": "Type your message to the compliance team…",
+    "placeholder": "Type your message…",
+    "internalLabel": "Internal note",
+    "messageLabel": "Message",
+    "send": "Send message",
+    "internalHint": "Internal notes are only visible to the compliance team",
+    "reporterHint": "Your messages are confidential and will only be seen by the compliance team",
+    "keyHint": "Press Enter to send, Shift+Enter for a new line"
+  },
+  "voice": {
+    "title": "Answers from the call",
+    "declined": "Declined to answer",
+    "notAnswered": "Not answered",
+    "version": "Collected under question set v{{version}}"
+  }
+}

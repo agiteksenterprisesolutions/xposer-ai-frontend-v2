@@ -22,6 +22,8 @@ import {
   Package,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { Trans, useTranslation } from "react-i18next";
+import { intlLocale, isRtl } from "../../utils/locale";
 import { REPORT_TYPE_STATUSES, reportTypeStatus } from "../../utils/reportTypes";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/ui/Card";
@@ -59,20 +61,21 @@ const REPORT_TYPES_TOUR_KEY = 'xposer_report_types_tour_seen';
 
 // Column order here is the column order in the table. Actions is not sortable,
 // so it keeps a plain header.
-const SORT_COLUMNS = {
-  name: { label: 'Name', defaultOrder: 'asc', value: byText('name') },
-  category: { label: 'Category', defaultOrder: 'asc', value: (type) => (type.category || 'General').toLowerCase() },
+// Built per render so the labels follow the interface language.
+const sortColumns = (t) => ({
+  name: { label: t('list.columns.name'), defaultOrder: 'asc', value: byText('name') },
+  category: { label: t('list.columns.category'), defaultOrder: 'asc', value: (type) => (type.category || 'General').toLowerCase() },
   // Active first, then drafts, then withdrawn.
-  status: { label: 'Status', defaultOrder: 'asc', value: (type) => ({ active: 0, draft: 1, inactive: 2 })[reportTypeStatus(type)] },
-  created_at: { label: 'Created On', defaultOrder: 'desc', value: byDate('created_at') },
-};
+  status: { label: t('list.columns.status'), defaultOrder: 'asc', value: (type) => ({ active: 0, draft: 1, inactive: 2 })[reportTypeStatus(type)] },
+  created_at: { label: t('list.columns.createdOn'), defaultOrder: 'desc', value: byDate('created_at') },
+});
 
 // The API sends naive UTC timestamps ("2026-08-20T10:50:37.782000"), which
 // parseServerDate normalizes before converting to the viewer's local time.
 const formatCreatedAt = (dateString) => {
   const date = parseServerDate(dateString);
   if (!date) return '—';
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(intlLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -82,13 +85,19 @@ const formatCreatedAt = (dateString) => {
 };
 
 const ReportTypes = () => {
+  const { t, i18n } = useTranslation('reportTypes');
   useSEO({
-    title: 'Report Types',
-    description: 'Manage the report categories and intake forms available to reporters.',
+    title: t('list.seoTitle'),
+    description: t('list.seoDescription'),
     noIndex: true,
   });
   const { user } = useAuthStore();
   const can = useCan();
+  // REPORT_TYPE_STATUSES carries English labels; show ours, keep its as fallback.
+  const statusLabel = (value) =>
+    t(`status.${value}`, { defaultValue: REPORT_TYPE_STATUSES.find((s) => s.value === value)?.label || value });
+  const statusHint = (value) =>
+    t(`statusHint.${value}`, { defaultValue: REPORT_TYPE_STATUSES.find((s) => s.value === value)?.hint || '' });
   // report_type:read opens this page; changing anything on it needs manage.
   const canManage = can(PERM.reportTypeManage);
   const [types, setTypes] = useState([]);
@@ -205,10 +214,10 @@ const ReportTypes = () => {
       searchCache.current.matches = searchCache.current.matches.map((t) => (t.id === type.id ? { ...t, status } : t));
       toast.success(
         status === "active"
-          ? `"${type.name}" is active — reporters can file it.`
+          ? t('list.toast.active', { name: type.name })
           : status === "inactive"
-            ? `"${type.name}" is withdrawn. Existing cases are unaffected.`
-            : `"${type.name}" is a draft again — hidden from reporters.`,
+            ? t('list.toast.inactive', { name: type.name })
+            : t('list.toast.draft', { name: type.name }),
       );
       if (showActiveOnly) {
         // It may have left the filter; re-read rather than trust the cache.
@@ -227,7 +236,7 @@ const ReportTypes = () => {
     try {
       const { blob, filename } = await reportTypesAPI.downloadImportTemplate();
       saveBlob(blob, filename);
-      toast.success("Template downloaded");
+      toast.success(t('list.toast.templateDownloaded'));
     } catch (error) {
       console.error("Error downloading report type template:", error);
     } finally {
@@ -241,7 +250,7 @@ const ReportTypes = () => {
     try {
       const { blob, filename } = await reportTypesAPI.exportReportTypes({ activeOnly: showActiveOnly });
       saveBlob(blob, filename);
-      toast.success("Report types exported");
+      toast.success(t('list.toast.exported'));
     } catch (error) {
       console.error("Error exporting report types:", error);
     } finally {
@@ -262,17 +271,17 @@ const ReportTypes = () => {
       if (result.imported > 0) {
         toast.success(
           result.message ||
-          `Imported ${result.imported} report type${result.imported === 1 ? "" : "s"}`
+          t('list.toast.imported', { count: result.imported })
         );
         fetchTypes();
       } else {
-        toast.warn(result.message || "No report types were created from this file");
+        toast.warn(result.message || t('list.toast.noneCreated'));
       }
     } catch (error) {
       // A rejected import still carries the per-row problems worth showing.
       if (error.importResult) {
         setImportResult(error.importResult);
-        toast.error(error.importResult.message || "Nothing was imported");
+        toast.error(error.importResult.message || t('list.import.nothingImported'));
       } else {
         console.error("Error importing report types:", error);
       }
@@ -294,6 +303,7 @@ const ReportTypes = () => {
 
   // Ordering the current page: the endpoint paginates server-side, so this
   // sorts the rows on screen rather than every report type.
+  const SORT_COLUMNS = useMemo(() => sortColumns(t), [t, i18n.resolvedLanguage]);
   const sort = useTableSort(matchingTypes, SORT_COLUMNS, { defaultSortBy: 'name' });
   const { sortedRows: filteredTypes, getHeaderProps } = sort;
 
@@ -302,9 +312,10 @@ const ReportTypes = () => {
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-report-types"]',
-        title: 'Report Types',
-        content: 'Define the categories reporters can choose from when filing a report.',
-        placement: 'right',
+        title: t('list.tour.sidebarTitle'),
+        content: t('list.tour.sidebarBody'),
+        // The sidebar sits on the inline-start side; point away from it.
+        placement: isRtl() ? 'left' : 'right',
         skipBeacon: true,
       });
     }
@@ -312,46 +323,46 @@ const ReportTypes = () => {
     steps.push(
       {
         target: '[data-tour="types-search"]',
-        title: 'Search types',
-        content: 'Quickly find a report type by name or category.',
+        title: t('list.tour.searchTitle'),
+        content: t('list.tour.searchBody'),
         placement: 'bottom',
         skipBeacon: !isDesktop,
       },
       {
         target: '[data-tour="types-toggle"]',
-        title: 'Active Only filter',
-        content: 'Toggle to show every type, or just the ones currently active.',
+        title: t('list.tour.toggleTitle'),
+        content: t('list.tour.toggleBody'),
         placement: 'bottom',
       },
       {
         target: '[data-tour="types-transfer"]',
-        title: 'Import and export',
-        content: 'Export your report types to Excel, or create several at once: download the blank template, fill in one row per question, then choose Import new types. Import only creates — it never updates an existing type.',
+        title: t('list.tour.transferTitle'),
+        content: t('list.tour.transferBody'),
         placement: 'bottom',
       },
       {
         target: '[data-tour="types-create"]',
-        title: 'Create a new type',
-        content: 'Add a new report category with its own custom questions.',
+        title: t('list.tour.createTitle'),
+        content: t('list.tour.createBody'),
         placement: 'bottom',
       },
       {
         target: '[data-tour="types-table"]',
-        title: 'Manage types',
-        content: 'Edit a type, or toggle it active/inactive to control what reporters see.',
+        title: t('list.tour.tableTitle'),
+        content: t('list.tour.tableBody'),
         placement: 'top',
       }
     );
 
     steps.push({
       target: '[data-tour="tour-user-menu"]',
-      title: 'Your account',
-      content: 'Manage your profile or log out from here.',
+      title: t('list.tour.accountTitle'),
+      content: t('list.tour.accountBody'),
       placement: 'bottom',
     });
 
     return steps;
-  }, [isDesktop]);
+  }, [isDesktop, t, i18n.resolvedLanguage]);
 
   return (
     <div className="space-y-6">
@@ -360,7 +371,8 @@ const ReportTypes = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="relative w-full sm:w-80" data-tour="types-search">
           <Input
-            placeholder="Search by name or category..."
+            placeholder={t('list.searchPlaceholder')}
+            aria-label={t('list.searchLabel')}
             value={searchTerm}
             onChange={handleSearchChange}
             startAdornment={<Search className="h-4 w-4 text-ink-subtle" />}
@@ -375,10 +387,11 @@ const ReportTypes = () => {
               setCurrentPage(1);
             }}
             className="flex items-center gap-2 text-sm text-ink-secondary"
-            title={showActiveOnly ? "Showing active report types only" : "Showing all report types"}
+            title={showActiveOnly ? t('list.filter.showingActive') : t('list.filter.showingAll')}
+            aria-pressed={showActiveOnly}
             data-tour="types-toggle"
           >
-            <span>{showActiveOnly ? "Active Only" : "All Types"}</span>
+            <span>{showActiveOnly ? t('list.filter.activeOnly') : t('list.filter.allTypes')}</span>
             <div
               className={`w-10 h-5 rounded-full transition-all relative ${showActiveOnly ? "bg-success-solid" : "bg-active"
                 }`}
@@ -414,39 +427,39 @@ const ReportTypes = () => {
                     aria-haspopup="menu"
                     data-tour="types-transfer"
                   >
-                    Import / Export
+                    {t('list.transfer.button')}
                   </Button>
                 }
               >
                 <Dropdown.Item
                   onClick={handleExport}
-                  title={showActiveOnly ? "Export the active report types to Excel" : "Export every report type to Excel"}
+                  title={showActiveOnly ? t('list.transfer.exportActiveTitle') : t('list.transfer.exportAllTitle')}
                 >
                   <Download className="w-4 h-4 shrink-0" />
-                  {showActiveOnly ? "Export active types" : "Export all types"}
+                  {showActiveOnly ? t('list.transfer.exportActive') : t('list.transfer.exportAll')}
                 </Dropdown.Item>
                 <Dropdown.Divider />
                 <Dropdown.Item
                   onClick={() => fileInputRef.current?.click()}
-                  title="Create new report types from a filled-in template. Existing types are not updated."
+                  title={t('list.transfer.importTitle')}
                 >
                   <Upload className="w-4 h-4 shrink-0" />
-                  Import new types
+                  {t('list.transfer.import')}
                 </Dropdown.Item>
                 <Dropdown.Item
                   onClick={handleDownloadTemplate}
-                  title="Download a blank Excel template for bulk-importing report types"
+                  title={t('list.transfer.templateTitle')}
                 >
                   <FileSpreadsheet className="w-4 h-4 shrink-0" />
-                  Download blank template
+                  {t('list.transfer.template')}
                 </Dropdown.Item>
                 <Dropdown.Divider />
                 <Dropdown.Item
                   onClick={() => setInstallingPack(true)}
-                  title="Add a ready-made set of report types for your industry"
+                  title={t('list.transfer.packTitle')}
                 >
                   <Package className="w-4 h-4 shrink-0" />
-                  Install a sector pack
+                  {t('list.transfer.pack')}
                 </Dropdown.Item>
               </Dropdown>
               <Button
@@ -455,7 +468,7 @@ const ReportTypes = () => {
                 onClick={() => navigate(`/${user?.organization_slug}/staff/create-report-type`)}
                 data-tour="types-create"
               >
-                Create New Type
+                {t('list.create')}
               </Button>
             </>
           )}
@@ -471,7 +484,7 @@ const ReportTypes = () => {
                   {column.label}
                 </Table.Head>
               ))}
-              <Table.Head className="text-end">Actions</Table.Head>
+              <Table.Head className="text-end">{t('list.columns.actions')}</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -483,7 +496,7 @@ const ReportTypes = () => {
                   <Skeleton.Badge key="c" className="w-14" />,
                   <Skeleton.Badge key="s" tall className="w-16" />,
                   <Skeleton.Text key="d" size="xs" className="w-36" />,
-                  <div key="a" className="flex items-center justify-end space-x-2">
+                  <div key="a" className="flex items-center justify-end gap-2">
                     <Skeleton className="h-8 w-10 rounded-lg" />
                     {canManage && <Skeleton className="h-8 w-10 rounded-lg" />}
                     {canManage && <Skeleton className="h-10 w-18 rounded-lg" />}
@@ -494,17 +507,17 @@ const ReportTypes = () => {
               <Table.Empty
                 message={
                   searchTerm
-                    ? 'No matching report types'
+                    ? t('list.empty.noMatch')
                     : showActiveOnly
-                      ? "No active report types found"
-                      : "No report types defined"
+                      ? t('list.empty.noActive')
+                      : t('list.empty.none')
                 }
                 description={
                   searchTerm
-                    ? 'Try a different search term.'
+                    ? t('list.empty.noMatchHint')
                     : showActiveOnly
-                      ? "Turn off Active Only to view all report types"
-                      : "Start by creating your first report category"
+                      ? t('list.empty.noActiveHint')
+                      : t('list.empty.noneHint')
                 }
                 icon={ClipboardList}
               />
@@ -524,14 +537,15 @@ const ReportTypes = () => {
                     {type.sector_pack?.code && (
                       <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
                         <Package className="h-3 w-3 shrink-0" aria-hidden="true" />
-                        From the {type.sector_pack.code} pack
-                        {type.sector_pack.version != null && ` (v${type.sector_pack.version})`}
+                        {type.sector_pack.version != null
+                          ? t('list.fromPackVersion', { code: type.sector_pack.code, version: type.sector_pack.version })
+                          : t('list.fromPack', { code: type.sector_pack.code })}
                       </p>
                     )}
                   </Table.Cell>
                   <Table.Cell>
                     <Badge variant="info" size="small">
-                      {type.category || "General"}
+                      {type.category || t('list.generalCategory')}
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>
@@ -539,16 +553,16 @@ const ReportTypes = () => {
                       // Inside a clickable row, so the change must not open the type.
                       <div onClick={(e) => e.stopPropagation()}>
                         <select
-                          aria-label={`Status of ${type.name}`}
+                          aria-label={t('list.statusOf', { name: type.name })}
                           value={reportTypeStatus(type)}
                           disabled={statusSaving === type.id}
                           onChange={(e) => handleStatusChange(type, e.target.value)}
-                          title={REPORT_TYPE_STATUSES.find((s) => s.value === reportTypeStatus(type))?.hint}
+                          title={statusHint(reportTypeStatus(type))}
                           className={`h-8 rounded-lg border px-2 text-xs font-semibold outline-none focus:border-line-accent disabled:opacity-60 ${STATUS_STYLE[reportTypeStatus(type)]}`}
                         >
                           {REPORT_TYPE_STATUSES.map((s) => (
                             <option key={s.value} value={s.value}>
-                              {s.label}
+                              {statusLabel(s.value)}
                             </option>
                           ))}
                         </select>
@@ -557,9 +571,9 @@ const ReportTypes = () => {
                       <Badge
                         variant={STATUS_BADGE[reportTypeStatus(type)]}
                         dot
-                        title={REPORT_TYPE_STATUSES.find((s) => s.value === reportTypeStatus(type))?.hint}
+                        title={statusHint(reportTypeStatus(type))}
                       >
-                        {REPORT_TYPE_STATUSES.find((s) => s.value === reportTypeStatus(type))?.label}
+                        {statusLabel(reportTypeStatus(type))}
                       </Badge>
                     )}
                   </Table.Cell>
@@ -573,12 +587,12 @@ const ReportTypes = () => {
                         The guard is on this wrapper rather than the cell: the
                         mobile card layout renders cell children without the
                         cell's own props. */}
-                    <div className="flex justify-end space-x-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="ghost"
                         size="small"
-                        title="View"
-                        aria-label={`View ${type.name}`}
+                        title={t('list.view')}
+                        aria-label={t('list.viewName', { name: type.name })}
                         onClick={() =>
                           navigate(`/${user?.organization_slug}/staff/report-types/${type.id}/view`)
                         }
@@ -590,8 +604,8 @@ const ReportTypes = () => {
                           <Button
                             variant="ghost"
                             size="small"
-                            title="Edit"
-                            aria-label={`Edit ${type.name}`}
+                            title={t('list.edit')}
+                            aria-label={t('list.editName', { name: type.name })}
                             onClick={() =>
                               navigate(`/${user?.organization_slug}/staff/report-types/${type.id}`)
                             }
@@ -630,11 +644,11 @@ const ReportTypes = () => {
       <Modal
         isOpen={Boolean(importResult)}
         onClose={() => setImportResult(null)}
-        title="Import results"
+        title={t('list.import.title')}
         size="large"
         footer={
           <Button variant="secondary" onClick={() => setImportResult(null)}>
-            Close
+            {t('common:actions.close')}
           </Button>
         }
       >
@@ -649,10 +663,7 @@ const ReportTypes = () => {
             ) : (
               <AlertTriangle className="h-4 w-4 text-warning-solid" />
             )}
-            <span>
-              {importResult?.imported || 0} report type
-              {importResult?.imported === 1 ? "" : "s"} imported
-            </span>
+            <span>{t('list.import.count', { count: importResult?.imported || 0 })}</span>
           </div>
 
           {importResult?.created?.length > 0 && (
@@ -668,14 +679,13 @@ const ReportTypes = () => {
 
           {/* Import is all-or-nothing: one bad row means no type was created. */}
           {importResult?.problems?.length > 0 && !(importResult?.imported > 0) && (
-            <Alert variant="error" title="Nothing was imported">
-              The import is all-or-nothing, so none of the report types in this file were created. Fix the
-              problems below and upload it again.
+            <Alert variant="error" title={t('list.import.nothingImported')}>
+              {t('list.import.allOrNothing')}
             </Alert>
           )}
 
           {importResult?.warnings?.length > 0 && (
-            <Alert variant="warning" title={`Warnings (${importResult.warnings.length})`}>
+            <Alert variant="warning" title={t('list.import.warnings', { count: importResult.warnings.length })}>
               <ul className="list-disc space-y-1 ps-4">
                 {importResult.warnings.map((warning, index) => (
                   <li key={index}>
@@ -710,7 +720,7 @@ const ReportTypes = () => {
                   <div className="space-y-2">
                     <p className="flex items-center gap-2 text-sm font-semibold text-ink">
                       <AlertTriangle className="h-4 w-4 text-warning-solid" />
-                      About the whole file ({fileProblems.length})
+                      {t('list.import.wholeFile', { count: fileProblems.length })}
                     </p>
                     <ul className="list-disc space-y-1 ps-5 text-sm text-ink-secondary marker:text-ink-subtle">
                       {fileProblems.flatMap((problem, index) =>
@@ -718,10 +728,7 @@ const ReportTypes = () => {
                       )}
                     </ul>
                     {alreadyExists && (
-                      <p className="text-xs text-ink-muted">
-                        Importing never updates an existing type — it matches on the name. To replace one, delete it
-                        here first, then import the file again.
-                      </p>
+                      <p className="text-xs text-ink-muted">{t('list.import.alreadyExistsHint')}</p>
                     )}
                   </div>
                 )}
@@ -729,12 +736,12 @@ const ReportTypes = () => {
                   <div className="space-y-2">
                     <p className="flex items-center gap-2 text-sm font-semibold text-ink">
                       <AlertTriangle className="h-4 w-4 text-warning-solid" />
-                      In specific rows ({rowProblems.length})
+                      {t('list.import.inRows', { count: rowProblems.length })}
                     </p>
                     <ul className="space-y-3 text-sm text-ink-secondary">
                       {rowProblems.map((problem, index) => (
                         <li key={index} className="space-y-1">
-                          <p className="font-semibold text-ink">Row {problem.row}</p>
+                          <p className="font-semibold text-ink">{t('list.import.row', { row: problem.row })}</p>
                           <ul className="list-disc space-y-1 ps-4 marker:text-ink-subtle">
                             {errorsOf(problem).map((err, errIndex) => (
                               <li key={errIndex}>{err}</li>
@@ -747,16 +754,19 @@ const ReportTypes = () => {
                 )}
                 {unknownOwner && (
                   <p className="text-xs text-ink-muted">
-                    Owner columns must name one of your roles, by code or name. Change the file to use an existing
-                    role, or{" "}
                     {can(ACCESS.roles) ? (
-                      <Link to={`/${user?.organization_slug}/staff/roles`} className="font-medium text-link hover:underline">
-                        create the role
-                      </Link>
+                      <Trans
+                        t={t}
+                        i18nKey="list.import.unknownOwnerLink"
+                        components={{
+                          roleLink: (
+                            <Link to={`/${user?.organization_slug}/staff/roles`} className="font-medium text-link hover:underline" />
+                          ),
+                        }}
+                      />
                     ) : (
-                      "ask an admin to create the role"
-                    )}{" "}
-                    first.
+                      t('list.import.unknownOwnerAsk')
+                    )}
                   </p>
                 )}
               </div>

@@ -9,12 +9,14 @@
 //            node — to the right of a top-to-bottom flow, below a
 //            left-to-right one — so a jump forwards or backwards never cuts
 //            across the steps in between.
+import { useTranslation } from 'react-i18next';
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath } from '@xyflow/react';
 import { Plus } from 'lucide-react';
 import { useWorkflowCanvas } from './canvasContext';
 
 export const SpineEdge = ({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, markerEnd, data }) => {
   const { readOnly, insertAt } = useWorkflowCanvas();
+  const { t } = useTranslation('admin');
   const [path, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -33,8 +35,8 @@ export const SpineEdge = ({ sourceX, sourceY, targetX, targetY, sourcePosition, 
           <button
             type="button"
             onClick={() => insertAt(data.index)}
-            aria-label="Add a step here"
-            title="Add a step here"
+            aria-label={t('workflow.addStepHere')}
+            title={t('workflow.addStepHere')}
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`, pointerEvents: 'all' }}
             className="nodrag nopan absolute flex h-6 w-6 items-center justify-center rounded-full border border-line-strong bg-surface text-ink-muted shadow-sm transition-colors hover:border-line-accent hover:bg-accent hover:text-on-accent"
           >

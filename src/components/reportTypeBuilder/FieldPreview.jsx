@@ -2,6 +2,7 @@
 //
 // A question's answer area as a reporter sees it — inert, for the builder's
 // canvas and the reporter preview. `compact` is the phone-sized version.
+import { useTranslation } from 'react-i18next';
 import { Upload } from 'lucide-react';
 import { DEFAULT_CURRENCY, normalizeOptions } from '../../utils/reportTypes';
 
@@ -9,6 +10,7 @@ const box = (compact) =>
   `w-full rounded-lg border border-line bg-subtle text-ink-muted ${compact ? 'h-9 px-2.5 text-xs' : 'h-10 px-3 text-sm'} flex items-center`;
 
 const FieldPreview = ({ question, compact = false }) => {
+  const { t } = useTranslation('builder');
   const options = normalizeOptions(question.options);
   const hint = question.placeholder;
 
@@ -18,7 +20,7 @@ const FieldPreview = ({ question, compact = false }) => {
     case 'select':
       return (
         <div className={`${box(compact)} justify-between`}>
-          <span className="truncate">{hint || 'Choose an answer'}</span>
+          <span className="truncate">{hint || t('preview.chooseAnswer')}</span>
           <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <path d="m6 9 6 6 6-6" />
           </svg>
@@ -34,14 +36,14 @@ const FieldPreview = ({ question, compact = false }) => {
             </span>
           ))}
           {options.length > (compact ? 4 : 6) && (
-            <span className="text-xs text-ink-muted">+{options.length - (compact ? 4 : 6)} more</span>
+            <span className="text-xs text-ink-muted">{t('preview.more', { count: options.length - (compact ? 4 : 6) })}</span>
           )}
         </div>
       );
     case 'boolean':
       return (
         <div className="flex gap-2">
-          {['Yes', 'No'].map((label) => (
+          {[t('logic.yes'), t('logic.no')].map((label) => (
             <span
               key={label}
               className={`flex items-center justify-center rounded-lg border border-line text-ink-secondary ${compact ? 'h-8 flex-1 text-xs' : 'h-9 px-5 text-sm'}`}
@@ -52,9 +54,9 @@ const FieldPreview = ({ question, compact = false }) => {
         </div>
       );
     case 'date':
-      return <div className={`${box(compact)} ${compact ? '' : 'max-w-60'}`}>dd / mm / yyyy</div>;
+      return <div className={`${box(compact)} ${compact ? '' : 'max-w-60'}`}>{t('preview.datePlaceholder')}</div>;
     case 'datetime':
-      return <div className={`${box(compact)} ${compact ? '' : 'max-w-72'}`}>dd / mm / yyyy, --:--</div>;
+      return <div className={`${box(compact)} ${compact ? '' : 'max-w-72'}`}>{t('preview.dateTimePlaceholder')}</div>;
     case 'time':
       return <div className={`${box(compact)} ${compact ? '' : 'max-w-40'}`}>--:--</div>;
     case 'currency':
@@ -70,7 +72,7 @@ const FieldPreview = ({ question, compact = false }) => {
           className={`flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-line bg-subtle text-ink-muted ${compact ? 'py-3 text-xs' : 'py-5 text-sm'}`}
         >
           <Upload className="h-4 w-4" aria-hidden="true" />
-          Add files
+          {t('preview.addFiles')}
         </div>
       );
     case 'number':

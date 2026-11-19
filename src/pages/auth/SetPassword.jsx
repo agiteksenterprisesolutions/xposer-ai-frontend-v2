@@ -9,7 +9,9 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Check, Eye, EyeOff, KeyRound, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Button from '../../components/ui/Button';
+import LanguageToggle from '../../components/ui/LanguageToggle';
 import Alert from '../../components/ui/Alert';
 import XposerLogo from '../../components/brand/XposerLogo';
 import { authAPI } from '../../api/auth';
@@ -19,6 +21,7 @@ import { PASSWORD_RULES, changePasswordSchema, mustChangePassword } from '../../
 import useSEO from '../../hooks/useSEO';
 
 const PasswordField = ({ id, label, value, onChange, error, autoComplete, describedBy }) => {
+  const { t } = useTranslation('people');
   const [visible, setVisible] = useState(false);
   return (
     <div className="space-y-1.5">
@@ -41,10 +44,10 @@ const PasswordField = ({ id, label, value, onChange, error, autoComplete, descri
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+          aria-label={visible ? t('setPassword.hide', { field: label }) : t('setPassword.show', { field: label })}
           className="absolute end-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink"
         >
-          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
         </button>
       </div>
       {error && <p className="text-xs text-danger-fg">{error}</p>}
@@ -53,7 +56,8 @@ const PasswordField = ({ id, label, value, onChange, error, autoComplete, descri
 };
 
 const SetPassword = () => {
-  useSEO({ title: 'Set your password', noIndex: true });
+  const { t } = useTranslation('people');
+  useSEO({ title: t('setPassword.seoTitle'), noIndex: true });
   const navigate = useNavigate();
   const { user, isAuthenticated, logout, markPasswordChanged, refreshUser } = useAuthStore();
   const [form, setForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
@@ -108,7 +112,7 @@ const SetPassword = () => {
       // that is the shared default — both written for the person.
       const detail = error?.detail;
       setServerError(
-        (typeof detail === 'string' && detail) || detail?.message || error?.message || "Your password wasn't changed. Try again.",
+        (typeof detail === 'string' && detail) || detail?.message || error?.message || t('setPassword.failed'),
       );
     } finally {
       setSaving(false);
@@ -120,17 +124,19 @@ const SetPassword = () => {
   return (
     <main className="flex min-h-dvh items-start justify-center bg-canvas px-4 py-10 sm:items-center">
       <div className="w-full max-w-md space-y-6">
-        <XposerLogo className="mx-auto h-7 w-auto" />
+        <div className="relative flex items-center justify-center">
+          <XposerLogo className="h-7 w-auto" />
+          <LanguageToggle className="absolute end-0" />
+        </div>
 
         <form onSubmit={submit} noValidate className="space-y-5 rounded-2xl border border-line bg-surface p-6 shadow-lg sm:p-8">
           <div className="space-y-2">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-soft text-accent-fg">
               <KeyRound className="h-5 w-5" aria-hidden="true" />
             </span>
-            <h1 className="text-xl font-bold tracking-[-0.01em] text-ink">Set your own password{name ? `, ${name}` : ''}</h1>
+            <h1 className="text-xl font-bold tracking-[-0.01em] text-ink">{name ? t('setPassword.titleNamed', { name }) : t('setPassword.title')}</h1>
             <p className="text-sm leading-relaxed text-ink-muted">
-              Your account was created with a temporary password. Choose your own to continue — you can't use the
-              app until you do.
+              {t('setPassword.intro')}
             </p>
           </div>
 
@@ -138,7 +144,7 @@ const SetPassword = () => {
 
           <PasswordField
             id="sp-current"
-            label="Temporary password"
+            label={t('setPassword.current')}
             value={form.current_password}
             onChange={set('current_password')}
             error={errors.current_password}
@@ -146,14 +152,14 @@ const SetPassword = () => {
           />
           <PasswordField
             id="sp-new"
-            label="New password"
+            label={t('setPassword.new')}
             value={form.new_password}
             onChange={set('new_password')}
             error={errors.new_password}
             autoComplete="new-password"
             describedBy="sp-rules"
           />
-          <ul id="sp-rules" className="grid grid-cols-1 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-2" aria-label="Password rules">
+          <ul id="sp-rules" className="grid grid-cols-1 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-2" aria-label={t('setPassword.rules')}>
             {PASSWORD_RULES.map((rule) => {
               const met = rule.test(form.new_password);
               return (
@@ -164,14 +170,14 @@ const SetPassword = () => {
                     {met && <Check className="h-3 w-3" aria-hidden="true" />}
                   </span>
                   {rule.label}
-                  <span className="sr-only">{met ? '(met)' : '(not met)'}</span>
+                  <span className="sr-only">{met ? t('setPassword.met') : t('setPassword.notMet')}</span>
                 </li>
               );
             })}
           </ul>
           <PasswordField
             id="sp-confirm"
-            label="Confirm new password"
+            label={t('setPassword.confirm')}
             value={form.confirm_password}
             onChange={set('confirm_password')}
             error={errors.confirm_password}
@@ -179,9 +185,9 @@ const SetPassword = () => {
           />
 
           <Button type="submit" fullWidth size="large" isLoading={saving}>
-            Set password and continue
+            {t('setPassword.submit')}
           </Button>
-          <p className="text-center text-xs text-ink-muted">Signing in elsewhere? Those sessions end when you set it.</p>
+          <p className="text-center text-xs text-ink-muted">{t('setPassword.sessions')}</p>
         </form>
 
         <button
@@ -193,7 +199,7 @@ const SetPassword = () => {
           className="mx-auto flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink"
         >
           <LogOut className="h-4 w-4" aria-hidden="true" />
-          Sign out
+          {t('setPassword.signOut')}
         </button>
       </div>
     </main>

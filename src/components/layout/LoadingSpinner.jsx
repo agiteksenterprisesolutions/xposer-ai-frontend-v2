@@ -1,13 +1,16 @@
 // src/components/layout/LoadingSpinner.jsx
 import React from 'react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const LoadingSpinner = ({
-  message = 'Loading...',
+  message,
   fullScreen = false,
   size = 'medium',
   className = '',
 }) => {
+  const { t } = useTranslation('common');
+  message ??= t('status.loading');
   const sizeClasses = {
     small: 'h-4 w-4',
     medium: 'h-8 w-8',
@@ -45,10 +48,12 @@ const LoadingSpinner = ({
 // Loading overlay for components
 export const LoadingOverlay = ({
   isLoading,
-  message = 'Loading...',
+  message,
   children,
   className = '',
 }) => {
+  const { t } = useTranslation('common');
+  message ??= t('status.loading');
   if (!isLoading) return children;
 
   return (

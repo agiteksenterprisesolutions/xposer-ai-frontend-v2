@@ -10,6 +10,7 @@
 // `excluded_user_ids` is never read here. A locked-out person gets a 404 for
 // the case, and nothing on any screen may hint at who else is excluded.
 import { ShieldAlert } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Card from '../ui/Card';
 import Badge from '../ui/Badge';
 import { useMemberNames } from '../../hooks/useMemberNames';
@@ -24,6 +25,7 @@ export const hasEscalationRecord = (report) =>
   );
 
 const EscalationRecord = ({ report, canReadHierarchy = false }) => {
+  const { t } = useTranslation('cases');
   const ids = [report.implicated_member_id, report.escalated_to_member_id].filter(Boolean);
 
   // Names come from the directory, when the viewer may read it — just these two, by employee id.
@@ -37,29 +39,29 @@ const EscalationRecord = ({ report, canReadHierarchy = false }) => {
     <Card>
       <Card.Header>
         <Card.Title className="flex flex-wrap items-center gap-2">
-          <ShieldAlert className="h-4 w-4 text-warning-fg" />
-          Escalation
+          <ShieldAlert className="h-4 w-4 text-warning-fg" aria-hidden="true" />
+          {t('escalationRecord.title')}
           {report.coi_bypass_applied && (
             <Badge variant="warning" size="small">
-              Routed around the implicated person
+              {t('escalationRecord.bypass')}
             </Badge>
           )}
         </Card.Title>
       </Card.Header>
       <Card.Content className="space-y-3">
-        {report.escalated_reason && <p className="text-sm text-ink-secondary">{report.escalated_reason}</p>}
+        {report.escalated_reason && <p className="text-sm text-ink-secondary" dir="auto">{report.escalated_reason}</p>}
         {ids.length > 0 && (
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             {report.implicated_member_id && (
               <div>
-                <dt className="text-xs text-ink-subtle">Implicated</dt>
-                <dd className="font-medium text-ink">{nameOf(report.implicated_member_id)}</dd>
+                <dt className="text-xs text-ink-subtle">{t('escalationRecord.implicated')}</dt>
+                <dd className="font-medium text-ink" dir="auto">{nameOf(report.implicated_member_id)}</dd>
               </div>
             )}
             {report.escalated_to_member_id && (
               <div>
-                <dt className="text-xs text-ink-subtle">Escalated to</dt>
-                <dd className="font-medium text-ink">{nameOf(report.escalated_to_member_id)}</dd>
+                <dt className="text-xs text-ink-subtle">{t('escalationRecord.escalatedTo')}</dt>
+                <dd className="font-medium text-ink" dir="auto">{nameOf(report.escalated_to_member_id)}</dd>
               </div>
             )}
           </dl>

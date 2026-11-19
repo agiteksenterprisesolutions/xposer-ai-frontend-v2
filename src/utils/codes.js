@@ -3,10 +3,12 @@
 // Codes are the stable slugs organization-defined things are referred to by —
 // a role's code on a user, an agent's code in a workflow stage. Names change;
 // codes never do.
+import i18n from '../i18n';
 
 export const CODE_PATTERN = /^[a-z][a-z0-9_]*$/;
 
-export const CODE_HINT = 'Use lowercase letters, numbers and underscores, starting with a letter.';
+/** The format rule for codes, in the current interface language. */
+export const codeHint = () => i18n.t('codeHint', { ns: 'common' });
 
 /** "Finance Lead" → "finance_lead" — a suggestion the user can still edit. */
 export const suggestCode = (name, prefix = 'x') =>

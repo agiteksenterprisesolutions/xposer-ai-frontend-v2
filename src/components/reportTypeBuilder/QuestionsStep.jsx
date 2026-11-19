@@ -12,6 +12,7 @@
 // Removing a standard question shows what stops working first (its
 // `if_disabled`), from the canvas or the settings panel.
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowDown,
   ArrowUp,
@@ -44,6 +45,7 @@ const DropLine = () => <div className="mx-2 h-0.5 rounded-full bg-accent" aria-h
 
 const Outline = ({ draft, problemIds }) => {
   const { form, selection, select, addSection, addQuestion, removeSection, catalog, moveSectionTo, moveQuestionTo } = draft;
+  const { t } = useTranslation('builder');
   const activeId = selection?.sectionId;
   const total = form.sections.reduce((n, s) => n + s.questions.length, 0);
   const locks = (section) => section.questions.some((q) => isCore(q) || !canTurnOff(entryFor(catalog, q)));
@@ -95,15 +97,15 @@ const Outline = ({ draft, problemIds }) => {
   };
 
   return (
-    <nav aria-label="Form outline" className="flex h-full flex-col" data-tour="rtb-outline">
+    <nav aria-label={t('outline.label')} className="flex h-full flex-col" data-tour="rtb-outline">
       <div className="flex items-center justify-between px-5 pb-2 pt-5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">Steps</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">{t('outline.steps')}</span>
         <span className="text-xs text-ink-muted">
-          {form.sections.length} step{form.sections.length === 1 ? '' : 's'} · {total} question{total === 1 ? '' : 's'}
+          {t('outline.stepCount', { count: form.sections.length })} · {t('inspector.questionCount', { count: total })}
         </span>
       </div>
 
-      <div className="flex-1 space-y-1 overflow-y-auto px-3 pb-3 scrollbar-thin">
+      <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pb-3 scrollbar-thin">
         {form.sections.map((section, index) => {
           const open = section.id === activeId;
           const stepSelected = open && !selection?.questionId;
@@ -116,7 +118,7 @@ const Outline = ({ draft, problemIds }) => {
                 draggable
                 onDragStart={(e) => startDrag(e, { kind: 'step', sectionId: section.id })}
                 onDragEnd={endDrag}
-                title="Drag to reorder"
+                title={t('outline.dragToReorder')}
                 className={`group flex items-center rounded-lg transition-colors ${into ? 'bg-accent-soft ring-2 ring-accent' : stepSelected ? 'bg-surface shadow-[0_0_0_1.5px_var(--color-accent)]' : open ? '' : 'hover:bg-hover'
                   }`}
               >
@@ -134,10 +136,12 @@ const Outline = ({ draft, problemIds }) => {
                   {index + 1}
                 </span>
                 <span className={`min-w-0 flex-1 truncate text-sm ${open ? 'font-semibold text-ink' : 'font-medium text-ink-secondary'}`}>
-                  {section.title || <span className="italic text-ink-muted">Untitled step</span>}
+                  {section.title || <span className="italic text-ink-muted">{t('preview.untitledStep')}</span>}
                 </span>
-                {problemIds.has(section.id) && <span className="h-2 w-2 shrink-0 rounded-full bg-danger-solid" aria-label="Needs attention" />}
-                {isConditional(section) && <GitBranch className="h-3.5 w-3.5 shrink-0 text-accent-fg" aria-label="Has a condition" />}
+                {problemIds.has(section.id) && (
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-danger-solid" role="img" aria-label={t('outline.needsAttention')} />
+                )}
+                {isConditional(section) && <GitBranch className="h-3.5 w-3.5 shrink-0 text-accent-fg" aria-label={t('outline.hasCondition')} />}
                 <span className="text-xs text-ink-muted">{section.questions.length}</span>
               </button>
               {/* On the open step: add a question, or delete the step, without
@@ -147,8 +151,8 @@ const Outline = ({ draft, problemIds }) => {
                   <button
                     type="button"
                     onClick={() => addQuestion(section.id, 'text', selection?.questionId ?? null)}
-                    aria-label={`Add a question to ${section.title || `step ${index + 1}`}`}
-                    title="Add a question"
+                    aria-label={t('outline.addQuestionTo', { step: section.title || t('issues.stepN', { n: index + 1 }) })}
+                    title={t('outline.addQuestion')}
                     className="flex h-7 w-7 items-center justify-center rounded-md text-accent-fg transition-colors hover:bg-accent-soft"
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
@@ -157,12 +161,12 @@ const Outline = ({ draft, problemIds }) => {
                     <button
                       type="button"
                       onClick={() => {
-                        if (section.questions.length === 0 || window.confirm('Delete this step and its questions?')) {
+                        if (section.questions.length === 0 || window.confirm(t('inspector.deleteStepConfirm'))) {
                           removeSection(section.id);
                         }
                       }}
-                      aria-label={`Delete ${section.title || `step ${index + 1}`}`}
-                      title="Delete step"
+                      aria-label={t('outline.deleteNamed', { step: section.title || t('issues.stepN', { n: index + 1 }) })}
+                      title={t('inspector.deleteStep')}
                       className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger-fg"
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -173,7 +177,7 @@ const Outline = ({ draft, problemIds }) => {
               </div>
 
               {open && section.questions.length > 0 && (
-                <ul className="space-y-px py-1 ps-3">
+                <ul className="flex flex-col gap-px py-1 ps-3">
                   {section.questions.map((question, qIndex) => {
                     const Icon = typeInfo(question.type).icon;
                     const active = selection?.questionId === question.id;
@@ -206,16 +210,16 @@ const Outline = ({ draft, problemIds }) => {
                         >
                           <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-accent-fg' : 'text-ink-muted'}`} aria-hidden="true" />
                           <span className="min-w-0 flex-1 truncate">
-                            {question.label || <span className="italic text-ink-muted">Untitled question</span>}
+                            {question.label || <span className="italic text-ink-muted">{t('preview.untitledQuestion')}</span>}
                           </span>
                           {problemIds.has(question.id) && (
-                            <span className="h-2 w-2 shrink-0 rounded-full bg-danger-solid" aria-label="Needs attention" />
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-danger-solid" role="img" aria-label={t('outline.needsAttention')} />
                           )}
-                          {isConditional(question) && <GitBranch className="h-3 w-3 shrink-0 text-accent-fg" aria-label="Has a condition" />}
+                          {isConditional(question) && <GitBranch className="h-3 w-3 shrink-0 text-accent-fg" aria-label={t('outline.hasCondition')} />}
                           {(isCore(question) || entryFor(catalog, question)) && (
                             <Lock
                               className="h-3 w-3 shrink-0 text-ink-muted"
-                              aria-label={isCore(question) ? 'Core question' : 'Standard question'}
+                              aria-label={isCore(question) ? t('outline.coreQuestion') : t('outline.standardQuestion')}
                             />
                           )}
                         </button>
@@ -237,14 +241,14 @@ const Outline = ({ draft, problemIds }) => {
           className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dashed border-line-strong px-3 py-2.5 text-sm font-medium text-link transition-colors hover:border-line-accent hover:bg-accent-soft/50"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
-          Add step
+          {t('outline.addStep')}
         </button>
       </div>
 
       {!catalog && form.sections.some((s) => s.questions.some(isCore)) && (
         <p className="m-3 flex gap-2 rounded-lg bg-subtle px-3 py-2.5 text-xs leading-relaxed text-ink-secondary">
           <Lock className="mt-px h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
-          Locked questions are core fields. They can't be removed or change type.
+          {t('outline.lockedNote')}
         </p>
       )}
     </nav>
@@ -254,6 +258,7 @@ const Outline = ({ draft, problemIds }) => {
 // ── Adding a question ─────────────────────────────────────────────────────────
 
 const AddQuestionBar = ({ onAdd }) => {
+  const { t } = useTranslation('builder');
   const [moreOpen, setMoreOpen] = useState(false);
   // Opens downward, flipping up only when there isn't room below — near the
   // top of the canvas (the first question) an upward menu ran under the header.
@@ -294,7 +299,7 @@ const AddQuestionBar = ({ onAdd }) => {
       data-tour="rtb-add-question"
     >
       <span className="me-1 flex items-center gap-1.5 text-sm font-medium text-ink-secondary">
-        Add a question :
+        {t('canvas.addQuestionLabel')}
       </span>
       {QUICK_TYPES.map((value) => {
         const type = typeInfo(value);
@@ -318,7 +323,7 @@ const AddQuestionBar = ({ onAdd }) => {
           onClick={toggleMore}
           className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-sm font-medium text-link hover:bg-accent-soft"
         >
-          More types
+          {t('canvas.moreTypes')}
           <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
         {moreOpen && (
@@ -326,7 +331,7 @@ const AddQuestionBar = ({ onAdd }) => {
             role="menu"
             className={`absolute start-0 z-20 w-52 rounded-xl border border-line bg-surface p-1.5 shadow-lg ${openUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}
           >
-            {QUESTION_TYPES.filter((t) => !QUICK_TYPES.includes(t.value)).map((type) => (
+            {QUESTION_TYPES.filter((option) => !QUICK_TYPES.includes(option.value)).map((type) => (
               <button
                 key={type.value}
                 type="button"
@@ -376,6 +381,7 @@ const selectable = (onSelect) => ({
 
 const QuestionCard = ({ draft, section, question, index, count, problem, onRemove }) => {
   const { form, selection, select, moveQuestion, duplicateQuestion, catalog } = draft;
+  const { t } = useTranslation('builder');
   const entry = entryFor(catalog, question);
   const removable = !isCore(question) && canTurnOff(entry);
   const active = selection?.questionId === question.id;
@@ -390,17 +396,17 @@ const QuestionCard = ({ draft, section, question, index, count, problem, onRemov
     <div className="relative" ref={ref}>
       {active && (
         <div className="absolute -bottom-4 end-4 z-10 flex gap-0.5 rounded-lg border border-line bg-surface p-0.5 shadow-sm">
-          <ToolButton label="Move up" disabled={index === 0} onClick={() => moveQuestion(section.id, question.id, -1)}>
+          <ToolButton label={t('canvas.moveUp')} disabled={index === 0} onClick={() => moveQuestion(section.id, question.id, -1)}>
             <ArrowUp className="h-3.5 w-3.5" />
           </ToolButton>
-          <ToolButton label="Move down" disabled={index === count - 1} onClick={() => moveQuestion(section.id, question.id, 1)}>
+          <ToolButton label={t('canvas.moveDown')} disabled={index === count - 1} onClick={() => moveQuestion(section.id, question.id, 1)}>
             <ArrowDown className="h-3.5 w-3.5" />
           </ToolButton>
-          <ToolButton label="Duplicate" onClick={() => duplicateQuestion(section.id, question.id)}>
+          <ToolButton label={t('canvas.duplicate')} onClick={() => duplicateQuestion(section.id, question.id)}>
             <Copy className="h-3.5 w-3.5" />
           </ToolButton>
           {removable && (
-            <ToolButton label={entry ? 'Turn off this question' : 'Delete question'} danger onClick={() => onRemove(section, question)}>
+            <ToolButton label={entry ? t('inspector.turnOffQuestion') : t('inspector.deleteQuestion')} danger onClick={() => onRemove(section, question)}>
               <Trash2 className="h-3.5 w-3.5" />
             </ToolButton>
           )}
@@ -409,7 +415,7 @@ const QuestionCard = ({ draft, section, question, index, count, problem, onRemov
       <div
         {...selectable(() => select({ sectionId: section.id, questionId: question.id }))}
         aria-pressed={active}
-        className={`cursor-pointer space-y-2 rounded-2xl border bg-surface px-6 py-4.5 text-start outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${active
+        className={`flex cursor-pointer flex-col gap-2 rounded-2xl border bg-surface px-6 py-4.5 text-start outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${active
           ? 'border-accent shadow-[0_0_0_1px_var(--color-accent),0_6px_20px_-8px_color-mix(in_srgb,var(--color-accent)_35%,transparent)]'
           : problem
             ? 'border-danger-line hover:border-danger-fg'
@@ -424,16 +430,16 @@ const QuestionCard = ({ draft, section, question, index, count, problem, onRemov
         )}
         <div className="flex items-start gap-3">
           <span className="min-w-0 flex-1 text-[0.9375rem] font-semibold text-ink">
-            {question.label || <span className="font-normal italic text-ink-muted">Untitled question</span>}
+            {question.label || <span className="font-normal italic text-ink-muted">{t('preview.untitledQuestion')}</span>}
             {question.required && <span className="ms-0.5 text-danger-fg">*</span>}
           </span>
           {(isCore(question) || entry) && (
             <span
               className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-xs text-ink-muted"
-              title={entry?.drives ? `Feeds: ${entry.drives}` : undefined}
+              title={entry?.drives ? t('canvas.feeds', { drives: entry.drives }) : undefined}
             >
               <Lock className="h-3 w-3" aria-hidden="true" />
-              {isCore(question) ? 'Core · always on' : 'Standard question'}
+              {isCore(question) ? t('canvas.coreAlwaysOn') : t('outline.standardQuestion')}
             </span>
           )}
         </div>
@@ -447,6 +453,7 @@ const QuestionCard = ({ draft, section, question, index, count, problem, onRemov
 
 const Canvas = ({ draft, issuesFor, onRemove }) => {
   const { form, selection, select, addQuestion, addSection, moveSection } = draft;
+  const { t } = useTranslation('builder');
   const sections = form.sections;
   const index = Math.max(
     0,
@@ -457,15 +464,15 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
   if (!section) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-        <p className="text-base font-semibold text-ink">No steps yet</p>
-        <p className="max-w-sm text-sm text-ink-muted">A step is one page of the form. Add one, then add its questions.</p>
+        <p className="text-base font-semibold text-ink">{t('canvas.noSteps')}</p>
+        <p className="max-w-sm text-sm text-ink-muted">{t('canvas.noStepsHint')}</p>
         <button
           type="button"
           onClick={() => addSection()}
           className="mt-2 inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent hover:bg-accent-hover"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
-          Add the first step
+          {t('canvas.addFirstStep')}
         </button>
       </div>
     );
@@ -473,16 +480,16 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
 
   const stepActive = selection?.sectionId === section.id && !selection?.questionId;
   const stepProblem = issuesFor(section.id)[0];
-  const stepCondition = describeLogic(section.conditional_logic, sections);
+  const stepCondition = describeLogic(section.conditional_logic, sections, { subject: 'step' });
   const goTo = (i) => select({ sectionId: sections[i].id, questionId: null });
 
   return (
-    <div className="mx-auto w-full max-w-170 space-y-4 px-4 py-6 sm:px-8 sm:py-7" data-tour="rtb-canvas">
+    <div className="mx-auto flex w-full max-w-170 flex-col gap-4 px-4 py-6 sm:px-8 sm:py-7" data-tour="rtb-canvas">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-1">
           <button
             type="button"
-            aria-label="Previous step"
+            aria-label={t('canvas.previousStep')}
             disabled={index === 0}
             onClick={() => goTo(index - 1)}
             className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink disabled:opacity-30"
@@ -490,11 +497,11 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
             <ChevronLeft className="h-4 w-4" />
           </button>
           <span className="text-xs font-medium text-ink-muted">
-            Step {index + 1} of {sections.length} · what reporters will see
+            {t('canvas.stepOfSee', { n: index + 1, total: sections.length })}
           </span>
           <button
             type="button"
-            aria-label="Next step"
+            aria-label={t('canvas.nextStep')}
             disabled={index === sections.length - 1}
             onClick={() => goTo(index + 1)}
             className="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted hover:bg-hover hover:text-ink disabled:opacity-30"
@@ -507,7 +514,7 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
             <button
               key={s.id}
               type="button"
-              aria-label={`Go to step ${i + 1}${s.title ? `: ${s.title}` : ''}`}
+              aria-label={s.title ? t('canvas.goToStepNamed', { n: i + 1, title: s.title }) : t('canvas.goToStep', { n: i + 1 })}
               onClick={() => goTo(i)}
               className="flex h-4 items-center"
             >
@@ -520,13 +527,13 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
       <div className="relative">
         {stepActive && (
           <div className="absolute -bottom-4 end-4 z-10 flex gap-0.5 rounded-lg border border-line bg-surface p-0.5 shadow-sm">
-            <ToolButton label="Move step earlier" disabled={index === 0} onClick={() => moveSection(section.id, -1)}>
+            <ToolButton label={t('canvas.stepEarlier')} disabled={index === 0} onClick={() => moveSection(section.id, -1)}>
               <ArrowUp className="h-3.5 w-3.5" />
             </ToolButton>
-            <ToolButton label="Move step later" disabled={index === sections.length - 1} onClick={() => moveSection(section.id, 1)}>
+            <ToolButton label={t('canvas.stepLater')} disabled={index === sections.length - 1} onClick={() => moveSection(section.id, 1)}>
               <ArrowDown className="h-3.5 w-3.5" />
             </ToolButton>
-            <ToolButton label="Add a step after this one" onClick={() => addSection(section.id)}>
+            <ToolButton label={t('canvas.addStepAfter')} onClick={() => addSection(section.id)}>
               <Plus className="h-3.5 w-3.5" />
             </ToolButton>
           </div>
@@ -534,7 +541,7 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
         <div
           {...selectable(() => select({ sectionId: section.id, questionId: null }))}
           aria-pressed={stepActive}
-          className={`cursor-pointer space-y-1 rounded-2xl border bg-surface px-6 py-5 outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${stepActive
+          className={`flex cursor-pointer flex-col items-start gap-1 rounded-2xl border bg-surface px-6 py-5 outline-none transition-[border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${stepActive
             ? 'border-accent shadow-[0_0_0_1px_var(--color-accent)]'
             : stepProblem
               ? 'border-danger-line'
@@ -544,11 +551,11 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
           {stepCondition && (
             <span className="mb-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-fg">
               <GitBranch className="h-3 w-3 shrink-0" aria-hidden="true" />
-              <span className="truncate">{stepCondition.replace('Only shown', 'Step only shown').replace('Skipped', 'Step skipped')}</span>
+              <span className="truncate">{stepCondition}</span>
             </span>
           )}
           <h2 className="text-xl font-bold tracking-[-0.01em] text-ink">
-            {section.title || <span className="font-semibold italic text-ink-muted">Untitled step</span>}
+            {section.title || <span className="font-semibold italic text-ink-muted">{t('preview.untitledStep')}</span>}
           </h2>
           {section.description && <p className="text-sm text-ink-muted">{section.description}</p>}
           {stepProblem && <p className="pt-1 text-xs font-medium text-danger-fg">{stepProblem}</p>}
@@ -576,7 +583,7 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
           onClick={() => goTo(index + 1)}
           className="flex w-full items-center justify-center gap-1.5 py-2 text-sm font-medium text-ink-muted hover:text-ink"
         >
-          Next step: {sections[index + 1].title || 'Untitled step'}
+          {t('canvas.nextStepNamed', { title: sections[index + 1].title || t('preview.untitledStep') })}
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </button>
       ) : (
@@ -586,7 +593,7 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
           className="flex w-full items-center justify-center gap-1.5 py-2 text-sm font-medium text-ink-muted hover:text-ink"
         >
           <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-          Last step. Add another?
+          {t('canvas.lastStep')}
         </button>
       )}
     </div>
@@ -594,6 +601,7 @@ const Canvas = ({ draft, issuesFor, onRemove }) => {
 };
 
 const QuestionsStep = ({ draft, issues }) => {
+  const { t } = useTranslation('builder');
   // Removing a standard question confirms first, with what stops working.
   const [turningOff, setTurningOff] = useState(null); // { section, question, entry }
   const remove = (section, question) => {
@@ -604,14 +612,18 @@ const QuestionsStep = ({ draft, issues }) => {
 
   // Errors keyed by the question or step they're about, for inline flags.
   const byId = new Map();
-  issues
-    .filter((issue) => issue.level === 'error')
-    .forEach(({ message, target }) => {
-      const id = target?.questionId || target?.sectionId;
-      if (!id) return;
-      byId.set(id, [...(byId.get(id) || []), message]);
-    });
+  const errorIssues = issues.filter((issue) => issue.level === 'error');
+  errorIssues.forEach(({ message, target }) => {
+    const id = target?.questionId || target?.sectionId;
+    if (!id) return;
+    byId.set(id, [...(byId.get(id) || []), message]);
+  });
   const issuesFor = (id) => byId.get(id) || [];
+  // The first error about one setting of a question or step (issue.about), so
+  // the inspector can show it under that field whatever the language.
+  const issueAbout = (id, about) =>
+    errorIssues.find((issue) => (issue.target?.questionId || issue.target?.sectionId) === id && issue.about === about)
+      ?.message;
   // A step is flagged when it, or a question in it, needs attention.
   const problemIds = new Set(byId.keys());
   issues.forEach(({ level, target }) => {
@@ -623,15 +635,15 @@ const QuestionsStep = ({ draft, issues }) => {
       <aside className="hidden w-68 shrink-0 border-e border-line bg-surface lg:block">
         <Outline draft={draft} problemIds={problemIds} />
       </aside>
-      <main className="min-w-0 flex-1 bg-canvas lg:overflow-y-auto lg:scrollbar-thin">
+      <div className="min-w-0 flex-1 bg-canvas lg:overflow-y-auto lg:scrollbar-thin">
         <Canvas draft={draft} issuesFor={issuesFor} onRemove={remove} />
-      </main>
+      </div>
       <aside
-        aria-label="Settings"
+        aria-label={t('canvas.settings')}
         className="shrink-0 border-t border-line bg-surface lg:w-88 lg:overflow-y-auto lg:border-s lg:border-t-0 lg:scrollbar-thin"
         data-tour="rtb-inspector"
       >
-        <Inspector draft={draft} issuesFor={issuesFor} onRemove={remove} />
+        <Inspector draft={draft} issueAbout={issueAbout} onRemove={remove} />
       </aside>
       <TurnOffConfirm
         entry={turningOff?.entry}

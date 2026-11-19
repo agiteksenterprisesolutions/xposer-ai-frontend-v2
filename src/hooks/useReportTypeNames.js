@@ -15,8 +15,10 @@
 // from here.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { reportTypesAPI } from '../api';
+import i18n from '../i18n';
 
-export const NO_TYPE_LABEL = 'AI Assistant';
+/** What a report filed through the AI assistant (no report type) is called. */
+export const noTypeLabel = () => i18n.t('reportType.none', { ns: 'common' });
 
 export function useReportTypeNames() {
   const [types, setTypes] = useState(null); // null while loading
@@ -50,11 +52,11 @@ export function useReportTypeNames() {
       const matchedId = report?.governing_report_type_id || report?.matched_report_type_id;
       const matched = (matchedId && byId.get(matchedId)?.name) || report?.matched_report_type_name;
       if (matched) return matched;
-      if (!report?.report_type_id) return NO_TYPE_LABEL;
+      if (!report?.report_type_id) return noTypeLabel();
       if (!loaded) return null;
       // The list couldn't be loaded: don't call a typed report something it isn't.
       if (failed) return '—';
-      return NO_TYPE_LABEL;
+      return noTypeLabel();
     },
     [byId, loaded, failed],
   );
@@ -67,12 +69,12 @@ export function useReportTypeNames() {
    */
   const categoryFor = useCallback(
     (typeId, serverName) => {
-      if (!typeId) return NO_TYPE_LABEL;
+      if (!typeId) return noTypeLabel();
       const found = byId.get(typeId)?.name;
       if (found) return found;
       if (!loaded) return null;
       if (failed) return serverName || '—';
-      return NO_TYPE_LABEL;
+      return noTypeLabel();
     },
     [byId, loaded, failed],
   );

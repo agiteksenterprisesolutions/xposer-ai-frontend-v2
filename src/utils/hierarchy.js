@@ -2,6 +2,7 @@
 //
 // Helpers for the reporting hierarchy: level ranks, and turning a pasted
 // spreadsheet into directory rows.
+import i18n from '../i18n';
 
 // Ranks are spaced so a tier can be slotted between two others later without
 // renumbering. Higher = more senior.
@@ -119,7 +120,7 @@ export const membersFromPaste = (text) => {
       members: [],
       columns,
       unknownHeaders: [],
-      error: 'The first row must be a header with a "Name" column. Use "Copy header row" above and paste it into row 1 of your sheet.',
+      error: i18n.t('bulk.errors.noNameHeader', { ns: 'hierarchy' }),
     };
   }
 

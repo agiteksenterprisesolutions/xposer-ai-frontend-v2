@@ -11,6 +11,7 @@
 //
 // Hiding something here is a courtesy, not a control: every endpoint enforces the
 // same permission server-side, so a stale tab still gets a 403.
+import i18n from '../i18n';
 
 /** The permissions an organization can assign. The catalog endpoint is the full list. */
 export const PERM = {
@@ -71,6 +72,8 @@ export const PERM = {
   entityManage: 'entity:manage',
   // Reporter portal addresses, branding and QR posters (XPAI-226/227).
   portalManage: 'portal:manage',
+  // The tenant's defaults every legal entity inherits (XPAI-222).
+  tenantManage: 'tenant:manage',
 
   // Roles
   roleManage: 'role:manage',
@@ -85,7 +88,7 @@ export const PERM = {
  * says what ticking one lets a person do. A permission missing here still
  * renders, under its code.
  */
-export const PERMISSION_INFO = {
+const PERMISSION_INFO_EN = {
   'report:create': 'Submit reports',
   'report:read_own': 'Read reports they filed themselves',
   'report:read_all': 'Read every report in the organization',
@@ -124,12 +127,36 @@ export const PERMISSION_INFO = {
 };
 
 /** A line under a permission whose label alone doesn't say what it changes. */
-export const PERMISSION_HINTS = {
+const PERMISSION_HINTS_EN = {
   'report:read_confidential': 'Cases marked Confidential are hidden without this.',
   'report:read_restricted': 'Cases marked Restricted are hidden without this.',
   'report:read_sensitive':
     'Without this, answers marked PII, special category, financial or government ID show as ••••. Every unmasked view is logged.',
 };
+
+// The permission code as a translation key: `report:read_own` →
+// `perm.report.read_own` in the `people` namespace (':' is i18next's
+// namespace separator, so it can't stay in the key).
+const permKey = (permission, kind) => `${kind}.${permission.replace(':', '.')}`;
+
+// Same shape as before (code → text), but each value is a getter, so it
+// reads in the current interface language whenever it's looked up.
+const translatedTable = (english, kind) => {
+  const table = {};
+  for (const [code, text] of Object.entries(english)) {
+    Object.defineProperty(table, code, {
+      enumerable: true,
+      get: () => i18n.t(permKey(code, kind), { ns: 'people', defaultValue: text }),
+    });
+  }
+  return Object.freeze(table);
+};
+
+/** Permission code → what ticking it lets a person do, in the interface language. */
+export const PERMISSION_INFO = translatedTable(PERMISSION_INFO_EN, 'perm');
+
+/** Permission code → an explanatory line, in the interface language. */
+export const PERMISSION_HINTS = translatedTable(PERMISSION_HINTS_EN, 'permHint');
 
 /**
  * Ticks or unticks one permission. Ticking *See restricted cases* ticks *See
@@ -158,8 +185,12 @@ export const permissionLabel = (permission) => {
 };
 
 /** Several permissions in a sentence: “Read every report” or “Read reports assigned to them”. */
-export const permissionLabels = (permissions = [], joiner = ' or ') =>
-  permissions.map((permission) => `“${permissionLabel(permission)}”`).join(joiner);
+export const permissionLabels = (permissions = [], joiner) => {
+  const sep = joiner ?? i18n.t('permJoin.or', { ns: 'people' });
+  return permissions
+    .map((permission) => i18n.t('permJoin.quoted', { ns: 'people', label: permissionLabel(permission) }))
+    .join(sep);
+};
 
 /**
  * Access rules for the areas of the app. A rule is `{ all: [...] }`,
@@ -223,6 +254,7 @@ export const ACCESS = {
   entitiesManage: { all: [PERM.entityRead, PERM.entityManage] },
   // Portal addresses are tenant-admin only; branding and posters are also
   // open to an entity admin for their own entity (ENTITY_ADMIN.md, wired there).
+  tenantSettings: { all: [PERM.tenantManage] },
   portalAddresses: { all: [PERM.portalManage] },
   portalBranding: { all: [PERM.portalManage] },
   posters: { all: [PERM.portalManage] },

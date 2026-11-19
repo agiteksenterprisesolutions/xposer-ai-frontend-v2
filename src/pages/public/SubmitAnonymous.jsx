@@ -527,7 +527,7 @@ const SubmitAnonymous = () => {
                 t={t}
                 i18nKey="anonymous.select.signInHint"
                 components={{
-                  link: <Link to={effectiveOrgSlug ? `/${effectiveOrgSlug}/login` : '/login'} className="font-medium text-link hover:underline" />,
+                  lnk: <Link to={effectiveOrgSlug ? `/${effectiveOrgSlug}/login` : '/login'} className="font-medium text-link hover:underline" />,
                 }}
               />
             </p>

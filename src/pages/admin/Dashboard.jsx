@@ -27,7 +27,13 @@ import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
 import { tone } from '../../utils/tone';
 import useSEO from '../../hooks/useSEO';
-import { NO_TYPE_LABEL, useReportTypeNames } from '../../hooks/useReportTypeNames';
+import { noTypeLabel, useReportTypeNames } from '../../hooks/useReportTypeNames';
+import { useTranslation } from 'react-i18next';
+import { isRtl } from '../../utils/locale';
+
+// Tour placements are written for left-to-right; Arabic mirrors the sidebar.
+const side = (placement) =>
+  isRtl() ? ({ left: 'right', right: 'left' }[placement] || placement) : placement;
 
 const ADMIN_TOUR_KEY = 'xposer_admin_dashboard_tour_seen';
 
@@ -56,10 +62,11 @@ const AdminDashboard = () => {
   const isDesktop = useIsDesktop();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { t, i18n } = useTranslation('dashboards');
 
   useSEO({
-    title: 'Admin Dashboard',
-    description: 'Platform-wide reporting activity, user counts, and category analytics.',
+    title: t('admin.seo.title'),
+    description: t('admin.seo.description'),
     noIndex: true,
   });
 
@@ -74,11 +81,11 @@ const AdminDashboard = () => {
       setStats(data);
     } catch (error) {
       console.error('Error fetching admin stats:', error);
-      toast.error('Failed to fetch analytics data');
+      toast.error(i18n.t('dashboards:admin.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [i18n]);
 
   useEffect(() => {
     fetchStats(filters);
@@ -96,7 +103,7 @@ const AdminDashboard = () => {
   const basePath = `/${user?.organization_slug}/staff`;
   const statCards = [
     {
-      title: 'Total Reports',
+      title: t('admin.cards.total'),
       value: getSummaryValue('Total Reports'),
       change: '+12%',
       trend: 'up',
@@ -105,7 +112,7 @@ const AdminDashboard = () => {
       to: `${basePath}/reports`
     },
     {
-      title: 'Active Users',
+      title: t('admin.cards.activeUsers'),
       value: getSummaryValue('Active Users'),
       change: '+5%',
       trend: 'up',
@@ -114,7 +121,7 @@ const AdminDashboard = () => {
       to: `${basePath}/users?status=active`
     },
     {
-      title: 'Pending Cases',
+      title: t('admin.cards.pending'),
       value: getSummaryValue('Pending'),
       change: '-2%',
       trend: 'down',
@@ -123,7 +130,7 @@ const AdminDashboard = () => {
       to: `${basePath}/reports?status=pending`
     },
     {
-      title: 'Anonymous Reports',
+      title: t('admin.cards.anonymous'),
       value: getSummaryValue('Anonymous Reports'),
       change: '+8%',
       trend: 'up',
@@ -160,7 +167,7 @@ const AdminDashboard = () => {
     const merged = new Map();
     (stats?.report_types || []).forEach((item) => {
       const id = item.id || item.report_type_id || item.type_id || '';
-      const name = categoryFor(id, item.name) || item.name || NO_TYPE_LABEL;
+      const name = categoryFor(id, item.name) || item.name || noTypeLabel();
       const total = Number(item.total) || 0;
       const prev = merged.get(name);
       merged.set(name, prev ? { ...prev, total: prev.total + total, id: prev.id || id } : { id, name, total });
@@ -183,9 +190,9 @@ const AdminDashboard = () => {
     if (isDesktop) {
       steps.push({
         target: '[data-tour="sidebar-user"]',
-        title: 'Welcome, Admin',
-        content: 'This sidebar is your control center for managing the whole platform.',
-        placement: 'right',
+        title: t('admin.tour.welcome.title'),
+        content: t('admin.tour.welcome.content'),
+        placement: side('right'),
         skipBeacon: true,
       });
     }
@@ -193,15 +200,15 @@ const AdminDashboard = () => {
     steps.push(
       {
         target: '[data-tour="admin-stats"]',
-        title: 'Platform overview',
-        content: 'A snapshot of total reports, active users, pending cases, and anonymous submissions — click any card to open the matching, pre-filtered list.',
+        title: t('admin.tour.stats.title'),
+        content: t('admin.tour.stats.content'),
         placement: 'bottom',
         skipBeacon: !isDesktop,
       },
       {
         target: '[data-tour="admin-filters"]',
-        title: 'Filter the period',
-        content: 'Narrow every figure on this page to a date range and interval, then press Apply.',
+        title: t('admin.tour.filters.title'),
+        content: t('admin.tour.filters.content'),
         placement: 'bottom',
       }
     );
@@ -210,33 +217,33 @@ const AdminDashboard = () => {
       steps.push(
         {
           target: '[data-tour="sidebar-all-reports"]',
-          title: 'All Reports',
-          content: 'Review every report submitted across the organization.',
-          placement: 'right',
+          title: t('admin.tour.allReports.title'),
+          content: t('admin.tour.allReports.content'),
+          placement: side('right'),
         },
         {
           target: '[data-tour="sidebar-user-management"]',
-          title: 'User Management',
-          content: 'Create, edit, and deactivate user accounts.',
-          placement: 'right',
+          title: t('admin.tour.users.title'),
+          content: t('admin.tour.users.content'),
+          placement: side('right'),
         },
         {
           target: '[data-tour="sidebar-roles-permissions"]',
-          title: 'Roles & Permissions',
-          content: "Build your organization's roles and choose what each one is allowed to do.",
-          placement: 'right',
+          title: t('admin.tour.roles.title'),
+          content: t('admin.tour.roles.content'),
+          placement: side('right'),
         },
         {
           target: '[data-tour="sidebar-ai-agents"]',
-          title: 'AI Agents',
-          content: 'Define the AI agents that triage and summarize incoming reports, and what each may do.',
-          placement: 'right',
+          title: t('admin.tour.agents.title'),
+          content: t('admin.tour.agents.content'),
+          placement: side('right'),
         },
         {
           target: '[data-tour="sidebar-workflows"]',
-          title: 'Workflows',
-          content: 'Choose the stages a new report runs through, and where an agent hands over to a person.',
-          placement: 'right',
+          title: t('admin.tour.workflows.title'),
+          content: t('admin.tour.workflows.content'),
+          placement: side('right'),
         }
       );
     }
@@ -244,26 +251,26 @@ const AdminDashboard = () => {
     steps.push(
       {
         target: '[data-tour="admin-categories"]',
-        title: 'Reports by category',
-        content: 'See which report types are driving volume over the selected period. Click a category to list its reports.',
+        title: t('admin.tour.categories.title'),
+        content: t('admin.tour.categories.content'),
         placement: 'top',
       },
       {
         target: '[data-tour="admin-distribution"]',
-        title: 'Category distribution',
-        content: 'The same breakdown as a share of the total — click a slice to drill into that category.',
+        title: t('admin.tour.distribution.title'),
+        content: t('admin.tour.distribution.content'),
         placement: 'top',
       },
       {
         target: '[data-tour="tour-user-menu"]',
-        title: 'Your account',
-        content: 'Manage your profile or log out from here.',
+        title: t('admin.tour.account.title'),
+        content: t('admin.tour.account.content'),
         placement: 'bottom',
       }
     );
 
     return steps;
-  }, [isDesktop]);
+  }, [isDesktop, t, i18n.resolvedLanguage]);
 
   return (
     <div className="space-y-8">
@@ -303,7 +310,7 @@ const AdminDashboard = () => {
                 <stat.icon className="h-4.5 w-4.5" aria-hidden="true" />
               </span>
             </div>
-            <span className="sr-only">Open the filtered list.</span>
+            <span className="sr-only">{t('admin.cards.openList')}</span>
             {/* <div className="flex items-baseline gap-1.5 mt-3">
               <span className={`text-xs font-semibold tabular-nums ${stat.trend === 'up' ? 'text-success-fg'
                   : stat.trend === 'down' ? 'text-danger-fg'
@@ -323,7 +330,7 @@ const AdminDashboard = () => {
         <Card.Content>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
             <div className="space-y-1">
-              <label htmlFor="dash-start-date" className="text-sm font-medium text-ink-secondary">Start Date</label>
+              <label htmlFor="dash-start-date" className="text-sm font-medium text-ink-secondary">{t('admin.filters.startDate')}</label>
               <input
                 id="dash-start-date"
                 type="date"
@@ -334,7 +341,7 @@ const AdminDashboard = () => {
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="dash-end-date" className="text-sm font-medium text-ink-secondary">End Date</label>
+              <label htmlFor="dash-end-date" className="text-sm font-medium text-ink-secondary">{t('admin.filters.endDate')}</label>
               <input
                 id="dash-end-date"
                 type="date"
@@ -346,23 +353,23 @@ const AdminDashboard = () => {
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="dash-interval" className="text-sm font-medium text-ink-secondary">Interval</label>
+              <label htmlFor="dash-interval" className="text-sm font-medium text-ink-secondary">{t('admin.filters.interval')}</label>
               <select
                 id="dash-interval"
                 className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-line-accent"
                 value={draftFilters.interval}
                 onChange={(e) => setDraftFilters((prev) => ({ ...prev, interval: e.target.value }))}
               >
-                <option value="day">Day</option>
-                <option value="week">Week</option>
-                <option value="month">Month</option>
+                <option value="day">{t('admin.filters.day')}</option>
+                <option value="week">{t('admin.filters.week')}</option>
+                <option value="month">{t('admin.filters.month')}</option>
               </select>
             </div>
             {/* Once a non-default period is showing and the inputs match it,
                 the only useful action left is clearing it. */}
             {hasActiveFilters && !isDraftDirty ? (
               <Button variant="secondary" startIcon={X} fullWidth onClick={handleClearFilters}>
-                Remove Filter
+                {t('admin.filters.remove')}
               </Button>
             ) : (
               <Button
@@ -372,7 +379,7 @@ const AdminDashboard = () => {
                 disabled={!isDraftDirty}
                 onClick={() => setFilters(draftFilters)}
               >
-                Apply
+                {t('admin.filters.apply')}
               </Button>
             )}
           </div>
@@ -387,13 +394,13 @@ const AdminDashboard = () => {
           <Card.Header>
             <Card.Title className="flex items-center">
               <Layers className="h-5 w-5 me-2 shrink-0 text-accent-fg" />
-              Reports by Category
+              {t('admin.categories.title')}
             </Card.Title>
           </Card.Header>
           <Card.Content>
             {/* Scrolls internally so the card height stays fixed no matter how
                 many categories come back. */}
-            <div className="space-y-4 max-h-80 overflow-y-auto -m-1 p-1 pe-3">
+            <div className="flex flex-col gap-4 max-h-80 overflow-y-auto -m-1 p-1 pe-3">
               {loading || !typesLoaded ? (
                 <Skeleton.Bars className="block space-y-1.5 p-1 -m-1" />
               ) : reportTypeData.length > 0 ? (
@@ -404,12 +411,12 @@ const AdminDashboard = () => {
                       key={i}
                       type="button"
                       onClick={() => openCategory(type)}
-                      title={`View ${type.name} reports`}
+                      title={t('admin.categories.viewReports', { name: type.name })}
                       className="w-full space-y-1.5 min-w-0 text-start rounded-md p-1 -m-1 cursor-pointer transition-colors hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                     >
                       <div className="flex justify-between gap-2 text-sm">
                         <span className="font-medium text-ink-secondary truncate" title={type.name}>{type.name}</span>
-                        <span className="text-ink-muted shrink-0 tabular-nums">{type.total} cases</span>
+                        <span className="text-ink-muted shrink-0 tabular-nums">{t('admin.categories.cases', { count: type.total })}</span>
                       </div>
                       <div className="w-full bg-active rounded-full h-2 text-start">
                         <div className="bg-accent h-2 rounded-full" style={{ width: `${percentage}%` }} />
@@ -418,7 +425,7 @@ const AdminDashboard = () => {
                   );
                 })
               ) : (
-                <div className="text-center py-8 text-ink-muted text-sm">No data available.</div>
+                <div className="text-center py-8 text-ink-muted text-sm">{t('shared.noData')}</div>
               )}
             </div>
           </Card.Content>
@@ -428,7 +435,7 @@ const AdminDashboard = () => {
           <Card.Header>
             <Card.Title className="flex items-center">
               <PieChartIcon className="h-5 w-5 me-2 shrink-0 text-accent-fg" />
-              Category Distribution
+              {t('admin.distribution.title')}
             </Card.Title>
           </Card.Header>
           <Card.Content>
@@ -445,7 +452,7 @@ const AdminDashboard = () => {
                     shorter chart on phones. */}
                 <div className="w-full h-56 sm:h-64 lg:h-72"
                   role="img"
-                  aria-label={`Category distribution, pie chart: ${reportTypeData.map((t) => `${t.name} ${t.total}`).join(', ')}`}>
+                  aria-label={t('admin.distribution.chartLabel', { items: reportTypeData.map((item) => `${item.name} ${item.total}`).join(', ') })}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                       <Pie
@@ -466,7 +473,7 @@ const AdminDashboard = () => {
                           <Cell key={`slice-${entry.name}-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`${value} cases`, 'Reports']} />
+                      <Tooltip formatter={(value) => [t('admin.categories.cases', { count: value }), t('admin.distribution.tooltipName')]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -480,7 +487,7 @@ const AdminDashboard = () => {
                       <button
                         type="button"
                         onClick={() => openCategory(entry)}
-                        title={`View ${entry.name} reports`}
+                        title={t('admin.categories.viewReports', { name: entry.name })}
                         className="flex w-full items-center gap-2 min-w-0 rounded-md px-1 py-0.5 -mx-1 text-start cursor-pointer transition-colors hover:bg-hover focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                       >
                         <span
@@ -497,8 +504,8 @@ const AdminDashboard = () => {
             ) : (
               <div className="h-72 flex flex-col justify-center items-center text-center bg-subtle border-dashed border-2 border-line rounded-xl px-4">
                 <PieChartIcon className="h-14 w-14 text-ink-subtle mb-3" />
-                <h4 className="text-base font-semibold text-ink">No chart data available</h4>
-                <p className="text-sm text-ink-muted mt-1">Submit more reports to visualize category distribution.</p>
+                <h4 className="text-base font-semibold text-ink">{t('admin.distribution.emptyTitle')}</h4>
+                <p className="text-sm text-ink-muted mt-1">{t('admin.distribution.emptyText')}</p>
               </div>
             )}
           </Card.Content>

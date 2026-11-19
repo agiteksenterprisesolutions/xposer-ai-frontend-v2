@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, Eye, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
+import { intlLocale } from '../../utils/locale';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
@@ -26,6 +28,7 @@ const ALIAS_PREVIEW = 3;
 const levelRoles = (level) => (Array.isArray(level.roles) ? level.roles : []);
 
 const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
+  const { t } = useTranslation('hierarchy');
   const { nameFor } = useOrgRoles();
   const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState(null); // { level } — null level means create
@@ -54,7 +57,7 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
         await orgHierarchyAPI.updateLevel(level.id, { rank });
       }
     } catch (error) {
-      toast.error(`Couldn't reorder: ${errorSummary(error)}`);
+      toast.error(t('levels.reorderFailed', { error: errorSummary(error) }));
     } finally {
       setBusy(false);
       onChanged();
@@ -65,7 +68,7 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
     setBusy(true);
     try {
       await orgHierarchyAPI.deleteLevel(deleting.id);
-      toast.success(`Level "${deleting.title}" deleted.`);
+      toast.success(t('levels.deleted', { title: deleting.title }));
       setDeleting(null);
       setDeleteBlocked(null);
       onChanged();
@@ -87,7 +90,7 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
   return (
     <div className="space-y-4">
       {deleteBlocked && (
-        <Alert variant="warning" title={`"${deleteBlocked.title}" can't be deleted yet`} dismissible onDismiss={() => setDeleteBlocked(null)}>
+        <Alert variant="warning" title={t('levels.cantDelete', { title: deleteBlocked.title })} dismissible onDismiss={() => setDeleteBlocked(null)}>
           <p>{deleteBlocked.message}</p>
           {deleteBlocked.roles.length > 0 && (
             <p className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -102,11 +105,11 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
               ))}
             </p>
           )}
-          <p className="mt-2 text-xs">Move these roles to another level first, then delete it.</p>
+          <p className="mt-2 text-xs">{t('levels.moveRolesFirst')}</p>
         </Alert>
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-ink-muted">Most senior first. A report escalates up this ladder.</p>
+        <p className="text-sm text-ink-muted">{t('levels.intro')}</p>
         <div className="flex items-center gap-3">
           {inactiveCount > 0 && (
             <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-secondary">
@@ -116,12 +119,12 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
                 onChange={(event) => setShowInactive(event.target.checked)}
                 className="h-4 w-4 rounded border-line-strong"
               />
-              Show inactive ({inactiveCount})
+              {t('levels.showInactive', { count: inactiveCount })}
             </label>
           )}
           {canManage && (
             <Button startIcon={Plus} onClick={() => setEditing({ level: null })}>
-              New level
+              {t('levelEditor.newTitle')}
             </Button>
           )}
         </div>
@@ -129,10 +132,10 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
 
       {visible.length === 0 ? (
         <Card className="py-10 text-center">
-          <Layers className="mx-auto h-8 w-8 text-ink-subtle" />
-          <p className="mt-3 text-sm font-semibold text-ink">No levels yet</p>
+          <Layers className="mx-auto h-8 w-8 text-ink-subtle" aria-hidden="true" />
+          <p className="mt-3 text-sm font-semibold text-ink">{t('levelChart.noLevels')}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
-            Start with the most senior tier and work down — e.g. Chief Executive, Director, Manager, Executive.
+            {t('levels.emptyBody')}
           </p>
         </Card>
       ) : (
@@ -153,7 +156,7 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
                         size="small"
                         disabled={busy || index === 0}
                         onClick={() => move(index, -1)}
-                        aria-label={`Move ${level.title} up`}
+                        aria-label={t('levels.moveUp', { title: level.title })}
                       >
                         <ArrowUp className="h-3.5 w-3.5" />
                       </Button>
@@ -162,7 +165,7 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
                         size="small"
                         disabled={busy || index === visible.length - 1}
                         onClick={() => move(index, 1)}
-                        aria-label={`Move ${level.title} down`}
+                        aria-label={t('levels.moveDown', { title: level.title })}
                       >
                         <ArrowDown className="h-3.5 w-3.5" />
                       </Button>
@@ -171,40 +174,40 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
 
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-semibold text-ink">{level.title}</span>
+                      <span className="text-sm font-semibold text-ink" dir="auto">{level.title}</span>
                       <span className="font-mono text-[11px] text-ink-subtle">
-                        {level.code} · rank {level.rank}
+                        {t('coverage.codeRank', { code: level.code, rank: level.rank })}
                       </span>
                       {level.department && <Badge size="small">{level.department}</Badge>}
-                      {level.is_active === false && <Badge variant="warning" size="small">Inactive</Badge>}
+                      {level.is_active === false && <Badge variant="warning" size="small">{t('levels.inactive')}</Badge>}
                       {/* Escalation never stops here: the bottom rung by rule, or an oversight level by choice. */}
                       {level.code === lowestCode ? (
-                        <Badge size="small">Lowest level · never an escalation target</Badge>
+                        <Badge size="small">{t('levelChart.lowestNeverTarget')}</Badge>
                       ) : (
-                        level.can_receive_escalations === false && <Badge size="small">Not an escalation target</Badge>
+                        level.can_receive_escalations === false && <Badge size="small">{t('levelChart.notTarget')}</Badge>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
                       {aliases.length === 0 ? (
-                        <span>No HR job titles mapped</span>
+                        <span>{t('levels.noAliases')}</span>
                       ) : (
                         <>
                           {aliases.slice(0, ALIAS_PREVIEW).map((alias) => (
-                            <span key={alias} className="rounded-full border border-line px-2 py-0.5">
+                            <span key={alias} className="rounded-full border border-line px-2 py-0.5" dir="auto">
                               {alias}
                             </span>
                           ))}
-                          {aliases.length > ALIAS_PREVIEW && <span>+{aliases.length - ALIAS_PREVIEW} more</span>}
+                          {aliases.length > ALIAS_PREVIEW && <span>{t('levels.more', { count: aliases.length - ALIAS_PREVIEW })}</span>}
                         </>
                       )}
                       {levelRoles(level).length > 0 ? (
-                        <span>· {levelRoles(level).map(nameFor).join(', ')}</span>
+                        <span>· {new Intl.ListFormat(intlLocale(), { type: 'unit' }).format(levelRoles(level).map(nameFor))}</span>
                       ) : (
-                        <span>· no role here yet</span>
+                        <span>· {t('levels.noRoleHere')}</span>
                       )}
                       {count != null && (
                         <span>
-                          · {count} {count === 1 ? 'person' : 'people'}
+                          · {t('people', { count })}
                         </span>
                       )}
                     </div>
@@ -214,20 +217,20 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
                     {canManage ? (
                       <>
                         <Button variant="outline" size="small" startIcon={Pencil} onClick={() => setEditing({ level })}>
-                          Edit
+                          {t('common:actions.edit')}
                         </Button>
                         <Button
                           variant="ghost"
                           size="small"
                           onClick={() => setDeleting(level)}
-                          aria-label={`Delete ${level.title}`}
+                          aria-label={t('levels.deleteLabel', { title: level.title })}
                         >
-                          <Trash2 className="h-4 w-4 text-danger-fg" />
+                          <Trash2 className="h-4 w-4 text-danger-fg" aria-hidden="true" />
                         </Button>
                       </>
                     ) : (
                       <Button variant="outline" size="small" startIcon={Eye} onClick={() => setEditing({ level })}>
-                        View
+                        {t('common:actions.view')}
                       </Button>
                     )}
                   </div>
@@ -255,13 +258,13 @@ const LevelsPanel = ({ levels, memberCounts, canManage, onChanged }) => {
         isOpen={Boolean(deleting)}
         onClose={() => setDeleting(null)}
         onConfirm={confirmDelete}
-        title="Delete this level?"
+        title={t('levels.deleteTitle')}
         message={
           deleting
-            ? `"${deleting.title}" will be removed from the ladder. A level can only be deleted once no role sits at it. To keep it for reference instead, edit it and turn off Active.`
+            ? t('levels.deleteMessage', { title: deleting.title })
             : ''
         }
-        confirmText="Delete level"
+        confirmText={t('levels.deleteConfirm')}
         destructive
         isLoading={busy}
       />

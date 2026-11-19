@@ -14,6 +14,7 @@
 // fixed permissions (role_source "intrinsic", role_code null) and only three
 // allowed capabilities. So it has no permissions section, and the kind is only
 // offered when the organization has no summarizer.
+import { Trans, useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ChevronDown, Plus, X } from 'lucide-react';
@@ -29,7 +30,7 @@ import { useCan } from '../../hooks/useCan';
 import { useAuthStore } from '../../store/authStore';
 import { ACCESS, permissionLabel, togglePermissionIn } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
-import { CODE_HINT, CODE_PATTERN, suggestCode } from '../../utils/codes';
+import { codeHint, CODE_PATTERN, suggestCode } from '../../utils/codes';
 import { describeError } from '../../utils/errors';
 import {
   AGENT_KIND_INFO,
@@ -43,9 +44,9 @@ import {
 
 
 // Sensitive answers are masked for every AI agent, whatever its permissions.
-const AGENT_PERMISSION_HINTS = {
-  'report:read_sensitive': 'No effect on AI agents: they always see answers marked sensitive as ••••.',
-};
+const agentPermissionHints = (t) => ({
+  'report:read_sensitive': t('editor.sensitiveHint'),
+});
 
 const SUMMARIZER = SUMMARIZER_KIND;
 const ORG_ROLE = 'org_role';
@@ -82,6 +83,7 @@ const ChoiceCard = ({ selected, disabled, onSelect, title, description }) => (
 
 /** Verdict slugs as removable chips, added by typing and pressing Enter. */
 const DecisionsInput = ({ value, onChange, readOnly }) => {
+  const { t } = useTranslation('agents');
   const [draft, setDraft] = useState('');
 
   const add = (raw) => {
@@ -93,7 +95,7 @@ const DecisionsInput = ({ value, onChange, readOnly }) => {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
-        {value.length === 0 && <span className="text-xs text-ink-subtle">No decisions yet.</span>}
+        {value.length === 0 && <span className="text-xs text-ink-subtle">{t('editor.decisions.none')}</span>}
         {value.map((decision) => (
           <span
             key={decision}
@@ -104,7 +106,7 @@ const DecisionsInput = ({ value, onChange, readOnly }) => {
               <button
                 type="button"
                 onClick={() => onChange(value.filter((d) => d !== decision))}
-                aria-label={`Remove ${decision}`}
+                aria-label={t('editor.decisions.remove', { name: decision })}
                 className="rounded-full hover:text-ink"
               >
                 <X className="h-3 w-3" />
@@ -125,17 +127,18 @@ const DecisionsInput = ({ value, onChange, readOnly }) => {
                   add(draft);
                 }
               }}
-              placeholder="e.g. escalate"
-              aria-label="Add a decision"
+              placeholder={t('editor.decisions.placeholder')}
+              aria-label={t('editor.decisions.add')}
+              dir="ltr"
               className={`${selectClass} font-mono`}
             />
             <Button variant="secondary" onClick={() => add(draft)} disabled={!draft.trim()}>
-              Add
+              {t('editor.decisions.addButton')}
             </Button>
           </div>
           {value.length === 0 && (
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-subtle">
-              Common:
+              {t('editor.decisions.common')}
               {SUGGESTED_DECISIONS.map((decision) => (
                 <button
                   key={decision}
@@ -176,6 +179,7 @@ const AgentEditorModal = ({
   onSaved,
 }) => {
   const isCreate = !agent;
+  const { t } = useTranslation('agents');
   const can = useCan();
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
   const { roles, byCode, nameFor } = useOrgRoles({ source: 'owners' });
@@ -243,8 +247,8 @@ const AgentEditorModal = ({
 
   const codeError = (() => {
     if (!isCreate) return null;
-    if (!code) return 'A code is required.';
-    if (!CODE_PATTERN.test(code)) return CODE_HINT;
+    if (!code) return t('editor.codeRequired');
+    if (!CODE_PATTERN.test(code)) return codeHint();
     return null;
   })();
 
@@ -295,7 +299,7 @@ const AgentEditorModal = ({
       const saved = isCreate
         ? await orgAgentsAPI.create({ ...body, code, kind })
         : await orgAgentsAPI.update(agent.id, body);
-      toast.success(isCreate ? `Agent "${body.name}" created.` : `Agent "${body.name}" saved.`);
+      toast.success(isCreate ? t('editor.created', { name: body.name }) : t('editor.saved', { name: body.name }));
       onSaved?.(saved);
     } catch (error) {
       setSaveError(describeError(error));
@@ -309,16 +313,16 @@ const AgentEditorModal = ({
   const footer = readOnly ? (
     <div className="flex justify-end">
       <Button variant="secondary" onClick={onClose}>
-        Close
+        {t('common:actions.close')}
       </Button>
     </div>
   ) : (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button variant="secondary" onClick={onClose} disabled={saving}>
-        Cancel
+        {t('common:actions.cancel')}
       </Button>
       <Button onClick={save} isLoading={saving} disabled={blocked}>
-        {isCreate ? 'Create agent' : 'Save changes'}
+        {isCreate ? t('editor.create') : t('editor.saveChanges')}
       </Button>
     </div>
   );
@@ -327,7 +331,7 @@ const AgentEditorModal = ({
     <Modal
       isOpen
       onClose={saving ? () => {} : onClose}
-      title={isCreate ? 'New agent' : readOnly ? agent.name : `Edit ${agent.name}`}
+      title={isCreate ? t('editor.newTitle') : readOnly ? agent.name : t('editor.editTitle', { name: agent.name })}
       size="xl"
       footer={footer}
       closeOnOverlayClick={false}
@@ -348,15 +352,15 @@ const AgentEditorModal = ({
         {/* Identity */}
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label="Name"
+            label={t('editor.name')}
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
             readOnly={readOnly}
-            placeholder="e.g. Finance triage"
+            placeholder={t('editor.namePlaceholder')}
           />
           <Input
-            label="Code"
+            label={t('editor.code')}
             value={code}
             onChange={(event) => {
               setCodeTouched(true);
@@ -366,29 +370,26 @@ const AgentEditorModal = ({
             required={isCreate}
             error={codeError}
             className="font-mono"
-            helperText={
-              isCreate
-                ? 'Workflow stages refer to the agent by this. It cannot be changed later.'
-                : 'Codes cannot change — workflow stages refer to the agent by it.'
-            }
+            dir="ltr"
+            helperText={isCreate ? t('editor.codeHintCreate') : t('editor.codeHintEdit')}
           />
           <div className="sm:col-span-2">
             <Input
-              label="Description"
+              label={t('editor.description')}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               readOnly={readOnly}
-              placeholder="Optional — what this agent is for"
+              placeholder={t('editor.descriptionPlaceholder')}
             />
           </div>
         </div>
 
         {/* Kind */}
         <Section
-          title="Kind"
-          hint={isCreate ? 'Fixed once the agent is created.' : 'The kind is fixed once an agent is created.'}
+          title={t('editor.kind')}
+          hint={isCreate ? t('editor.kindHintCreate') : t('editor.kindHintEdit')}
         >
-          <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Kind">
+          <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={t('editor.kind')}>
             {(isCreate ? creatableKinds : [kind]).map((k) => (
               <ChoiceCard
                 key={k}
@@ -404,7 +405,7 @@ const AgentEditorModal = ({
 
         {/* Permissions — a summarizer's are fixed */}
         {isSummarizer ? (
-          <Section title="Permissions" hint="Fixed for the summarizer — it doesn't act as a role.">
+          <Section title={t('editor.permissions')} hint={t('editor.permissionsSummarizerHint')}>
             <div className="flex flex-wrap gap-1.5">
               {SUMMARIZER_PERMISSIONS.map((permission) => (
                 <span
@@ -418,30 +419,30 @@ const AgentEditorModal = ({
           </Section>
         ) : (
         <Section
-          title="Permissions"
-          hint="An agent acts with a set of permissions, exactly like a person. You can only give it permissions you hold yourself."
+          title={t('editor.permissions')}
+          hint={t('editor.permissionsHint')}
         >
-          <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Where its permissions come from">
+          <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={t('editor.permissionSource')}>
             <ChoiceCard
               selected={roleSource === ORG_ROLE}
               disabled={readOnly}
               onSelect={() => setRoleSource(ORG_ROLE)}
-              title="Use one of your roles"
-              description="The agent acts with that role's permissions and follows any change to it."
+              title={t('editor.useRole')}
+              description={t('editor.useRoleHint')}
             />
             <ChoiceCard
               selected={roleSource === CUSTOM}
               disabled={readOnly}
               onSelect={() => setRoleSource(CUSTOM)}
-              title="Custom permissions"
-              description="Choose a set just for this agent."
+              title={t('editor.custom')}
+              description={t('editor.customHint')}
             />
           </div>
 
           {roleSource === ORG_ROLE && (
             <div className="space-y-1.5">
               <label htmlFor="agent-role" className="text-xs font-medium text-ink-secondary">
-                Role
+                {t('editor.role')}
               </label>
               <select
                 id="agent-role"
@@ -450,23 +451,23 @@ const AgentEditorModal = ({
                 disabled={readOnly}
                 className={selectClass}
               >
-                <option value="">Choose a role…</option>
+                <option value="">{t('editor.chooseRole')}</option>
                 {roles.map((role) => (
                   <option key={role.code} value={role.code}>
                     {role.name}
                   </option>
                 ))}
-                {roleCode && !byCode.has(roleCode) && <option value={roleCode}>{nameFor(roleCode)} (not found)</option>}
+                {roleCode && !byCode.has(roleCode) && <option value={roleCode}>{t('editor.roleNotFound', { name: nameFor(roleCode) })}</option>}
               </select>
               {selectedRole && (
                 <p className="text-xs text-ink-muted">
                   {/* Only an admin's role list carries permissions. */}
-                  {Array.isArray(selectedRole.permissions) && `${selectedRole.permissions.length} permissions.`}
+                  {Array.isArray(selectedRole.permissions) && t('editor.permissionCount', { count: selectedRole.permissions.length })}
                   {roleLink && (
                     <>
                       {' '}
                       <Link to={roleLink} className="text-link hover:underline">
-                        Review roles
+                        {t('editor.reviewRoles')}
                       </Link>
                     </>
                   )}
@@ -482,7 +483,7 @@ const AgentEditorModal = ({
               onToggle={togglePermission}
               onAdd={(p) => setPermissions((prev) => new Set(prev).add(p))}
               errorsByPermission={permissionErrors}
-              hints={AGENT_PERMISSION_HINTS}
+              hints={agentPermissionHints(t)}
               readOnly={readOnly}
             />
           )}
@@ -491,12 +492,8 @@ const AgentEditorModal = ({
 
         {/* Capabilities */}
         <Section
-          title="Capabilities"
-          hint={
-            isSummarizer
-              ? 'A summarizer can only do these three. It never messages the reporter, changes a report or routes it.'
-              : 'What the agent may do on a report. Each one only works while its permissions include the one it needs.'
-          }
+          title={t('editor.capabilities')}
+          hint={isSummarizer ? t('editor.capabilitiesSummarizerHint') : t('editor.capabilitiesHint')}
         >
           <div className="grid gap-2 sm:grid-cols-2">
             {capabilityEntries.map(({ capability, requires }) => {
@@ -510,7 +507,7 @@ const AgentEditorModal = ({
                   className={`rounded-lg border px-3 py-2.5 ${
                     checked && !works ? 'border-warning-line bg-warning-soft' : checked ? 'border-line-accent bg-accent-soft' : 'border-line bg-surface'
                   } ${forbiddenReason ? 'opacity-60' : ''}`}
-                  title={forbiddenReason ? `Not for a summarizer: ${forbiddenReason}` : undefined}
+                  title={forbiddenReason ? t('editor.notForSummarizerTitle', { reason: forbiddenReason }) : undefined}
                 >
                   <div className="flex items-start gap-3">
                     <Checkbox
@@ -526,10 +523,10 @@ const AgentEditorModal = ({
                       {CAPABILITY_INFO[capability]?.description && (
                         <p className="text-xs text-ink-muted">{CAPABILITY_INFO[capability].description}</p>
                       )}
-                      <p className="mt-0.5 text-[11px] text-ink-subtle">Needs “{permissionLabel(requires)}”</p>
+                      <p className="mt-0.5 text-[11px] text-ink-subtle">{t('editor.needs', { permission: permissionLabel(requires) })}</p>
 
                       {forbiddenReason && (
-                        <p className="mt-1.5 text-xs text-ink-muted">Not for a summarizer — {forbiddenReason}.</p>
+                        <p className="mt-1.5 text-xs text-ink-muted">{t('editor.notForSummarizer', { reason: forbiddenReason })}</p>
                       )}
 
                       {checked && !works && !forbiddenReason && (
@@ -538,31 +535,31 @@ const AgentEditorModal = ({
                           <span>
                             {roleSource === ORG_ROLE ? (
                               roleCode ? (
-                                <>
-                                  Won't work yet: needs “{permissionLabel(requires)}” on the{' '}
-                                  {roleLink ? (
-                                    <Link to={roleLink} className="font-medium underline">
-                                      {nameFor(roleCode)}
-                                    </Link>
-                                  ) : (
-                                    <span className="font-medium">{nameFor(roleCode)}</span>
-                                  )}{' '}
-                                  role.
-                                </>
+                                <Trans
+                                  t={t}
+                                  i18nKey="editor.wontWorkRole"
+                                  values={{ permission: permissionLabel(requires), role: nameFor(roleCode) }}
+                                  components={{
+                                    role: roleLink ? (
+                                      <Link to={roleLink} className="font-medium underline" />
+                                    ) : (
+                                      <span className="font-medium" />
+                                    ),
+                                  }}
+                                />
                               ) : (
-                                'Choose a role to see whether this will work.'
+                                t('editor.chooseRoleToCheck')
                               )
                             ) : (
                               <>
-                                Won't work yet: add “{permissionLabel(requires)}” to this agent's
-                                permissions.
+                                {t('editor.wontWorkCustom', { permission: permissionLabel(requires) })}
                                 {!readOnly && permissionEntries.get(requires)?.granted && (
                                   <button
                                     type="button"
                                     onClick={() => setPermissions((prev) => new Set(prev).add(requires))}
                                     className="ms-1.5 font-medium underline"
                                   >
-                                    Add it
+                                    {t('editor.addIt')}
                                   </button>
                                 )}
                               </>
@@ -581,38 +578,38 @@ const AgentEditorModal = ({
         {/* Decisions — an analyst's closed set of verdicts; a summarizer has none */}
         {!isSummarizer && (
           <Section
-            title="Decisions"
-            hint="The verdicts this agent may return. Workflow stages branch on them, so keep them short and stable."
+            title={t('editor.decisionsTitle')}
+            hint={t('editor.decisionsHint')}
           >
             <DecisionsInput value={decisions} onChange={setDecisions} readOnly={readOnly} />
             {decisions.length === 0 && (
               <p className="flex items-start gap-1.5 text-xs text-warning-fg">
                 <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
-                With no decisions, a workflow can't branch on this agent — every run just moves on to the next step.
+                {t('editor.noDecisionsWarning')}
               </p>
             )}
           </Section>
         )}
 
-        <Section title="Instructions" hint="The organization's own guidance for this agent, in English.">
+        <Section title={t('editor.instructions')} hint={t('editor.instructionsHint')}>
           <Textarea
             value={instructions}
             onChange={(event) => setInstructions(event.target.value)}
             readOnly={readOnly}
             rows={6}
-            placeholder={
-              isSummarizer
-                ? 'e.g. Lead with any amounts, dates and people named in the evidence.'
-                : 'e.g. Prioritise anything implicating a budget holder.'
-            }
-            aria-label="Instructions"
+            placeholder={isSummarizer ? t('editor.instructionsSummarizerPlaceholder') : t('editor.instructionsPlaceholder')}
+            aria-label={t('editor.instructions')}
+            dir="auto"
           />
         </Section>
 
         {!isCreate && isSummarizer && (
           <p className="rounded-lg bg-subtle px-3 py-2.5 text-xs text-ink-muted">
-            The summarizer is switched on and off in its own settings, on the Summarizer page — not here. It is currently{' '}
-            <span className="font-semibold text-ink">{agent?.is_active === false ? 'off' : 'on'}</span>.
+            <Trans
+              t={t}
+              i18nKey={agent?.is_active === false ? 'editor.summarizerSwitchOff' : 'editor.summarizerSwitchOn'}
+              components={{ b: <span className="font-semibold text-ink" /> }}
+            />
           </p>
         )}
 
@@ -626,9 +623,9 @@ const AgentEditorModal = ({
             />
             <span>
               <span id="agent-active-label" className="block text-sm font-medium text-ink">
-                Active
+                {t('editor.active')}
               </span>
-              <span className="block text-xs text-ink-muted">An inactive agent is skipped by every workflow.</span>
+              <span className="block text-xs text-ink-muted">{t('editor.activeHint')}</span>
             </span>
           </label>
         )}
@@ -641,28 +638,29 @@ const AgentEditorModal = ({
             aria-expanded={showAdvanced}
             className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-start text-sm font-semibold text-ink hover:bg-hover"
           >
-            Advanced
+            {t('editor.advanced')}
             <ChevronDown className={`h-4 w-4 text-ink-subtle transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
           </button>
           {showAdvanced && (
             <div className="grid gap-4 px-4 pb-4 sm:grid-cols-2">
               <Input
-                label="Model"
+                label={t('editor.model')}
                 value={modelName}
                 onChange={(event) => setModelName(event.target.value)}
                 readOnly={readOnly}
-                helperText="Leave empty to use the service default."
+                helperText={t('editor.serviceDefault')}
                 className="font-mono"
+                dir="ltr"
               />
               <Input
-                label="Temperature"
+                label={t('editor.temperature')}
                 type="number"
                 step="0.1"
                 min="0"
                 value={temperature}
                 onChange={(event) => setTemperature(event.target.value)}
                 readOnly={readOnly}
-                helperText="Leave empty to use the service default."
+                helperText={t('editor.serviceDefault')}
               />
             </div>
           )}

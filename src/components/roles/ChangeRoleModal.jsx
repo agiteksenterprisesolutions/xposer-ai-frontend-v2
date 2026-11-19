@@ -4,6 +4,7 @@
 // request — the server resolves permissions per request — so when the user is
 // the one signed in, our cached permissions are refetched straight away.
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -15,6 +16,7 @@ import { useAuthStore } from '../../store/authStore';
 import { describeError } from '../../utils/errors';
 
 const ChangeRoleModal = ({ user, isSelf = false, onClose, onChanged }) => {
+  const { t } = useTranslation('people');
   const { nameFor } = useOrgRoles();
   const [role, setRole] = useState(user.role);
   const [saving, setSaving] = useState(false);
@@ -26,7 +28,7 @@ const ChangeRoleModal = ({ user, isSelf = false, onClose, onChanged }) => {
     setError(null);
     try {
       const result = await usersAPI.changeRole(user.id, role);
-      toast.success(`${displayName} is now ${nameFor(role)}.`);
+      toast.success(t('changeRole.done', { name: displayName, role: nameFor(role) }));
       if (isSelf) useAuthStore.getState().refreshUser();
       // `warnings` — e.g. assigned_cases_stranded: open cases they can no
       // longer work. The page shows them, since this modal closes.
@@ -42,35 +44,39 @@ const ChangeRoleModal = ({ user, isSelf = false, onClose, onChanged }) => {
     <Modal
       isOpen
       onClose={saving ? () => {} : onClose}
-      title={`Change role for ${displayName}`}
+      title={t('changeRole.title', { name: displayName })}
       size="sm"
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('common:actions.cancel')}
           </Button>
           <Button onClick={save} isLoading={saving} disabled={role === user.role}>
-            Change role
+            {t('changeRole.submit')}
           </Button>
         </div>
       }
     >
       <div className="space-y-4">
         <p className="text-sm text-ink-secondary">
-          Currently <span className="font-medium text-ink">{nameFor(user.role)}</span>. The new role's permissions
-          apply from their next action — no sign-out needed.
+          <Trans
+            t={t}
+            i18nKey="changeRole.current"
+            values={{ role: nameFor(user.role) }}
+            components={{ b: <span className="font-medium text-ink" /> }}
+          />
         </p>
 
         <RoleSelect
           value={role}
           onChange={(event) => setRole(event.target.value)}
-          aria-label="Role"
+          aria-label={t('changeRole.roleLabel')}
           className="w-full rounded-lg border border-line-strong bg-subtle p-2 text-sm text-ink"
         />
 
         {isSelf && (
-          <Alert variant="warning" title="This is your own account">
-            If the new role lacks a permission you are using now, you will lose access to it immediately.
+          <Alert variant="warning" title={t('changeRole.selfTitle')}>
+            {t('changeRole.selfBody')}
           </Alert>
         )}
 

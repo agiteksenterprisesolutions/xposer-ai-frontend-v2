@@ -2,6 +2,7 @@
 //
 // The organization's workflows. Exactly one is active — the one a report
 // submitted now runs through — and activating another stands it down.
+import { Trans, useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -32,6 +33,7 @@ import { PERM } from '../../utils/permissions';
 import { staffPath } from '../../utils/navigation';
 import { describeError, errorSummary } from '../../utils/errors';
 import { parseServerDate } from '../../utils/formatters';
+import { intlLocale } from '../../utils/locale';
 import { EXECUTOR_HUMAN } from '../../utils/workflows';
 import useSEO from '../../hooks/useSEO';
 
@@ -41,11 +43,9 @@ const canvasDots = {
   backgroundSize: '14px 14px',
 };
 
-const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
-
 const formatUpdated = (value) => {
   const date = parseServerDate(value);
-  return date ? date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  return date ? date.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : null;
 };
 
 const Terminal = ({ icon: Icon, label, accent }) => (
@@ -55,7 +55,7 @@ const Terminal = ({ icon: Icon, label, accent }) => (
         accent ? 'border-line-accent bg-accent-soft text-accent-fg' : 'border-line bg-surface text-ink-muted'
       }`}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
     </span>
     <span className="text-[10px] font-medium text-ink-subtle">{label}</span>
   </div>
@@ -72,9 +72,10 @@ const STEP_W = 72 + LINK_W;
 const MORE_W = 48 + LINK_W;
 
 const PreviewStep = ({ stage }) => {
+  const { t } = useTranslation('admin');
   const isHuman = stage.executor_type === EXECUTOR_HUMAN;
   const Icon = isHuman ? UserRound : Bot;
-  const branches = stage.transitions?.filter((t) => t.when_decision).length || 0;
+  const branches = stage.transitions?.filter((tr) => tr.when_decision).length || 0;
   return (
     <div className="flex items-start">
       <Link />
@@ -88,13 +89,13 @@ const PreviewStep = ({ stage }) => {
           {branches > 0 && (
             <span
               className="absolute -end-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-surface bg-surface px-1 text-[9px] font-semibold text-accent-fg shadow-sm"
-              title={plural(branches, 'branch rule')}
+              title={t('workflows.branchRules', { count: branches })}
             >
               {branches}
             </span>
           )}
         </span>
-        <span className="w-full truncate text-center text-[10px] font-medium text-ink-secondary">
+        <span className="w-full truncate text-center text-[10px] font-medium text-ink-secondary" dir="auto">
           {stage.name || stage.key}
         </span>
       </div>
@@ -108,6 +109,7 @@ const PreviewStep = ({ stage }) => {
  * into one "+N" marker before the End, and the builder shows them all.
  */
 const FlowPreview = ({ stages = [] }) => {
+  const { t } = useTranslation('admin');
   const boxRef = useRef(null);
   const [width, setWidth] = useState(0);
 
@@ -131,7 +133,7 @@ const FlowPreview = ({ stages = [] }) => {
   return (
     <div ref={boxRef} className="overflow-hidden rounded-lg border border-line-subtle bg-subtle" style={canvasDots}>
       <div className="flex items-start px-3 pb-2.5 pt-3">
-        <Terminal icon={Inbox} label="Report" accent />
+        <Terminal icon={Inbox} label={t('workflows.preview.report')} accent />
         {shown.map((stage) => (
           <PreviewStep key={stage.key} stage={stage} />
         ))}
@@ -142,21 +144,22 @@ const FlowPreview = ({ stages = [] }) => {
               <span className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-dashed border-line-strong bg-surface px-1.5 text-xs font-semibold text-ink-muted">
                 +{more}
               </span>
-              <span className="text-[10px] font-medium text-ink-subtle">more</span>
+              <span className="text-[10px] font-medium text-ink-subtle">{t('workflows.preview.more')}</span>
             </div>
           </div>
         )}
         <Link />
-        <Terminal icon={Flag} label="End" />
+        <Terminal icon={Flag} label={t('workflows.preview.end')} />
       </div>
     </div>
   );
 };
 
 const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => {
+  const { t } = useTranslation('admin');
   const stages = workflow.stages || [];
   const people = stages.filter((s) => s.executor_type === EXECUTOR_HUMAN).length;
-  const branches = stages.reduce((n, s) => n + (s.transitions?.filter((t) => t.when_decision).length || 0), 0);
+  const branches = stages.reduce((n, s) => n + (s.transitions?.filter((tr) => tr.when_decision).length || 0), 0);
   const updated = formatUpdated(workflow.updated_at || workflow.created_at);
 
   return (
@@ -171,7 +174,7 @@ const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => 
             workflow.is_active ? 'bg-accent text-on-accent' : 'bg-active text-ink-muted'
           }`}
         >
-          <GitBranch className="h-5 w-5" />
+          <GitBranch className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -180,17 +183,17 @@ const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => 
               onClick={onOpen}
               className="truncate text-start text-[15px] font-semibold text-ink after:absolute after:inset-0 after:rounded-xl focus:outline-none focus-visible:underline"
             >
-              {workflow.name}
+              <span dir="auto">{workflow.name}</span>
             </button>
             {workflow.is_active ? (
               <Badge variant="success" size="small" dot>
-                Running
+                {t('workflow.status.running')}
               </Badge>
             ) : (
-              <Badge size="small">Standby</Badge>
+              <Badge size="small">{t('workflow.status.standby')}</Badge>
             )}
           </div>
-          {workflow.version != null && <p className="mt-0.5 text-xs text-ink-subtle">Version {workflow.version}</p>}
+          {workflow.version != null && <p className="mt-0.5 text-xs text-ink-subtle">{t('workflows.version', { version: workflow.version })}</p>}
         </div>
 
         {/* Above the card-wide link, so these stay clickable. */}
@@ -201,22 +204,22 @@ const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => 
               trigger={
                 <button
                   type="button"
-                  aria-label={`More actions for ${workflow.name}`}
+                  aria-label={t('workflows.moreActions', { name: workflow.name })}
                   className="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-hover hover:text-ink"
                 >
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                 </button>
               }
             >
               {!workflow.is_active && (
                 <Dropdown.Item onClick={onActivate}>
-                  <Power className="h-4 w-4 shrink-0" />
-                  Use for new reports
+                  <Power className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {t('workflow.inspector.useForNew')}
                 </Dropdown.Item>
               )}
               <Dropdown.Item onClick={onDelete} className="text-danger-fg hover:text-danger-fg">
-                <Trash2 className="h-4 w-4 shrink-0" />
-                Delete workflow
+                <Trash2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {t('workflows.delete')}
               </Dropdown.Item>
             </Dropdown>
           </div>
@@ -224,44 +227,44 @@ const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => 
       </header>
 
       {workflow.description ? (
-        <p className="line-clamp-2 text-sm text-ink-muted">{workflow.description}</p>
+        <p className="line-clamp-2 text-sm text-ink-muted" dir="auto">{workflow.description}</p>
       ) : (
-        <p className="text-sm italic text-ink-subtle">No description</p>
+        <p className="text-sm italic text-ink-subtle">{t('workflows.noDescription')}</p>
       )}
 
       {stages.length > 0 ? (
         <FlowPreview stages={stages} />
       ) : (
         <div className="rounded-lg border border-dashed border-line px-3 py-5 text-center text-xs text-ink-muted" style={canvasDots}>
-          No steps yet — open the builder to add some.
+          {t('workflows.noSteps')}
         </div>
       )}
 
       <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted">
         <div className="flex items-center gap-1.5">
-          <dt className="sr-only">Steps</dt>
-          <dd className="flex items-center gap-1.5"><Bot className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{plural(stages.length, 'step')}</dd>
+          <dt className="sr-only">{t('workflow.inspector.steps')}</dt>
+          <dd className="flex items-center gap-1.5"><Bot className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{t('workflows.stepCount', { count: stages.length })}</dd>
         </div>
         <div className="flex items-center gap-1.5">
-          <dt className="sr-only">Handled by people</dt>
-          <dd className="flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{people} by people</dd>
+          <dt className="sr-only">{t('workflow.inspector.byPeople')}</dt>
+          <dd className="flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{t('workflows.byPeople', { count: people })}</dd>
         </div>
         <div className="flex items-center gap-1.5">
-          <dt className="sr-only">Branches</dt>
-          <dd className="flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{plural(branches, 'branch', 'branches')}</dd>
+          <dt className="sr-only">{t('workflow.inspector.branches')}</dt>
+          <dd className="flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{t('workflows.branchCount', { count: branches })}</dd>
         </div>
         <div className="flex items-center gap-1.5">
-          <dt className="sr-only">Visit limit</dt>
-          <dd className="flex items-center gap-1.5"><RefreshCw className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />up to {workflow.max_stage_visits ?? 3} visits</dd>
+          <dt className="sr-only">{t('workflows.visitLimit')}</dt>
+          <dd className="flex items-center gap-1.5"><RefreshCw className="h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />{t('workflows.upToVisits', { count: workflow.max_stage_visits ?? 3 })}</dd>
         </div>
       </dl>
 
       <footer className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-line-subtle pt-4">
-        <span className="text-xs text-ink-subtle">{updated ? `Updated ${updated}` : ''}</span>
+        <span className="text-xs text-ink-subtle">{updated ? t('workflows.updated', { date: updated }) : ''}</span>
         <span className="relative z-10 flex gap-2">
           {canManage && !workflow.is_active && (
             <Button variant="ghost" size="small" startIcon={Power} onClick={onActivate}>
-              Activate
+              {t('workflows.activate')}
             </Button>
           )}
           <Button
@@ -271,7 +274,7 @@ const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => 
             endIcon={canManage ? ArrowRight : undefined}
             onClick={onOpen}
           >
-            {canManage ? 'Open builder' : 'View'}
+            {canManage ? t('workflows.openBuilder') : t('common:actions.view')}
           </Button>
         </span>
       </footer>
@@ -279,7 +282,9 @@ const WorkflowCard = ({ workflow, canManage, onOpen, onActivate, onDelete }) => 
   );
 };
 
-const NewWorkflowTile = ({ onClick }) => (
+const NewWorkflowTile = ({ onClick }) => {
+  const { t } = useTranslation('admin');
+  return (
   <button
     type="button"
     onClick={onClick}
@@ -287,19 +292,19 @@ const NewWorkflowTile = ({ onClick }) => (
     style={canvasDots}
   >
     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-on-accent shadow-glow">
-      <Plus className="h-5 w-5" />
+      <Plus className="h-5 w-5" aria-hidden="true" />
     </span>
     <span>
-      <span className="block text-sm font-semibold text-ink">New workflow</span>
-      <span className="mt-1 block max-w-60 text-xs text-ink-muted">
-        Connect agents and people into the route a report takes.
-      </span>
+      <span className="block text-sm font-semibold text-ink">{t('workflows.new')}</span>
+      <span className="mt-1 block max-w-60 text-xs text-ink-muted">{t('workflows.newTileText')}</span>
     </span>
   </button>
-);
+  );
+};
 
 const Workflows = () => {
-  useSEO({ title: 'Workflows', description: 'The stages a new report runs through.', noIndex: true });
+  const { t } = useTranslation('admin');
+  useSEO({ title: t('workflows.title'), description: t('workflows.seoDescription'), noIndex: true });
   const navigate = useNavigate();
   const canManage = useCan()(PERM.agentManage);
   const orgSlug = useAuthStore((state) => state.user?.organization_slug);
@@ -337,7 +342,7 @@ const Workflows = () => {
     setBusy(true);
     try {
       await orgWorkflowsAPI.update(activating.id, { is_active: true });
-      toast.success(`"${activating.name}" now runs new reports.`);
+      toast.success(t('workflows.toastActivated', { name: activating.name }));
       setActivating(null);
       load();
     } catch (err) {
@@ -352,7 +357,7 @@ const Workflows = () => {
     setDeleteError(null);
     try {
       await orgWorkflowsAPI.remove(deleting.id);
-      toast.success(`"${deleting.name}" deleted.`);
+      toast.success(t('workflows.toastDeleted', { name: deleting.name }));
       setDeleting(null);
       load();
     } catch (err) {
@@ -368,46 +373,46 @@ const Workflows = () => {
     <div className="space-y-6 pb-12">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-xl font-bold text-ink">Workflows</h1>
+          <h1 className="text-xl font-bold text-ink">{t('workflows.title')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-            The route a new report takes — which AI agents look at it, in what order, and when a person takes over.
+            {t('workflows.intro')}
           </p>
           {loading && workflows.length === 0 && <Skeleton.Text size="xs" className="mt-3 w-72" />}
           {!loading && workflows.length > 0 && (
             <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
-              <span className="font-medium text-ink">{plural(workflows.length, 'workflow')}</span>
+              <span className="font-medium text-ink">{t('workflows.count', { count: workflows.length })}</span>
               <span aria-hidden="true">·</span>
               {active ? (
                 <span>
-                  New reports run through <span className="font-medium text-ink">{active.name}</span>
+                  <Trans t={t} i18nKey="workflows.runningThrough" values={{ name: active.name }} components={{ b: <span className="font-medium text-ink" dir="auto" /> }} />
                 </span>
               ) : (
-                <span className="font-medium text-warning-fg">None running</span>
+                <span className="font-medium text-warning-fg">{t('workflows.noneRunning')}</span>
               )}
             </p>
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={load} disabled={loading} aria-label="Refresh" title="Refresh">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" onClick={load} disabled={loading} aria-label={t('workflows.refresh')} title={t('workflows.refresh')}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
           </Button>
           {canManage && (
             <Button startIcon={Plus} onClick={create}>
-              New workflow
+              {t('workflows.new')}
             </Button>
           )}
         </div>
       </div>
 
       {error && (
-        <Alert variant="error" title="Couldn't load workflows">
+        <Alert variant="error" title={t('workflows.loadError')}>
           {error}
         </Alert>
       )}
 
       {!loading && !error && workflows.length > 0 && !active && (
-        <Alert variant="warning" title="No workflow is running">
-          New reports have nothing to run through. Choose "Use for new reports" on one of the workflows below.
+        <Alert variant="warning" title={t('workflows.noneRunningTitle')}>
+          {t('workflows.noneRunningBody')}
         </Alert>
       )}
 
@@ -454,14 +459,13 @@ const Workflows = () => {
               <Flag className="h-4 w-4" />
             </span>
           </div>
-          <p className="mt-5 text-base font-semibold text-ink">No workflows yet</p>
+          <p className="mt-5 text-base font-semibold text-ink">{t('workflows.emptyTitle')}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
-            A workflow decides what happens to a new report — which agents look at it, in what order, and when a person
-            takes over.
+            {t('workflows.emptyBody')}
           </p>
           {canManage && (
             <Button className="mt-5" startIcon={Plus} onClick={create}>
-              Build your first workflow
+              {t('workflows.buildFirst')}
             </Button>
           )}
         </div>
@@ -490,13 +494,15 @@ const Workflows = () => {
         isOpen={Boolean(activating)}
         onClose={() => setActivating(null)}
         onConfirm={activate}
-        title="Switch workflows?"
+        title={t('workflows.switchTitle')}
         message={
           activating
-            ? `New reports will run through "${activating.name}"${active ? ` instead of "${active.name}"` : ''}. Reports already in progress keep the workflow they started with.`
+            ? active
+              ? t('workflows.switchBodyInstead', { name: activating.name, current: active.name })
+              : t('workflows.switchBody', { name: activating.name })
             : ''
         }
-        confirmText="Activate"
+        confirmText={t('workflows.activate')}
         variant="primary"
         isLoading={busy}
       />
@@ -505,32 +511,32 @@ const Workflows = () => {
         <Modal
           isOpen
           onClose={busy ? () => {} : () => setDeleting(null)}
-          title={`Delete "${deleting.name}"?`}
+          title={t('workflows.deleteTitle', { name: deleting.name })}
           size="sm"
           footer={
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
               <Button variant="secondary" onClick={() => setDeleting(null)} disabled={busy}>
-                {deleteError ? 'Close' : 'Cancel'}
+                {deleteError ? t('common:actions.close') : t('common:actions.cancel')}
               </Button>
               {!deleteError && (
                 <Button variant="danger" onClick={remove} isLoading={busy}>
-                  Delete workflow
+                  {t('workflows.delete')}
                 </Button>
               )}
             </div>
           }
         >
           {deleteError ? (
-            <Alert variant={deleteError.status === 409 ? 'warning' : 'error'} title="This workflow can't be deleted">
+            <Alert variant={deleteError.status === 409 ? 'warning' : 'error'} title={t('workflows.cantDelete')}>
               {deleteError.summary}
               {deleteError.status === 409 && (
-                <p className="mt-2">An organization always needs one workflow. Create its replacement first.</p>
+                <p className="mt-2">{t('workflows.needsOne')}</p>
               )}
             </Alert>
           ) : (
             <p className="text-sm leading-relaxed text-ink-secondary">
-              This cannot be undone.
-              {deleting.is_active && ' It is the active workflow — activate another first, or new reports will have nothing to run through.'}
+              {t('workflows.cannotUndo')}
+              {deleting.is_active && ` ${t('workflows.deleteActiveWarning')}`}
             </p>
           )}
         </Modal>

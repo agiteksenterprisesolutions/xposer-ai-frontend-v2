@@ -1,0 +1,324 @@
+{
+  "status": {
+    "draft": "Draft",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "statusHint": {
+    "draft": "Not available to reporters. Use while the type is being written or reviewed.",
+    "active": "Reporters can file reports of this type.",
+    "inactive": "Withdrawn. Existing cases are unaffected."
+  },
+  "tiers": {
+    "standard": "Standard",
+    "confidential": "Confidential",
+    "restricted": "Restricted"
+  },
+  "list": {
+    "seoTitle": "Report Types",
+    "seoDescription": "Manage the report categories and intake forms available to reporters.",
+    "columns": {
+      "name": "Name",
+      "category": "Category",
+      "status": "Status",
+      "createdOn": "Created on",
+      "actions": "Actions"
+    },
+    "toast": {
+      "active": "\"{{name}}\" is active — reporters can file it.",
+      "inactive": "\"{{name}}\" is withdrawn. Existing cases are unaffected.",
+      "draft": "\"{{name}}\" is a draft again — hidden from reporters.",
+      "templateDownloaded": "Template downloaded",
+      "exported": "Report types exported",
+      "imported_one": "Imported {{count}} report type",
+      "imported_other": "Imported {{count}} report types",
+      "noneCreated": "No report types were created from this file"
+    },
+    "tour": {
+      "sidebarTitle": "Report Types",
+      "sidebarBody": "Define the categories reporters can choose from when filing a report.",
+      "searchTitle": "Search types",
+      "searchBody": "Quickly find a report type by name or category.",
+      "toggleTitle": "Active only filter",
+      "toggleBody": "Toggle to show every type, or just the ones currently active.",
+      "transferTitle": "Import and export",
+      "transferBody": "Export your report types to Excel, or create several at once: download the blank template, fill in one row per question, then choose Import new types. Import only creates — it never updates an existing type.",
+      "createTitle": "Create a new type",
+      "createBody": "Add a new report category with its own custom questions.",
+      "tableTitle": "Manage types",
+      "tableBody": "Edit a type, or toggle it active/inactive to control what reporters see.",
+      "accountTitle": "Your account",
+      "accountBody": "Manage your profile or log out from here."
+    },
+    "searchPlaceholder": "Search by name or category…",
+    "searchLabel": "Search report types",
+    "filter": {
+      "showingActive": "Showing active report types only",
+      "showingAll": "Showing all report types",
+      "activeOnly": "Active only",
+      "allTypes": "All types"
+    },
+    "transfer": {
+      "button": "Import / Export",
+      "exportActiveTitle": "Export the active report types to Excel",
+      "exportAllTitle": "Export every report type to Excel",
+      "exportActive": "Export active types",
+      "exportAll": "Export all types",
+      "importTitle": "Create new report types from a filled-in template. Existing types are not updated.",
+      "import": "Import new types",
+      "templateTitle": "Download a blank Excel template for bulk-importing report types",
+      "template": "Download blank template",
+      "packTitle": "Add a ready-made set of report types for your industry",
+      "pack": "Install a sector pack"
+    },
+    "create": "Create new type",
+    "empty": {
+      "noMatch": "No matching report types",
+      "noActive": "No active report types found",
+      "none": "No report types defined",
+      "noMatchHint": "Try a different search term.",
+      "noActiveHint": "Turn off Active only to view all report types",
+      "noneHint": "Start by creating your first report category"
+    },
+    "fromPack": "From the {{code}} pack",
+    "fromPackVersion": "From the {{code}} pack (v{{version}})",
+    "generalCategory": "General",
+    "statusOf": "Status of {{name}}",
+    "view": "View",
+    "viewName": "View {{name}}",
+    "edit": "Edit",
+    "editName": "Edit {{name}}",
+    "import": {
+      "title": "Import results",
+      "count_one": "{{count}} report type imported",
+      "count_other": "{{count}} report types imported",
+      "nothingImported": "Nothing was imported",
+      "allOrNothing": "The import is all-or-nothing, so none of the report types in this file were created. Fix the problems below and upload it again.",
+      "warnings_one": "Warning ({{count}})",
+      "warnings_other": "Warnings ({{count}})",
+      "wholeFile": "About the whole file ({{count}})",
+      "inRows": "In specific rows ({{count}})",
+      "row": "Row {{row}}",
+      "alreadyExistsHint": "Importing never updates an existing type — it matches on the name. To replace one, delete it here first, then import the file again.",
+      "unknownOwnerLink": "Owner columns must name one of your roles, by code or name. Change the file to use an existing role, or <roleLink>create the role</roleLink> first.",
+      "unknownOwnerAsk": "Owner columns must name one of your roles, by code or name. Change the file to use an existing role, or ask an admin to create the role first."
+    }
+  },
+  "create": {
+    "seoTitle": "New report type",
+    "seoDescription": "Define a new report category and build its intake form.",
+    "tour": {
+      "stepsTitle": "Three short steps",
+      "stepsBody": "Write the questions, set how reports are handled, then review and publish. Move between them at any time.",
+      "canvasTitle": "The form as reporters see it",
+      "canvasBody": "One step at a time. Click a question or the step title to change it.",
+      "addTitle": "Add questions",
+      "addBody": "The common question types are one click away. \"More types\" has the rest.",
+      "inspectorTitle": "Settings for what you selected",
+      "inspectorBody": "Wording, whether it is required, when it is shown, and how sensitive the answer is.",
+      "previewTitle": "Preview",
+      "previewBody": "Page through the form exactly as a reporter would, on desktop or phone."
+    },
+    "copyFailed": "Couldn't load that report type. Try again.",
+    "savedDraft": "\"{{name}}\" saved as a draft",
+    "published": "\"{{name}}\" is published"
+  },
+  "edit": {
+    "seoTitle": "Edit — {{name}}",
+    "loadFailed": "Couldn't load this report type. Try again.",
+    "savedVersion": "Saved as version {{version}}",
+    "saved": "Changes saved",
+    "notFound": "Report type not found",
+    "back": "Back to report types"
+  },
+  "view": {
+    "loadFailed": "Failed to load report type. Please try again.",
+    "loadFailedShort": "Failed to load report type"
+  },
+  "pack": {
+    "title": "Install a sector pack",
+    "done": "Done",
+    "preview": "Preview",
+    "previewAgain": "Preview again",
+    "previewFirst": "Preview first",
+    "install": "Install",
+    "intro": "A sector pack is a ready-made set of report types for an industry. Installing copies them in as your own report types. They arrive as drafts, so you can review them before reporters see them.",
+    "noneTitle": "No sector packs available yet",
+    "noneBody": "When Xposer publishes one for your industry, it appears here.",
+    "choose": "Sector pack",
+    "summary_one": "{{count}} report type · version {{version}}",
+    "summary_other": "{{count}} report types · version {{version}}",
+    "inThisPack": "In this pack",
+    "installed_one": "Installed {{count}} report type from {{pack}}. Review it, then activate it if you want it.",
+    "installed_other": "Installed {{count}} report types from {{pack}}. Review them, then activate the ones you want.",
+    "installedVersion_one": "Installed {{count}} report type from {{pack}} (v{{version}}). Review it, then activate it if you want it.",
+    "installedVersion_other": "Installed {{count}} report types from {{pack}} (v{{version}}). Review them, then activate the ones you want.",
+    "blocked": "Nothing can be installed until these are fixed. Nothing was changed.",
+    "nothingNew": "Nothing new to install: you already have every report type in this pack.",
+    "previewOnly": "Preview only. Nothing has been changed yet.",
+    "problems": "Problems",
+    "added": "Added",
+    "willAdd": "Will be added",
+    "skipped": "Skipped, you already have these"
+  },
+  "governance": {
+    "intro": "These settings apply to every new case of this type. Cases already filed keep the settings they were filed under.",
+    "code": "Compliance code",
+    "codeExample": "e.g. FRD-CLM-01",
+    "optional": "Optional",
+    "codeLocked": "A code is permanent once set.",
+    "codePermanent": "Can't be changed after it's saved.",
+    "category": "Category",
+    "categoryExample": "e.g. Fraud",
+    "status": "Status",
+    "tier": "Confidentiality tier",
+    "defaultOwner": "Default owner",
+    "defaultOwnerHint": "a role",
+    "alternateOwner": "Alternate owner",
+    "alternateOwnerHint": "if the default is implicated",
+    "notSet": "Not set",
+    "ackWithin": "Acknowledge within",
+    "triageWithin": "Triage within",
+    "keepFor": "Keep records for",
+    "days": "days",
+    "years": "years",
+    "regulatory": "Regulatory trigger",
+    "advisory": "advisory",
+    "regulatoryExample": "e.g. Notify the regulator within 72 hours",
+    "regulatoryHint": "A reminder for handlers. Nobody is notified automatically.",
+    "anonymous": "Allow anonymous reports",
+    "anonymousHint": "Reporters may file without giving their identity.",
+    "approvedBy": "Approved by <name>{{name}}</name>",
+    "approvedByOn": "Approved by <name>{{name}}</name> on {{date}}",
+    "approvedOn": "Approved on {{date}}"
+  },
+  "voice": {
+    "title": "Voice Questions",
+    "intro": "What the voice agent finds out on every call, in order. It asks conversationally, in the caller's own language — changes apply from the next call.",
+    "shortIntro": "What the AI agent finds out on every call.",
+    "seoDescription": "Choose what the AI agent finds out on every reporting call.",
+    "timelineTitle": "The call, in order",
+    "newQuestion": "New question",
+    "required": "Required",
+    "optional": "Optional",
+    "hasGuidance": "Has guidance",
+    "addQuestion": "Add a question",
+    "dragToReorder": "Drag to reorder",
+    "questionCount_one": "{{count}} question",
+    "questionCount_other": "{{count}} questions",
+    "requiredCount_one": "{{count}} required",
+    "requiredCount_other": "{{count}} required",
+    "noOrg": "No organization on this account",
+    "loadFailed": "The question set could not be loaded.",
+    "saveFailed": "The question set could not be saved.",
+    "fixFirst": "Fix the highlighted questions before saving.",
+    "saved": "Saved — the next call uses these questions.",
+    "resetDone": "Reset to the default questions.",
+    "version": "Version {{version}}",
+    "versionSaved": "Version {{version}} · saved {{date}}",
+    "reset": "Reset to defaults",
+    "resetTitle": "Discard your questions and use the defaults",
+    "resetTitleDefault": "Already using the default questions",
+    "resetConfirmTitle": "Reset to the default questions?",
+    "resetConfirmBody": "Your questions will be discarded and the defaults restored. Reports already submitted keep the answers they were collected with.",
+    "errorTitle": "Something went wrong",
+    "defaultsTitle": "Using the default questions",
+    "defaultsBody": "Edit them and save to make them yours. Nothing here is live for your organization until you do.",
+    "needAttention_one": "{{count}} question needs attention",
+    "needAttention_other": "{{count}} questions need attention",
+    "needAttentionBody": "Nothing is saved until every question is valid — saving replaces the whole list at once.",
+    "unsaved": "Unsaved changes · they apply from the next call",
+    "discard": "Discard",
+    "save": "Save questions",
+    "end": "The report is filed and the caller gets their tracking details.",
+    "opening": {
+      "title": "Opening remark",
+      "eyebrow": "Before the questions",
+      "default": "The default opening",
+      "quoted": "“{{text}}”",
+      "afterGreeting": "Said after the greeting from Voice Profile",
+      "label": "What the agent says after its greeting",
+      "placeholder": "Leave blank for the default opening",
+      "hint": "The greeting itself is set on the Voice Profile page. Leave this blank and the agent opens in its own words."
+    },
+    "evidence": {
+      "title": "Ask for supporting files",
+      "on": "The agent invites photos, documents or recordings.",
+      "off": "The agent won't bring it up; callers can still upload."
+    },
+    "empty": {
+      "title": "No questions",
+      "body": "This is allowed — the agent simply has a free-form conversation and writes up whatever the caller tells it. Add a question to steer it."
+    },
+    "editor": {
+      "atLeastTwo": "Add at least two options.",
+      "mustDiffer": "Options must be different from each other.",
+      "position": "Question {{number}} of {{total}}",
+      "earlier": "Ask this earlier",
+      "later": "Ask this later",
+      "remove": "Remove",
+      "whatLabel": "What to find out",
+      "whatPlaceholder": "e.g. When did this happen?",
+      "whatHint": "Write it as something to find out, not a form prompt — the agent phrases the question itself, in the caller's language.",
+      "kind": "Kind of answer",
+      "kindHint": "This doesn't change how the agent asks — only how the answer is stored, so reports can be filtered and charted by it.",
+      "options": "Options",
+      "option": "Option {{number}}",
+      "removeOption": "Remove option {{number}}",
+      "addOption": "Add option",
+      "optionsHint": "Keep them short and distinct — the agent reads them out.",
+      "requiredOn": "The caller must answer it, or say they would rather not.",
+      "requiredOff": "The agent asks, but the caller can skip it.",
+      "guidance": "Guidance for the agent",
+      "guidanceNote": "Optional · never read out",
+      "guidancePlaceholder": "How the agent should probe, e.g. an estimate is fine."
+    },
+    "tileHints": {
+      "text": "Their own words",
+      "date": "Stored as a date",
+      "choice": "One of your options",
+      "multi_choice": "Any of your options",
+      "boolean": "Stored as yes or no",
+      "number": "Stored as a number"
+    },
+    "types": {
+      "text": {
+        "label": "Text",
+        "hint": "Free-form answer in the caller's own words"
+      },
+      "date": {
+        "label": "Date",
+        "hint": "Stored as 2026-08-20"
+      },
+      "choice": {
+        "label": "Single choice",
+        "hint": "Exactly one of the options"
+      },
+      "multi_choice": {
+        "label": "Multiple choice",
+        "hint": "Any number of the options"
+      },
+      "boolean": {
+        "label": "Yes / No",
+        "hint": "Stored as true or false"
+      },
+      "number": {
+        "label": "Number",
+        "hint": "Stored as a number"
+      }
+    },
+    "validation": {
+      "noKey": "This question has no key — remove it and add it again",
+      "invalidKey": "This question has an invalid key — remove it and add it again",
+      "sharedKey": "Shares a key with question {{number}}",
+      "emptyLabel": "Label cannot be empty",
+      "twoOptions": "A “{{type}}” question needs at least two options",
+      "uniqueOptions": "Options must be unique",
+      "optionsNotAllowed": "Options are only valid on choice or multi-choice questions"
+    },
+    "listSeparator": ", ",
+    "yes": "Yes",
+    "no": "No",
+    "questionFallback": "Question"
+  }
+}

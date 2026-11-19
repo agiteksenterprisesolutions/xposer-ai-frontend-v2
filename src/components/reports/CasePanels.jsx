@@ -14,6 +14,8 @@
 import { useState } from 'react';
 import { ArrowLeft, Archive, CalendarClock, CheckCircle2, Gavel, Info, Landmark, Mic } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { StatusBadge } from '../ui/Badge';
@@ -24,6 +26,7 @@ import { SLA_CLOCKS, SlaBadge, TierBadge, formatWhen, slaClock } from './CaseGov
 // ─── Notices above the case ──────────────────────────────────────────────
 
 export const CaseNotices = ({ report }) => {
+  const { t } = useTranslation('cases');
   const warnings = Array.isArray(report?.eligibility_warnings) ? report.eligibility_warnings.filter(Boolean) : [];
   if (!report?.regulatory_trigger && !warnings.length) return null;
   return (
@@ -32,9 +35,9 @@ export const CaseNotices = ({ report }) => {
         <div className="flex items-start gap-3 rounded-xl border border-info-line bg-info-soft px-4 py-3 text-sm text-info-fg">
           <Landmark className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <p>
-            <span className="font-semibold">Regulator: </span>
-            {report.regulatory_trigger}
-            <span className="mt-0.5 block text-xs">A reminder for whoever handles this case. Nobody has been notified.</span>
+            <span className="font-semibold">{t('notices.regulator')} </span>
+            <span dir="auto">{report.regulatory_trigger}</span>
+            <span className="mt-0.5 block text-xs">{t('notices.regulatorNote')}</span>
           </p>
         </div>
       )}
@@ -42,10 +45,10 @@ export const CaseNotices = ({ report }) => {
         <div className="flex items-start gap-3 rounded-xl border border-warning-line bg-warning-soft px-4 py-3 text-sm text-warning-fg">
           <Mic className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <div>
-            <p className="font-semibold">Check how this call was filed</p>
+            <p className="font-semibold">{t('notices.checkCall')}</p>
             <ul className="mt-1 list-disc space-y-0.5 ps-4">
               {warnings.map((warning, i) => (
-                <li key={i}>{warning}</li>
+                <li key={i} dir="auto">{warning}</li>
               ))}
             </ul>
           </div>
@@ -71,15 +74,11 @@ export const deadlineLength = (sla, days, basis) => {
   const n = sla?.[days];
   if (n === null || n === undefined) return null;
   const kind = sla?.[basis] === 'business' ? 'business' : 'calendar';
-  return `${n} ${kind} day${n === 1 ? '' : 's'}`;
-};
-
-const CLOCK_NOTES = {
-  acknowledge: 'Met by the first message to the reporter, or by marking it below.',
-  triage: 'Met the first time someone moves the case out of Pending, including assigning it by hand.',
+  return i18n.t(`deadlines.length.${kind}`, { ns: 'cases', count: n });
 };
 
 const ClockRow = ({ clock, label, note, length }) => {
+  const { t } = useTranslation('cases');
   const set = clock && clock.state && clock.state !== 'not_set';
   return (
     <div className="space-y-1">
@@ -88,19 +87,19 @@ const ClockRow = ({ clock, label, note, length }) => {
           {label}
           {length && <span className="ms-1.5 text-xs font-normal text-ink-muted">· {length}</span>}
         </p>
-        {set ? <SlaBadge clock={clock} size="medium" /> : <span className="text-xs text-ink-subtle">No deadline</span>}
+        {set ? <SlaBadge clock={clock} size="medium" /> : <span className="text-xs text-ink-subtle">{t('deadlines.noDeadline')}</span>}
       </div>
       {set && (
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-xs">
           {clock.due_at && (
             <>
-              <dt className="text-ink-muted">Due</dt>
+              <dt className="text-ink-muted">{t('deadlines.due')}</dt>
               <dd className="text-ink-secondary">{formatWhen(clock.due_at)}</dd>
             </>
           )}
           {clock.done_at && (
             <>
-              <dt className="text-ink-muted">Done</dt>
+              <dt className="text-ink-muted">{t('deadlines.done')}</dt>
               <dd className="text-ink-secondary">{formatWhen(clock.done_at)}</dd>
             </>
           )}
@@ -118,6 +117,7 @@ const ClockRow = ({ clock, label, note, length }) => {
  *   onUpdated(case) – the case as the server returned it
  */
 export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
+  const { t } = useTranslation('cases');
   const [busy, setBusy] = useState(false);
   const ack = slaClock(report, 'acknowledge');
   const sla = report?.sla || {};
@@ -130,7 +130,7 @@ export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
     setBusy(true);
     try {
       const result = await reportsAPI.acknowledgeReport(report.id);
-      toast.success(result?.acknowledgement_recorded === false ? 'It was already recorded as acknowledged.' : 'Recorded as acknowledged.');
+      toast.success(result?.acknowledgement_recorded === false ? t('deadlines.alreadyAcknowledged') : t('deadlines.acknowledged'));
       onUpdated?.(result);
     } catch (err) {
       toast.error(errorSummary(err));
@@ -144,12 +144,12 @@ export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-accent-fg" />
-          Deadlines
+          {t('deadlines.title')}
         </Card.Title>
         <Card.Description>
           {calendar
-            ? `These follow the ${calendar.pack_code} jurisdiction pack (version ${calendar.pack_version}). It can change when the case's legal entity is set; a deadline already met stays as it was. Times are in your time zone.`
-            : 'Set by the report type when this case was filed. Times are in your time zone.'}
+            ? t('deadlines.descriptionPack', { pack: calendar.pack_code, version: calendar.pack_version })
+            : t('deadlines.descriptionType')}
         </Card.Description>
       </Card.Header>
       <Card.Content className="space-y-4">
@@ -158,7 +158,7 @@ export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
             key={key}
             clock={slaClock(report, key)}
             label={label}
-            note={CLOCK_NOTES[key]}
+            note={t(`deadlines.note.${key}`)}
             length={SLA_FIELDS[key] && deadlineLength(sla, SLA_FIELDS[key].days, SLA_FIELDS[key].basis)}
           />
         ))}
@@ -167,28 +167,25 @@ export const DeadlinesCard = ({ report, canAcknowledge, onUpdated }) => {
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-ink">
-                Feedback to the reporter
+                {t('deadlines.feedback')}
                 {feedbackLength && <span className="ms-1.5 text-xs font-normal text-ink-muted">· {feedbackLength}</span>}
               </p>
-              {sla.feedback_due_at && <span className="text-xs text-ink-secondary">Due {formatWhen(sla.feedback_due_at)}</span>}
+              {sla.feedback_due_at && <span className="text-xs text-ink-secondary">{t('deadlines.dueOn', { date: formatWhen(sla.feedback_due_at) })}</span>}
             </div>
-            <p className="text-xs text-ink-subtle">For information. No reminders are sent for it yet.</p>
+            <p className="text-xs text-ink-subtle">{t('deadlines.feedbackNote')}</p>
           </div>
         )}
         {businessDays && (
           <p className="border-t border-line-subtle pt-3 text-xs text-ink-muted">
-            Business days skip weekends and public holidays{calendar ? ` in the ${calendar.pack_code} calendar` : ''}. If a holiday is added,
-            a running deadline moves later.
+            {calendar ? t('deadlines.businessDaysPack', { pack: calendar.pack_code }) : t('deadlines.businessDays')}
           </p>
         )}
         {showAcknowledge && (
           <div className="space-y-1.5 border-t border-line-subtle pt-4">
             <Button variant="secondary" size="small" startIcon={CheckCircle2} onClick={acknowledge} isLoading={busy} fullWidth>
-              Mark as acknowledged
+              {t('deadlines.markAcknowledged')}
             </Button>
-            <p className="text-xs text-ink-muted">
-              For an acknowledgement sent by letter or made by phone. Your first message to the reporter counts on its own.
-            </p>
+            <p className="text-xs text-ink-muted">{t('deadlines.markAcknowledgedNote')}</p>
           </div>
         )}
       </Card.Content>
@@ -207,6 +204,7 @@ const formatDay = (value) => formatWhen(value, { time: false });
  *   onUpdated(case) – after the hold changes
  */
 export const RecordsCard = ({ report, canHold, onUpdated }) => {
+  const { t } = useTranslation('cases');
   const [busy, setBusy] = useState(false);
   const closed = report?.status === 'closed';
   const onHold = Boolean(report?.legal_hold);
@@ -217,7 +215,7 @@ export const RecordsCard = ({ report, canHold, onUpdated }) => {
     setBusy(true);
     try {
       const updated = await reportsAPI.updateReport(report.id, { legal_hold: hold }, { quiet: true });
-      toast.success(hold ? 'Legal hold placed.' : 'Legal hold lifted.');
+      toast.success(hold ? t('records.holdPlaced') : t('records.holdLifted'));
       onUpdated?.(updated);
     } catch (err) {
       toast.error(errorSummary(err));
@@ -226,21 +224,25 @@ export const RecordsCard = ({ report, canHold, onUpdated }) => {
     }
   };
 
+  // Retention 0 anywhere in the chain (type, entity or tenant) means "keep
+  // forever": the case is never redacted (ENTITIES.md §3).
+  const forever = report.retention_forever === true;
   let line;
-  if (onHold) line = 'Legal hold: content will not be deleted.';
-  else if (closed && report.retain_until) line = `Content will be deleted on ${formatDay(report.retain_until)}.`;
-  else if (closed) line = 'This report type sets no retention period, so the content is kept.';
-  else if (report.retain_until) line = `Content will be deleted on ${formatDay(report.retain_until)}.`;
+  if (onHold) line = t('records.onHold');
+  else if (forever) line = t('records.forever');
+  else if (closed && report.retain_until) line = t('records.deletedOn', { date: formatDay(report.retain_until) });
+  else if (closed) line = t('records.noRetention');
+  else if (report.retain_until) line = t('records.deletedOn', { date: formatDay(report.retain_until) });
   // The pack decides whether retention counts from submission or from closure,
   // and the case doesn't say which, so don't claim either.
-  else line = 'No deletion date is set yet.';
+  else line = t('records.noDate');
 
   return (
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center gap-2">
           <Archive className="h-4 w-4 text-accent-fg" />
-          Records
+          {t('records.title')}
         </Card.Title>
       </Card.Header>
       <Card.Content className="space-y-3">
@@ -252,32 +254,32 @@ export const RecordsCard = ({ report, canHold, onUpdated }) => {
           )}
           {line}
         </p>
-        {closed && report.retention_years && !onHold && (
+        {closed && report.retention_years && !onHold && !forever && (
           <p className="text-xs text-ink-muted">
-            Closed {formatDay(report.closed_at)} · kept {report.retention_years} years. Reopening the case cancels the date.
+            {t('records.closedKept', { date: formatDay(report.closed_at), count: report.retention_years })}
           </p>
         )}
         {/* The jurisdiction pack the case was filed under, when one applied. */}
         {jurisdiction && (
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-line-subtle pt-3 text-xs">
-            <dt className="text-ink-muted">Jurisdiction</dt>
+            <dt className="text-ink-muted">{t('records.jurisdiction')}</dt>
             <dd className="text-ink-secondary">
               <span className="font-mono">{jurisdiction.pack_code}</span>
-              {jurisdiction.pack_version != null && ` · version ${jurisdiction.pack_version}`}
+              {jurisdiction.pack_version != null && ` · ${t('records.version', { version: jurisdiction.pack_version })}`}
             </dd>
             {jurisdiction.regulators?.length > 0 && (
               <>
-                <dt className="text-ink-muted">Regulators</dt>
-                <dd className="text-ink-secondary">{jurisdiction.regulators.join(', ')}</dd>
+                <dt className="text-ink-muted">{t('records.regulators')}</dt>
+                <dd className="text-ink-secondary" dir="auto">{jurisdiction.regulators.join(t('records.listSeparator'))}</dd>
               </>
             )}
             {jurisdiction.retention_min_years != null && (
               <>
-                <dt className="text-ink-muted">Kept at least</dt>
+                <dt className="text-ink-muted">{t('records.keptAtLeast')}</dt>
                 <dd className="text-ink-secondary">
-                  {jurisdiction.retention_min_years} years
+                  {t('records.years', { count: jurisdiction.retention_min_years })}
                   {report.retention_years != null && report.retention_years > jurisdiction.retention_min_years
-                    ? ` (this case: ${report.retention_years}, from its report type)`
+                    ? ` ${t('records.thisCase', { count: report.retention_years })}`
                     : ''}
                 </dd>
               </>
@@ -286,7 +288,7 @@ export const RecordsCard = ({ report, canHold, onUpdated }) => {
         )}
         {canHold && (
           <Button variant="secondary" size="small" startIcon={Gavel} onClick={() => setHold(!onHold)} isLoading={busy} fullWidth>
-            {onHold ? 'Lift legal hold' : 'Place legal hold'}
+            {onHold ? t('records.liftHold') : t('records.placeHold')}
           </Button>
         )}
       </Card.Content>
@@ -300,21 +302,22 @@ export const isDisposed = (report) => Boolean(report?.redacted_at);
 
 /** Read-only: the content is gone, and every update is refused (409). */
 export const DisposedCase = ({ report, typeName, onBack }) => {
+  const { t } = useTranslation('cases');
   const years = report.disposal?.retention_years ?? report.retention_years;
   const rows = [
-    ['Report type', typeName],
-    ['Submitted', formatDay(report.created_at)],
-    ['Closed', formatDay(report.disposal?.closed_at || report.closed_at)],
-    ['Disposed', formatDay(report.redacted_at)],
+    [t('disposed.reportType'), typeName],
+    [t('disposed.submitted'), formatDay(report.created_at)],
+    [t('disposed.closed'), formatDay(report.disposal?.closed_at || report.closed_at)],
+    [t('disposed.disposed'), formatDay(report.redacted_at)],
   ].filter(([, value]) => value);
 
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="small" onClick={onBack}>
-        <ArrowLeft className="me-1 h-4 w-4" /> Back
+        <ArrowLeft className="me-1 h-4 w-4" aria-hidden="true" /> {t('common:actions.back')}
       </Button>
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-xl font-bold text-ink">Case #{report.report_number}</h2>
+        <h2 className="text-xl font-bold text-ink">{t('disposed.caseNumber', { number: report.report_number })}</h2>
         <StatusBadge status={report.status} />
         <TierBadge tier={report.confidentiality_tier} size="medium" />
       </div>
@@ -323,10 +326,10 @@ export const DisposedCase = ({ report, typeName, onBack }) => {
           <p className="flex items-start gap-3 text-sm text-ink-secondary">
             <Archive className="mt-0.5 h-5 w-5 shrink-0 text-ink-muted" aria-hidden="true" />
             <span>
-              <span className="block font-semibold text-ink">{report.title || `${typeName} — disposed under retention policy`}</span>
-              Disposed on {formatDay(report.redacted_at)}
-              {years ? ` under a ${years}-year retention policy` : ' under the retention policy'}. The answers, description,
-              messages and attachments have been permanently deleted; this record that the case existed is kept.
+              <span className="block font-semibold text-ink" dir="auto">{report.title || t('disposed.fallbackTitle', { type: typeName })}</span>
+              {years
+                ? t('disposed.bodyYears', { date: formatDay(report.redacted_at), count: years })
+                : t('disposed.body', { date: formatDay(report.redacted_at) })}
             </span>
           </p>
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 border-t border-line-subtle pt-4 text-sm">

@@ -3,6 +3,8 @@
 // The compliance side of a report type: code, status, owners, tier, SLAs,
 // retention. Each is copied onto a case when it is filed and enforced there.
 import { Info, Lock } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
+import { intlLocale } from '../../utils/locale';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
 import { parseServerDate } from '../../utils/formatters';
 import { CONFIDENTIALITY_TIERS, REPORT_TYPE_STATUSES } from '../../utils/reportTypes';
@@ -36,13 +38,13 @@ const NumberField = ({ id, label, value, onChange, suffix, disabled }) => (
   </div>
 );
 
-const RoleField = ({ id, label, hint, value, onChange, roles, nameFor, disabled }) => (
+const RoleField = ({ id, label, hint, value, onChange, roles, nameFor, disabled, notSet }) => (
   <div>
     <Label htmlFor={id} hint={hint}>
       {label}
     </Label>
     <select id={id} value={value || ''} onChange={(event) => onChange(event.target.value)} disabled={disabled} className={fieldClass}>
-      <option value="">Not set</option>
+      <option value="">{notSet}</option>
       {roles.map((role) => (
         <option key={role.code} value={role.code}>
           {role.name}
@@ -63,19 +65,19 @@ const RoleField = ({ id, label, hint, value, onChange, roles, nameFor, disabled 
 const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = false }) => {
   const { roles, nameFor } = useOrgRoles({ source: 'owners' });
   const approvedAt = parseServerDate(value.approved_at);
+  const { t } = useTranslation('reportTypes');
 
   return (
     <div className="space-y-5">
       <p className="flex items-start gap-2 rounded-lg bg-info-soft px-3 py-2.5 text-xs leading-relaxed text-info-fg">
         <Info className="mt-px h-3.5 w-3.5 shrink-0" />
-        These settings apply to every new case of this type. Cases already filed keep the settings they were filed
-        under.
+        {t('governance.intro')}
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
         <div>
-          <Label htmlFor="rt-code" hint={codeLocked ? '' : 'e.g. FRD-CLM-01'}>
-            Compliance code
+          <Label htmlFor="rt-code" hint={codeLocked ? '' : t('governance.codeExample')}>
+            {t('governance.code')}
           </Label>
           <div className="relative">
             <input
@@ -84,31 +86,31 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
               onChange={(event) => onChange('code', event.target.value.toUpperCase())}
               disabled={readOnly || codeLocked}
               className={`${fieldClass} font-mono ${codeLocked ? 'pe-8' : ''}`}
-              placeholder="Optional"
+              placeholder={t('governance.optional')}
             />
             {codeLocked && <Lock className="absolute end-3 top-2.5 h-3.5 w-3.5 text-ink-subtle" aria-hidden="true" />}
           </div>
           {codeLocked ? (
-            <p className="mt-1 text-[11px] text-ink-subtle">A code is permanent once set.</p>
+            <p className="mt-1 text-[11px] text-ink-subtle">{t('governance.codeLocked')}</p>
           ) : (
-            <p className="mt-1 text-[11px] text-ink-subtle">Can't be changed after it's saved.</p>
+            <p className="mt-1 text-[11px] text-ink-subtle">{t('governance.codePermanent')}</p>
           )}
         </div>
 
         <div>
-          <Label htmlFor="rt-category">Category</Label>
+          <Label htmlFor="rt-category">{t('governance.category')}</Label>
           <input
             id="rt-category"
             value={value.category || ''}
             onChange={(event) => onChange('category', event.target.value)}
             disabled={readOnly}
             className={fieldClass}
-            placeholder="e.g. Fraud"
+            placeholder={t('governance.categoryExample')}
           />
         </div>
 
         <div>
-          <Label htmlFor="rt-status">Status</Label>
+          <Label htmlFor="rt-status">{t('governance.status')}</Label>
           <select
             id="rt-status"
             value={value.status || 'active'}
@@ -118,14 +120,14 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
           >
             {REPORT_TYPE_STATUSES.map((status) => (
               <option key={status.value} value={status.value}>
-                {status.label}
+                {t(`status.${status.value}`, { defaultValue: status.label })}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <Label htmlFor="rt-tier">Confidentiality tier</Label>
+          <Label htmlFor="rt-tier">{t('governance.tier')}</Label>
           <select
             id="rt-tier"
             value={value.confidentiality_tier || 'standard'}
@@ -135,7 +137,7 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
           >
             {CONFIDENTIALITY_TIERS.map((tier) => (
               <option key={tier.value} value={tier.value}>
-                {tier.label}
+                {t(`tiers.${tier.value}`, { defaultValue: tier.label })}
               </option>
             ))}
           </select>
@@ -143,8 +145,9 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
 
         <RoleField
           id="rt-owner"
-          label="Default owner"
-          hint="a role"
+          label={t('governance.defaultOwner')}
+          hint={t('governance.defaultOwnerHint')}
+          notSet={t('governance.notSet')}
           value={value.default_owner_role}
           onChange={(role) => onChange('default_owner_role', role)}
           roles={roles}
@@ -153,8 +156,9 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
         />
         <RoleField
           id="rt-alt-owner"
-          label="Alternate owner"
-          hint="if the default is implicated"
+          label={t('governance.alternateOwner')}
+          hint={t('governance.alternateOwnerHint')}
+          notSet={t('governance.notSet')}
           value={value.alternate_owner_role}
           onChange={(role) => onChange('alternate_owner_role', role)}
           roles={roles}
@@ -164,32 +168,32 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
 
         <NumberField
           id="rt-ack"
-          label="Acknowledge within"
-          suffix="days"
+          label={t('governance.ackWithin')}
+          suffix={t('governance.days')}
           value={value.ack_sla_days}
           onChange={(days) => onChange('ack_sla_days', days)}
           disabled={readOnly}
         />
         <NumberField
           id="rt-triage"
-          label="Triage within"
-          suffix="days"
+          label={t('governance.triageWithin')}
+          suffix={t('governance.days')}
           value={value.triage_sla_days}
           onChange={(days) => onChange('triage_sla_days', days)}
           disabled={readOnly}
         />
         <NumberField
           id="rt-retention"
-          label="Keep records for"
-          suffix="years"
+          label={t('governance.keepFor')}
+          suffix={t('governance.years')}
           value={value.retention_years}
           onChange={(years) => onChange('retention_years', years)}
           disabled={readOnly}
         />
 
         <div>
-          <Label htmlFor="rt-regulatory" hint="advisory">
-            Regulatory trigger
+          <Label htmlFor="rt-regulatory" hint={t('governance.advisory')}>
+            {t('governance.regulatory')}
           </Label>
           <input
             id="rt-regulatory"
@@ -197,16 +201,16 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
             onChange={(event) => onChange('regulatory_trigger', event.target.value)}
             disabled={readOnly}
             className={fieldClass}
-            placeholder="e.g. Notify the regulator within 72 hours"
+            placeholder={t('governance.regulatoryExample')}
           />
-          <p className="mt-1 text-[11px] text-ink-subtle">A reminder for handlers. Nobody is notified automatically.</p>
+          <p className="mt-1 text-[11px] text-ink-subtle">{t('governance.regulatoryHint')}</p>
         </div>
       </div>
 
       <label className="flex items-center justify-between gap-3">
         <span>
-          <span className="block text-sm font-medium text-ink">Allow anonymous reports</span>
-          <span className="block text-xs text-ink-muted">Reporters may file without giving their identity.</span>
+          <span className="block text-sm font-medium text-ink">{t('governance.anonymous')}</span>
+          <span className="block text-xs text-ink-muted">{t('governance.anonymousHint')}</span>
         </span>
         <input
           type="checkbox"
@@ -219,8 +223,16 @@ const ReportTypeGovernance = ({ value, onChange, codeLocked = false, readOnly = 
 
       {(value.approved_by || approvedAt) && (
         <p className="border-t border-line-subtle pt-3 text-xs text-ink-muted">
-          Approved{value.approved_by && <> by <span className="font-medium text-ink">{value.approved_by}</span></>}
-          {approvedAt && ` on ${approvedAt.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`}
+          {(() => {
+            const date = approvedAt
+              ? approvedAt.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
+              : null;
+            const by = value.approved_by ? <span className="font-medium text-ink" dir="auto" /> : null;
+            const key = value.approved_by ? (date ? 'governance.approvedByOn' : 'governance.approvedBy') : 'governance.approvedOn';
+            return (
+              <Trans t={t} i18nKey={key} values={{ name: value.approved_by, date }} components={by ? { name: by } : {}} />
+            );
+          })()}
         </p>
       )}
     </div>

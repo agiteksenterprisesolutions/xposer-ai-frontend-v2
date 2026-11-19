@@ -5,6 +5,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
+import { isRtl } from '../../utils/locale';
 import { reportTypesAPI } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import { toBuilderShape, toReportTypePayload } from '../../utils/reportTypes';
@@ -19,9 +21,10 @@ import { buildCatalog, seedSections } from '../../components/reportTypeBuilder/c
 const CREATE_REPORT_TYPE_TOUR_KEY = 'xposer_create_report_type_tour_v2_seen';
 
 const CreateReportType = () => {
+  const { t, i18n } = useTranslation('reportTypes');
   useSEO({
-    title: 'New report type',
-    description: 'Define a new report category and build its intake form.',
+    title: t('create.seoTitle'),
+    description: t('create.seoDescription'),
     noIndex: true,
   });
   const { user } = useAuthStore();
@@ -35,37 +38,37 @@ const CreateReportType = () => {
     () => [
       {
         target: '[data-tour="rtb-steps"]',
-        title: 'Three short steps',
-        content: 'Write the questions, set how reports are handled, then review and publish. Move between them at any time.',
+        title: t('create.tour.stepsTitle'),
+        content: t('create.tour.stepsBody'),
         placement: 'bottom',
         skipBeacon: true,
       },
       {
         target: '[data-tour="rtb-canvas"]',
-        title: 'The form as reporters see it',
-        content: 'One step at a time. Click a question or the step title to change it.',
-        placement: 'right',
+        title: t('create.tour.canvasTitle'),
+        content: t('create.tour.canvasBody'),
+        placement: isRtl() ? 'left' : 'right',
       },
       {
         target: '[data-tour="rtb-add-question"]',
-        title: 'Add questions',
-        content: 'The common question types are one click away. "More types" has the rest.',
+        title: t('create.tour.addTitle'),
+        content: t('create.tour.addBody'),
         placement: 'top',
       },
       {
         target: '[data-tour="rtb-inspector"]',
-        title: 'Settings for what you selected',
-        content: 'Wording, whether it is required, when it is shown, and how sensitive the answer is.',
-        placement: 'left',
+        title: t('create.tour.inspectorTitle'),
+        content: t('create.tour.inspectorBody'),
+        placement: isRtl() ? 'right' : 'left',
       },
       {
         target: '[data-tour="rtb-preview"]',
-        title: 'Preview',
-        content: 'Page through the form exactly as a reporter would, on desktop or phone.',
+        title: t('create.tour.previewTitle'),
+        content: t('create.tour.previewBody'),
         placement: 'bottom',
       },
     ],
-    [],
+    [t, i18n.resolvedLanguage],
   );
 
   const begin = async ({ name, category, mode, copyId }) => {
@@ -88,7 +91,7 @@ const CreateReportType = () => {
       const copy = asCopy(toBuilderShape(source), name);
       setStart(category ? { ...copy, category } : copy);
     } catch {
-      toast.error("Couldn't load that report type. Try again.");
+      toast.error(t('create.copyFailed'));
     } finally {
       setStarting(false);
     }
@@ -98,7 +101,7 @@ const CreateReportType = () => {
     setSaving(true);
     try {
       const created = await reportTypesAPI.createReportType(toReportTypePayload(form));
-      toast.success(form.status === 'draft' ? `"${form.name}" saved as a draft` : `"${form.name}" is published`);
+      toast.success(form.status === 'draft' ? t('create.savedDraft', { name: form.name }) : t('create.published', { name: form.name }));
       // Saved, but the server found something that will stop cases being
       // handled (an owner role nobody holds, say): open it where that shows.
       const createdId = created?.id || created?._id;

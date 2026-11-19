@@ -2,6 +2,7 @@
 // The backend keys every system user to a Firebase sign-in method. This is the
 // single source of truth for what those values mean, so the UI never has to
 // compare raw strings like 'google.com' in a dozen places.
+import i18n from '../i18n';
 
 export const AUTH_PROVIDERS = {
   PASSWORD: 'password',
@@ -16,14 +17,17 @@ export const PROVIDER_ID_TO_AUTH_PROVIDER = {
 };
 
 export const AUTH_PROVIDER_LABELS = {
-  [AUTH_PROVIDERS.PASSWORD]: 'Password',
+  // A getter so it reads in the current interface language.
+  get [AUTH_PROVIDERS.PASSWORD]() {
+    return i18n.t('authProvider.password', { ns: 'common' });
+  },
   [AUTH_PROVIDERS.GOOGLE]: 'Google',
   [AUTH_PROVIDERS.MICROSOFT]: 'Microsoft',
 };
 
 /** Options for the create/edit-user sign-in method selector. */
 export const AUTH_PROVIDER_OPTIONS = [
-  { value: AUTH_PROVIDERS.PASSWORD, label: 'Password' },
+  { value: AUTH_PROVIDERS.PASSWORD, get label() { return i18n.t('authProvider.password', { ns: 'common' }); } },
   { value: AUTH_PROVIDERS.GOOGLE, label: 'Google (SSO)' },
   { value: AUTH_PROVIDERS.MICROSOFT, label: 'Microsoft (SSO)' },
 ];
