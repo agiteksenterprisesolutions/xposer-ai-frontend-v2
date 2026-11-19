@@ -13,12 +13,17 @@
 //   entity admin (own entity)     the five settings only, via /settings
 //   others with entity:read       view
 //
+// The two packs (jurisdiction, calendar) are dated (XPAI-224,
+// PACK_HISTORY.md): chosen when an entity is created, then changed only from
+// a date in the pack history (PackHistory, opened from each row and from the
+// form). Edit forms show them read-only and never send them.
+//
 // Entities are never deleted (filed cases point at them), and a case's entity
 // comes only from the portal address the reporter used (§3).
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Building, Pencil, Plus, Power, RotateCcw, SlidersHorizontal, Unlock } from 'lucide-react';
+import { Building, History, Pencil, Plus, Power, RotateCcw, SlidersHorizontal, Unlock } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -28,7 +33,8 @@ import Modal from '../../components/ui/Modal';
 import Table, { TableLoading } from '../../components/ui/Table';
 import Skeleton from '../../components/ui/Skeleton';
 import TagInput from '../../components/ui/TagInput';
-import { entitiesAPI, tenantSettingsAPI, INHERITABLE_FIELDS } from '../../api/entities';
+import { entitiesAPI, tenantSettingsAPI, INHERITABLE_FIELDS, PACK_FIELDS } from '../../api/entities';
+import PackHistory from '../../components/entities/PackHistory';
 import { localized } from '../../api/jurisdiction';
 import { useOrgJurisdiction } from '../../hooks/useOrgJurisdiction';
 import { useRegionPacks } from '../../hooks/useRegionPacks';
@@ -73,11 +79,35 @@ const initialInherit = (entity, tenant) =>
   );
 
 // ─── One inheritable setting: inherited (greyed + Override) or own (+ Reset) ──
-const InheritableField = ({ field, state, onChange, error, packs }) => {
+const InheritableField = ({ field, state, onChange, error, packs, locked = false, current = null, onOpenHistory }) => {
   const { t } = useTranslation('entities');
   const id = useId();
   const { overridden, value, inherited } = state;
   const label = t(`fields.${field}`);
+
+  // A pack on an existing entity: the one in force today, read-only; it is
+  // changed from a date in the pack history.
+  if (locked) {
+    const eff = current?.effective?.[field];
+    const shown = eff ? eff.value : current?.[field];
+    return (
+      <Field
+        label={label}
+        htmlFor={id}
+        hint={t('history.lockedHint')}
+        badge={onOpenHistory && (
+          <Button variant="ghost" size="small" startIcon={History} onClick={onOpenHistory} aria-label={t('history.openAria', { field: label })}>
+            {t('history.open')}
+          </Button>
+        )}
+      >
+        <div id={id} className="flex h-10 items-center gap-2 rounded-lg border border-line bg-sunken px-3 text-sm text-ink-muted">
+          <span dir="auto" className="min-w-0 truncate" title={inheritedText(field, shown, t, packs)}>{inheritedText(field, shown, t, packs)}</span>
+          {eff?.source === 'tenant' && <Badge size="small" variant="default" className="shrink-0">{t('inherit.short')}</Badge>}
+        </div>
+      </Field>
+    );
+  }
 
   const badge = overridden ? (
     <Button
@@ -189,7 +219,7 @@ const RegulatorPicker = ({ value, onChange, options, error }) => {
 };
 
 // ─── The entity form: full (tenant admin) or settings only (entity admin) ───
-const EntityForm = ({ isOpen, onClose, entity, settingsOnly, tenant, packs, regulators, onSaved }) => {
+const EntityForm = ({ isOpen, onClose, entity, settingsOnly, tenant, packs, regulators, onSaved, onOpenHistory }) => {
   const { t } = useTranslation('entities');
   const editing = Boolean(entity);
   const [identity, setIdentity] = useState(null);
@@ -243,6 +273,7 @@ const EntityForm = ({ isOpen, onClose, entity, settingsOnly, tenant, packs, regu
       if (!identity.nameAr.trim()) next.nameAr = t('errors.nameAr');
     }
     INHERITABLE_FIELDS.forEach((field) => {
+      if (editing && PACK_FIELDS.includes(field)) return;
       if (!inherit[field].overridden) return;
       const v = inherit[field].value;
       if (field === 'retention_years' && !/^\d+$/.test(String(v ?? '').trim())) next[field] = t('errors.retention');
@@ -257,7 +288,9 @@ const EntityForm = ({ isOpen, onClose, entity, settingsOnly, tenant, packs, regu
     if (!validate()) return;
     const body = {};
     // The five settings: send what differs from what's stored (null = inherit).
+    // Packs only on create; afterwards they change from a date.
     INHERITABLE_FIELDS.forEach((field) => {
+      if (editing && PACK_FIELDS.includes(field)) return;
       const next = inheritValue(field);
       const stored = entity ? entity[field] ?? null : null;
       if (!editing ? next !== null : String(next) !== String(stored)) body[field] = next;
@@ -358,7 +391,17 @@ const EntityForm = ({ isOpen, onClose, entity, settingsOnly, tenant, packs, regu
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {INHERITABLE_FIELDS.map((field) => (
-              <InheritableField key={field} field={field} state={inherit[field]} onChange={(v) => setInh(field, v)} error={errors[field]} packs={packs} />
+              <InheritableField
+                key={field}
+                field={field}
+                state={inherit[field]}
+                onChange={(v) => setInh(field, v)}
+                error={errors[field]}
+                packs={packs}
+                locked={editing && PACK_FIELDS.includes(field)}
+                current={entity}
+                onOpenHistory={editing && onOpenHistory ? () => onOpenHistory(entity) : undefined}
+              />
             ))}
           </div>
         </section>
@@ -408,6 +451,7 @@ const Entities = () => {
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(null); // { entity, settingsOnly } or { entity: null }
   const [toggling, setToggling] = useState(null);
+  const [history, setHistory] = useState(null); // the entity whose pack history is open
 
   // Tenant defaults: for the inherited values a new entity shows, and the
   // "missing settings" prompt. Only a tenant admin can read them.
@@ -518,8 +562,20 @@ const Entities = () => {
                 rows.map((entity) => {
                   const inactive = entity.is_active === false;
                   const name = localized(entity.name);
+                  const historyButton = (
+                    <Button
+                      variant="ghost"
+                      size="small"
+                      aria-label={t('history.rowAria', { name })}
+                      title={t('history.title')}
+                      onClick={() => setHistory(entity)}
+                    >
+                      <History className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  );
                   const actions = (
                     <div className="flex justify-end gap-1">
+                      {historyButton}
                       {canManage ? (
                         <>
                           <Button variant="ghost" size="small" aria-label={t('actions.editAria', { name })} onClick={() => setEditing({ entity })}>
@@ -588,7 +644,29 @@ const Entities = () => {
         packs={packs}
         regulators={regulators}
         onSaved={load}
+        onOpenHistory={setHistory}
       />
+
+      <Modal
+        isOpen={Boolean(history)}
+        onClose={() => setHistory(null)}
+        title={t('history.entityTitle', { name: localized(history?.name) || history?.code || '' })}
+        size="large"
+        footer={
+          <div className="flex justify-end">
+            <Button variant="secondary" onClick={() => setHistory(null)}>{t('history.close')}</Button>
+          </div>
+        }
+      >
+        {history && (
+          <PackHistory
+            scope={{ entityId: history.id }}
+            canChange={canManage}
+            packs={packs}
+            onChanged={load}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

@@ -5,8 +5,12 @@
 // changing one here changes every entity that inherits it, at once.
 //
 // Retention is required and can't be cleared; 0 means keep forever. The
-// region and the default jurisdiction pack are set by the platform and shown
-// read-only.
+// region is set by the platform and shown read-only.
+//
+// The tenant's jurisdiction pack and business calendar are dated (XPAI-224,
+// PACK_HISTORY.md §2): they're changed from a date in the pack history below,
+// never in the form. The platform only picks the first jurisdiction pack when
+// the tenant is created.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lock, Save } from 'lucide-react';
@@ -16,19 +20,18 @@ import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Skeleton from '../../components/ui/Skeleton';
 import { tenantSettingsAPI } from '../../api/entities';
-import { localized } from '../../api/jurisdiction';
 import { useRegionPacks } from '../../hooks/useRegionPacks';
 import { describeError } from '../../utils/errors';
 import useSEO from '../../hooks/useSEO';
 import { CURRENCIES, CURRENCY_PATTERN, Field, inputClass } from '../../components/entities/formParts';
+import PackHistory from '../../components/entities/PackHistory';
 
-const FIELDS = ['default_language', 'default_currency', 'default_retention_years', 'default_calendar_pack_code'];
+const FIELDS = ['default_language', 'default_currency', 'default_retention_years'];
 
 const toForm = (s) => ({
   default_language: s?.default_language || '',
   default_currency: s?.default_currency || '',
   default_retention_years: s?.default_retention_years ?? '',
-  default_calendar_pack_code: s?.default_calendar_pack_code || '',
 });
 
 const TenantSettings = () => {
@@ -41,7 +44,7 @@ const TenantSettings = () => {
   const [serverError, setServerError] = useState(null);
   const [saving, setSaving] = useState(false);
   const region = settings?.platform?.region || null;
-  const { packs, loading: packsLoading } = useRegionPacks(region, { enabled: Boolean(settings) });
+  const { packs } = useRegionPacks(region, { enabled: Boolean(settings) });
 
   const load = useCallback(() => {
     setLoadError(null);
@@ -175,24 +178,6 @@ const TenantSettings = () => {
                   </>
                 )}
               </Field>
-              <Field label={t('tenant.fields.default_calendar_pack_code')} htmlFor="ts-cal" error={errors.default_calendar_pack_code} hint={t('tenant.calendarHint')}>
-                <select
-                  id="ts-cal"
-                  dir="ltr"
-                  className={inputClass}
-                  value={form.default_calendar_pack_code}
-                  onChange={(e) => set('default_calendar_pack_code', e.target.value)}
-                  disabled={packsLoading}
-                >
-                  <option value="">{t('values.followsPack')}</option>
-                  {packs.map((p) => (
-                    <option key={p.code} value={p.code}>{p.code} · {localized(p.name)}</option>
-                  ))}
-                  {form.default_calendar_pack_code && !packs.some((p) => p.code === form.default_calendar_pack_code) && (
-                    <option value={form.default_calendar_pack_code}>{form.default_calendar_pack_code}</option>
-                  )}
-                </select>
-              </Field>
               {serverError && <div className="sm:col-span-2"><Alert variant="error">{serverError}</Alert></div>}
             </Card.Content>
             <Card.Footer className="flex justify-end">
@@ -200,6 +185,17 @@ const TenantSettings = () => {
                 {t('common:actions.save')}
               </Button>
             </Card.Footer>
+          </Card>
+
+          <Card>
+            <Card.Header>
+              <Card.Title>{t('history.tenantTitle')}</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              {/* Re-read the settings after a change (the packs in force today
+                  may move) without touching unsaved edits in the form above. */}
+              <PackHistory scope={null} canChange packs={packs} onChanged={() => tenantSettingsAPI.get().then(setSettings).catch(() => {})} />
+            </Card.Content>
           </Card>
 
           <Card>
@@ -216,12 +212,6 @@ const TenantSettings = () => {
                   <dt className="text-xs font-semibold uppercase text-ink-muted">{t('tenant.region')}</dt>
                   <dd className="mt-1 rounded-lg border border-line bg-sunken px-3 py-2 text-sm text-ink-muted">
                     {settings.platform?.region || t('values.notSet')}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase text-ink-muted">{t('tenant.defaultPack')}</dt>
-                  <dd className="mt-1 rounded-lg border border-line bg-sunken px-3 py-2 text-sm text-ink-muted" dir="auto">
-                    {settings.platform?.default_jurisdiction_pack_code || t('values.notSet')}
                   </dd>
                 </div>
               </dl>

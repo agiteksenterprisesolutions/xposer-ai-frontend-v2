@@ -106,16 +106,15 @@
     "saved": "Organization defaults saved.",
     "retentionHint": "Required. 0 = keep forever.",
     "currencyHint": "ISO code, such as AED or SAR.",
-    "calendarHint": "Whose weekend and holidays time cases. “Follows the pack” uses each case’s own pack.",
     "platformTitle": "Set by the platform",
-    "platformIntro": "Your region and default jurisdiction pack are set by Xposer. Contact your account manager to change them.",
+    "platformIntro": "Your region is set by Xposer. Contact your account manager to change it.",
     "region": "Region",
-    "defaultPack": "Default jurisdiction pack",
     "fields": {
       "default_language": "Default language",
       "default_currency": "Default currency",
       "default_retention_years": "Keep cases for (years)",
-      "default_calendar_pack_code": "Business calendar"
+      "default_calendar_pack_code": "Business calendar",
+      "default_jurisdiction_pack_code": "Jurisdiction pack"
     }
   },
   "case": {
@@ -128,6 +127,66 @@
       "agentTitle": "Set by the AI before entities were fixed by the portal address.",
       "staff": "Set by staff",
       "staffTitle": "Set by a staff member before entities were fixed by the portal address."
+    }
+  },
+  "history": {
+    "title": "Pack history",
+    "entityTitle": "Pack history: {{name}}",
+    "tenantTitle": "Packs",
+    "rowAria": "Pack history for {{name}}",
+    "open": "History",
+    "openAria": "Pack history for {{field}}",
+    "lockedHint": "In force today. Changed from a date in the pack history.",
+    "close": "Close",
+    "intro": "Each case follows the pack in force on the day it was filed and keeps it for good. To change a pack, add a change from a date: the pack before it ends that day.",
+    "introReadOnly": "Each case follows the pack in force on the day it was filed and keeps it for good. Only a tenant admin can change packs.",
+    "kinds": {
+      "jurisdiction": "Jurisdiction pack",
+      "jurisdictionHint": "Whose rules apply: deadlines, retention, regulators and the AI notice.",
+      "calendar": "Business calendar",
+      "calendarHint": "Whose weekend and holidays time the deadlines."
+    },
+    "change": "Change pack from date…",
+    "changeAria": "Change the {{kind}} from a date",
+    "followTenant": "Follows the tenant",
+    "form": {
+      "pack": "New pack",
+      "from": "From",
+      "fromHint": "From midnight on this day. The earliest date is {{date}}; if cases were already filed, choose tomorrow or later.",
+      "save": "Save change"
+    },
+    "state": {
+      "current": "In force",
+      "scheduled": "Scheduled",
+      "past": "Past"
+    },
+    "range": "{{from}} – {{to}}",
+    "rangeOpen": "From {{from}}",
+    "by": "Changed by {{name}} on {{date}}",
+    "bySystem": "Recorded automatically",
+    "emptyEntity": "No entries yet. This entity follows the tenant’s packs.",
+    "emptyTenant": "No entries yet.",
+    "cancelEntry": "Cancel change",
+    "cancelAria": "Cancel the change to {{pack}} from {{date}}",
+    "keep": "Keep it",
+    "confirmTitle": "Cancel this scheduled change?",
+    "confirmBody": "The change to {{pack}} from {{date}} won’t happen, and the pack before it stays in force.",
+    "toast": {
+      "saved": "Pack changed.",
+      "scheduled": "Pack change scheduled from {{date}}.",
+      "cancelled": "Scheduled change cancelled."
+    },
+    "errors": {
+      "overlap": "Choose a date after {{date}}. To replace a scheduled change, cancel it first.",
+      "beforeCase": "A case was already filed under the old pack. Choose a later date.",
+      "noChange": "That is already the pack from that date.",
+      "concurrent": "Someone else changed this at the same moment. The history has been reloaded; try again.",
+      "alreadyStarted": "This change is already in force. Add a new change instead.",
+      "notLatest": "Cancel the later change first.",
+      "date": "Choose a date on or after {{date}}.",
+      "notAllowed": "Only a tenant admin can change packs.",
+      "notAllowedRead": "You don’t have access to this pack history.",
+      "loadFailed": "The pack history couldn’t be loaded."
     }
   }
 }
