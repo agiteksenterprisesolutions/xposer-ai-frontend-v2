@@ -1,0 +1,132 @@
+{
+  "page": {
+    "title": "Legal entities",
+    "intro": "The companies in your group, each with its own legal settings. A report’s entity comes from the portal address the reporter used. Settings an entity doesn’t set come from your organization defaults.",
+    "showInactive": "Show deactivated entities",
+    "emptyTitle": "No legal entities yet",
+    "emptyBody": "Without entities, every report is filed at organization level. Add one for each company that needs its own address, pack or retention.",
+    "missingBody": "Some required organization defaults aren’t set yet, so entities that inherit them have no value.",
+    "missingLink": "Set organization defaults",
+    "arabicMissing": "Arabic name missing"
+  },
+  "columns": {
+    "entity": "Entity",
+    "retention": "Keep cases",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Deactivated"
+  },
+  "actions": {
+    "editAria": "Edit {{name}}",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "settings": "Settings"
+  },
+  "fields": {
+    "code": "Entity identifier",
+    "nameEn": "Name (English)",
+    "nameAr": "Name (Arabic)",
+    "regulators": "Regulators",
+    "aliases": "Other names",
+    "description": "Description",
+    "default_language": "Default language",
+    "currency": "Currency",
+    "jurisdiction_pack_code": "Jurisdiction pack",
+    "calendar_pack_code": "Business calendar",
+    "retention_years": "Keep cases for (years)"
+  },
+  "hints": {
+    "code": "Lowercase letters, digits, _ and -, e.g. acme_insurance. It can’t be changed later.",
+    "codeFixed": "The identifier can’t be changed.",
+    "retention": "0 = keep forever.",
+    "calendar": "Whose weekend and holidays time this entity’s cases.",
+    "regulators": "The regulators of the active packs in your region.",
+    "regulatorsNone": "No regulators are listed for your region’s packs yet. Type a regulator code and press Enter.",
+    "aliases": "Short names or former names, to help staff recognise it."
+  },
+  "inherit": {
+    "badge": "Inherited from tenant",
+    "short": "Inherited",
+    "override": "Override",
+    "overrideAria": "Override {{field}}",
+    "reset": "Reset to tenant default"
+  },
+  "form": {
+    "addTitle": "Add a legal entity",
+    "editTitle": "Edit {{name}}",
+    "settingsTitle": "Settings for {{name}}",
+    "add": "Add entity",
+    "settingsHeading": "Settings",
+    "settingsIntro": "Each setting follows your organization defaults unless you override it here.",
+    "arabicMissing": "This entity has no Arabic name. Both names are now required, so add it before saving."
+  },
+  "errors": {
+    "identifier": "Use lowercase letters, digits, _ and - only.",
+    "identifierTaken": "Another entity already uses this identifier.",
+    "nameEn": "Enter the English name.",
+    "nameAr": "Enter the Arabic name. Both names are required.",
+    "retention": "Enter a whole number of years, 0 or more.",
+    "retentionRequired": "Enter how many years to keep cases. 0 keeps them forever.",
+    "currency": "Use a 3-letter currency code, such as AED or SAR.",
+    "pack": "Choose a jurisdiction pack.",
+    "packUnknown": "That pack isn’t active.",
+    "packRegion": "That pack is from another region. Choose a pack from your region.",
+    "regulatorAllowed": "Choose from the regulators in your region: {{codes}}."
+  },
+  "toast": {
+    "added": "Entity added.",
+    "saved": "Entity saved.",
+    "deactivated": "Entity deactivated.",
+    "reactivated": "Entity reactivated."
+  },
+  "values": {
+    "forever": "Forever",
+    "years_one": "{{count}} year",
+    "years_other": "{{count}} years",
+    "followsPack": "Follows the pack",
+    "notSet": "Not set",
+    "none": "None yet.",
+    "choosePack": "Choose a pack",
+    "listSeparator": ", ",
+    "language": {
+      "en": "English",
+      "ar": "Arabic"
+    }
+  },
+  "tenant": {
+    "title": "Organization defaults",
+    "intro": "Every legal entity uses these unless it overrides them. A change here applies at once to every entity that inherits it.",
+    "defaultsTitle": "Defaults",
+    "missingTitle": "Settings needed",
+    "missingBody": "Set these before your entities can rely on them: {{fields}}.",
+    "saved": "Organization defaults saved.",
+    "retentionHint": "Required. 0 = keep forever.",
+    "currencyHint": "ISO code, such as AED or SAR.",
+    "calendarHint": "Whose weekend and holidays time cases. “Follows the pack” uses each case’s own pack.",
+    "platformTitle": "Set by the platform",
+    "platformIntro": "Your region and default jurisdiction pack are set by Xposer. Contact your account manager to change them.",
+    "region": "Region",
+    "defaultPack": "Default jurisdiction pack",
+    "fields": {
+      "default_language": "Default language",
+      "default_currency": "Default currency",
+      "default_retention_years": "Keep cases for (years)",
+      "default_calendar_pack_code": "Business calendar"
+    }
+  },
+  "case": {
+    "label": "Legal entity",
+    "tenant": "Tenant: no entity (filed at organization level)",
+    "source": {
+      "portal": "Portal",
+      "portalTitle": "Set by the portal address the reporter used. It can’t be changed.",
+      "agent": "Set by AI",
+      "agentTitle": "Set by the AI before entities were fixed by the portal address.",
+      "staff": "Set by staff",
+      "staffTitle": "Set by a staff member before entities were fixed by the portal address."
+    }
+  }
+}

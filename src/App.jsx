@@ -47,6 +47,7 @@ import Account from './pages/admin/Account'
 import Entities from './pages/admin/Entities'
 import Jurisdiction from './pages/admin/Jurisdiction'
 import Portal from './pages/admin/Portal';
+import TenantSettings from './pages/admin/TenantSettings';
 import Posters from './pages/admin/Posters';
 import ChangePassword from './pages/reporter/ChangePassword'
 import SetPassword from './pages/auth/SetPassword'
@@ -214,6 +215,7 @@ function App() {
           <Route path="agents" element={gate(ACCESS.agents, <Agents />)} />
           <Route path="summarizer" element={gate(ACCESS.agents, <Summarizer />)} />
           <Route path="hierarchy" element={gate(ACCESS.hierarchy, <Hierarchy />)} />
+          <Route path="tenant-settings" element={gate(ACCESS.tenantSettings, <TenantSettings />)} />
           <Route path="entities" element={gate(ACCESS.entities, <Entities />)} />
           <Route path="jurisdiction" element={gate(ACCESS.jurisdiction, <Jurisdiction />)} />
           <Route path="portal" element={gate(ACCESS.portalBranding, <Portal />)} />

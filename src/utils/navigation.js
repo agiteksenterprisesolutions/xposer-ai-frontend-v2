@@ -7,6 +7,7 @@
 // /:orgSlug/staff and each page in it is shown to whoever holds the permission
 // that page needs. The reporter portal stays at /:orgSlug/reporter.
 import {
+  SlidersHorizontal,
   Globe,
   QrCode,
   Home,
@@ -69,6 +70,7 @@ export const STAFF_NAV = [
   { section: 'Organization', name: 'User Management', icon: Users, path: 'users', access: ACCESS.users },
   { section: 'Organization', name: 'Roles & Permissions', icon: ShieldCheck, path: 'roles', access: ACCESS.roles },
   { section: 'Organization', name: 'Reporting Hierarchy', icon: Network, path: 'hierarchy', access: ACCESS.hierarchy },
+  { section: 'Organization', name: 'Organization Defaults', icon: SlidersHorizontal, path: 'tenant-settings', access: ACCESS.tenantSettings },
   { section: 'Organization', name: 'Legal Entities', icon: Building, path: 'entities', access: ACCESS.entities },
   { section: 'Organization', name: 'Jurisdiction', icon: Landmark, path: 'jurisdiction', access: ACCESS.jurisdiction },
   // The reporter portal: its addresses and look, and printable QR posters.
