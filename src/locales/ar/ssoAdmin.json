@@ -1,0 +1,167 @@
+{
+  "page": {
+    "title": "تسجيل الدخول للمُبلِّغين بأسمائهم",
+    "intro": "يسجّل الموظفون الذين يُبلِغون بأسمائهم الدخول بحساب شركتهم. أضف اتصالًا لكل مكان يسجّلون الدخول منه: دليل Microsoft Entra، أو Google Workspace، أو البريد الإلكتروني للعمل وكلمة مرور. ينتمي كل نطاق بريد إلى اتصال واحد فقط.",
+    "anonymousNote": "لا يتغيّر الإبلاغ دون الكشف عن الهوية: لا يُطلب من المُبلِّغين الذين يختارونه تسجيل الدخول أبدًا."
+  },
+  "empty": {
+    "title": "لا توجد اتصالات لتسجيل الدخول بعد",
+    "body": "لا يستطيع الموظفون الإبلاغ إلا دون الكشف عن الهوية حتى تضيف اتصالًا."
+  },
+  "providers": {
+    "microsoft": "Microsoft",
+    "google": "Google",
+    "password": "البريد الإلكتروني وكلمة المرور"
+  },
+  "wholeGroup": "المجموعة كاملة",
+  "none": "لا يوجد شيء بعد.",
+  "copy": "نسخ {{label}}",
+  "copyFailed": "تعذّر النسخ. حدّد النص وانسخه بنفسك.",
+  "status": {
+    "errors_zero": "لا أخطاء",
+    "errors_one": "خطأ واحد",
+    "errors_two": "خطآن",
+    "errors_few": "{{count}} أخطاء",
+    "errors_many": "{{count}} خطأً",
+    "errors_other": "{{count}} خطأ",
+    "warnings_zero": "لا تحذيرات",
+    "warnings_one": "تحذير واحد",
+    "warnings_two": "تحذيران",
+    "warnings_few": "{{count}} تحذيرات",
+    "warnings_many": "{{count}} تحذيرًا",
+    "warnings_other": "{{count}} تحذير",
+    "testOk": "نجح الاختبار {{when}}",
+    "testFailed": "فشل الاختبار {{when}}",
+    "notTested": "لم يُختبر",
+    "ready": "جاهز",
+    "paused": "متوقف مؤقتًا",
+    "button": "الزر: {{label}}",
+    "errorPrefix": "خطأ:",
+    "warningPrefix": "تحذير:"
+  },
+  "actions": {
+    "add": "إضافة اتصال",
+    "test": "اختبار",
+    "testFor": "اختبار {{name}}",
+    "editFor": "تعديل {{name}}",
+    "deleteFor": "حذف {{name}}",
+    "enabledFor": "تفعيل {{name}}"
+  },
+  "fields": {
+    "provider": "المزوّد",
+    "name": "الاسم",
+    "entity": "الكيان",
+    "domains": "نطاقات البريد الإلكتروني",
+    "tenantId": "معرّف الدليل (Directory (tenant) ID)",
+    "clientId": "معرّف العميل (Client ID)",
+    "secret": "سرّ العميل (Client secret)",
+    "showButton": "عرضه زرًا في البوابة",
+    "buttonLabel": "نص الزر",
+    "enabled": "مفعّل",
+    "redirectUri": "عنوان إعادة التوجيه (Redirect URL)"
+  },
+  "placeholders": {
+    "domains": "acmebank.sa ثم Enter"
+  },
+  "hints": {
+    "provider": {
+      "microsoft": "يسجّل الموظفون الدخول بحساب عمل Microsoft عبر تطبيق Entra الخاص بكم.",
+      "google": "يسجّل الموظفون الدخول بحساب Google Workspace عبر عميل OAuth الخاص بكم.",
+      "password": "يسجّل الموظفون الدخول ببريد العمل وكلمة مرور، بعد تأكيد صندوق البريد برمز يُرسل إليه. لا حاجة إلى تطبيق."
+    },
+    "providerFixed": "لا يمكن تغيير المزوّد بعد الإنشاء.",
+    "name": "للمسؤولين لديكم، مثل «Acme Bank – Google».",
+    "entity": "الكيان الذي ينتمي إليه هؤلاء الموظفون، أو المجموعة كاملة.",
+    "domains": "كل نطاق بريد عمل يسجّل الدخول من هنا. ينتمي النطاق إلى اتصال واحد فقط. لا يمكن استخدام صناديق البريد الشخصية مثل gmail.com.",
+    "tenantId": "من صفحة Overview للتطبيق في Entra: معرّف GUID مثل 72f988bf-86f1-41af-91ab-2d7cd011db47.",
+    "clientId": {
+      "microsoft": "Application (client) ID من صفحة Overview للتطبيق في Entra.",
+      "google": "من Google Cloud ← Credentials، مثل 1234-abc.apps.googleusercontent.com."
+    },
+    "secret": "الصق قيمة السرّ. تُخزَّن مشفّرة ولا تُعرض مرة أخرى.",
+    "secretSet": "السرّ محفوظ — أدخل سرًّا جديدًا لاستبداله.",
+    "showButton": "يرى المُبلِّغون زرًا مباشرًا في البوابة بدل كتابة بريدهم. يُترك عادةً معطّلًا عند وجود عدة كيانات.",
+    "buttonLabel": "يظهر بصيغة «المتابعة باستخدام {{provider}} — <النص>».",
+    "redirect": {
+      "microsoft": "أضف هذا العنوان في تطبيق Microsoft بوصفه Web redirect URI.",
+      "google": "أضف هذا العنوان في عميل Google OAuth ضمن Authorized redirect URIs."
+    },
+    "redirectUnset": "لم يُضبط عنوان إعادة التوجيه على الخادم بعد، لذا لا يمكن إكمال تسجيل الدخول. تواصل مع دعم Xposer."
+  },
+  "errors": {
+    "name": "أدخل اسمًا.",
+    "domainsRequired": "أضف نطاق بريد إلكتروني واحدًا على الأقل.",
+    "domainFormat": "«{{domain}}» ليس نطاقًا. استخدم الجزء الذي يلي @، مثل acmebank.sa.",
+    "domainPublic": "«{{domain}}» نطاق بريد شخصي. استخدم النطاق الخاص بشركتك.",
+    "tenantIdRequired": "أدخل معرّف الدليل (Directory (tenant) ID).",
+    "tenantId": "لا يبدو هذا معرّف دليل. إنه GUID، مثل 72f988bf-86f1-41af-91ab-2d7cd011db47.",
+    "clientId": "أدخل معرّف العميل.",
+    "secret": "أدخل سرّ العميل.",
+    "buttonLabel": "أدخل نص الزر، أو عطّل الزر."
+  },
+  "editor": {
+    "addTitle": "إضافة اتصال لتسجيل الدخول",
+    "editTitle": "تعديل {{name}}",
+    "add": "إضافة الاتصال",
+    "done": "تم",
+    "appHeading": {
+      "microsoft": "تطبيق Microsoft Entra الخاص بكم",
+      "google": "عميل Google OAuth الخاص بكم"
+    }
+  },
+  "test": {
+    "passed": "نجحت جميع الفحوص.",
+    "failed": "فشلت بعض الفحوص.",
+    "ok": "ناجح",
+    "notOk": "فاشل",
+    "checks": {
+      "provider": "المزوّد",
+      "client_secret": "سرّ العميل",
+      "redirect_uri": "عنوان إعادة التوجيه",
+      "email": "إرسال البريد"
+    }
+  },
+  "toast": {
+    "added": "تمت إضافة الاتصال. انسخ عنوان إعادة التوجيه إلى تطبيقكم ثم اختبره.",
+    "saved": "تم حفظ الاتصال.",
+    "warnings_zero": "تم الحفظ دون تحذيرات.",
+    "warnings_one": "تم الحفظ مع تحذير واحد يجب مراجعته.",
+    "warnings_two": "تم الحفظ مع تحذيرين يجب مراجعتهما.",
+    "warnings_few": "تم الحفظ مع {{count}} تحذيرات يجب مراجعتها.",
+    "warnings_many": "تم الحفظ مع {{count}} تحذيرًا يجب مراجعتها.",
+    "warnings_other": "تم الحفظ مع {{count}} تحذير يجب مراجعتها.",
+    "paused": "تم إيقاف {{name}} مؤقتًا.",
+    "enabled": "تم تفعيل {{name}}.",
+    "deleted": "تم حذف {{name}}."
+  },
+  "delete": {
+    "title": "حذف {{name}}؟",
+    "body": "لن يتمكن الموظفون في نطاقاته من تسجيل الدخول للإبلاغ بأسمائهم. لإيقاف تسجيل الدخول مؤقتًا، عطّل الاتصال بدلًا من حذفه.",
+    "confirm": "حذف الاتصال"
+  },
+  "guide": {
+    "intro": "سلّم هذه الخطوات إلى فريق تقنية المعلومات لديكم. سيحتاجون إلى عنوان إعادة التوجيه أعلاه.",
+    "saveFirst": "احفظ الاتصال أولًا للحصول على عنوان إعادة التوجيه.",
+    "microsoft": {
+      "title": "دليل الإعداد: Microsoft Entra",
+      "steps": [
+        "Entra admin center ← App registrations ← New registration.",
+        "سمِّه، مثل «Xposer reporting». في Supported account types اختر: Accounts in this organizational directory only.",
+        "Redirect URI: المنصة Web (وليس SPA)، ثم الصق عنوان إعادة التوجيه.",
+        "Certificates & secrets ← New client secret ← انسخ القيمة (Value).",
+        "من Overview انسخ Application (client) ID وDirectory (tenant) ID.",
+        "API permissions: ‏openid وemail وprofile ‏(Microsoft Graph، delegated). امنح موافقة المسؤول (admin consent) إن تطلّب دليلكم ذلك.",
+        "الصق معرّف العميل والسرّ ومعرّف الدليل في هذا الاتصال، ثم اضغط «اختبار»."
+      ]
+    },
+    "google": {
+      "title": "دليل الإعداد: Google Workspace",
+      "steps": [
+        "Google Cloud console ← APIs & Services ← OAuth consent screen: اختر User type ‏Internal (مساحة Workspace الخاصة بكم فقط).",
+        "Credentials ← Create credentials ← OAuth client ID ← النوع Web application.",
+        "Authorized redirect URIs: الصق عنوان إعادة التوجيه.",
+        "انسخ Client ID وClient secret إلى هذا الاتصال، ثم اضغط «اختبار»."
+      ]
+    }
+  }
+}

@@ -55,11 +55,14 @@ import { organizationAPI } from "../../api/jurisdiction";
 import { intlLocale } from "../../utils/locale";
 
 /**
- * A type that refuses anonymous reports doesn't offer "anonymous" on its
- * identity question — the server would refuse the submission anyway.
+ * Don't offer "anonymous" on the identity question when the server would
+ * refuse it: on a type that refuses anonymous reports, and for a signed-in
+ * reporter, who can choose named or confidential but never anonymous
+ * (400 signed_in_not_anonymous, SSO.md §2.7). To be anonymous they use the
+ * anonymous path without signing in.
  */
-const withoutRefusedAnonymity = (type) => {
-  if (!type || type.allows_anonymous !== false) return type;
+const withoutRefusedAnonymity = (type, signedIn = false) => {
+  if (!type || (type.allows_anonymous !== false && !signedIn)) return type;
   return {
     ...type,
     sections: (type.sections || []).map((section) => ({
@@ -484,7 +487,7 @@ const MultiStepReportForm = ({
                 : null
             : null;
           if (pinned?.sections) type = { ...type, sections: pinned.sections };
-          type = withoutRefusedAnonymity(type);
+          type = withoutRefusedAnonymity(type, !isAnonymous && isAuthenticated);
         } catch (err) {
           // Types that need sign-in are hidden from anonymous reporters, and
           // answer 404 to a direct link.

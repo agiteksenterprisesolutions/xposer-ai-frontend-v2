@@ -19,7 +19,7 @@ export const APP_RESERVED = [
   'pricing', 'privacy', 'terms', 'cookie-policy', 'compliance', 'security',
   'how-to-use', 'checkout', 'contact', 'forget-password', 'register',
   'submit-anonymous', 'track-report', 'report-details', 'edit-draft',
-  'reporter', 'staff', 'reviewer', 'set-password',
+  'reporter', 'staff', 'reviewer', 'set-password', 'report-named',
 ];
 
 const RESERVED = new Set([...BACKEND_RESERVED, ...APP_RESERVED]);

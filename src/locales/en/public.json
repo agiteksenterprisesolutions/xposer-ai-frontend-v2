@@ -23,7 +23,8 @@
     "cta": {
       "submit": "Submit Anonymous Report",
       "dashboard": "Open Dashboard",
-      "teamLogin": "Team Login"
+      "teamLogin": "Team Login",
+      "named": "Report under my name"
     },
     "tour": {
       "submit": {

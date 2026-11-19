@@ -1,0 +1,155 @@
+{
+  "page": {
+    "title": "Sign-in for named reporters",
+    "intro": "Employees who report under their name sign in with their own company account. Add one connection per place they sign in: a Microsoft Entra directory, a Google Workspace, or work email and password. Each email domain belongs to one connection.",
+    "anonymousNote": "Anonymous reporting never changes: reporters who stay anonymous are never asked to sign in."
+  },
+  "empty": {
+    "title": "No sign-in connections yet",
+    "body": "Employees can only report anonymously until you add a connection."
+  },
+  "providers": {
+    "microsoft": "Microsoft",
+    "google": "Google",
+    "password": "Email & password"
+  },
+  "wholeGroup": "Whole group",
+  "none": "None yet.",
+  "copy": "Copy {{label}}",
+  "copyFailed": "Couldn’t copy. Select the text and copy it yourself.",
+  "status": {
+    "errors_one": "{{count}} error",
+    "errors_other": "{{count}} errors",
+    "warnings_one": "{{count}} warning",
+    "warnings_other": "{{count}} warnings",
+    "testOk": "Test passed {{when}}",
+    "testFailed": "Test failed {{when}}",
+    "notTested": "Not tested",
+    "ready": "Ready",
+    "paused": "Paused",
+    "button": "Button: {{label}}",
+    "errorPrefix": "Error:",
+    "warningPrefix": "Warning:"
+  },
+  "actions": {
+    "add": "Add connection",
+    "test": "Test",
+    "testFor": "Test {{name}}",
+    "editFor": "Edit {{name}}",
+    "deleteFor": "Delete {{name}}",
+    "enabledFor": "{{name}} enabled"
+  },
+  "fields": {
+    "provider": "Provider",
+    "name": "Name",
+    "entity": "Entity",
+    "domains": "Email domains",
+    "tenantId": "Directory (tenant) ID",
+    "clientId": "Client ID",
+    "secret": "Client secret",
+    "showButton": "Show as a button on the portal",
+    "buttonLabel": "Button label",
+    "enabled": "Enabled",
+    "redirectUri": "Redirect URL"
+  },
+  "placeholders": {
+    "domains": "acmebank.sa, then Enter"
+  },
+  "hints": {
+    "provider": {
+      "microsoft": "Employees sign in with their Microsoft work account, through your own Entra app.",
+      "google": "Employees sign in with their Google Workspace account, through your own OAuth client.",
+      "password": "Employees sign in with their work email and a password, after confirming the mailbox with an emailed code. No app is needed."
+    },
+    "providerFixed": "The provider can’t be changed after creation.",
+    "name": "For your admins, e.g. “Acme Bank – Google”.",
+    "entity": "The entity these employees belong to, or the whole group.",
+    "domains": "Every work email domain that signs in here. A domain can belong to only one connection. Personal mailboxes such as gmail.com can’t be used.",
+    "tenantId": "From the app’s Overview page in Entra: a GUID like 72f988bf-86f1-41af-91ab-2d7cd011db47.",
+    "clientId": {
+      "microsoft": "Application (client) ID, from the app’s Overview page in Entra.",
+      "google": "From Google Cloud → Credentials, e.g. 1234-abc.apps.googleusercontent.com."
+    },
+    "secret": "Paste the secret value. It is stored encrypted and never shown again.",
+    "secretSet": "Secret is set — enter a new one to replace it.",
+    "showButton": "Reporters see a direct button on the portal instead of typing their email. Usually off when you have several entities.",
+    "buttonLabel": "Shown as “Continue with {{provider}} — <label>”.",
+    "redirect": {
+      "microsoft": "Add this in your Microsoft app, as a Web redirect URI.",
+      "google": "Add this in your Google OAuth client, under Authorized redirect URIs."
+    },
+    "redirectUnset": "The server has no redirect URL set yet, so sign-in can’t finish. Ask Xposer support."
+  },
+  "errors": {
+    "name": "Enter a name.",
+    "domainsRequired": "Add at least one email domain.",
+    "domainFormat": "“{{domain}}” isn’t a domain. Use the part after @, e.g. acmebank.sa.",
+    "domainPublic": "“{{domain}}” is a personal mailbox domain. Use your company’s own domain.",
+    "tenantIdRequired": "Enter the Directory (tenant) ID.",
+    "tenantId": "That doesn’t look like a Directory ID. It is a GUID, e.g. 72f988bf-86f1-41af-91ab-2d7cd011db47.",
+    "clientId": "Enter the Client ID.",
+    "secret": "Enter the client secret.",
+    "buttonLabel": "Enter the button label, or turn the button off."
+  },
+  "editor": {
+    "addTitle": "Add a sign-in connection",
+    "editTitle": "Edit {{name}}",
+    "add": "Add connection",
+    "done": "Done",
+    "appHeading": {
+      "microsoft": "Your Microsoft Entra app",
+      "google": "Your Google OAuth client"
+    }
+  },
+  "test": {
+    "passed": "All checks passed.",
+    "failed": "Some checks failed.",
+    "ok": "Passed",
+    "notOk": "Failed",
+    "checks": {
+      "provider": "Provider",
+      "client_secret": "Client secret",
+      "redirect_uri": "Redirect URL",
+      "email": "Email sending"
+    }
+  },
+  "toast": {
+    "added": "Connection added. Copy its redirect URL into your app, then Test.",
+    "saved": "Connection saved.",
+    "warnings_one": "Saved with {{count}} warning to check.",
+    "warnings_other": "Saved with {{count}} warnings to check.",
+    "paused": "{{name}} is paused.",
+    "enabled": "{{name}} is enabled.",
+    "deleted": "{{name}} deleted."
+  },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "body": "Employees on its domains won’t be able to sign in to report under their name. To stop sign-in for a while, switch the connection off instead.",
+    "confirm": "Delete connection"
+  },
+  "guide": {
+    "intro": "Give these steps to your IT team. They need the Redirect URL above.",
+    "saveFirst": "Save the connection first to get its Redirect URL.",
+    "microsoft": {
+      "title": "Setup guide: Microsoft Entra",
+      "steps": [
+        "Entra admin center → App registrations → New registration.",
+        "Name it, e.g. “Xposer reporting”. Supported account types: Accounts in this organizational directory only.",
+        "Redirect URI: platform Web (not SPA), and paste the Redirect URL.",
+        "Certificates & secrets → New client secret → copy the Value.",
+        "From Overview, copy the Application (client) ID and the Directory (tenant) ID.",
+        "API permissions: openid, email and profile (Microsoft Graph, delegated). Grant admin consent if your tenant requires it.",
+        "Paste the client ID, secret and tenant ID into this connection, then press Test."
+      ]
+    },
+    "google": {
+      "title": "Setup guide: Google Workspace",
+      "steps": [
+        "Google Cloud console → APIs & Services → OAuth consent screen: User type Internal (only your Workspace).",
+        "Credentials → Create credentials → OAuth client ID → type Web application.",
+        "Authorized redirect URIs: paste the Redirect URL.",
+        "Copy the Client ID and Client secret into this connection, then press Test."
+      ]
+    }
+  }
+}

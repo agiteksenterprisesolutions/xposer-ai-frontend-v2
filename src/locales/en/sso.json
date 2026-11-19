@@ -1,0 +1,64 @@
+{
+  "signIn": {
+    "title": "Report under your name",
+    "intro": "Sign in with your company account. Your organization will know the report is from you; it won’t be anonymous.",
+    "workEmail": "Work email",
+    "workEmailHint": "We’ll send you to your company’s sign-in page.",
+    "continue": "Continue",
+    "or": "or",
+    "continueWith": {
+      "microsoft": "Continue with Microsoft — {{label}}",
+      "google": "Continue with Google — {{label}}",
+      "password": "Continue — {{label}}"
+    },
+    "anonymousInstead": "Report anonymously instead",
+    "otherEmail": "Use another email",
+    "notAvailable": "Signing in isn’t available for this organization. You can still report anonymously.",
+    "privacy": "Signing in is only for reporting under your name. To stay anonymous, don’t sign in."
+  },
+  "password": {
+    "for": "Signing in as",
+    "label": "Password",
+    "signIn": "Sign in",
+    "firstTime": "First time here, or forgot your password?",
+    "emailCode": "Email me a code"
+  },
+  "code": {
+    "sent": "If this email can sign in here, we’ve sent it a code.",
+    "label": "Code (6 digits)",
+    "newPassword": "New password",
+    "continue": "Continue",
+    "resend": "Send a new code",
+    "resendIn_one": "Send a new code in {{count}} second",
+    "resendIn_other": "Send a new code in {{count}} seconds",
+    "ruleMet": "(met)",
+    "ruleNotMet": "(not met yet)"
+  },
+  "callback": {
+    "title": "Signing in",
+    "signingIn": "Signing you in…",
+    "cancelled": "Sign-in was cancelled",
+    "failed": "Sign-in didn’t work",
+    "startAgain": "Start again",
+    "home": "Go to the home page"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "unavailable": "Sign-in is temporarily unavailable.",
+    "tryShortly": "Your company’s sign-in isn’t answering. Try again shortly.",
+    "askAdmin": "Sign-in for your company isn’t set up correctly. Ask your administrator.",
+    "network": "Couldn’t reach the server. Check your connection and try again.",
+    "emailInvalid": "Enter your work email address.",
+    "passwordRequired": "Enter your password.",
+    "codeFormat": "Enter the 6-digit code from the email.",
+    "codeInvalid": "That code isn’t valid any more. Ask for a new code.",
+    "passwordRules": "The new password must meet every rule below."
+  },
+  "case": {
+    "reporter": "Reporter",
+    "anonymous": "Anonymous",
+    "confidentialVerified": "Confidential reporter — identity verified",
+    "verifiedSso": "Verified by company sign-in",
+    "verifiedEmail": "Verified work email"
+  }
+}

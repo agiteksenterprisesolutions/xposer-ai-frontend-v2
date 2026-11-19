@@ -118,6 +118,24 @@ export const useAuthStore = create(
         }
       },
 
+      // ─── Company sign-in for named reporters (XPAI-108, SSO.md) ──
+      // The backend already ran the sign-in (Microsoft/Google callback, or
+      // email & password) and answered with the same shape as /auth/login.
+      // Store it like any reporter session and read the full user.
+      acceptSsoSession: async (response) => {
+        const user = withPasswordFlag(response);
+        set({
+          user,
+          token: response.access_token,
+          role: user?.role || null,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+        const fullUser = await get().refreshUser();
+        return fullUser || user;
+      },
+
       // ─── Social Login (Firebase OAuth) ───────────────────────────
       // Two-step: Firebase proves who the user is, then the backend turns
       // that proof into our own JWT so the rest of the app is unchanged.

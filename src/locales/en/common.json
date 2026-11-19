@@ -163,7 +163,8 @@
     "portal": "Portal & branding",
     "posters": "QR posters",
     "tenant-settings": "Organization defaults",
-    "routing-rules": "Routing rules"
+    "routing-rules": "Routing rules",
+    "sso": "Reporter sign-in"
   },
   "tags": {
     "placeholder": "Type and press Enter",

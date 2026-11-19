@@ -47,6 +47,9 @@ import Account from './pages/admin/Account'
 import Entities from './pages/admin/Entities'
 import Jurisdiction from './pages/admin/Jurisdiction'
 import Portal from './pages/admin/Portal';
+import NamedSignIn from './pages/public/NamedSignIn';
+import SsoCallback from './pages/public/SsoCallback';
+import SsoConnections from './pages/admin/SsoConnections';
 import RoutingRules from './pages/admin/RoutingRules';
 import TenantSettings from './pages/admin/TenantSettings';
 import Posters from './pages/admin/Posters';
@@ -152,6 +155,7 @@ function App() {
               </AnonymousOnlyRoute>
             }
           />
+          <Route path="report-named" element={<NamedSignIn />} />
           <Route path="track-report" element={<TrackReport />} />
           <Route path="report-details/:id" element={<ReportDetails />} />
           <Route
@@ -220,6 +224,7 @@ function App() {
           <Route path="tenant-settings" element={gate(ACCESS.tenantSettings, <TenantSettings />)} />
           <Route path="entities" element={gate(ACCESS.entities, <Entities />)} />
           <Route path="jurisdiction" element={gate(ACCESS.jurisdiction, <Jurisdiction />)} />
+          <Route path="sso" element={gate(ACCESS.ssoConnections, <SsoConnections />)} />
           <Route path="portal" element={gate(ACCESS.portalBranding, <Portal />)} />
           <Route path="posters" element={gate(ACCESS.posters, <Posters />)} />
           <Route path="workflows" element={gate(ACCESS.agents, <Workflows />)} />
@@ -233,6 +238,12 @@ function App() {
           <Route path="question-sets" element={gate(ACCESS.questionSets, <QuestionSets />)} />
           <Route path="voice-profile" element={gate(ACCESS.voiceProfile, <VoiceProfile />)} />
           <Route path="account" element={gate(ACCESS.account, <Account />)} />
+        </Route>
+
+        {/* Where Microsoft/Google send a named reporter back (SSO.md §2.5).
+            One route for every tenant: the connection id says which. */}
+        <Route path="/sso/callback/:connectionId" element={<PublicLayout />}>
+          <Route index element={<SsoCallback />} />
         </Route>
 
         {/* An entity's reporter portal (XPAI-226): /acme/insurance. Static

@@ -163,7 +163,8 @@
     "portal": "البوابة والهوية البصرية",
     "posters": "ملصقات رمز QR",
     "tenant-settings": "الإعدادات الافتراضية للجهة",
-    "routing-rules": "قواعد التوجيه"
+    "routing-rules": "قواعد التوجيه",
+    "sso": "تسجيل دخول المُبلِّغين"
   },
   "tags": {
     "placeholder": "اكتب ثم اضغط Enter",

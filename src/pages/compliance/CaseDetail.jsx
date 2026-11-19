@@ -44,6 +44,7 @@ import { formatAnswer, orderedAnswers, questionsByName } from '../../utils/repor
 import { useReportForm } from '../../hooks/useReportForm';
 import GoverningType from '../../components/reports/GoverningType';
 import CaseEntity from '../../components/reports/CaseEntity';
+import CaseReporter from '../../components/reports/CaseReporter';
 import FlagBadge from '../../components/reports/FlagBadge';
 import RoutingReason, { hasRoutingReason } from '../../components/reports/RoutingReason';
 import { errorSummary } from '../../utils/errors';
@@ -814,6 +815,8 @@ const CaseDetail = () => {
                   </div>
                 </div>
               )}
+              {/* Who filed it: anonymous, or a verified named / confidential reporter (SSO.md §2.8). */}
+              <CaseReporter report={report} />
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-ink-muted uppercase">{t("detail.assignedTo")}</p>
                 <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink wrap-break-word">

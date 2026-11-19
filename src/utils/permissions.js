@@ -79,6 +79,8 @@ export const PERM = {
   entityManageOwn: 'entity:manage_own',
   // Routing rules: where cases go and their flags (XPAI-106). Admin only.
   routingManage: 'routing:manage',
+  // Company sign-in connections for named reporters (XPAI-108). Admin only.
+  ssoManage: 'sso:manage',
 
   // Roles
   roleManage: 'role:manage',
@@ -263,6 +265,7 @@ export const ACCESS = {
   // open to an entity admin for their own entity (ENTITY_ADMIN.md §3).
   tenantSettings: { all: [PERM.tenantManage] },
   routingRules: { all: [PERM.routingManage] },
+  ssoConnections: { all: [PERM.ssoManage] },
   portalAddresses: { all: [PERM.portalManage] },
   portalBranding: { any: [PERM.portalManage, PERM.entityManageOwn] },
   posters: { any: [PERM.portalManage, PERM.entityManageOwn] },

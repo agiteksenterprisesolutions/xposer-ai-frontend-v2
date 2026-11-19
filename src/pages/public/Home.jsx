@@ -1,7 +1,7 @@
 // src/pages/public/Home.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Shield, ArrowRight } from 'lucide-react';
+import { Shield, ArrowRight, UserCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { reportsAPI } from '../../api';
@@ -12,6 +12,7 @@ import { canSubmitAnonymousReport } from '../../utils/roles';
 import { getHomePath } from '../../utils/navigation';
 import usePortal from '../../hooks/usePortal';
 import PortalHeader from '../../components/public/PortalHeader';
+import { useOrgPublic } from '../../hooks/useOrgPublic';
 
 const HOME_TOUR_KEY = 'xposer_home_tour_seen';
 
@@ -35,6 +36,8 @@ const Home = () => {
   // The portal page data (XPAI-226): name, branding, default language; also
   // records the address so reports started from here are filed under it.
   const portalState = usePortal(orgSlug, entitySlug);
+  // Whether reporters can sign in with their company account (SSO.md §2.1).
+  const { sso } = useOrgPublic(orgSlug);
   const tourRef = useRef(null);
   const isDesktop = useIsDesktop();
   // const [trustStats, setTrustStats] = useState([
@@ -178,6 +181,17 @@ const Home = () => {
                   >
                     {t('home.cta.submit')}
                     <ArrowRight size={15} aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+                  </Link>
+                )}
+                {/* Company sign-in for named reporters (SSO.md §2.3): only when
+                    the organization has it, and never inside the anonymous path. */}
+                {orgSlug && !user && sso.enabled && (
+                  <Link
+                    to={`/${orgSlug}/report-named`}
+                    className="inline-flex items-center gap-2 border border-line-accent text-accent-fg text-[14.5px] font-semibold px-6 py-3 rounded-lg transition-all duration-200 hover:bg-accent-soft hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                  >
+                    <UserCheck size={15} aria-hidden="true" />
+                    {t('home.cta.named')}
                   </Link>
                 )}
                 <Link

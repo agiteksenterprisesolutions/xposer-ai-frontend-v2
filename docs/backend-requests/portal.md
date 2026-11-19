@@ -16,7 +16,7 @@ Please add these to the reserved list on `PUT /v2/portal/addresses/{entity_code}
 ```
 pricing privacy terms cookie-policy compliance security how-to-use checkout
 contact forget-password register submit-anonymous track-report report-details
-edit-draft reporter staff reviewer set-password
+edit-draft reporter staff reviewer set-password report-named
 ```
 
 The frontend already refuses them (`src/utils/portalSlugs.js`), but the
