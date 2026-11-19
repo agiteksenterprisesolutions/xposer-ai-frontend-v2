@@ -14,7 +14,7 @@
 // (report types, questions, packs) comes from the API in the language it was
 // written in, until the backend stores translations.
 //
-// The choice is kept under `xposer-lang` in localStorage. index.html reads the
+// The choice is kept under `xposer-lang` in localStorage. public/boot.js reads the
 // same key before first paint, so an Arabic page never flashes left-to-right.
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';

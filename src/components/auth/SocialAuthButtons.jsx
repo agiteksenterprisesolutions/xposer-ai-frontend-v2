@@ -1,7 +1,8 @@
 // src/components/auth/SocialAuthButtons.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { isFirebaseConfigured, authLog, authError } from '../../lib/firebase';
+import { isFirebaseConfigured } from '../../lib/firebaseEnv';
+import { authLog, authError } from '../../lib/authLog';
 import Button from '../ui/Button';
 import { useTranslation } from 'react-i18next';
 

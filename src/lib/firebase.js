@@ -1,5 +1,9 @@
 // src/lib/firebase.js
-// Firebase app + auth singleton. Only the Auth product is wired up — the
+// Firebase app + auth singleton. Never import this statically: load it with
+// loadFirebase() from ./firebaseEnv when a sign-in starts, so the SDK stays
+// out of the bundle the public intake pages load (XPAI-228).
+//
+// Only the Auth product is wired up — the
 // app's data still lives behind the FastAPI backend, so Firebase is used
 // purely as an identity provider (Google OAuth today, more providers later).
 import { initializeApp, getApps, getApp } from 'firebase/app';
@@ -15,36 +19,11 @@ import {
   browserPopupRedirectResolver,
 } from 'firebase/auth';
 
-// Dev-only tracing for the OAuth handshake. Auth failures are hard to debug
-// blind — the popup, the provider and the backend exchange each fail
-// differently — so every step announces itself in development. Set
-// VITE_AUTH_DEBUG=true to keep these on in a production build.
-const AUTH_DEBUG = import.meta.env.DEV || import.meta.env.VITE_AUTH_DEBUG === 'true';
+import { authLog, authError } from './authLog';
+import { AUTH_METHOD_PASSWORD, firebaseConfig, isFirebaseConfigured } from './firebaseEnv';
 
-export function authLog(message, ...details) {
-  if (AUTH_DEBUG) console.log(`[auth] ${message}`, ...details);
-}
-
-export function authError(message, ...details) {
-  // Errors are never silenced: a broken sign-in in production needs a trail.
-  console.error(`[auth] ${message}`, ...details);
-}
-
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-// Lets the UI hide the social buttons entirely on a deployment that has no
-// Firebase project configured, instead of rendering a button that throws.
-export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId
-);
+// Re-exported for callers that already hold this module.
+export { authLog, authError, AUTH_METHOD_PASSWORD, isFirebaseConfigured };
 
 if (!isFirebaseConfigured) {
   authError(
@@ -163,8 +142,6 @@ export async function signInWithPassword(email, password) {
   return toSession(credential.user, AUTH_METHOD_PASSWORD);
 }
 
-/** Provider id Firebase reports for password accounts. */
-export const AUTH_METHOD_PASSWORD = 'password';
 
 /**
  * Resolves the pending redirect sign-in, if there is one. Returns null on a

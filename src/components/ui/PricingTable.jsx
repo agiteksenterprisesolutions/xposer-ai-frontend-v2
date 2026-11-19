@@ -3,11 +3,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle, ArrowRight, Zap, Star, AlertTriangle } from 'lucide-react';
 import { plansAPI } from '../../api';
 import { useNavigate, useParams } from 'react-router-dom';
+import '../../styles/marketingFonts'; // self-hosted fonts (XPAI-228)
 /* ─────────────────────────────────────────────
    Styles (scoped under .pt-root)
 ───────────────────────────────────────────── */
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
   .pt-root {
     --bg-void: #080c14;

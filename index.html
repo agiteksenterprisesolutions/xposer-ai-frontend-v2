@@ -8,42 +8,13 @@
   <title>Xposer AI</title>
 
   <!--
-    Interface language before first paint, so Arabic never flashes
-    left-to-right. src/i18n reads and writes the same key.
+    Language, direction and theme before first paint (public/boot.js). A file
+    on our own origin, not an inline script, so a strict Content-Security-
+    Policy works without 'unsafe-inline' (XPAI-228). Must stay synchronous.
   -->
-  <script>
-    (function () {
-      try {
-        var lang = localStorage.getItem('xposer-lang') || (navigator.language || 'en');
-        lang = lang.slice(0, 2).toLowerCase() === 'ar' ? 'ar' : 'en';
-        document.documentElement.setAttribute('lang', lang);
-        document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-      } catch (e) {}
-    })();
-  </script>
+  <script src="/boot.js"></script>
 
-  <!-- Ensure this line exists -->
   <link rel="stylesheet" href="/src/index.css">
-
-  <!--
-    Resolve the theme before first paint so the page never flashes the wrong
-    palette. This is the source of truth for the initial value: the theme store
-    reads the data-theme set here rather than resolving it a second time, so the
-    two can't disagree. Light is the product default when nothing is stored.
-  -->
-  <script>
-    (function () {
-      try {
-        var stored = localStorage.getItem('xposer-theme');
-        var theme = (stored === 'light' || stored === 'dark')
-          ? stored
-          : 'light'
-        document.documentElement.setAttribute('data-theme', theme);
-      } catch (e) {
-        document.documentElement.setAttribute('data-theme', 'light');
-      }
-    })();
-  </script>
 </head>
 
 <body>

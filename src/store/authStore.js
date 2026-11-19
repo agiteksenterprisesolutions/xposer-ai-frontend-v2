@@ -2,16 +2,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { authAPI } from '../api';
-import {
-  signInWithPassword,
-  signInWithProvider,
-  completeRedirectSignIn,
-  firebaseSignOut,
-  describeFirebaseAuthError,
-  AUTH_METHOD_PASSWORD,
-  authLog,
-  authError,
-} from '../lib/firebase';
+// The Firebase SDK is loaded only when a sign-in needs it (loadFirebase), so
+// pages that never sign anyone in, like the public intake pages, don't carry
+// it (XPAI-228).
+import { AUTH_METHOD_PASSWORD, loadFirebase } from '../lib/firebaseEnv';
+import { authLog, authError } from '../lib/authLog';
 import { toast } from 'react-toastify';
 
 // Firebase reports all of these as a flat "bad credential". The backend
@@ -44,6 +39,11 @@ export const useAuthStore = create(
       // 'idle' | 'loading' | 'ready' | 'error'
       permissionsStatus: 'idle',
 
+      // How the current session started: 'firebase' (password, Google or
+      // Microsoft through Firebase) or 'backend' (username login, reporter,
+      // company SSO). Logout only loads Firebase for the first.
+      authVia: null,
+
       // ─── Login ───────────────────────────────────────────────────
       // Credentials live in Firebase, so an email address is verified by the
       // Firebase SDK and the resulting ID token goes to the same
@@ -62,8 +62,10 @@ export const useAuthStore = create(
           set({ isLoading: true, error: null });
 
           let session;
+          let fb;
           try {
-            session = await signInWithPassword(trimmed, password);
+            fb = await loadFirebase();
+            session = await fb.signInWithPassword(trimmed, password);
           } catch (error) {
             // Firebase cannot tell "wrong password" apart from "this account
             // signs in with Google" — both surface as invalid-credential. The
@@ -74,7 +76,7 @@ export const useAuthStore = create(
               return get().passwordLoginViaBackend(trimmed, password);
             }
 
-            const errorMessage = describeFirebaseAuthError(error, AUTH_METHOD_PASSWORD);
+            const errorMessage = fb ? fb.describeFirebaseAuthError(error, AUTH_METHOD_PASSWORD) : parseErrorMessage(error, 'Login failed');
             authError('login: Firebase rejected the credentials:', errorMessage);
             set({ isLoading: false, error: errorMessage });
             return { success: false, error: errorMessage };
@@ -102,6 +104,7 @@ export const useAuthStore = create(
             token: access_token,
             role: user.role,
             isAuthenticated: true,
+            authVia: 'backend',
             isLoading: false,
             error: null,
           });
@@ -129,6 +132,7 @@ export const useAuthStore = create(
           token: response.access_token,
           role: user?.role || null,
           isAuthenticated: true,
+          authVia: 'backend',
           isLoading: false,
           error: null,
         });
@@ -145,10 +149,12 @@ export const useAuthStore = create(
         set({ isLoading: true, error: null });
         authLog(`socialLogin(${providerId}) started`);
         let session;
+        let fb;
         try {
-          session = await signInWithProvider(providerId);
+          fb = await loadFirebase();
+          session = await fb.signInWithProvider(providerId);
         } catch (error) {
-          const errorMessage = describeFirebaseAuthError(error);
+          const errorMessage = fb ? fb.describeFirebaseAuthError(error) : parseErrorMessage(error, 'Login failed');
           if (errorMessage) {
             authError(`socialLogin(${providerId}) failed:`, errorMessage);
           } else {
@@ -173,10 +179,12 @@ export const useAuthStore = create(
       // pending redirect.
       resumeSocialLogin: async (options = {}) => {
         let session = null;
+        let fb;
         try {
-          session = await completeRedirectSignIn();
+          fb = await loadFirebase();
+          session = await fb.completeRedirectSignIn();
         } catch (error) {
-          const errorMessage = describeFirebaseAuthError(error);
+          const errorMessage = fb ? fb.describeFirebaseAuthError(error) : null;
           if (errorMessage) set({ error: errorMessage });
           return null;
         }
@@ -203,6 +211,7 @@ export const useAuthStore = create(
             token: access_token,
             role: user?.role || null,
             isAuthenticated: true,
+            authVia: 'firebase',
             isLoading: false,
             error: null,
           });
@@ -215,7 +224,7 @@ export const useAuthStore = create(
         } catch (error) {
           // The app never got a session, so don't leave a half-signed-in
           // Firebase user behind to confuse the next attempt.
-          firebaseSignOut().catch(() => { });
+          signOutOfFirebase();
           authError('token exchange rejected by the backend', error);
           const errorMessage = parseErrorMessage(error, 'Login failed');
           set({ isLoading: false, error: errorMessage });
@@ -238,6 +247,7 @@ export const useAuthStore = create(
             token: access_token,
             role: user?.role || 'reporter',
             isAuthenticated: true,
+            authVia: 'backend',
             isLoading: false,
             error: null,
           });
@@ -266,6 +276,7 @@ export const useAuthStore = create(
               token: response.access_token,
               role: response.user.role,
               isAuthenticated: true,
+              authVia: 'backend',
             });
             const fullUser = await get().refreshUser();
             toast.success('Registration successful! You are now logged in.');
@@ -285,14 +296,18 @@ export const useAuthStore = create(
         // Call backend logout (fire-and-forget)
         authAPI.logout().catch(() => { });
         // Drop the Firebase session too, otherwise the next social sign-in
-        // silently reuses the old identity.
-        firebaseSignOut().catch(() => { });
+        // silently reuses the old identity. Only for a session that came
+        // through Firebase (or one saved before we recorded how it started),
+        // so signing a reporter out never loads the SDK.
+        const { authVia, token } = get();
+        if (authVia === 'firebase' || (!authVia && token)) signOutOfFirebase();
 
         set({
           user: null,
           token: null,
           role: null,
           isAuthenticated: false,
+          authVia: null,
           error: null,
           fieldErrors: null,
           permissionsStatus: 'idle',
@@ -372,6 +387,7 @@ export const useAuthStore = create(
         token: state.token,
         role: state.role,
         isAuthenticated: state.isAuthenticated,
+        authVia: state.authVia,
       }),
       // v3: permissions moved from a per-role matrix onto user.permissions.
       // Keep the session; the stale matrix is dropped and /users/me refetched.
@@ -403,6 +419,15 @@ function withPasswordFlag(response) {
  */
 function isEmailAddress(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+/**
+ * End the Firebase session, loading the SDK for it. Fire and forget.
+ */
+function signOutOfFirebase() {
+  loadFirebase()
+    .then((fb) => fb.firebaseSignOut())
+    .catch(() => { });
 }
 
 function parseErrorMessage(error, fallback = 'An error occurred') {

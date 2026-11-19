@@ -7,12 +7,12 @@ import { useAuthStore } from '../../store/authStore';
 import { plansAPI } from '../../api';
 import useSEO from '../../hooks/useSEO';
 import { getHomePath } from '../../utils/navigation';
+import '../../styles/marketingFonts'; // self-hosted fonts (XPAI-228)
 
 /* ─────────────────────────────────────────────
    Styles (scoped under .pp-root)
 ───────────────────────────────────────────── */
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
   .pp-root {
     --bg-void: #080c14;

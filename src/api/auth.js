@@ -1,7 +1,7 @@
 // src/api/auth.js
 import { toast } from 'react-toastify';
 import api from './axios';
-import { authLog, authError } from '../lib/firebase';
+import { authLog, authError } from '../lib/authLog';
 
 export const authAPI = {
   // User login - FastAPI OAuth2 format

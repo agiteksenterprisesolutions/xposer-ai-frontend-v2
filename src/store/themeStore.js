@@ -5,7 +5,7 @@ const STORAGE_KEY = 'xposer-theme';
 
 const DEFAULT_THEME = 'light';
 
-// The inline script in index.html has already resolved and painted a theme by
+// public/boot.js has already resolved and painted a theme by
 // the time this runs, so trust the attribute it set. Deriving the value
 // independently here let the store disagree with the DOM on a first visit,
 // which made the toggle need two clicks to take effect.

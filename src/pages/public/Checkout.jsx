@@ -17,13 +17,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import useSEO from '../../hooks/useSEO';
+import '../../styles/marketingFonts'; // self-hosted fonts (XPAI-228)
 
 /* ─────────────────────────────────────────────
    Styles (scoped under .co-root)
    Designed to match the Landing/Pricing aesthetic
 ───────────────────────────────────────────── */
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
   .co-root {
     --bg-void: #080c14;

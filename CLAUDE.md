@@ -88,6 +88,26 @@ pass. Keep it there:
   `RouteAnnouncer` adds a hidden `<h1>` when a page has none and moves focus to
   it on navigation.
 
+## Reporter privacy: no third-party requests (XPAI-228)
+
+The public intake pages (portal home, entity portal, report, before you
+report, track, report under my name) load nothing from any host but our
+origin and the API. Keep it that way:
+
+- **No external scripts, fonts, stylesheets, analytics or embeds.** Install
+  libraries and fonts with npm (`@fontsource/*`) so they're bundled. No
+  `<iframe>`. Links opening a new tab get `rel="noopener noreferrer"`.
+- **No inline scripts in `index.html`.** First-paint code lives in
+  `public/boot.js`, so the Content-Security-Policy can be `script-src 'self'`.
+- **Firebase loads on demand only:** `loadFirebase()` from
+  `src/lib/firebaseEnv.js`. Never import `src/lib/firebase.js` statically;
+  logging helpers are in `src/lib/authLog.js`.
+- **Check:** `npm run build`, `npx vite preview --port 4173`, then
+  `CHECK_SLUG=<tenant> npm run check:third-party -- --csp`. It fails on any
+  other host, a CSP violation, or an unexpected cookie/storage key.
+  The edge headers and the known exceptions (voice, attachment downloads,
+  sign-in) are in `docs/backend-requests/edge-security-headers.md`.
+
 ## Languages (English and Arabic)
 
 The whole tenant app (reporter, staff and admin screens) is translated with
@@ -125,8 +145,8 @@ backend support (requests already send `Accept-Language`).
 - **Formatting:** dates and money go through `src/utils/locale.js`
   (`intlLocale()`, `dateFnsLocale()`) or the shared `formatDate` helpers.
   Arabic uses Western digits (`ar-u-nu-latn`).
-- **Language choice:** stored as `xposer-lang` in localStorage; `index.html`
-  sets `lang`/`dir` before first paint. Requests send `Accept-Language`.
+- **Language choice:** stored as `xposer-lang` in localStorage; `public/boot.js`
+  (loaded by `index.html`) sets `lang`/`dir` before first paint. Requests send `Accept-Language`.
 - **The super-admin panel** stays English-only. The shared UI components here
   now call `useTranslation`. When copying one across, strip that back out.
 - **Arabic copy is machine-drafted** until a human reviewer signs it off. Legal
