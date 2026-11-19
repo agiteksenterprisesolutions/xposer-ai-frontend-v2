@@ -132,7 +132,15 @@ const InheritableField = ({ field, state, onChange, error, packs, locked = false
     </Button>
   );
 
-  const hint = field === 'retention_years' ? t('hints.retention') : field === 'calendar_pack_code' ? t('hints.calendar') : undefined;
+  // Packs are only editable here on a new entity: they become the first
+  // entries of its pack history, from today (ENTITIES.md §2).
+  const hint = field === 'retention_years'
+    ? t('hints.retention')
+    : field === 'calendar_pack_code'
+      ? t('hints.calendarCreate')
+      : field === 'jurisdiction_pack_code'
+        ? t('hints.jurisdictionCreate')
+        : undefined;
 
   if (!overridden) {
     return (
@@ -322,7 +330,8 @@ const EntityForm = ({ isOpen, onClose, entity, settingsOnly, tenant, packs, regu
       const detail = err?.response?.data?.detail || {};
       const code = detail.code || problems?.[0]?.code;
       const field = problems?.[0]?.field?.split('.');
-      if (code === 'identifier_taken' || err?.response?.status === 409) setErrors((e) => ({ ...e, code: t('errors.identifierTaken') }));
+      if (code === 'use_pack_assignments') setServerError(t('history.errors.usePackHistory'));
+      else if (code === 'identifier_taken' || err?.response?.status === 409) setErrors((e) => ({ ...e, code: t('errors.identifierTaken') }));
       else if (code === 'name_ar_required' || (field?.[0] === 'name' && field?.[1] === 'ar')) setErrors((e) => ({ ...e, nameAr: t('errors.nameAr') }));
       else if (code === 'unknown_regulator') {
         const allowed = detail.allowed || problems?.[0]?.allowed;

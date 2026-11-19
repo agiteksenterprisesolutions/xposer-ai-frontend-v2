@@ -42,10 +42,11 @@
     "code": "Lowercase letters, digits, _ and -, e.g. acme_insurance. It can’t be changed later.",
     "codeFixed": "The identifier can’t be changed.",
     "retention": "0 = keep forever.",
-    "calendar": "Whose weekend and holidays time this entity’s cases.",
     "regulators": "The regulators of the active packs in your region.",
     "regulatorsNone": "No regulators are listed for your region’s packs yet. Type a regulator code and press Enter.",
-    "aliases": "Short names or former names, to help staff recognise it."
+    "aliases": "Short names or former names, to help staff recognise it.",
+    "jurisdictionCreate": "Applies from today. Later changes are made from a date in the pack history.",
+    "calendarCreate": "Whose weekend and holidays time this entity’s cases. Applies from today; later changes are made in the pack history."
   },
   "inherit": {
     "short": "Inherited",
@@ -186,7 +187,8 @@
       "date": "Choose a date on or after {{date}}.",
       "notAllowed": "Only a tenant admin can change packs.",
       "notAllowedRead": "You don’t have access to this pack history.",
-      "loadFailed": "The pack history couldn’t be loaded."
+      "loadFailed": "The pack history couldn’t be loaded.",
+      "usePackHistory": "Packs are changed from a date in the pack history, not here."
     }
   }
 }

@@ -95,7 +95,9 @@ const TenantSettings = () => {
     } catch (err) {
       const { summary, problems } = describeError(err);
       const field = problems?.[0]?.field?.split('.').pop();
-      if (field && FIELDS.includes(field)) setErrors((e) => ({ ...e, [field]: problems[0].message || summary }));
+      const code = err?.response?.data?.detail?.code || problems?.[0]?.code;
+      if (code === 'use_pack_assignments') setServerError(t('history.errors.usePackHistory'));
+      else if (field && FIELDS.includes(field)) setErrors((e) => ({ ...e, [field]: problems[0].message || summary }));
       else setServerError(summary);
     } finally {
       setSaving(false);
