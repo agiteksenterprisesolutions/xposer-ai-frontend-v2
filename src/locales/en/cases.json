@@ -222,7 +222,8 @@
     "waitingFor": "Waiting for {{role}}",
     "assignedAuto": "Assigned automatically {{when}}",
     "assigned": "Assigned {{when}}",
-    "assignedBy": "Assigned {{when}} by {{name}}"
+    "assignedBy": "Assigned {{when}} by {{name}}",
+    "flags": "Flags"
   },
   "timeline": {
     "noteAdded": "Internal note added",
@@ -280,7 +281,8 @@
       "category": "Category: {{value}}",
       "priority": "Priority: {{value}}",
       "assignee": "Assigned to: {{value}}",
-      "onePerson": "one person"
+      "onePerson": "one person",
+      "flag": "Flag: {{value}}"
     },
     "filedBy": {
       "true": "Anonymous",
@@ -325,7 +327,9 @@
     },
     "emptySearchHint": "Try a different search term.",
     "emptyHint": "Try adjusting your filters.",
-    "anonymous": "Anonymous"
+    "anonymous": "Anonymous",
+    "flagFilter": "Filter by flag",
+    "flagPlaceholder": "Any flag"
   },
   "myCases": {
     "col": {
@@ -363,5 +367,33 @@
     "pendingReplies": "Pending replies",
     "guidelinesTitle": "Communication guidelines",
     "guidelinesBody": "Maintain strict confidentiality. Use internal notes for team discussion and messages to the reporter for reporter communication."
+  },
+  "routing": {
+    "title": "Why is this case here?",
+    "listSeparator": ", ",
+    "clauseSeparator": "; ",
+    "effect": {
+      "owner": "owner → {{role}}",
+      "backup": "backup → {{role}}",
+      "tier": "tier raised to {{tier}}",
+      "flags_one": "flag {{flags}}",
+      "flags_other": "flags {{flags}}",
+      "none": "matched, but another rule’s action took effect"
+    },
+    "tier": {
+      "standard": "Standard",
+      "confidential": "Confidential",
+      "restricted": "Restricted"
+    },
+    "summary": {
+      "rule": "Routing rule “{{name}}” sent it to {{role}}.",
+      "typeOwnerWithRules": "Rules added flags or raised the tier; the owner comes from the report type ({{role}}).",
+      "noRule": "No routing rule matched: the report type’s owner ({{role}}) took it.",
+      "error": "The routing rules couldn’t be checked, so the report type’s owner was used."
+    },
+    "errorDetail": "Reason: {{error}}",
+    "ruleMeta": "v{{version}} · priority {{priority}}",
+    "typeOwnerWas": "The report type’s own owner is {{role}}.",
+    "evaluatedAt": "Checked {{when}}"
   }
 }

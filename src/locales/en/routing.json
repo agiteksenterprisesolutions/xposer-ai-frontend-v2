@@ -1,0 +1,140 @@
+{
+  "page": {
+    "title": "Routing rules",
+    "intro": "Send cases to the right role and flag them, by report type, legal entity or answer. Rules run in the order shown; the first rule that names an owner wins, flags add up, and the tier only goes up. The conflict-of-interest policy always comes first.",
+    "add": "New rule",
+    "emptyTitle": "No routing rules yet",
+    "emptyBody": "Without rules, each case goes to its report type’s own owner role. Add a rule to send some cases elsewhere — for example, every claims-fraud report to the Special Investigation Unit."
+  },
+  "list": {
+    "orderHint": "Rules run from top to bottom. Drag a rule, or use its arrows, to change the order.",
+    "priority": "Priority",
+    "version": "v{{version}}",
+    "errors_one": "{{count}} error",
+    "errors_other": "{{count}} errors",
+    "warnings_one": "{{count}} warning",
+    "warnings_other": "{{count}} warnings",
+    "when": "When",
+    "then": "Then",
+    "ownerTo": "Owner: {{role}}",
+    "backupTo": "backup: {{role}}",
+    "tierAtLeast": "tier at least {{tier}}",
+    "answerConditions_one": "{{count}} answer condition",
+    "answerConditions_other": "{{count}} answer conditions",
+    "activeFor": "{{name}} is active",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "edit": "Edit {{name}}",
+    "delete": "Delete {{name}}",
+    "moved": "{{name}} moved to position {{position}} of {{total}}.",
+    "inactive": "Inactive"
+  },
+  "editor": {
+    "newTitle": "New routing rule",
+    "editTitle": "Edit {{name}}",
+    "create": "Create rule",
+    "details": "Rule",
+    "conditions": "Conditions",
+    "conditionsIntro": "The case must meet every condition that is set. Inside one list, any value matches. Rules don’t need a question on the form.",
+    "actions": "Actions",
+    "actionsIntro": "What happens to a case that matches."
+  },
+  "fields": {
+    "name": "Name",
+    "priority": "Priority",
+    "description": "Description",
+    "active": "Active",
+    "codePrefixes": "Report type code starts with",
+    "categories": "Report type category",
+    "reportTypeCodes": "Exact report types",
+    "entityCodes": "Legal entity",
+    "answers": "Answers",
+    "ownerRole": "Owner role",
+    "backupRole": "Backup role",
+    "flags": "Flags",
+    "raiseTier": "Raise tier to"
+  },
+  "hints": {
+    "priority": "0–100000. Lower runs first.",
+    "codePrefixes": "For example FRD-CLM matches FRD-CLM-01 and FRD-CLM-02.",
+    "noCategories": "Your report types have no categories yet. Type one to add it.",
+    "reportTypeCodes": "Only report types with a code are listed.",
+    "noTypeCodes": "None of your report types has a code yet.",
+    "entityCodes": "The legal entity comes from the portal address the reporter used.",
+    "noEntities": "Your organization has no legal entities.",
+    "answersFromTypes_one": "Questions from the {{count}} report type these conditions select.",
+    "answersFromTypes_other": "Questions from the {{count}} report types these conditions select.",
+    "answersAllTypes": "Questions from all report types. Add a report type condition to narrow the list.",
+    "currency": "Amounts are compared in normal units: write 500000 for 500,000 SAR. The currency itself isn’t compared.",
+    "backupRole": "Takes the case when the report names someone in the owner role.",
+    "flags": "Flags from your jurisdiction pack show their label. You can type another code (letters, digits, _ and -).",
+    "raiseTier": "Only raises the tier; a case already at a higher tier keeps it."
+  },
+  "answers": {
+    "intro": "Match when",
+    "empty": "No answer conditions.",
+    "noQuestions": "No questions to match on: the selected report types have none.",
+    "add": "Add an answer condition",
+    "addAnother": "Add another condition"
+  },
+  "values": {
+    "typeOwner": "Keep the report type’s owner",
+    "none": "None",
+    "noTierChange": "No change",
+    "listSeparator": ", "
+  },
+  "errors": {
+    "name": "Enter a name of up to 120 characters.",
+    "priority": "Enter a whole number from 0 to 100000.",
+    "condition": "Add at least one condition, so the rule can’t match every case by accident.",
+    "action": "Add at least one action: an owner role, a backup role, a flag or a tier.",
+    "flag": "Use letters, digits, _ and - only."
+  },
+  "toast": {
+    "created": "Rule created.",
+    "saved": "Rule saved.",
+    "deleted": "Rule “{{name}}” deleted.",
+    "savedWithWarnings_one": "Rule saved with {{count}} warning. See it on the rule.",
+    "savedWithWarnings_other": "Rule saved with {{count}} warnings. See them on the rule."
+  },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "body": "Cases already filed keep the routing they got. New cases won’t use this rule.",
+    "confirm": "Delete rule"
+  },
+  "chips": {
+    "add": "Add",
+    "addLabel": "Add to {{field}}"
+  },
+  "preview": {
+    "title": "Where would this case go?",
+    "intro": "Try a report type and sample answers to see which role takes the case, its flags and tier, and who would be assigned. Nothing is saved.",
+    "reportType": "Report type",
+    "chooseType": "Choose a report type",
+    "entity": "Legal entity",
+    "noEntity": "None (organization level)",
+    "answers": "Sample answers",
+    "noAnswer": "No answer",
+    "yes": "Yes",
+    "no": "No",
+    "currencyUnits": "normal units",
+    "run": "Show where it goes",
+    "owner": "Owner role",
+    "noOwner": "No owner",
+    "fromRule": "from a routing rule",
+    "fromType": "from the report type",
+    "tier": "Tier",
+    "flags": "Flags",
+    "assignee": "Would be assigned to",
+    "queue": "Nobody yet: it waits in the queue",
+    "rulesApplied": "Rules that matched",
+    "ruleMeta": "(v{{version}}, priority {{priority}})",
+    "steps": "Steps"
+  },
+  "used": {
+    "owner_role": "owner",
+    "backup_role": "backup",
+    "add_flags": "flags",
+    "raise_tier": "tier"
+  }
+}

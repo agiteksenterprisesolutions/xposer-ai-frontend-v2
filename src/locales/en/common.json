@@ -162,7 +162,8 @@
     "anonymousReport": "Anonymous report",
     "portal": "Portal & branding",
     "posters": "QR posters",
-    "tenant-settings": "Organization defaults"
+    "tenant-settings": "Organization defaults",
+    "routing-rules": "Routing rules"
   },
   "tags": {
     "placeholder": "Type and press Enter",

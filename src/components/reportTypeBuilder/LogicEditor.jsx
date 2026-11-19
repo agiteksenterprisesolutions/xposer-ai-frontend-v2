@@ -108,9 +108,15 @@ const RuleValue = ({ rule, question, onChange }) => {
  *   earlier  – the questions before this point, in form order
  *   subject  – 'question' | 'step', for the wording
  *   onChange – (logic | null) => void
+ *   variant  – 'visibility' (default): show/skip a question or step.
+ *              'match': plain answer conditions, no show/skip and no
+ *              condition_type, as routing rules use (ROUTING_RULES.md).
+ *   copy     – with variant 'match', the caller's own sentences:
+ *              { intro, empty, noQuestions, add, addAnother }
  */
-const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
+const LogicEditor = ({ logic, earlier, subject = 'question', onChange, variant = 'visibility', copy = {} }) => {
   const { t } = useTranslation('builder');
+  const matchOnly = variant === 'match';
   const rules = logic?.rules || [];
   const mode = rules[0]?.condition_type === 'skip' || rules[0]?.condition_type === 'hide' ? 'skip' : 'show';
   const byName = new Map(earlier.map((q) => [q.name, q]));
@@ -123,7 +129,7 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
     write([
       ...rules,
       {
-        condition_type: mode,
+        ...(matchOnly ? {} : { condition_type: mode }),
         when_question: question?.name || '',
         operator: 'equals',
         value: defaultValueFor(question),
@@ -166,7 +172,7 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
   if (earlier.length === 0) {
     return (
       <p className="text-xs leading-relaxed text-ink-muted">
-        {subject === 'step' ? t('logicEditor.firstStep') : t('logicEditor.firstQuestion')}
+        {matchOnly ? copy.noQuestions : subject === 'step' ? t('logicEditor.firstStep') : t('logicEditor.firstQuestion')}
       </p>
     );
   }
@@ -174,14 +180,14 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
   if (rules.length === 0) {
     return (
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-ink-muted">{t('logicEditor.alwaysShown')}</p>
+        <p className="text-sm text-ink-muted">{matchOnly ? copy.empty : t('logicEditor.alwaysShown')}</p>
         <button
           type="button"
           onClick={addRule}
           className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-link hover:bg-accent-soft"
         >
           <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
-          {t('logicEditor.addCondition')}
+          {matchOnly ? copy.add : t('logicEditor.addCondition')}
         </button>
       </div>
     );
@@ -190,11 +196,17 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-1.5 text-sm text-ink-secondary">
-        <select aria-label={t('logicEditor.showOrSkip')} value={mode} onChange={(e) => setMode(e.target.value)} className={control}>
-          <option value="show">{t('logicEditor.show')}</option>
-          <option value="skip">{t('logicEditor.skip')}</option>
-        </select>
-        <span>{subject === 'step' ? t('logicEditor.thisStepIf') : t('logicEditor.thisQuestionIf')}</span>
+        {matchOnly ? (
+          <span>{copy.intro}</span>
+        ) : (
+          <>
+            <select aria-label={t('logicEditor.showOrSkip')} value={mode} onChange={(e) => setMode(e.target.value)} className={control}>
+              <option value="show">{t('logicEditor.show')}</option>
+              <option value="skip">{t('logicEditor.skip')}</option>
+            </select>
+            <span>{subject === 'step' ? t('logicEditor.thisStepIf') : t('logicEditor.thisQuestionIf')}</span>
+          </>
+        )}
         {rules.length > 1 && (
           <>
             <select
@@ -274,7 +286,7 @@ const LogicEditor = ({ logic, earlier, subject = 'question', onChange }) => {
         className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-link hover:bg-accent-soft"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-        {t('logicEditor.addAnother')}
+        {matchOnly ? copy.addAnother : t('logicEditor.addAnother')}
       </button>
     </div>
   );

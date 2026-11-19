@@ -162,7 +162,8 @@
     "anonymousReport": "بلاغ دون الكشف عن الهوية",
     "portal": "البوابة والهوية البصرية",
     "posters": "ملصقات رمز QR",
-    "tenant-settings": "الإعدادات الافتراضية للجهة"
+    "tenant-settings": "الإعدادات الافتراضية للجهة",
+    "routing-rules": "قواعد التوجيه"
   },
   "tags": {
     "placeholder": "اكتب ثم اضغط Enter",

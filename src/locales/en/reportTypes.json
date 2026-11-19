@@ -320,5 +320,12 @@
     "yes": "Yes",
     "no": "No",
     "questionFallback": "Question"
+  },
+  "routingRules": {
+    "title_one": "{{count}} routing rule affects this type",
+    "title_other": "{{count}} routing rules affect this type",
+    "manage": "Manage routing rules",
+    "inactive": "Off",
+    "owner": "owner → {{role}}"
   }
 }

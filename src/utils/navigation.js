@@ -7,6 +7,7 @@
 // /:orgSlug/staff and each page in it is shown to whoever holds the permission
 // that page needs. The reporter portal stays at /:orgSlug/reporter.
 import {
+  Route,
   SlidersHorizontal,
   Globe,
   QrCode,
@@ -58,6 +59,7 @@ export const STAFF_NAV = [
   { section: 'Overview', name: 'All Reports', icon: FileText, path: 'reports', access: ACCESS.caseReports },
   // What reporters fill in, by form or by voice
   { section: 'Reporting', name: 'Report Types', icon: Settings, path: 'report-types', access: ACCESS.reportTypes },
+  { section: 'Reporting', name: 'Routing Rules', icon: Route, path: 'routing-rules', access: ACCESS.routingRules },
   { section: 'Reporting', name: 'Voice Questions', icon: ListChecks, path: 'question-sets', access: ACCESS.questionSets },
   { section: 'Reporting', name: 'Voice Profile', icon: AudioLines, path: 'voice-profile', access: ACCESS.voiceProfile },
   // How reports are handled once they arrive

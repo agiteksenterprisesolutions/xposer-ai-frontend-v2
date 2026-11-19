@@ -254,7 +254,8 @@
     "waitingFor": "بانتظار {{role}}",
     "assignedAuto": "أُسندت تلقائيًا {{when}}",
     "assigned": "أُسندت {{when}}",
-    "assignedBy": "أسندها {{name}} {{when}}"
+    "assignedBy": "أسندها {{name}} {{when}}",
+    "flags": "العلامات"
   },
   "timeline": {
     "noteAdded": "تمت إضافة الملاحظة الداخلية",
@@ -312,7 +313,8 @@
       "category": "الفئة: {{value}}",
       "priority": "الأولوية: {{value}}",
       "assignee": "مُسنَدة إلى: {{value}}",
-      "onePerson": "شخص واحد"
+      "onePerson": "شخص واحد",
+      "flag": "العلامة: {{value}}"
     },
     "filedBy": {
       "true": "دون الكشف عن الهوية",
@@ -361,7 +363,9 @@
     },
     "emptySearchHint": "جرّب عبارة بحث مختلفة.",
     "emptyHint": "جرّب تعديل عوامل التصفية.",
-    "anonymous": "دون الكشف عن الهوية"
+    "anonymous": "دون الكشف عن الهوية",
+    "flagFilter": "التصفية حسب العلامة",
+    "flagPlaceholder": "أي علامة"
   },
   "myCases": {
     "col": {
@@ -403,5 +407,37 @@
     "pendingReplies": "ردود معلّقة",
     "guidelinesTitle": "إرشادات التواصل",
     "guidelinesBody": "حافظ على السرية التامة. استخدم الملاحظات الداخلية للنقاش بين أعضاء الفريق، والرسائل إلى المُبلِّغ للتواصل معه."
+  },
+  "routing": {
+    "title": "لماذا وصلت هذه القضية إلى هنا؟",
+    "listSeparator": "، ",
+    "clauseSeparator": "؛ ",
+    "effect": {
+      "owner": "المسؤول ← {{role}}",
+      "backup": "البديل ← {{role}}",
+      "tier": "رُفع مستوى السرية إلى {{tier}}",
+      "flags_zero": "العلامات {{flags}}",
+      "flags_one": "العلامة {{flags}}",
+      "flags_two": "العلامتان {{flags}}",
+      "flags_few": "العلامات {{flags}}",
+      "flags_many": "العلامات {{flags}}",
+      "flags_other": "العلامات {{flags}}",
+      "none": "طابقت، لكن إجراء قاعدة أخرى هو الذي طُبّق"
+    },
+    "tier": {
+      "standard": "عادي",
+      "confidential": "سري",
+      "restricted": "مقيّد"
+    },
+    "summary": {
+      "rule": "أرسلتها قاعدة التوجيه «{{name}}» إلى {{role}}.",
+      "typeOwnerWithRules": "أضافت القواعد علامات أو رفعت مستوى السرية؛ أما المسؤول فمن نوع البلاغ ({{role}}).",
+      "noRule": "لم تطابق أي قاعدة توجيه: تولّاها المسؤول المحدّد في نوع البلاغ ({{role}}).",
+      "error": "تعذّر التحقق من قواعد التوجيه، لذا استُخدم المسؤول المحدّد في نوع البلاغ."
+    },
+    "errorDetail": "السبب: {{error}}",
+    "ruleMeta": "الإصدار {{version}} · الأولوية {{priority}}",
+    "typeOwnerWas": "المسؤول المحدّد في نوع البلاغ هو {{role}}.",
+    "evaluatedAt": "تم التحقق {{when}}"
   }
 }

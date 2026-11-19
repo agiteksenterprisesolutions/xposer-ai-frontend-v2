@@ -47,6 +47,7 @@ import Account from './pages/admin/Account'
 import Entities from './pages/admin/Entities'
 import Jurisdiction from './pages/admin/Jurisdiction'
 import Portal from './pages/admin/Portal';
+import RoutingRules from './pages/admin/RoutingRules';
 import TenantSettings from './pages/admin/TenantSettings';
 import Posters from './pages/admin/Posters';
 import ChangePassword from './pages/reporter/ChangePassword'
@@ -206,6 +207,7 @@ function App() {
           <Route path="analytics" element={gate(ACCESS.analytics, <Analytics />)} />
           <Route path="users" element={gate(ACCESS.users, <Users />)} />
           <Route path="report-types" element={gate(ACCESS.reportTypes, <ReportTypes />)} />
+          <Route path="routing-rules" element={gate(ACCESS.routingRules, <RoutingRules />)} />
           <Route path="report-types/:id/view" element={gate(ACCESS.reportTypes, <ViewReportType />)} />
           <Route path="report-types/:id" element={gate(ACCESS.reportTypesManage, <EditReportType />)} />
           <Route path="create-report-type" element={gate(ACCESS.reportTypesManage, <CreateReportType />)} />

@@ -14,6 +14,7 @@ import Skeleton from '../../components/ui/Skeleton';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { StatusBadge, PriorityBadge } from '../../components/ui/Badge';
+import FlagBadge from '../../components/reports/FlagBadge';
 import { reportsAPI } from '../../api';
 import { useReportTypeNames } from '../../hooks/useReportTypeNames';
 import { useAuthStore } from '../../store/authStore';
@@ -148,6 +149,11 @@ const MyCases = () => {
                     <div className="flex flex-col items-start gap-1">
                       <span dir="ltr">#{report.report_number}</span>
                       <TierBadge tier={report.confidentiality_tier} />
+                      {report.flags?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {report.flags.map((flag, i) => <FlagBadge key={`${flag.code}-${i}`} flag={flag} />)}
+                        </div>
+                      )}
                     </div>
                   </Table.Cell>
                   <Table.Cell className="text-sm text-ink-secondary" dir="auto">

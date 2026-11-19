@@ -44,6 +44,8 @@ import { formatAnswer, orderedAnswers, questionsByName } from '../../utils/repor
 import { useReportForm } from '../../hooks/useReportForm';
 import GoverningType from '../../components/reports/GoverningType';
 import CaseEntity from '../../components/reports/CaseEntity';
+import FlagBadge from '../../components/reports/FlagBadge';
+import RoutingReason, { hasRoutingReason } from '../../components/reports/RoutingReason';
 import { errorSummary } from '../../utils/errors';
 import { MaskedValue, TierBadge, isAutoAssigned, maskedKeys, slaClock } from '../../components/reports/CaseGovernance';
 import { CaseNotices, DeadlinesCard, DisposedCase, RecordsCard, isDisposed } from '../../components/reports/CasePanels';
@@ -802,6 +804,16 @@ const CaseDetail = () => {
                 </p>
                 <PriorityBadge priority={report.priority} />
               </div>
+              {/* Flags from the report type's regulatory trigger and from
+                  routing rules (ROUTING_RULES.md §7). */}
+              {Array.isArray(report.flags) && report.flags.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-ink-muted uppercase">{t("detail.flags")}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.flags.map((flag, i) => <FlagBadge key={`${flag.code}-${i}`} flag={flag} size="medium" />)}
+                  </div>
+                </div>
+              )}
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-ink-muted uppercase">{t("detail.assignedTo")}</p>
                 <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-ink wrap-break-word">
@@ -828,8 +840,9 @@ const CaseDetail = () => {
                         : t("detail.assigned", { when: formatRelativeTime(report.assigned_at) })}
                   </p>
                 )}
-                {/* Why routing did what it did — unassigned, or sent to the backup owner. */}
-                {report.routing_note && <p className="text-xs text-ink-muted" dir="auto">{report.routing_note}</p>}
+                {/* Why routing did what it did — unassigned, or sent to the backup
+                    owner. With rules_routing the note is in "Why is this case here?". */}
+                {report.routing_note && !hasRoutingReason(report) && <p className="text-xs text-ink-muted" dir="auto">{report.routing_note}</p>}
               </div>
 
               {/* The type that governs this case, linked; for an AI report,
@@ -847,6 +860,9 @@ const CaseDetail = () => {
               </Button>
             </Card.Footer> */}
           </Card>
+
+          {/* Why is this case here? Which routing rules matched (§7–8). */}
+          {hasRoutingReason(report) && <RoutingReason report={report} />}
 
           <DeadlinesCard report={report} canAcknowledge={can(PERM.reportManage)} onUpdated={(updated) => updated?.id ? setReport(updated) : fetchReport()} />
 

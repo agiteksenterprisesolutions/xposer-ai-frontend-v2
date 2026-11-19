@@ -32,6 +32,9 @@ import { DEFAULT_PAGE_SIZE, normalizeListResponse } from '../../utils/pagination
 import TableSortControl from '../../components/ui/TableSortControl';
 import { OwnerCell, SLA_CLOCKS, SLA_FILTERS, SlaBadge, SlaCell, TierBadge, ownerName, slaClock, slaUrgency } from '../../components/reports/CaseGovernance';
 import { useOrgRoles } from '../../hooks/useOrgRoles';
+import { useOrgJurisdiction } from '../../hooks/useOrgJurisdiction';
+import FlagBadge, { flagLabel } from '../../components/reports/FlagBadge';
+import FlagFilter from '../../components/reports/FlagFilter';
 import {
   useTableSort,
   byDate,
@@ -73,9 +76,10 @@ const ReportSummary = ({ report, typeName }) => {
           {parseServerDate(report.created_at)?.toLocaleDateString(intlLocale()) || ''}
         </span>
       </div>
-      {(urgentPriority || urgentClocks.length > 0) && (
+      {(urgentPriority || urgentClocks.length > 0 || report.flags?.length > 0) && (
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
           {urgentPriority && <PriorityBadge priority={report.priority} />}
+          {(report.flags || []).map((flag, i) => <FlagBadge key={`${flag.code}-${i}`} flag={flag} />)}
           {urgentClocks.map(({ key, short, clock }) => (
             <SlaBadge key={key} clock={clock} prefix={short} />
           ))}
@@ -110,7 +114,7 @@ const buildSortColumns = (typeNameFor, nameFor, t) => ({
 });
 
 const AllReports = () => {
-  const { t } = useTranslation('cases');
+  const { t, i18n } = useTranslation('cases');
   useSEO({
     title: t('list.seoTitle'),
     description: t('list.seoDescription'),
@@ -132,6 +136,8 @@ const AllReports = () => {
   const filedBy = FILED_BY.find((f) => f.value === searchParams.get('anonymous'));
   // Cases with either deadline in this state (breached = overdue).
   const slaParam = searchParams.get('sla') || '';
+  // Cases carrying one flag code (ROUTING_RULES.md §7).
+  const flagParam = searchParams.get('flag') || '';
   // One person's cases, from the Users page after a role change strands them.
   const assigneeParam = searchParams.get('assigned_to') || '';
   const assigneeName = searchParams.get('assignee') || '';
@@ -210,6 +216,16 @@ const AllReports = () => {
   // still responds on a backend that ignores those parameters. Note this orders
   // the current page — with more than one page, the server decides which rows
   // land on it.
+  // Flag filter suggestions: the org pack's regulatory triggers plus any flag
+  // on the cases loaded so far (labels from whichever has one).
+  const { pack: orgPack } = useOrgJurisdiction();
+  const flagOptions = useMemo(() => {
+    const byCode = new Map();
+    (orgPack?.regulatory_triggers || []).forEach((trg) => trg?.code && byCode.set(String(trg.code).toUpperCase(), { ...trg, code: String(trg.code).toUpperCase() }));
+    reports.forEach((r) => (r.flags || []).forEach((f) => f?.code && !byCode.has(f.code) && byCode.set(f.code, f)));
+    return [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code));
+  }, [orgPack, reports]);
+
   const sort = useTableSort(reports, sortColumns, { defaultSortBy: 'created_at' });
   const { sortBy, sortOrder, sortedRows: filteredReports, getHeaderProps } = sort;
 
@@ -225,6 +241,7 @@ const AllReports = () => {
         priority: priorityParam || undefined,
         is_anonymous: filedBy ? filedBy.value === 'true' : undefined,
         sla: slaParam || undefined,
+        flag: flagParam || undefined,
         assigned_to: assigneeParam || undefined,
         // The deadlines column is ordered on this page only.
         sort_by: sortBy === 'sla' ? undefined : sortBy,
@@ -240,7 +257,7 @@ const AllReports = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, activeStatus, resolvedTypeId, priorityParam, filedBy, slaParam, assigneeParam, sortBy, sortOrder]);
+  }, [currentPage, searchQuery, activeStatus, resolvedTypeId, priorityParam, filedBy, slaParam, flagParam, assigneeParam, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchReports();
@@ -260,7 +277,7 @@ const AllReports = () => {
   // rarely a valid page of the new one.
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeStatus, resolvedTypeId, priorityParam, filedBy, slaParam, assigneeParam, sortBy, sortOrder]);
+  }, [activeStatus, resolvedTypeId, priorityParam, filedBy, slaParam, flagParam, assigneeParam, sortBy, sortOrder]);
 
   const statusTabs = ['all', 'pending', 'in_progress', 'resolved', 'closed'].map((id) => ({
     id,
@@ -290,6 +307,14 @@ const AllReports = () => {
         clear: () => updateFilters({ assigned_to: '', assignee: '' }),
       });
     }
+    if (flagParam) {
+      const known = flagOptions.find((f) => f.code === flagParam);
+      chips.push({
+        key: 'flag',
+        label: t('list.chip.flag', { value: known ? flagLabel(known, i18n.resolvedLanguage) : flagParam }),
+        clear: () => updateFilters({ flag: '' }),
+      });
+    }
     if (filedBy) {
       chips.push({
         key: 'anonymous',
@@ -298,7 +323,7 @@ const AllReports = () => {
       });
     }
     return chips;
-  }, [activeTypeName, priorityParam, assigneeParam, assigneeName, filedBy, updateFilters, t]);
+  }, [activeTypeName, priorityParam, assigneeParam, assigneeName, filedBy, flagParam, flagOptions, updateFilters, t, i18n.resolvedLanguage]);
 
   const tourSteps = useMemo(() => {
     const steps = [];
@@ -386,6 +411,7 @@ const AllReports = () => {
               </option>
             ))}
           </select>
+          <FlagFilter value={flagParam} onChange={(code) => updateFilters({ flag: code })} options={flagOptions} />
           <select
             aria-label={t('list.filedByLabel')}
             value={filedBy?.value || ''}
@@ -508,6 +534,11 @@ const AllReports = () => {
                           <EyeOff className="h-3 w-3" aria-hidden="true" />
                           {t('list.anonymous')}
                         </span>
+                      )}
+                      {report.flags?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {report.flags.map((flag, i) => <FlagBadge key={`${flag.code}-${i}`} flag={flag} />)}
+                        </div>
                       )}
                     </div>
                   </Table.Cell>

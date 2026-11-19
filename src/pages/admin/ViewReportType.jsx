@@ -14,6 +14,7 @@ import useSEO from '../../hooks/useSEO';
 import { useCan } from '../../hooks/useCan';
 import { PERM } from '../../utils/permissions';
 import { toBuilderShape } from '../../utils/reportTypes';
+import TypeRoutingRules from '../../components/reportTypes/TypeRoutingRules';
 
 /**
  * Read-only counterpart to EditReportType: the same builder, locked to its
@@ -83,12 +84,18 @@ const ViewReportType = () => {
   }
 
   return (
-    <ReportTypeBuilder
-      initialData={toBuilderShape(reportType)}
-      readOnly
-      onEdit={canManage ? () => navigate(`${listPath}/${id}`) : undefined}
-      onBack={() => navigate(listPath)}
-    />
+    <>
+      {/* Routing rules that send this type's cases somewhere else (§8). */}
+      <div className="mx-auto max-w-6xl px-4 pt-4 empty:hidden">
+        <TypeRoutingRules reportType={reportType} orgSlug={user?.organization_slug} />
+      </div>
+      <ReportTypeBuilder
+        initialData={toBuilderShape(reportType)}
+        readOnly
+        onEdit={canManage ? () => navigate(`${listPath}/${id}`) : undefined}
+        onBack={() => navigate(listPath)}
+      />
+    </>
   );
 };
 

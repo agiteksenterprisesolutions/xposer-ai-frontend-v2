@@ -77,6 +77,8 @@ export const PERM = {
   // The entity admin's own entity: its branding, posters and settings
   // (XPAI-232). Only the fixed entity_admin role can hold it.
   entityManageOwn: 'entity:manage_own',
+  // Routing rules: where cases go and their flags (XPAI-106). Admin only.
+  routingManage: 'routing:manage',
 
   // Roles
   roleManage: 'role:manage',
@@ -260,6 +262,7 @@ export const ACCESS = {
   // Portal addresses are tenant-admin only; branding and posters are also
   // open to an entity admin for their own entity (ENTITY_ADMIN.md §3).
   tenantSettings: { all: [PERM.tenantManage] },
+  routingRules: { all: [PERM.routingManage] },
   portalAddresses: { all: [PERM.portalManage] },
   portalBranding: { any: [PERM.portalManage, PERM.entityManageOwn] },
   posters: { any: [PERM.portalManage, PERM.entityManageOwn] },
