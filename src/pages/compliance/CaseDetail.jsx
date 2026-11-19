@@ -394,6 +394,12 @@ const CaseDetail = () => {
       toast.success(t("assign.assigned"));
       fetchReport();
     } catch (error) {
+      // An entity admin can only hold their own entity's cases, never a
+      // tenant-level one (ENTITY_ADMIN.md §2).
+      if (error?.response?.data?.detail?.code === 'assignee_out_of_scope') {
+        toast.error(t("assign.outOfScope"));
+        return;
+      }
       // Not cleared for the case's level, excluded from it, or its reporter —
       // the server's sentence says which.
       toast.error(errorSummary(error));

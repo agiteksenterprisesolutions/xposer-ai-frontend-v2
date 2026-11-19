@@ -78,7 +78,15 @@
     "current": "Currently <b>{{role}}</b>. The new role's permissions apply from their next action — no sign-out needed.",
     "roleLabel": "Role",
     "selfTitle": "This is your own account",
-    "selfBody": "If the new role lacks a permission you are using now, you will lose access to it immediately."
+    "selfBody": "If the new role lacks a permission you are using now, you will lose access to it immediately.",
+    "entity": "Entity",
+    "entityChoose": "Choose an entity",
+    "entityHint": "They will see and manage only this entity’s cases, branding, posters and settings.",
+    "entityNone": "There are no active legal entities. Add one first.",
+    "entityRequired": "Choose the entity this person runs.",
+    "entityUnknown": "That entity isn’t active in your organization. Choose another.",
+    "doneEntity": "{{name}} is now {{role}} for {{entity}}.",
+    "submitMove": "Move to this entity"
   },
   "deleteRole": {
     "done": "Role \"{{name}}\" deleted.",
@@ -198,7 +206,8 @@
       "noLevel": "This role has no level yet, so they can’t be placed in the org chart until it gets one.",
       "member": "Prefilled from their entry. Changing it also moves them in the org chart, because their level is their role’s level.",
       "login": "What they can do once signed in, and where they sit in the org chart.",
-      "directory": "Places them in the org chart. Reporter fits most people who never sign in."
+      "directory": "Places them in the org chart. Reporter fits most people who never sign in.",
+      "entityRole": "To make someone {{role}}, add them with another role, then use Change role to pick their entity."
     },
     "result": {
       "loginCreated": "Login created",
@@ -243,7 +252,8 @@
     "username": "Username",
     "usernamePlaceholder": "from their email",
     "signsInAs": "They’ll sign in as <u>{{username}}</u>",
-    "usernameWarning": " — capitals and symbols are kept exactly and must be typed the same at sign-in. Set a plain lowercase username to avoid that."
+    "usernameWarning": " — capitals and symbols are kept exactly and must be typed the same at sign-in. Set a plain lowercase username to avoid that.",
+    "entityRoleRefused": "An entity admin can’t be added here. Add the person with another role, then use Change role to make them an entity admin and pick their entity."
   },
   "dirLink": {
     "linked": "{{name}} is linked to {{entry}}.",
@@ -471,7 +481,8 @@
       "roleGone": "{{name}}'s role, {{role}}, no longer exists, so they would return with no permissions. You'll be asked to choose a new role.",
       "deactivateBody": "Are you sure you want to deactivate {{name}}?",
       "activateBody": "Are you sure you want to activate {{name}}?"
-    }
+    },
+    "roleWithEntity": "{{role}} — {{entity}}"
   },
   "roles": {
     "savedWarnings": {

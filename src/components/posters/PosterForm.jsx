@@ -8,6 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { portalAPI } from '../../api/portal';
+import { entitiesAPI } from '../../api/entities';
+import { useCan } from '../../hooks/useCan';
+import { useAuthStore } from '../../store/authStore';
+import { PERM } from '../../utils/permissions';
 import { describeError } from '../../utils/errors';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
@@ -137,13 +141,25 @@ const PosterForm = ({ poster, onSaved, onCancel }) => {
   }, [poster]);
 
   // Addresses a poster can open: the tenant's, or an entity's that has one.
-  // Only tenant admins can list them; anyone else keeps the poster's own.
+  // Only tenant admins can list them (portal:manage). An entity admin's
+  // posters always open their own entity (ENTITY_ADMIN.md §3); its name comes
+  // from GET /entities/, which returns only their entity, and the server
+  // fills in the address.
+  const can = useCan();
+  const ownEntity = !can(PERM.portalManage) ? useAuthStore.getState().user?.entity_code || null : null;
   useEffect(() => {
     let cancelled = false;
-    portalAPI
-      .getAddresses()
-      .then((data) => {
-        if (!cancelled) setAddresses((data?.items || []).filter((item) => item.url));
+    const request = ownEntity
+      ? entitiesAPI.list().then((list) => {
+          const mine = list.find((e) => e.code === ownEntity);
+          return [{ kind: 'entity', entity_code: ownEntity, label: mine?.name || ownEntity, url: null, own: true }];
+        })
+      : portalAPI.getAddresses().then((data) => (data?.items || []).filter((item) => item.url));
+    request
+      .then((items) => {
+        if (cancelled) return;
+        setAddresses(items);
+        if (ownEntity) setForm((prev) => (prev.entity_code ? prev : { ...prev, entity_code: ownEntity }));
       })
       .catch(() => {
         if (!cancelled) setAddresses([]);
@@ -151,7 +167,7 @@ const PosterForm = ({ poster, onSaved, onCancel }) => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [ownEntity]);
 
   const options = useMemo(() => {
     const list = (addresses || []).map((item) => ({

@@ -43,6 +43,8 @@ import { useOrgRoles, REPORTER_ROLE } from '../../hooks/useOrgRoles';
 import { useAuthStore } from '../../store/authStore';
 import ChangeRoleModal from '../../components/roles/ChangeRoleModal';
 import RoleSelect from '../../components/roles/RoleSelect';
+import { entitiesAPI } from '../../api/entities';
+import { localized } from '../../api/jurisdiction';
 import { toast } from 'react-toastify';
 import UserAvatar from '../../components/ui/UserAvatar';
 import Alert from '../../components/ui/Alert';
@@ -113,7 +115,22 @@ const Users = () => {
   // this person can see (GET /users/visible-roles). Each user also carries
   // `role_name`, which is preferred for their own label.
   const { allRoles: visibleRoles, nameFor, byCode } = useOrgRoles();
-  const roleLabel = (user) => user.role_name || nameFor(user.role);
+  // An entity admin's label names the entity they run: "Entity admin — Acme
+  // Bank" (ENTITY_ADMIN.md §1). Entity names need entity:read; without it the
+  // identifier is shown.
+  const [entityNames, setEntityNames] = useState({});
+  const canReadEntities = can(PERM.entityRead);
+  useEffect(() => {
+    if (!canReadEntities) return;
+    entitiesAPI
+      .list({ includeInactive: true })
+      .then((list) => setEntityNames(Object.fromEntries(list.map((e) => [e.code, localized(e.name) || e.code]))))
+      .catch(() => {});
+  }, [canReadEntities]);
+  const roleLabel = (user) => {
+    const role = user.role_name || nameFor(user.role);
+    return user.entity_code ? t('users.roleWithEntity', { role, entity: entityNames[user.entity_code] || user.entity_code }) : role;
+  };
   const [roleChangeUser, setRoleChangeUser] = useState(null);
   // After a role change or deactivation: open cases the person can no longer work.
   const [stranded, setStranded] = useState(null);

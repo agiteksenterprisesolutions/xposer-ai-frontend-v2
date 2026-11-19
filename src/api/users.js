@@ -85,8 +85,14 @@ export const usersAPI = {
   // Give a user another role (a role code from GET /org-roles/, or 'reporter').
   // Needs user:update plus user:manage_roles. Errors are left to the caller,
   // which shows the backend's sentence next to the picker.
-  changeRole: async (id, role) => {
-    const response = await api.put(`/users/${id}`, { role }, { skipErrorToast: true });
+  // A role that `requires_entity` (the fixed entity_admin) also takes the
+  // entity they run: { role: 'entity_admin', entity_code }. Moving an entity
+  // admin to another entity sends the new entity_code; any other role drops
+  // it. 422 entity_required, 400 unknown_entity (ENTITY_ADMIN.md §1).
+  changeRole: async (id, role, entityCode = null) => {
+    const body = { role };
+    if (entityCode) body.entity_code = entityCode;
+    const response = await api.put(`/users/${id}`, body, { skipErrorToast: true });
     return response.data;
   },
 

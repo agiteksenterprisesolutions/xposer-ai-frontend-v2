@@ -102,7 +102,14 @@ const AddPersonModal = ({ isOpen, onClose, member = null, onAdded }) => {
   const { t } = useTranslation('people');
   const forMember = Boolean(member);
   const { allRoles: unsortedRoles, nameFor, byCode } = useOrgRoles();
-  const allRoles = useMemo(() => sortRolesByLevel(unsortedRoles.filter((r) => r.is_active !== false)), [unsortedRoles]);
+  // A role tied to one legal entity (the entity admin) can't be given here:
+  // the server refuses it (400 entity_admin_needs_entity). It is assigned
+  // with Change role, which asks for the entity (ENTITY_ADMIN.md §1).
+  const entityRoles = unsortedRoles.filter((r) => r.requires_entity);
+  const allRoles = useMemo(
+    () => sortRolesByLevel(unsortedRoles.filter((r) => r.is_active !== false && !r.requires_entity)),
+    [unsortedRoles],
+  );
   const orgName = useAuthStore((s) => s.user?.organization_name);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
@@ -174,6 +181,10 @@ const AddPersonModal = ({ isOpen, onClose, member = null, onAdded }) => {
       const described = describeError(err);
       const detail = err?.response?.data?.detail;
       if (detail?.code === 'role_has_no_level') setRoleWithoutLevel(detail.role_code || form.role);
+      if (detail?.code === 'entity_admin_needs_entity') {
+        setServerError({ summary: t('addPerson.entityRoleRefused'), problems: [] });
+        return;
+      }
       // They already have a login: the list we opened this from was stale.
       if (described.status === 400 && /already registered/i.test(described.summary)) {
         setServerError({ summary: form.full_name.trim() ? t('addPerson.alreadyHasLogin', { name: form.full_name.trim() }) : t('addPerson.alreadyHasLoginAnon'), problems: [] });
@@ -210,6 +221,11 @@ const AddPersonModal = ({ isOpen, onClose, member = null, onAdded }) => {
             ? t('addPerson.roleHelp.login')
             : t('addPerson.roleHelp.directory')}
       </p>
+      {entityRoles.length > 0 && (
+        <p className="text-xs text-ink-muted">
+          {t('addPerson.roleHelp.entityRole', { role: entityRoles.map((r) => r.name).join(', ') })}
+        </p>
+      )}
     </Field>
   );
 

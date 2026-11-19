@@ -254,7 +254,8 @@
     "title": "Assign case",
     "description": "Select an assignee. Only people whose role can open reports are listed; those who can't take this case are greyed out.",
     "loading": "Loading assignees",
-    "none": "No eligible assignees available."
+    "none": "No eligible assignees available.",
+    "outOfScope": "That person is an entity admin for another entity, or this case isn’t filed under any entity. An entity admin can only take their own entity’s cases."
   },
   "list": {
     "col": {

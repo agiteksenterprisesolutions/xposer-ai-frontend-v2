@@ -74,6 +74,9 @@ export const PERM = {
   portalManage: 'portal:manage',
   // The tenant's defaults every legal entity inherits (XPAI-222).
   tenantManage: 'tenant:manage',
+  // The entity admin's own entity: its branding, posters and settings
+  // (XPAI-232). Only the fixed entity_admin role can hold it.
+  entityManageOwn: 'entity:manage_own',
 
   // Roles
   roleManage: 'role:manage',
@@ -220,7 +223,9 @@ export const ACCESS = {
   // Any staff account. The list is filtered server-side to the caller plus the
   // roles in their role's `viewable_roles` (admins see everyone); creating,
   // editing and resetting are admin-only and gated on the screen itself.
-  users: { staff: true },
+  // An entity admin (entity:manage_own) runs one entity's cases and portal
+  // look, not the organization's people (ENTITY_ADMIN.md §2).
+  users: { staff: true, none: [PERM.entityManageOwn] },
   team: { staff: true },
   // Reporters hold report_type:read too (to pick a type when filing), so
   // reading alone doesn't open the staff page: it also takes managing types
@@ -253,12 +258,14 @@ export const ACCESS = {
   entities: { all: [PERM.entityRead] },
   entitiesManage: { all: [PERM.entityRead, PERM.entityManage] },
   // Portal addresses are tenant-admin only; branding and posters are also
-  // open to an entity admin for their own entity (ENTITY_ADMIN.md, wired there).
+  // open to an entity admin for their own entity (ENTITY_ADMIN.md §3).
   tenantSettings: { all: [PERM.tenantManage] },
   portalAddresses: { all: [PERM.portalManage] },
-  portalBranding: { all: [PERM.portalManage] },
-  posters: { all: [PERM.portalManage] },
-  hierarchy: { all: [PERM.hierarchyRead] },
+  portalBranding: { any: [PERM.portalManage, PERM.entityManageOwn] },
+  posters: { any: [PERM.portalManage, PERM.entityManageOwn] },
+  // The entity admin role carries org_hierarchy:read for the backend's own
+  // use, but the org chart isn't theirs to see (ENTITY_ADMIN.md §2).
+  hierarchy: { all: [PERM.hierarchyRead], none: [PERM.entityManageOwn] },
   hierarchyAdmin: { all: [PERM.hierarchyManage] },
   voiceProfile: { all: [PERM.voiceProfileRead] },
 
@@ -281,6 +288,8 @@ export const satisfies = (permissions, rule) => {
   const held = permissions instanceof Set ? permissions : new Set(permissions ?? []);
   const all = rule.all ?? [];
   const any = rule.any ?? [];
+  const none = rule.none ?? [];
+  if (none.some((p) => held.has(p))) return false;
   if (rule.staff && ![...held].some((p) => !REPORTER_IDENTITY.has(p))) return false;
   return all.every((p) => held.has(p)) && (any.length === 0 || any.some((p) => held.has(p)));
 };

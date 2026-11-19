@@ -410,7 +410,7 @@ const Entities = () => {
   }, [canTenant]);
 
   const region = tenant?.platform?.region || organization?.region || null;
-  const { packs, regulators } = useRegionPacks(region, { enabled: canManage || canTenant || Boolean(user?.entity_code) });
+  const { packs, regulators } = useRegionPacks(region, { enabled: canManage || canTenant || can(PERM.entityManageOwn) });
 
   const load = useCallback(() => {
     setError(null);
@@ -435,7 +435,8 @@ const Entities = () => {
   };
 
   // An entity admin edits their own entity's settings (ENTITY_ADMIN.md).
-  const canEditSettings = (entity) => canManage || (user?.entity_code && user.entity_code === entity.code);
+  const canManageOwn = can(PERM.entityManageOwn);
+  const canEditSettings = (entity) => canManage || (canManageOwn && user?.entity_code === entity.code);
   const rows = entities || [];
   const missing = tenant?.missing || [];
 
