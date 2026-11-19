@@ -17,6 +17,8 @@ import useSEO from '../../hooks/useSEO';
 import { normalizeListResponse } from '../../utils/pagination';
 import ReportTypePicker from '../../components/forms/ReportTypePicker';
 import { useDeflectionExits } from '../../hooks/useDeflectionExits';
+import BeforeYouReport from '../../components/reports/BeforeYouReport';
+import { currentAckHash } from '../../store/reportAckStore';
 
 const SubmitReport = () => {
   const { t } = useTranslation('submit');
@@ -27,7 +29,11 @@ const SubmitReport = () => {
   });
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
-  const [stage, setStage] = useState('typeSelection');
+  // 'beforeYouReport' (XPAI-114) → 'typeSelection' → 'multiStepForm'. Every
+  // report starts by reading "Before you report".
+  const [stage, setStage] = useState('beforeYouReport');
+  // Set when the server refused a stale acknowledgement (409 ack_outdated).
+  const [ackNotice, setAckNotice] = useState(null);
   const [reportTypes, setReportTypes] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [isLoadingTypes, setIsLoadingTypes] = useState(true);
@@ -68,7 +74,7 @@ const SubmitReport = () => {
 
   const handleSuccess = () => {
     setTimeout(() => {
-      setStage('typeSelection');
+      setStage('beforeYouReport');
       setSelectedType(null);
     }, 3000);
   };
@@ -145,15 +151,32 @@ const SubmitReport = () => {
 
   return (
     <div className="min-h-screen bg-canvas py-8 sm:py-12">
-      {stage === 'typeSelection' ? (
+      {stage === 'beforeYouReport' ? (
+        <div className="px-4 sm:px-6 lg:px-8">
+          <BeforeYouReport
+            slug={user?.organization_slug}
+            notice={ackNotice}
+            onContinue={() => {
+              setAckNotice(null);
+              setStage('typeSelection');
+            }}
+          />
+        </div>
+      ) : stage === 'typeSelection' ? (
         renderTypeSelection()
       ) : selectedType ? (
         <MultiStepReportForm
           reportTypeId={selectedType.id}
           onSuccess={handleSuccess}
           onCancel={() => {
-            setStage('typeSelection');
+            // A started report used the acknowledgement; the next one reads the page again.
+            setStage(currentAckHash(user?.organization_slug) ? 'typeSelection' : 'beforeYouReport');
             setSelectedType(null);
+          }}
+          onAckOutdated={(message) => {
+            setAckNotice(message || t('beforeYouReport.outdated'));
+            setSelectedType(null);
+            setStage('beforeYouReport');
           }}
           isAnonymous={false}
         />

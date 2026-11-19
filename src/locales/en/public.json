@@ -382,5 +382,12 @@
         "body": "Even with an account you can use <strong>Anonymous Report</strong> at the bottom of the sidebar. That report is credential-based like any other anonymous submission."
       }
     }
+  },
+  "portal": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "This reporting page doesn’t exist or isn’t available. Check the address, or ask the organization for its reporting link.",
+    "backHome": "Go to the home page",
+    "rateLimitedTitle": "Please wait a minute",
+    "rateLimitedBody": "Too many requests came from your connection. Wait a minute, then reload the page."
   }
 }

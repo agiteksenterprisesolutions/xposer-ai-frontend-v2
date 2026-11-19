@@ -18,6 +18,7 @@ import { useTourStore } from '../../store/tourStore';
 import Dropdown from '../ui/Dropdown';
 import ThemeToggle from '../ui/ThemeToggle';
 import LanguageToggle from '../ui/LanguageToggle';
+import { currentPortalPath } from '../../store/portalStore';
 import { useTranslation } from 'react-i18next';
 import XposerLogo from '../brand/XposerLogo';
 import UserAvatar from '../ui/UserAvatar';
@@ -36,10 +37,11 @@ const Navbar = ({ onMenuClick }) => {
   const { toggleMobileSidebar, sidebarOpen, toggleSidebar } = useUIStore();
   // Set by the current page's tour, if it has one — see store/tourStore.
   const startTour = useTourStore((state) => state.start);
-  const { orgSlug: paramSlug } = useParams();
+  const { orgSlug: paramSlug, entitySlug } = useParams();
   const orgSlug = user?.organization_slug ?? paramSlug;
   const location = useLocation();
-  const isHome = location.pathname === "/" || (orgSlug && (location.pathname === `/${orgSlug}` || location.pathname === `/${orgSlug}/`));
+  // The portal home: /, /acme, or an entity's portal /acme/insurance.
+  const isHome = location.pathname === "/" || (orgSlug && (location.pathname === `/${orgSlug}` || location.pathname === `/${orgSlug}/`)) || (orgSlug && entitySlug && location.pathname.replace(/\/$/, '') === `/${orgSlug}/${entitySlug}`);
   const navigate = useNavigate();
   const { t } = useTranslation('common');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -138,7 +140,7 @@ const Navbar = ({ onMenuClick }) => {
           )}
 
           {/* Logo */}
-          <Link to={orgSlug ? `/${orgSlug}` : '/'} className="flex items-center no-underline min-w-0" data-tour="tour-logo">
+          <Link to={orgSlug ? `/${currentPortalPath(orgSlug) || orgSlug}` : '/'} className="flex items-center no-underline min-w-0" data-tour="tour-logo">
             <XposerLogo className="h-6 sm:h-7 w-auto shrink-0" />
           </Link>
         </div>

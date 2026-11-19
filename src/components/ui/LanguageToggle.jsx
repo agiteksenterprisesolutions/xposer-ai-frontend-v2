@@ -5,7 +5,7 @@
 // scans for العربية), and carries its `lang` so screen readers pronounce it.
 import { Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { LANGUAGES } from '../../i18n';
+import { LANGUAGES, CHOSEN_KEY } from '../../i18n';
 
 const LanguageToggle = ({ className = '', compact = false }) => {
   const { i18n, t } = useTranslation('common');
@@ -15,7 +15,14 @@ const LanguageToggle = ({ className = '', compact = false }) => {
   return (
     <button
       type="button"
-      onClick={() => i18n.changeLanguage(next.code)}
+      onClick={() => {
+        try {
+          localStorage.setItem(CHOSEN_KEY, '1');
+        } catch {
+          /* private mode: the choice still applies to this page */
+        }
+        i18n.changeLanguage(next.code);
+      }}
       lang={next.code}
       aria-label={compact ? t('language.switchTo', { language: next.native, lng: next.code }) : undefined}
       title={t('language.switchTo', { language: next.native, lng: next.code })}

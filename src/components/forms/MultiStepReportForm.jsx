@@ -26,7 +26,7 @@ import Skeleton from "../ui/Skeleton";
 import Button from "../ui/Button";
 import Input, { Textarea, Select } from "../ui/Input";
 import Alert from "../ui/Alert";
-import { reportsAPI } from "../../api/reports";
+import { reportsAPI, isAckOutdated, ackOutdatedMessage } from "../../api/reports";
 import { reportTypesAPI } from "../../api/reportTypes";
 import { useAuthStore } from "../../store/authStore";
 import { isValidDate, isValidEmail, isValidPhone } from "../../utils/validators";
@@ -313,6 +313,9 @@ const MultiStepReportForm = ({
   organizationSlug = null,
   onSuccess,
   onCancel,
+  // Called with the server's message when POST /reports/init refuses a stale
+  // "Before you report" acknowledgement (409 ack_outdated).
+  onAckOutdated,
   isAnonymous = false,
   // ---- Draft editing ----
   // When set, the form resumes this report instead of initialising a new one.
@@ -508,6 +511,12 @@ const MultiStepReportForm = ({
             setGeneratedReportNumber(currentReportNumber);
             toast.success(t("load.started"));
           } catch (err) {
+            // 409 ack_outdated: the "Before you report" page changed since the
+            // reporter read it; the page that hosts this form shows it again.
+            if (isAckOutdated(err) && onAckOutdated) {
+              onAckOutdated(ackOutdatedMessage(err));
+              return;
+            }
             // 403 reporters_only: a staff account can't file; say so plainly.
             const detail = err?.response?.data?.detail;
             throw new Error(

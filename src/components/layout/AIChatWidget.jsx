@@ -35,6 +35,9 @@ import LanguagePills from "../ui/LanguagePills";
 import { useAuthStore } from "../../store/authStore";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { isStaffUser, isIdentifiedUser } from "../../utils/roles";
+import BeforeYouReport from "../reports/BeforeYouReport";
+import { currentAckHash } from "../../store/reportAckStore";
+import { isAckOutdated, ackOutdatedMessage } from "../../api/reports";
 import {
   ATTACHMENT_ACCEPT,
   attachmentHint,
@@ -572,9 +575,20 @@ export default function AIChatWidget() {
   };
 
 
+  // "Before you report" (XPAI-114) comes before every report the assistant
+  // starts. `byrNext` is where it leads: the anonymous password step, or back
+  // to the signed-in screen to start the report.
+  const [byrNext, setByrNext] = useState("password-setup");
+  const [byrNotice, setByrNotice] = useState(null);
+  const showBeforeYouReport = (next, notice = null) => {
+    setByrNext(next);
+    setByrNotice(notice);
+    setStep("before-you-report");
+  };
+
   const handleAnonymousSelect = () => {
     setReportType("anonymous");
-    setStep("password-setup");
+    showBeforeYouReport("password-setup");
   };
 
   // --- NEW: Updated handleInitialize function ---
@@ -585,6 +599,11 @@ export default function AIChatWidget() {
     }
     if (useCustomPassword && password.length < 6) {
       showToast(t("errors.passwordTooShort"), "error");
+      return;
+    }
+
+    if (!currentAckHash(orgSlug)) {
+      showBeforeYouReport("password-setup");
       return;
     }
 
@@ -613,6 +632,10 @@ export default function AIChatWidget() {
       setMessages([]); // Clear previous chat history
       setStep("credentials");
     } catch (error) {
+      if (isAckOutdated(error)) {
+        showBeforeYouReport("password-setup", ackOutdatedMessage(error) || t("submit:beforeYouReport.outdated"));
+        return;
+      }
       console.error("Failed to initialize:", error);
       showToast(
         error.response?.data?.detail || t("errors.initFailed"),
@@ -627,6 +650,10 @@ export default function AIChatWidget() {
     if (isStaff) {
       showToast(t("errors.staffAccount"), "error");
       return null;
+    }
+    if (!currentAckHash(orgSlug)) {
+      showBeforeYouReport("auth");
+      return;
     }
     setIsLoading(true);
     try {
@@ -649,6 +676,10 @@ export default function AIChatWidget() {
     } catch (error) {
       setIsLoading(false);
       setIsAuthCredentailsGenerated(false);
+      if (isAckOutdated(error)) {
+        showBeforeYouReport("auth", ackOutdatedMessage(error) || t("submit:beforeYouReport.outdated"));
+        return;
+      }
       console.log(error);
     } finally {
       setIsLoading(false);
@@ -2711,6 +2742,31 @@ export default function AIChatWidget() {
                       className="h-full flex flex-col"
                     >
                       {renderHome()}
+                    </motion.div>
+                  )}
+                  {step === "before-you-report" && (
+                    <motion.div
+                      key="before-you-report"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="h-full min-h-0 overflow-y-auto scrollbar-thin pe-1"
+                    >
+                      <BeforeYouReport
+                        compact
+                        slug={orgSlug}
+                        notice={byrNotice}
+                        onBack={() => setStep(byrNext === "auth" ? "loggedin-submission" : entryStep)}
+                        onContinue={() => {
+                          setByrNotice(null);
+                          if (byrNext === "auth") {
+                            setStep("loggedin-submission");
+                            handleAuthInitialize();
+                          } else {
+                            setStep(byrNext);
+                          }
+                        }}
+                      />
                     </motion.div>
                   )}
                   {step === "password-setup" && (

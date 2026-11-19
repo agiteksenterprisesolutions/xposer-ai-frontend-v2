@@ -23,7 +23,7 @@ function getPublicHomePath(user) {
  */
 const PublicLayout = ({ requireOrg = false }) => {
   const { user, isAuthenticated } = useAuthStore();
-  const { orgSlug } = useParams();
+  const { orgSlug, entitySlug } = useParams();
   // Called before any early return: a hook after a conditional return changes
   // the hook order between renders.
   const location = useLocation();
@@ -109,7 +109,8 @@ const PublicLayout = ({ requireOrg = false }) => {
     }
   }
 
-  const isHome = location.pathname === "/" || (orgSlug && (location.pathname === `/${orgSlug}` || location.pathname === `/${orgSlug}/`));
+  // The portal home: /, /acme, or an entity's portal /acme/insurance.
+  const isHome = location.pathname === "/" || (orgSlug && (location.pathname === `/${orgSlug}` || location.pathname === `/${orgSlug}/`)) || (orgSlug && entitySlug && location.pathname.replace(/\/$/, '') === `/${orgSlug}/${entitySlug}`);
 
   return (
     <div className="min-h-screen flex flex-col">

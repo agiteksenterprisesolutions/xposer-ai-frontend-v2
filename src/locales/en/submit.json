@@ -53,7 +53,8 @@
       "form": "Submit report — {{name}}",
       "selectType": "Select report type",
       "init": "Submit an anonymous report",
-      "description": "File a report anonymously. No personal information is required — you receive credentials to track progress securely."
+      "description": "File a report anonymously. No personal information is required — you receive credentials to track progress securely.",
+      "before": "Before you report"
     },
     "toast": {
       "staffSignedIn": "You are signed in to a staff account. Log out to file an anonymous report.",
@@ -168,5 +169,12 @@
     "title": "Continue your draft",
     "intro": "This draft doesn't have a report type yet. Choose one to keep going — your report number <number>{{number}}</number> stays the same.",
     "noDescription": "Submit a report for this category"
+  },
+  "beforeYouReport": {
+    "loading": "Loading “Before you report”…",
+    "loadFailedTitle": "This page didn’t load",
+    "loadFailedBody": "You need to read it before you report. Check your connection and try again.",
+    "continue": "Continue",
+    "outdated": "This page was updated since you opened it. Please read it again and confirm."
   }
 }

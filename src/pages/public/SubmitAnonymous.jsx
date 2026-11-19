@@ -22,7 +22,9 @@ import MultiStepReportForm from '../../components/forms/MultiStepReportForm';
 import { reportTypesAPI } from '../../api/reportTypes';
 import ReportTypePicker, { DeflectionModal } from '../../components/forms/ReportTypePicker';
 import { useDeflectionExits } from '../../hooks/useDeflectionExits';
-import { reportsAPI } from '../../api/reports';
+import { reportsAPI, isAckOutdated, ackOutdatedMessage } from '../../api/reports';
+import BeforeYouReport from '../../components/reports/BeforeYouReport';
+import { currentAckHash } from '../../store/reportAckStore';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../../store/authStore';
 import { describeError } from '../../utils/errors';
@@ -79,8 +81,12 @@ const SubmitAnonymous = () => {
   // a complaint or an HR request never creates an anonymous report it doesn't need.
   const [deflectionClosed, setDeflectionClosed] = useState(false);
   const navigate = useNavigate();
-  const [stage, setStage] = useState('init'); // 'init', 'selectType', 'form'
-  const deflecting = stage === 'init' && !deflection.loading && deflection.exits.length > 0 && !deflectionClosed;
+  // 'before' ("Before you report", XPAI-114) → 'init' (credentials) → 'selectType' → 'form'
+  const [stage, setStage] = useState('before');
+  // Set when the server refused a stale acknowledgement (409 ack_outdated).
+  const [ackNotice, setAckNotice] = useState(null);
+  // "Is this the right place?" comes first, over the "Before you report" page.
+  const deflecting = (stage === 'before' || stage === 'init') && !deflection.loading && deflection.exits.length > 0 && !deflectionClosed;
   const [reportTypes, setReportTypes] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,11 +107,13 @@ const SubmitAnonymous = () => {
         ? t('anonymous.seo.form', { name: selectedType.name })
         : stage === 'selectType'
           ? t('anonymous.seo.selectType')
-          : t('anonymous.seo.init'),
+          : stage === 'before'
+            ? t('anonymous.seo.before')
+            : t('anonymous.seo.init'),
     description: t('anonymous.seo.description'),
     keywords: ['anonymous report', 'whistleblower', 'confidential reporting'],
     // The wizard holds live report data once credentials exist.
-    noIndex: stage !== 'init',
+    noIndex: stage !== 'init' && stage !== 'before',
   });
 
   // Fetch report types
@@ -137,6 +145,12 @@ const SubmitAnonymous = () => {
       return;
     }
 
+    // Every report starts from the "Before you report" page.
+    if (!currentAckHash(effectiveOrgSlug)) {
+      setStage('before');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const customPassword = useCustomPassword ? password : null;
@@ -159,6 +173,11 @@ const SubmitAnonymous = () => {
       setStage('selectType');
       toast.success(t('anonymous.toast.credentialsCreated'));
     } catch (error) {
+      if (isAckOutdated(error)) {
+        setAckNotice(ackOutdatedMessage(error) || t('beforeYouReport.outdated'));
+        setStage('before');
+        return;
+      }
       console.error('Failed to initialize:', error);
       toast.error(describeError(error).summary || t('anonymous.toast.initFailed'));
     } finally {
@@ -601,6 +620,16 @@ const SubmitAnonymous = () => {
         />
       )}
 
+      {stage === 'before' && (
+        <BeforeYouReport
+          slug={effectiveOrgSlug}
+          notice={ackNotice}
+          onContinue={() => {
+            setAckNotice(null);
+            setStage('init');
+          }}
+        />
+      )}
       {stage === 'init' && renderInitStage()}
       <DeflectionModal isOpen={deflecting} onClose={() => setDeflectionClosed(true)} exits={deflection.exits} />
       {stage === 'selectType' && renderSelectTypeStage()}

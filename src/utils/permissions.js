@@ -69,6 +69,8 @@ export const PERM = {
   // Legal entities (the companies a tenant is made of)
   entityRead: 'entity:read',
   entityManage: 'entity:manage',
+  // Reporter portal addresses, branding and QR posters (XPAI-226/227).
+  portalManage: 'portal:manage',
 
   // Roles
   roleManage: 'role:manage',
@@ -219,6 +221,11 @@ export const ACCESS = {
   // Legal entities: entity:manage requires entity:read.
   entities: { all: [PERM.entityRead] },
   entitiesManage: { all: [PERM.entityRead, PERM.entityManage] },
+  // Portal addresses are tenant-admin only; branding and posters are also
+  // open to an entity admin for their own entity (ENTITY_ADMIN.md, wired there).
+  portalAddresses: { all: [PERM.portalManage] },
+  portalBranding: { all: [PERM.portalManage] },
+  posters: { all: [PERM.portalManage] },
   hierarchy: { all: [PERM.hierarchyRead] },
   hierarchyAdmin: { all: [PERM.hierarchyManage] },
   voiceProfile: { all: [PERM.voiceProfileRead] },

@@ -10,6 +10,8 @@ import DashboardTour from '../../components/tour/DashboardTour';
 import { useIsDesktop } from '../../components/tour/useIsDesktop';
 import { canSubmitAnonymousReport } from '../../utils/roles';
 import { getHomePath } from '../../utils/navigation';
+import usePortal from '../../hooks/usePortal';
+import PortalHeader from '../../components/public/PortalHeader';
 
 const HOME_TOUR_KEY = 'xposer_home_tour_seen';
 
@@ -29,7 +31,10 @@ const Home = () => {
     keywords: ['whistleblowing', 'anonymous reporting', 'compliance', 'AI triage', 'speak up platform'],
   });
   const { user } = useAuthStore();
-  const { orgSlug } = useParams();
+  const { orgSlug, entitySlug } = useParams();
+  // The portal page data (XPAI-226): name, branding, default language; also
+  // records the address so reports started from here are filed under it.
+  const portalState = usePortal(orgSlug, entitySlug);
   const tourRef = useRef(null);
   const isDesktop = useIsDesktop();
   // const [trustStats, setTrustStats] = useState([
@@ -107,6 +112,24 @@ const Home = () => {
     return steps;
   }, [orgSlug, user, isDesktop, t]);
 
+  // Unknown, switched-off or expired addresses all answer the same 404.
+  if (orgSlug && (portalState.status === 'not_found' || portalState.status === 'rate_limited')) {
+    const limited = portalState.status === 'rate_limited';
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-6 pt-24">
+        <div className="max-w-md text-center">
+          <h1 className="text-2xl font-bold text-ink mb-3">
+            {limited ? t('portal.rateLimitedTitle') : t('portal.notFoundTitle')}
+          </h1>
+          <p className="text-ink-muted mb-6">{limited ? t('portal.rateLimitedBody') : t('portal.notFoundBody')}</p>
+          {!limited && (
+            <Link to="/" className="font-medium text-link hover:underline">{t('portal.backHome')}</Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <DashboardTour ref={tourRef} storageKey={HOME_TOUR_KEY} steps={tourSteps} />
@@ -127,6 +150,7 @@ const Home = () => {
 
             {/* Left: headline */}
             <div data-tour="tour-hero">
+              {orgSlug && <PortalHeader portal={portalState.portal} />}
               <h1 className="font-extrabold text-[2.6rem] sm:text-5xl lg:text-6xl rtl:text-[2.2rem] rtl:sm:text-4xl rtl:lg:text-5xl leading-[1.06] rtl:leading-[1.3] tracking-[-0.03em] text-balance mb-6">
                 {t('home.hero.line1')}{' '}
                 <span className="relative inline-block">

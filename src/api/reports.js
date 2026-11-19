@@ -1,5 +1,9 @@
 import api from './axios';
 import i18n from '../i18n';
+import { currentAckHash, useReportAckStore } from '../store/reportAckStore';
+import { currentPortalPath } from '../store/portalStore';
+import { apiErrorToast } from '../utils/toastGuard';
+import { describeError } from '../utils/errors';
 
 // Staff-only fields on a report: notes, who holds it, escalation and owner
 // routing, and the records hold.
@@ -27,6 +31,40 @@ export const toReporterView = (report) => {
   const view = { ...report };
   STAFF_ONLY_REPORT_FIELDS.forEach((field) => delete view[field]);
   return view;
+};
+
+/** POST /reports/init with the acknowledgement attached. */
+const startReport = async ({ customPassword = null, organizationSlug = null } = {}) => {
+  const requestData = {};
+  if (customPassword) requestData.password = customPassword;
+  if (organizationSlug) requestData.organization_slug = organizationSlug;
+  const ackHash = currentAckHash(organizationSlug);
+  if (ackHash) requestData.ack_content_hash = ackHash;
+  // The portal address the reporter came in through files the report under
+  // that tenant and entity (XPAI-226). 403 portal_mismatch for a signed-in
+  // reporter of another tenant; 404 for an unknown address.
+  const portalPath = currentPortalPath(organizationSlug);
+  if (portalPath) requestData.portal_path = portalPath;
+  try {
+    // A stale acknowledgement is answered on the page itself, not by a toast.
+    const response = await api.post('/reports/init', requestData, { skipErrorToast: Boolean(ackHash) });
+    if (ackHash) useReportAckStore.getState().clear();
+    return response.data;
+  } catch (error) {
+    if (isAckOutdated(error)) useReportAckStore.getState().clear();
+    else if (ackHash) apiErrorToast(describeError(error).summary);
+    throw error;
+  }
+};
+
+/** 409 ack_outdated: the "Before you report" page changed since it was read. */
+export const isAckOutdated = (error) =>
+  error?.response?.status === 409 && error?.response?.data?.detail?.code === 'ack_outdated';
+
+/** The server's sentence for a stale acknowledgement, if it sent one. */
+export const ackOutdatedMessage = (error) => {
+  const detail = error?.response?.data?.detail;
+  return typeof detail?.message === 'string' ? detail.message : null;
 };
 
 export const reportsAPI = {
@@ -213,30 +251,29 @@ export const reportsAPI = {
     }
   },
 
+  /**
+   * The "Before you report" page (XPAI-114), public. Render whatever sections
+   * come back, in order; `content_hash` is what the reporter acknowledges.
+   */
+  getBeforeYouReport: async (organizationSlug) => {
+    const response = await api.get(
+      `/organizations/by-slug/${encodeURIComponent(organizationSlug)}/before-you-report`,
+      { skipErrorToast: true },
+    );
+    return response.data;
+  },
+
   // ============ Simplified Helper Methods ============
 
-  startAuthenticatedReport: async (organizationSlug = null) => {
-    try {
-      const requestData = {};
-      if (organizationSlug) requestData.organization_slug = organizationSlug;
-      const response = await api.post('/reports/init', requestData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
+  // Both starts send the "Before you report" acknowledgement (XPAI-114) when
+  // the reporter has given one. A used hash is cleared, so the next report
+  // asks again; a 409 ack_outdated clears it too and is left to the screen
+  // (isAckOutdated), which shows the page again.
+  startAuthenticatedReport: async (organizationSlug = null) =>
+    startReport({ organizationSlug }),
 
-  startAnonymousReport: async (customPassword = null, organizationSlug = null) => {
-    try {
-      const requestData = {};
-      if (customPassword) requestData.password = customPassword;
-      if (organizationSlug) requestData.organization_slug = organizationSlug;
-      const response = await api.post('/reports/init', requestData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
+  startAnonymousReport: async (customPassword = null, organizationSlug = null) =>
+    startReport({ customPassword, organizationSlug }),
 
   // ============ Public Endpoints ============
 

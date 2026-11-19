@@ -46,6 +46,8 @@ import VoiceProfile from './pages/admin/VoiceProfile'
 import Account from './pages/admin/Account'
 import Entities from './pages/admin/Entities'
 import Jurisdiction from './pages/admin/Jurisdiction'
+import Portal from './pages/admin/Portal';
+import Posters from './pages/admin/Posters';
 import ChangePassword from './pages/reporter/ChangePassword'
 import SetPassword from './pages/auth/SetPassword'
 
@@ -214,6 +216,8 @@ function App() {
           <Route path="hierarchy" element={gate(ACCESS.hierarchy, <Hierarchy />)} />
           <Route path="entities" element={gate(ACCESS.entities, <Entities />)} />
           <Route path="jurisdiction" element={gate(ACCESS.jurisdiction, <Jurisdiction />)} />
+          <Route path="portal" element={gate(ACCESS.portalBranding, <Portal />)} />
+          <Route path="posters" element={gate(ACCESS.posters, <Posters />)} />
           <Route path="workflows" element={gate(ACCESS.agents, <Workflows />)} />
           <Route path="workflows/new" element={gate(ACCESS.agentsManage, <WorkflowEditor />)} />
           <Route path="workflows/:id" element={gate(ACCESS.agents, <WorkflowEditor />)} />
@@ -225,6 +229,13 @@ function App() {
           <Route path="question-sets" element={gate(ACCESS.questionSets, <QuestionSets />)} />
           <Route path="voice-profile" element={gate(ACCESS.voiceProfile, <VoiceProfile />)} />
           <Route path="account" element={gate(ACCESS.account, <Account />)} />
+        </Route>
+
+        {/* An entity's reporter portal (XPAI-226): /acme/insurance. Static
+            pages under /:orgSlug (login, pricing, track-report…) still win,
+            which is why those names are reserved slugs (utils/portalSlugs). */}
+        <Route path="/:orgSlug/:entitySlug" element={<PublicLayout />}>
+          <Route index element={<Home />} />
         </Route>
 
         {/* v1 role areas, kept only as redirects into the staff area */}

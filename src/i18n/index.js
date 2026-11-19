@@ -25,6 +25,9 @@ export const LANGUAGES = [
   { code: 'ar', native: 'العربية', dir: 'rtl' },
 ];
 export const STORAGE_KEY = 'xposer-lang';
+// Set when the visitor picks a language with the switcher. A portal's default
+// language (usePortal) only applies until they do.
+export const CHOSEN_KEY = 'xposer-lang-chosen';
 
 const files = import.meta.glob('../locales/*/*.json', { eager: true, import: 'default' });
 const resources = {};
