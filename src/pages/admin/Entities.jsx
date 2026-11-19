@@ -80,8 +80,15 @@ const InheritableField = ({ field, state, onChange, error, packs }) => {
   const label = t(`fields.${field}`);
 
   const badge = overridden ? (
-    <Button variant="ghost" size="small" startIcon={RotateCcw} onClick={() => onChange({ ...state, overridden: false })}>
-      {t('inherit.reset')}
+    <Button
+      variant="ghost"
+      size="small"
+      startIcon={RotateCcw}
+      onClick={() => onChange({ ...state, overridden: false })}
+      aria-label={t('inherit.resetAria', { field: label })}
+      title={t('inherit.reset')}
+    >
+      {t('inherit.resetShort')}
     </Button>
   ) : (
     <Button
@@ -100,9 +107,9 @@ const InheritableField = ({ field, state, onChange, error, packs }) => {
   if (!overridden) {
     return (
       <Field label={label} htmlFor={id} badge={badge} hint={hint}>
-        <div id={id} className="flex min-h-10 flex-wrap items-center gap-2 rounded-lg border border-line bg-sunken px-3 py-2 text-sm text-ink-muted">
-          <span dir="auto">{inheritedText(field, inherited, t, packs)}</span>
-          <Badge size="small" variant="default">{t('inherit.badge')}</Badge>
+        <div id={id} className="flex h-10 items-center gap-2 rounded-lg border border-line bg-sunken px-3 text-sm text-ink-muted">
+          <span dir="auto" className="min-w-0 truncate" title={inheritedText(field, inherited, t, packs)}>{inheritedText(field, inherited, t, packs)}</span>
+          <Badge size="small" variant="default" className="shrink-0">{t('inherit.short')}</Badge>
         </div>
       </Field>
     );

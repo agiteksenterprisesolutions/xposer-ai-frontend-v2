@@ -48,11 +48,12 @@
     "aliases": "Short names or former names, to help staff recognise it."
   },
   "inherit": {
-    "badge": "Inherited from tenant",
     "short": "Inherited",
     "override": "Override",
     "overrideAria": "Override {{field}}",
-    "reset": "Reset to tenant default"
+    "reset": "Reset to tenant default",
+    "resetShort": "Reset",
+    "resetAria": "Reset {{field}} to tenant default"
   },
   "form": {
     "addTitle": "Add a legal entity",

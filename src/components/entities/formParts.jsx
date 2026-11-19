@@ -18,12 +18,14 @@ export const Field = ({ label, htmlFor, hint, error, required, badge, children }
   const describedBy = error || hint ? `${id}-desc` : undefined;
   return (
     <div className="space-y-1.5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label htmlFor={htmlFor} className="block text-sm font-medium text-ink-secondary">
+      {/* One line, fixed height, so fields side by side line up whether or
+          not they carry a button (Override / Reset). */}
+      <div className={`flex items-center justify-between gap-2 ${badge ? 'min-h-8' : ''}`}>
+        <label htmlFor={htmlFor} className="block min-w-0 text-sm font-medium text-ink-secondary">
           {label}
           {required && <span className="ms-0.5 text-danger-fg" aria-hidden="true">*</span>}
         </label>
-        {badge}
+        {badge && <div className="-me-2 shrink-0 whitespace-nowrap">{badge}</div>}
       </div>
       {typeof children === 'function' ? children(describedBy) : children}
       {error ? (
